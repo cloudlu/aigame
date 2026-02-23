@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>无尽冬日 - 游戏简化版</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='%231e293b'/%3E%3Ccircle cx='8' cy='8' r='5' fill='%2360a5fa'/%3E%3Cpath d='M8 3v10M3 8h10' stroke='%23ffffff' stroke-width='1' stroke-linecap='round'/%3E%3C/svg%3E">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/controls/OrbitControls.js"></script>
+    <!-- 统一的 Tailwind 配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e40af',
+                        secondary: '#3b82f6',
+                        accent: '#60a5fa',
+                        dark: '#1e293b',
+                        light: '#f1f5f9',
+                        success: '#10b981',
+                        danger: '#ef4444',
+                        warning: '#f59e0b'
+                    },
+                    fontFamily: {
+                        game: ['Arial', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .text-shadow {
+                text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+            }
+            .bg-glass {
+                background: rgba(255, 255, 255, 0.1);
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+            }
+            .border-glass {
+                border: 1px solid rgba(255, 255, 255, 0.2);
+            }
+        }
+    </style>
+    <style>
+        body {
+            background-color: #1e293b;
+            background-image: 
+                linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
+                url('https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=winter%20landscape%20with%20snow%20and%20ice%2C%20dark%20atmosphere%2C%20game%20background%2C%20minimalist&image_size=landscape_16_9');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+        .game-container {
+            min-height: 100vh;
+        }
+        .resource-bar {
+            transition: all 0.3s ease;
+        }
+        .btn-primary {
+            position: relative;
+            transition: all 0.2s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+        .btn-primary img {
+            pointer-events: none;
+        }
+        .character-card {
+            transition: all 0.3s ease;
+        }
+        .character-card:hover {
+            transform: scale(1.02);
+        }
+        .enemy-card {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
+        }
+        .level-up-animation {
+            animation: levelUp 1s ease-in-out;
+        }
+        @keyframes levelUp {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 0.8;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        .resource-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        /* 悬停提示样式 */
+        [data-tooltip] {
+            position: relative;
+            cursor: help;
+        }
+        [data-tooltip]::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(30, 41, 59, 0.9);
+            color: #f1f5f9;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 9999;
+            border: 1px solid rgba(96, 165, 250, 0.5);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        [data-tooltip]::before {
+            content: '';
+            position: absolute;
+            top: -16px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 6px;
+            border-style: solid;
+            border-color: rgba(30, 41, 59, 0.9) transparent transparent transparent;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+        }
+        [data-tooltip]:hover::after,
+        [data-tooltip]:hover::before {
+            opacity: 1;
+            visibility: visible;
+        }
+    </style>
+</head>
+<body class="font-game text-light">
+    <div class="game-container flex flex-col">
+        <!-- 顶部导航栏 -->
+        <nav class="bg-dark/80 border-b border-glass py-2 px-4 flex justify-between items-center">
+            <div class="flex items-center">
+                <h1 class="text-xl font-bold text-accent">无尽冬日</h1>
+            </div>
+            <div class="flex items-center space-x-3">
+                <span class="text-sm text-light/90">
+                    <i class="fa fa-user mr-1 text-accent"></i> <span id="current-user-nav">Guest</span>
+                </span>
+                <button id="login-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="登录已有账号">
+                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=login%20button%20icon%20winter%20theme%20blue%20crystal%20style%20clean%20minimal&image_size=square" alt="登录" class="w-full h-full object-cover">
+                </button>
+                <button id="register-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="注册新账号">
+                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=register%20button%20icon%20winter%20theme%20green%20crystal%20style%20clean%20minimal&image_size=square" alt="注册" class="w-full h-full object-cover">
+                </button>
+                <button id="logout-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden hidden" data-tooltip="退出当前账号">
+                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=logout%20button%20icon%20winter%20theme%20red%20crystal%20style%20clean%20minimal&image_size=square" alt="登出" class="w-full h-full object-cover">
+                </button>
+                <button id="save-game" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="保存游戏进度">
+                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=save%20button%20icon%20winter%20theme%20purple%20crystal%20style%20clean%20minimal&image_size=square" alt="保存" class="w-full h-full object-cover">
+                </button>
+                <button id="load-game" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="重置游戏进度">
+                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=reset%20button%20icon%20winter%20theme%20yellow%20crystal%20style%20clean%20minimal&image_size=square" alt="重置" class="w-full h-full object-cover">
+                </button>
+                <div class="relative">
+                    <button id="settings-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="游戏设置选项">
+                        <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=settings%20button%20icon%20winter%20theme%20white%20crystal%20style%20clean%20minimal&image_size=square" alt="设置" class="w-full h-full object-cover">
+                    </button>
+                    <div id="settings-dropdown" class="hidden absolute top-full right-0 mt-1 bg-dark/90 border border-glass rounded-lg p-2 min-w-[250px] z-50">
+                        <button id="export-game" class="w-full text-left px-3 py-2 text-sm hover:bg-primary/20 rounded flex items-center">
+                            <i class="fa fa-download mr-2"></i> 导出存档
+                        </button>
+                        <input type="file" id="import-game" class="hidden" accept=".json">
+                        <label for="import-game" class="w-full text-left px-3 py-2 text-sm hover:bg-primary/20 rounded flex items-center cursor-pointer">
+                            <i class="fa fa-upload mr-2"></i> 导入存档
+                        </label>
+                        
+                        <!-- 自动战斗设置 -->
+                        <div class="w-full text-left px-3 py-2 text-sm rounded">
+                            <div class="font-medium text-white mb-2 flex items-center">
+                                <i class="fa fa-bolt mr-2 text-yellow-500"></i> 自动战斗设置
+                            </div>
+                            <div class="space-y-1">
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="auto-battle-green" class="mr-2 accent-accent" checked>
+                                    <label for="auto-battle-green" class="text-sm text-green-500">绿色（较弱）</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="auto-battle-yellow" class="mr-2 accent-accent" checked>
+                                    <label for="auto-battle-yellow" class="text-sm text-yellow-500">黄色（相当）</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="auto-battle-red" class="mr-2 accent-accent" checked>
+                                    <label for="auto-battle-red" class="text-sm text-red-500">红色（较强）</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 自动收集资源设置 -->
+                        <div class="w-full text-left px-3 py-2 text-sm rounded">
+                            <div class="font-medium text-white mb-2 flex items-center">
+                                <i class="fa fa-collection mr-2 text-blue-500"></i> 自动收集设置
+                            </div>
+                            <div class="space-y-1">
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="auto-collect-wood" class="mr-2 accent-accent" checked>
+                                    <label for="auto-collect-wood" class="text-sm text-light/90">木材</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="auto-collect-iron" class="mr-2 accent-accent" checked>
+                                    <label for="auto-collect-iron" class="text-sm text-light/90">铁矿</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="auto-collect-crystal" class="mr-2 accent-accent" checked>
+                                    <label for="auto-collect-crystal" class="text-sm text-light/90">水晶</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button id="reset-game" class="w-full text-left px-3 py-2 text-sm hover:bg-danger/20 rounded flex items-center">
+                            <i class="fa fa-refresh mr-2"></i> 重置游戏
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- 探索日志区域 -->
+        <div id="battle-log" class="bg-dark/80 border-b border-glass py-2 px-4 overflow-hidden">
+            <div class="h-24 overflow-y-auto">
+                <p class="text-light/70">探索日志...</p>
+            </div>
+        </div>
+
+        <!-- 游戏主内容 -->
+        <main class="flex-grow p-4 md:p-6">
+            <!-- 人物和装备区域 -->
+            <div class="grid grid-cols-1 md:grid-cols-1 gap-6 mb-6">
+                <!-- 人物信息 -->
+                <div class="character-card bg-glass border-glass rounded-lg p-4 hover:shadow-xl hover:shadow-accent/10 transition-all">
+                    <div class="flex items-center mb-4">
+                        <div class="w-20 h-20 rounded-full bg-primary/30 flex items-center justify-center mr-4 border-2 border-accent/50 overflow-hidden shadow-lg shadow-primary/20">
+                            <div class="w-full h-full flex items-center justify-center text-3xl text-accent animate-pulse">
+                                <i class="fa fa-user"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-white">幸存者: <span id="survivor-name" class="text-accent">Guest</span></h2>
+                            <div class="flex items-center mt-1">
+                                <span class="text-sm bg-primary/30 px-2 py-1 rounded shadow-md">等级 <span id="level" class="text-accent">1</span></span>
+                                <span class="text-xs text-light/60 ml-2">经验: <span id="exp">0</span>/<span id="max-exp">100</span></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+                        <div class="bg-dark/30 rounded p-2 text-center hover:bg-dark/40 transition-colors shadow-md">
+                            <p class="text-xs text-light/60">攻击力</p>
+                            <p class="text-lg font-bold text-white" id="attack" data-tooltip="攻击力: 影响普通攻击和特殊技的伤害">10</p>
+                        </div>
+                        <div class="bg-dark/30 rounded p-2 text-center hover:bg-dark/40 transition-colors shadow-md">
+                            <p class="text-xs text-light/60">防御力</p>
+                            <p class="text-lg font-bold text-white" id="defense" data-tooltip="防御力: 减少受到的敌人伤害">5</p>
+                        </div>
+                        <div class="bg-dark/30 rounded p-2 text-center hover:bg-dark/40 transition-colors shadow-md">
+                            <p class="text-xs text-light/60">生命值</p>
+                            <p class="text-lg font-bold text-white" id="hp" data-tooltip="生命值恢复: +0/秒">100</p>
+                        </div>
+                        <div class="bg-dark/30 rounded p-2 text-center hover:bg-dark/40 transition-colors shadow-md">
+                            <p class="text-xs text-light/60">幸运值</p>
+                            <p class="text-lg font-bold text-white" id="luck" data-tooltip="幸运值: 提高装备掉落概率和暴击率">2</p>
+                        </div>
+                        <div class="bg-dark/30 rounded p-2 text-center hover:bg-dark/40 transition-colors shadow-md">
+                            <p class="text-xs text-light/60">能量</p>
+                            <p class="text-lg font-bold text-white" id="energy" data-tooltip="能量恢复: +2/秒">100</p>
+                        </div>
+                    </div>
+                    
+                    <!-- 装备栏 -->
+                    <div>
+                        <h3 class="font-bold text-sm mb-2 text-light/90">装备栏</h3>
+                        <div class="grid grid-cols-5 gap-2">
+                            <div class="equipment-slot bg-dark/30 rounded p-2 text-center hover:bg-dark/40 transition-colors cursor-pointer border border-dark/50" data-slot="weapon">
+                                <p class="text-xs text-light/60">武器</p>
+                                <p id="equipment-weapon" class="text-sm">无</p>
+                            </div>
+                            <div class="equipment-slot bg-dark/30 rounded p-2 text-center hover:bg-dark/40 transition-colors cursor-pointer border border-dark/50" data-slot="armor">
+                                <p class="text-xs text-light/60">护甲</p>
+                                <p id="equipment-armor" class="text-sm">无</p>
+                            </div>
+                            <div class="equipment-slot bg-dark/30 rounded p-2 text-center hover:bg-dark/40 transition-colors cursor-pointer border border-dark/50" data-slot="helmet">
+                                <p class="text-xs text-light/60">头盔</p>
+                                <p id="equipment-helmet" class="text-sm">无</p>
+                            </div>
+                            <div class="equipment-slot bg-dark/30 rounded p-2 text-center hover:bg-dark/40 transition-colors cursor-pointer border border-dark/50" data-slot="boots">
+                                <p class="text-xs text-light/60">靴子</p>
+                                <p id="equipment-boots" class="text-sm">无</p>
+                            </div>
+                            <div class="equipment-slot bg-dark/30 rounded p-2 text-center hover:bg-dark/40 transition-colors cursor-pointer border border-dark/50" data-slot="accessory">
+                                <p class="text-xs text-light/60">饰品</p>
+                                <p id="equipment-accessory" class="text-sm">无</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 人物形象 -->
+                    <div class="mt-6 mb-6">
+                        <h3 class="font-bold text-sm mb-3 text-light/90">装备预览</h3>
+                        <div class="flex justify-center">
+                            <div class="relative w-96 h-96">
+                                <!-- 人物图形 -->
+                                <div class="w-full h-full flex items-center justify-center">
+                                    <!-- 人物身体 -->
+                                    <img id="character-body" src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cute%20cartoon%203D%20winter%20survivor%20character%2C%20stylish%20winter%20clothing%2C%20chibi%20style%2C%20clean%20white%20background%2C%20no%20equipment%2C%20professional%203D%20render%2C%20bright%20colorful%20lighting&image_size=square" alt="人物身体" class="w-full h-full object-contain">
+                                    <!-- 武器 -->
+                                    <img id="character-weapon" src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cute%20cartoon%203D%20ice%20crystal%20sword%2C%20winter%20themed%20weapon%2C%20chibi%20style%2C%20clean%20white%20background%2C%20professional%203D%20render%2C%20bright%20colorful%20lighting%2C%20no%20character&image_size=square" alt="武器" class="absolute top-2/3 left-20 w-16 h-16 object-contain transform -translate-y-1/2 -rotate-30 opacity-0 transition-opacity">
+                                    <!-- 护甲 -->
+                                    <img id="character-armor" src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cute%20cartoon%203D%20ice%20crystal%20chest%20plate%2C%20winter%20themed%20armor%2C%20chibi%20style%2C%20clean%20white%20background%2C%20professional%203D%20render%2C%20bright%20colorful%20lighting%2C%20no%20character&image_size=square" alt="护甲" class="absolute top-1/2 left-1/2 w-24 h-24 object-contain transform -translate-x-1/2 -translate-y-1/2 opacity-0 transition-opacity">
+                                    <!-- 头盔 -->
+                                    <img id="character-helmet" src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cute%20cartoon%203D%20ice%20crystal%20helmet%2C%20winter%20themed%20headgear%2C%20chibi%20style%2C%20clean%20white%20background%2C%20professional%203D%20render%2C%20bright%20colorful%20lighting%2C%20no%20character&image_size=square" alt="头盔" class="absolute top-16 left-1/2 w-12 h-12 object-contain transform -translate-x-1/2 opacity-0 transition-opacity">
+                                    <!-- 靴子 -->
+                                    <img id="character-boots" src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cute%20cartoon%203D%20ice%20crystal%20boots%2C%20winter%20themed%20footwear%2C%20chibi%20style%2C%20clean%20white%20background%2C%20professional%203D%20render%2C%20bright%20colorful%20lighting%2C%20no%20character&image_size=square" alt="靴子" class="absolute bottom-16 left-1/2 w-12 h-12 object-contain transform -translate-x-1/2 opacity-0 transition-opacity">
+                                    <!-- 饰品 -->
+                                    <img id="character-accessory" src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cute%20cartoon%203D%20ice%20crystal%20necklace%2C%20winter%20themed%20accessory%2C%20chibi%20style%2C%20clean%20white%20background%2C%20professional%203D%20render%2C%20bright%20colorful%20lighting%2C%20no%20character&image_size=square" alt="饰品" class="absolute top-1/2 left-1/2 w-10 h-10 object-contain transform -translate-x-1/2 -translate-y-1/2 opacity-0 transition-opacity">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 装备管理 -->
+                    <div class="mt-4 space-y-2">
+                        <div class="flex space-x-2 justify-center">
+                            <button id="equip-item-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="从背包中装备物品">
+                                <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=equip%20item%20button%20winter%20theme%20blue%20crystal%20style%20clean%20minimal&image_size=square" alt="装备物品" class="w-full h-full object-cover">
+                            </button>
+                            <button id="unequip-item-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="卸下当前装备">
+                                <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=unequip%20item%20button%20winter%20theme%20green%20crystal%20style%20clean%20minimal&image_size=square" alt="卸下装备" class="w-full h-full object-cover">
+                            </button>
+                            <button id="open-inventory-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="打开背包查看物品">
+                                <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=open%20inventory%20button%20winter%20theme%20purple%20crystal%20style%20clean%20minimal&image_size=square" alt="打开背包" class="w-full h-full object-cover">
+                            </button>
+                            <button id="refine-weapon-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="精炼当前装备">
+                                <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=refine%20weapon%20button%20winter%20theme%20yellow%20crystal%20style%20clean%20minimal&image_size=square" alt="精炼装备" class="w-full h-full object-cover">
+                            </button>
+                            <button id="disassemble-item-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="分解当前装备">
+                                <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=disassemble%20item%20button%20winter%20theme%20red%20crystal%20style%20clean%20minimal&image_size=square" alt="分解装备" class="w-full h-full object-cover">
+                            </button>
+                            <button id="craft-equipment-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="合成装备">
+                                <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=craft%20equipment%20button%20winter%20theme%20green%20crystal%20style%20clean%20minimal&image_size=square" alt="合成装备" class="w-full h-full object-cover">
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 装备精炼信息 -->
+                    <div id="refine-info" class="mt-4 bg-dark/30 rounded-lg p-3 hidden">
+                        <h3 class="font-bold text-sm mb-2 text-light/90">装备精炼</h3>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-light/80">当前装备:</span>
+                                <span id="refine-weapon-name" class="text-sm font-medium text-white">无</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-light/80">精炼等级:</span>
+                                <span id="refine-weapon-level" class="text-sm font-medium text-accent">+0</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-light/80">精炼需求:</span>
+                                <div id="refine-requirements" class="text-sm text-light/70">
+                                    木材: 0, 铁矿: 0, 水晶: 0
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-light/80">属性提升:</span>
+                                <span id="refine-bonus" class="text-sm font-medium text-success">+0%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 装备分解信息 -->
+                    <div id="disassemble-info" class="mt-4 bg-dark/30 rounded-lg p-3 hidden">
+                        <h3 class="font-bold text-sm mb-2 text-light/90">装备分解</h3>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-light/80">当前装备:</span>
+                                <span id="disassemble-weapon-name" class="text-sm font-medium text-white">无</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-light/80">精炼等级:</span>
+                                <span id="disassemble-weapon-level" class="text-sm font-medium text-accent">+0</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-light/80">分解返还:</span>
+                                <div id="disassemble-returns" class="text-sm text-light/70">
+                                    木材: 0, 铁矿: 0, 水晶: 0
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-light/80">返还说明:</span>
+                                <span class="text-xs text-light/60">返还所有精炼材料</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 装备合成信息 -->
+                    <div id="craft-info" class="mt-4 bg-dark/30 rounded-lg p-3 hidden">
+                        <h3 class="font-bold text-sm mb-2 text-light/90">装备合成</h3>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-light/80">可合成装备:</span>
+                                <span id="craft-available" class="text-sm font-medium text-white">无</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-light/80">合成需求:</span>
+                                <div id="craft-requirements" class="text-sm text-light/70">
+                                    3个同等级装备
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-light/80">合成结果:</span>
+                                <span id="craft-result" class="text-sm font-medium text-accent">+1级装备</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-light/80">合成说明:</span>
+                                <span class="text-xs text-light/60">3个同等级装备合成1个高1级装备</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 探索地图区域（放到幸存者下面） -->
+            <div class="mb-6">
+                <div class="bg-glass border-glass rounded-lg p-4 hover:shadow-xl hover:shadow-accent/10 transition-all">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold text-white">探索地图</h2>
+                        <button id="refresh-enemy-btn" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="刷新随机敌人">
+                            <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=refresh%20enemy%20button%20winter%20theme%20purple%20crystal%20style%20clean%20minimal&image_size=square" alt="刷新敌人" class="w-full h-full object-cover">
+                        </button>
+                    </div>
+                    <div id="battle-area">
+                        <!-- 3D探索场景 -->
+                        <div id="battle-3d-container" class="bg-dark/50 border border-glass rounded-lg p-3 mb-4 hover:shadow-lg hover:shadow-danger/20 transition-all" style="height: 500px; width: 100%; position: relative;">
+                            <!-- 3D场景将由JavaScript动态生成 -->
+                            <div style="color: white; position: absolute; top: 10px; left: 10px; z-index: 10;">3D探索场景</div>
+                        </div>
+                        
+                        <!-- 小地图 -->
+                        <div id="mini-map" class="bg-dark/50 border border-glass rounded-lg p-4 mb-4 relative" style="height: 150px;">
+                            <!-- 地图背景 -->
+                            <div id="map-background" class="absolute inset-0 rounded-lg overflow-hidden z-0 opacity-30">
+                                <img src="" alt="地图背景" class="w-full h-full object-cover">
+                            </div>
+                            <div id="map-grid" class="grid grid-cols-5 gap-1 h-full relative z-10">
+                                <!-- 地图格子将由JavaScript动态生成 -->
+                            </div>
+                            <!-- 玩家位置 -->
+                            <div id="player-position" class="absolute w-8 h-8 rounded-full bg-accent/50 flex items-center justify-center shadow-lg shadow-accent/30 animate-pulse z-10" style="top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                                <i class="fa fa-user text-white text-sm"></i>
+                            </div>
+                        </div>
+                        
+                        <!-- 敌人信息 -->
+                        <div id="enemy-info" class="enemy-card bg-danger/20 border border-danger/30 rounded-lg p-3 mb-4 hover:shadow-lg hover:shadow-danger/20 transition-all">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <div id="enemy-icon" class="w-14 h-14 rounded-full bg-danger/30 flex items-center justify-center mr-3 shadow-md shadow-danger/20">
+                                        <i class="fa fa-skull text-xl text-danger"></i>
+                                    </div>
+                                    <div>
+                                        <h3 id="enemy-name" class="font-bold text-white">雪原狼</h3>
+                                        <div class="flex items-center">
+                                            <p class="text-sm text-light/70">等级 <span id="enemy-level" class="text-accent">1</span></p>
+                                            <span id="enemy-elite-badge" class="ml-2 text-xs bg-yellow-500 text-black px-1.5 py-0.5 rounded hidden font-bold">精英</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold text-white">HP: <span id="enemy-hp" class="text-danger">30</span>/<span id="enemy-max-hp">30</span></p>
+                                    <p class="text-sm text-light/70">攻击: <span id="enemy-attack">8</span></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center mb-3">
+                            <!-- 普通攻击和技能攻击一起放到左边 -->
+                            <div class="flex space-x-2">
+                                <button id="attack-btn" class="btn-primary bg-primary hover:bg-primary/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="对敌人进行普通攻击，不消耗能量">
+                                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=normal%20attack%20button%20winter%20theme%20red%20crystal%20style%20clean%20minimal&image_size=square" alt="普通攻击" class="w-full h-full object-cover">
+                                </button>
+                                <button id="skill-0" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="强力攻击: 造成2倍普通伤害，消耗20能量，需要1级">
+                                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=powerful%20attack%20skill%20button%20winter%20theme%20yellow%20crystal%20style%20clean%20minimal&image_size=square" alt="强力攻击" class="w-full h-full object-cover">
+                                </button>
+                                <button id="skill-1" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="防御姿态: 减少50%受到的伤害，消耗15能量，需要10级">
+                                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=defense%20stance%20skill%20button%20winter%20theme%20blue%20crystal%20style%20clean%20minimal&image_size=square" alt="防御姿态" class="w-full h-full object-cover">
+                                </button>
+                                <button id="skill-2" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="生命恢复: 恢复20%最大生命值，消耗25能量，需要20级">
+                                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=life%20heal%20skill%20button%20winter%20theme%20green%20crystal%20style%20clean%20minimal&image_size=square" alt="生命恢复" class="w-full h-full object-cover">
+                                </button>
+                                <button id="skill-3" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="幸运一击: 有70%几率造成3倍伤害，消耗30能量，需要30级">
+                                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=lucky%20strike%20skill%20button%20winter%20theme%20purple%20crystal%20style%20clean%20minimal&image_size=square" alt="幸运一击" class="w-full h-full object-cover">
+                                </button>
+                            </div>
+                            
+                            <!-- 自动战斗和自动收集按钮 -->
+                            <div class="flex space-x-2">
+                                <button id="auto-battle-btn" class="btn-primary bg-secondary hover:bg-secondary/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="自动进行战斗，消耗能量">
+                                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=auto%20battle%20button%20winter%20theme%20green%20crystal%20style%20clean%20minimal&image_size=square" alt="自动战斗" class="w-full h-full object-cover">
+                                </button>
+                                <button id="auto-collect-btn" class="btn-primary bg-secondary hover:bg-secondary/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="自动收集资源，消耗能量">
+                                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=auto%20collect%20resources%20button%20winter%20theme%20blue%20crystal%20style%20clean%20minimal&image_size=square" alt="自动收集" class="w-full h-full object-cover">
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 资源栏 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="resource-bar bg-glass border-glass rounded-lg p-3 flex items-center justify-between hover:shadow-lg hover:shadow-accent/10 transition-all">
+                    <div class="flex items-center">
+                        <div class="resource-icon w-10 h-10 rounded-full bg-secondary/30 mr-3 flex items-center justify-center animate-pulse">
+                            <i class="fa fa-wood text-accent text-lg"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-light/90">木材</h3>
+                            <p class="text-lg font-bold text-white" id="wood">0</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xs text-light/60">产量</p>
+                        <p class="text-xs text-success flex items-center" id="wood-rate">
+                            <i class="fa fa-arrow-up mr-1"></i> +1/秒
+                        </p>
+                    </div>
+                </div>
+                <div class="resource-bar bg-glass border-glass rounded-lg p-3 flex items-center justify-between hover:shadow-lg hover:shadow-accent/10 transition-all">
+                    <div class="flex items-center">
+                        <div class="resource-icon w-10 h-10 rounded-full bg-secondary/30 mr-3 flex items-center justify-center animate-pulse">
+                            <i class="fa fa-iron text-accent text-lg"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-light/90">铁矿</h3>
+                            <p class="text-lg font-bold text-white" id="iron">0</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xs text-light/60">产量</p>
+                        <p class="text-xs text-success flex items-center" id="iron-rate">
+                            <i class="fa fa-arrow-up mr-1"></i> +0.5/秒
+                        </p>
+                    </div>
+                </div>
+                <div class="resource-bar bg-glass border-glass rounded-lg p-3 flex items-center justify-between hover:shadow-lg hover:shadow-accent/10 transition-all">
+                    <div class="flex items-center">
+                        <div class="resource-icon w-10 h-10 rounded-full bg-secondary/30 mr-3 flex items-center justify-center animate-pulse">
+                            <i class="fa fa-gem text-accent text-lg"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-light/90">水晶</h3>
+                            <p class="text-lg font-bold text-white" id="crystal">0</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xs text-light/60">产量</p>
+                        <p class="text-xs text-success flex items-center" id="crystal-rate">
+                            <i class="fa fa-arrow-up mr-1"></i> +0.2/秒
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 挂机和功能区域 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- 自动挂机 -->
+                <div class="bg-glass border-glass rounded-lg p-4 hover:shadow-lg hover:shadow-accent/10 transition-all">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-bold flex items-center text-white">
+                            <i class="fa fa-moon-o mr-2 text-accent animate-pulse"></i> 自动挂机
+                        </h3>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="auto挂机" class="sr-only peer">
+                            <div class="w-12 h-6 bg-dark/50 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary shadow-md"></div>
+                        </label>
+                    </div>
+                    <p class="text-xs text-light/60 mb-3">启用后将自动收集资源和战斗</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="bg-dark/30 rounded p-2 text-center hover:bg-dark/40 transition-colors border border-dark/50">
+                            <p class="text-xs text-light/60">挂机时间</p>
+                            <p class="font-bold text-white" id="afk-time">00:00:00</p>
+                        </div>
+                        <div class="bg-dark/30 rounded p-2 text-center hover:bg-dark/40 transition-colors border border-dark/50">
+                            <p class="text-xs text-light/60">已收集资源</p>
+                            <p class="font-bold text-white" id="collected-resources">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 资源收集 -->
+                <div class="bg-glass border-glass rounded-lg p-4 hover:shadow-lg hover:shadow-accent/10 transition-all">
+                    <h3 class="font-bold flex items-center mb-3 text-white">
+                        <i class="fa fa-collection mr-2 text-accent animate-pulse"></i> 资源收集
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="bg-dark/30 rounded p-3 hover:bg-dark/40 transition-colors border border-dark/50 shadow-sm">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm text-light/90 flex items-center">
+                                    <i class="fa fa-wood text-accent mr-2"></i> 木材收集
+                                </span>
+                                <button id="collect-wood" class="btn-primary bg-secondary/70 hover:bg-secondary w-8 h-8 rounded flex items-center justify-center overflow-hidden shadow-sm transition-all" data-tooltip="收集木材资源，消耗5点能量">
+                                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=collect%20wood%20button%20winter%20theme%20brown%20crystal%20style%20clean%20minimal&image_size=square" alt="收集木材" class="w-full h-full object-cover">
+                                </button>
+                            </div>
+                            <div class="w-full bg-dark/50 rounded-full h-2 overflow-hidden">
+                                <div id="wood-progress" class="bg-accent h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="bg-dark/30 rounded p-3 hover:bg-dark/40 transition-colors border border-dark/50 shadow-sm">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm text-light/90 flex items-center">
+                                    <i class="fa fa-iron text-accent mr-2"></i> 铁矿收集
+                                </span>
+                                <button id="collect-iron" class="btn-primary bg-secondary/70 hover:bg-secondary w-8 h-8 rounded flex items-center justify-center overflow-hidden shadow-sm transition-all" data-tooltip="收集铁矿资源，消耗5点能量">
+                                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=collect%20iron%20button%20winter%20theme%20gray%20crystal%20style%20clean%20minimal&image_size=square" alt="收集铁矿" class="w-full h-full object-cover">
+                                </button>
+                            </div>
+                            <div class="w-full bg-dark/50 rounded-full h-2 overflow-hidden">
+                                <div id="iron-progress" class="bg-accent h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="bg-dark/30 rounded p-3 hover:bg-dark/40 transition-colors border border-dark/50 shadow-sm">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm text-light/90 flex items-center">
+                                    <i class="fa fa-gem text-accent mr-2"></i> 水晶收集
+                                </span>
+                                <button id="collect-crystal" class="btn-primary bg-secondary/70 hover:bg-secondary w-8 h-8 rounded flex items-center justify-center overflow-hidden shadow-sm transition-all" data-tooltip="收集水晶资源，消耗5点能量">
+                                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=collect%20crystal%20button%20winter%20theme%20blue%20crystal%20style%20clean%20minimal&image_size=square" alt="收集水晶" class="w-full h-full object-cover">
+                                </button>
+                            </div>
+                            <div class="w-full bg-dark/50 rounded-full h-2 overflow-hidden">
+                                <div id="crystal-progress" class="bg-accent h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 商店 -->
+                <div class="bg-glass border-glass rounded-lg p-4 hover:shadow-lg hover:shadow-accent/10 transition-all">
+                    <h3 class="font-bold flex items-center mb-3 text-white">
+                        <i class="fa fa-shopping-cart mr-2 text-accent animate-pulse"></i> 商店
+                    </h3>
+                    <div class="space-y-3 max-h-96 overflow-y-auto pr-2">
+                        <div class="bg-dark/30 rounded p-3 hover:bg-dark/40 transition-colors border border-dark/50 shadow-sm">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h4 class="font-medium text-white">生命药水</h4>
+                                    <p class="text-xs text-light/60">恢复50%最大生命值</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold text-accent flex items-center">
+                                        <i class="fa fa-wood mr-1"></i> 50 <span class="text-xs text-light/60 ml-1">木材</span>
+                                    </p>
+                                    <button id="buy-health-potion" class="btn-primary bg-primary hover:bg-primary/80 w-8 h-8 rounded flex items-center justify-center overflow-hidden mt-1 transition-all shadow-sm" data-tooltip="购买生命药水，恢复50%最大生命值">
+                                        <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=buy%20health%20potion%20button%20winter%20theme%20red%20crystal%20style%20clean%20minimal&image_size=square" alt="购买生命药水" class="w-full h-full object-cover">
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-dark/30 rounded p-3 hover:bg-dark/40 transition-colors border border-dark/50 shadow-sm">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h4 class="font-medium text-white">能量药水</h4>
+                                    <p class="text-xs text-light/60">恢复满能量</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold text-accent flex items-center">
+                                        <i class="fa fa-wood mr-1"></i> 30 <span class="text-xs text-light/60 ml-1">木材</span>
+                                    </p>
+                                    <button id="buy-energy-potion" class="btn-primary bg-primary hover:bg-primary/80 w-8 h-8 rounded flex items-center justify-center overflow-hidden mt-1 transition-all shadow-sm" data-tooltip="购买能量药水，恢复满能量">
+                                        <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=buy%20energy%20potion%20button%20winter%20theme%20blue%20crystal%20style%20clean%20minimal&image_size=square" alt="购买能量药水" class="w-full h-full object-cover">
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-dark/30 rounded p-3 hover:bg-dark/40 transition-colors border border-dark/50 shadow-sm">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h4 class="font-medium text-white">攻击药水</h4>
+                                    <p class="text-xs text-light/60">临时提升20%攻击力</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold text-accent flex items-center">
+                                        <i class="fa fa-wood mr-1"></i> 40 <span class="text-xs text-light/60 ml-1">木材</span>
+                                    </p>
+                                    <button id="buy-attack-potion" class="btn-primary bg-primary hover:bg-primary/80 w-8 h-8 rounded flex items-center justify-center overflow-hidden mt-1 transition-all shadow-sm" data-tooltip="购买攻击药水，临时提升20%攻击力">
+                                        <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=buy%20attack%20potion%20button%20winter%20theme%20yellow%20crystal%20style%20clean%20minimal&image_size=square" alt="购买攻击药水" class="w-full h-full object-cover">
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-dark/30 rounded p-3 hover:bg-dark/40 transition-colors border border-dark/50 shadow-sm">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h4 class="font-medium text-white">防御药水</h4>
+                                    <p class="text-xs text-light/60">临时提升20%防御力</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold text-accent flex items-center">
+                                        <i class="fa fa-wood mr-1"></i> 40 <span class="text-xs text-light/60 ml-1">木材</span>
+                                    </p>
+                                    <button id="buy-defense-potion" class="btn-primary bg-primary hover:bg-primary/80 w-8 h-8 rounded flex items-center justify-center overflow-hidden mt-1 transition-all shadow-sm" data-tooltip="购买防御药水，临时提升20%防御力">
+                                        <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=buy%20defense%20potion%20button%20winter%20theme%20green%20crystal%20style%20clean%20minimal&image_size=square" alt="购买防御药水" class="w-full h-full object-cover">
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-dark/30 rounded p-3 hover:bg-dark/40 transition-colors border border-dark/50 shadow-sm">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h4 class="font-medium text-white">基础剑</h4>
+                                    <p class="text-xs text-light/60">攻击力+10</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold text-accent flex items-center">
+                                        <i class="fa fa-wood mr-1"></i> 100 <span class="text-xs text-light/60 ml-1">木材</span>
+                                    </p>
+                                    <button id="buy-basic-sword" class="btn-primary bg-primary hover:bg-primary/80 w-8 h-8 rounded flex items-center justify-center overflow-hidden mt-1 transition-all shadow-sm" data-tooltip="购买基础剑，攻击力+10">
+                                        <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=buy%20sword%20button%20winter%20theme%20silver%20crystal%20style%20clean%20minimal&image_size=square" alt="购买基础剑" class="w-full h-full object-cover">
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-dark/30 rounded p-3 hover:bg-dark/40 transition-colors border border-dark/50 shadow-sm">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h4 class="font-medium text-white">基础护甲</h4>
+                                    <p class="text-xs text-light/60">防御力+8</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold text-accent flex items-center">
+                                        <i class="fa fa-wood mr-1"></i> 80 <span class="text-xs text-light/60 ml-1">木材</span>
+                                    </p>
+                                    <button id="buy-basic-armor" class="btn-primary bg-primary hover:bg-primary/80 w-8 h-8 rounded flex items-center justify-center overflow-hidden mt-1 transition-all shadow-sm" data-tooltip="购买基础护甲，防御力+8">
+                                        <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=buy%20armor%20button%20winter%20theme%20bronze%20crystal%20style%20clean%20minimal&image_size=square" alt="购买基础护甲" class="w-full h-full object-cover">
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-dark/30 rounded p-3 hover:bg-dark/40 transition-colors border border-dark/50 shadow-sm">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h4 class="font-medium text-white">基础头盔</h4>
+                                    <p class="text-xs text-light/60">防御力+5，生命值+20</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold text-accent flex items-center">
+                                        <i class="fa fa-wood mr-1"></i> 60 <span class="text-xs text-light/60 ml-1">木材</span>
+                                    </p>
+                                    <button id="buy-basic-helmet" class="btn-primary bg-primary hover:bg-primary/80 w-8 h-8 rounded flex items-center justify-center overflow-hidden mt-1 transition-all shadow-sm" data-tooltip="购买基础头盔，防御力+5，生命值+20">
+                                        <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=buy%20helmet%20button%20winter%20theme%20gold%20crystal%20style%20clean%20minimal&image_size=square" alt="购买基础头盔" class="w-full h-full object-cover">
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-dark/30 rounded p-3 hover:bg-dark/40 transition-colors border border-dark/50 shadow-sm">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h4 class="font-medium text-white">基础靴子</h4>
+                                    <p class="text-xs text-light/60">防御力+3，幸运值+2</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold text-accent flex items-center">
+                                        <i class="fa fa-wood mr-1"></i> 40 <span class="text-xs text-light/60 ml-1">木材</span>
+                                    </p>
+                                    <button id="buy-basic-boots" class="btn-primary bg-primary hover:bg-primary/80 w-8 h-8 rounded flex items-center justify-center overflow-hidden mt-1 transition-all shadow-sm" data-tooltip="购买基础靴子，防御力+3，幸运值+2">
+                                        <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=buy%20boots%20button%20winter%20theme%20brown%20crystal%20style%20clean%20minimal&image_size=square" alt="购买基础靴子" class="w-full h-full object-cover">
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 游戏底部 -->
+        <footer class="py-3 px-6 border-t border-glass text-center text-sm text-light/50">
+            <p>无尽冬日 - 游戏简化版 &copy; 2026</p>
+        </footer>
+    </div>
+
+    <!-- 音频元素 -->
+    <audio id="attack-sound" preload="auto" volume="1" loop="false">
+        <source src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3" type="audio/mpeg">
+     </audio>
+    <audio id="skill-0-sound" preload="auto" volume="1" loop="false">
+        <source src="https://assets.mixkit.co/active_storage/sfx/2569/2569-preview.mp3" type="audio/mpeg">
+     </audio>
+    <audio id="skill-1-sound" preload="auto" volume="1" loop="false">
+        <source src="https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3" type="audio/mpeg">
+     </audio>
+    <audio id="skill-2-sound" preload="auto" volume="1" loop="false">
+        <source src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3" type="audio/mpeg">
+     </audio>
+    <audio id="skill-3-sound" preload="auto" volume="1" loop="false">
+        <source src="https://assets.mixkit.co/active_storage/sfx/2572/2572-preview.mp3" type="audio/mpeg">
+     </audio>
+    <audio id="victory-sound" preload="auto" volume="1" loop="false">
+        <source src="https://assets.mixkit.co/active_storage/sfx/2560/2560-preview.mp3" type="audio/mpeg">
+     </audio>
+    <audio id="defeat-sound" preload="auto" volume="1" loop="false">
+        <source src="https://assets.mixkit.co/active_storage/sfx/2567/2567-preview.mp3" type="audio/mpeg">
+     </audio>
+    <audio id="levelup-sound" preload="auto" volume="1" loop="false">
+        <source src="https://assets.mixkit.co/active_storage/sfx/2561/2561-preview.mp3" type="audio/mpeg">
+     </audio>
+    <audio id="battle-music" preload="auto" volume="1" loop="true">
+        <source src="https://assets.mixkit.co/active_storage/sfx/2587/2587-preview.mp3" type="audio/mpeg">
+        <source src="https://freesound.org/data/previews/369/369773_6473717-lq.mp3" type="audio/mpeg">
+        </audio>
+    <audio id="battle-end-sound" preload="auto" volume="1" loop="false">
+        <source src="https://assets.mixkit.co/active_storage/sfx/2560/2560-preview.mp3" type="audio/mpeg">
+     </audio>
+
+    <!-- 游戏脚本 -->
+    <script src="game.js"></script>
+</body>
+</html>
