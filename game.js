@@ -690,7 +690,8 @@ class EndlessWinterGame {
                 }
             }
             
-            // 从3D场景中移除该敌人的代码已移至initBattle3DScene()函数中，该函数会清理旧的3D场景
+            // 保存当前地图场景状态，包括玩家位置
+            this.saveMapState();
         } else {
             // 刷新敌人
             this.refreshEnemy();
@@ -708,11 +709,11 @@ class EndlessWinterGame {
             this.gameState.battle.inBattle = true;
             console.log('Battle state after setting:', this.gameState.battle.inBattle);
             
-            // 初始化3D战斗场景
-            this.initBattle3DScene();
-            
             // 切换到战斗UI布局
             this.switchToBattleUILayout();
+            
+            // 创建完整的战斗场景
+            this.createBattleScene(this.gameState.enemy);
             
             // 播放战斗音乐
             this.playSound('battle-music');
@@ -3276,6 +3277,8 @@ class EndlessWinterGame {
             enemyEnergyBar: null,
             animationId: null,
             isAttacking: false,
+            playerDefeated: false,
+            enemyDefeated: false,
             battleEffects: [],
             fireEffects: [],
             opacity: 0 // 初始透明度为0，用于淡入效果
@@ -3415,33 +3418,20 @@ class EndlessWinterGame {
     
     // 保存当前UI布局状态
     saveUILayout() {
-        // 保存UI元素的显示状态
+        // 保存UI元素的显示状态（不保存人物属性卡片，因为它始终显示）
         this.uiState = {
-            characterCard: document.querySelector('.character-card') ? document.querySelector('.character-card').style.display : 'block',
-            resourceBars: document.querySelector('.grid') ? document.querySelector('.grid').style.display : 'grid',
-            afkSection: document.querySelector('.grid') ? document.querySelector('.grid').style.display : 'grid'
+            resourceGrid: document.querySelector('[class*="grid-cols-3"]') ? document.querySelector('[class*="grid-cols-3"]').style.display : 'grid',
+            afkSection: document.querySelector('[class*="grid-cols-3"]') ? document.querySelector('[class*="grid-cols-3"]').style.display : 'grid'
         };
     }
     
     // 切换到战斗UI布局
     switchToBattleUILayout() {
-        // 隐藏左边的文字显示区域
-        const characterCard = document.querySelector('.character-card');
-        if (characterCard) {
-            characterCard.style.display = 'none';
-        }
-        
+        // 保留人物属性卡片显示
         // 隐藏资源栏和挂机区域
-        const resourceBars = document.querySelector('.grid');
+        const resourceBars = document.querySelector('[class*="grid-cols-3"]');
         if (resourceBars) {
             resourceBars.style.display = 'none';
-        }
-        
-        // 调整探索地图区域，使其占据更大空间
-        const explorationMap = document.querySelector('.mb-6:nth-child(2)');
-        if (explorationMap) {
-            explorationMap.style.width = '100%';
-            explorationMap.style.maxWidth = 'none';
         }
         
         // 调整3D战斗场景容器大小
@@ -3454,23 +3444,12 @@ class EndlessWinterGame {
     
     // 恢复原始UI布局
     restoreUILayout() {
-        // 恢复左边的文字显示区域
-        const characterCard = document.querySelector('.character-card');
-        if (characterCard && this.uiState) {
-            characterCard.style.display = this.uiState.characterCard;
-        }
+        // 保留人物属性卡片显示，不做修改
         
         // 恢复资源栏和挂机区域
-        const resourceBars = document.querySelector('.grid');
+        const resourceBars = document.querySelector('[class*="grid-cols-3"]');
         if (resourceBars && this.uiState) {
-            resourceBars.style.display = this.uiState.resourceBars;
-        }
-        
-        // 恢复探索地图区域大小
-        const explorationMap = document.querySelector('.mb-6:nth-child(2)');
-        if (explorationMap) {
-            explorationMap.style.width = '';
-            explorationMap.style.maxWidth = '';
+            resourceBars.style.display = this.uiState.resourceGrid;
         }
         
         // 恢复3D战斗场景容器大小
@@ -3689,6 +3668,14 @@ class EndlessWinterGame {
     
     // 攻击敌人
     attackEnemy() {
+        // 确保战斗场景已初始化
+        if (!this.battle3D || !this.battle3D.player || !this.battle3D.enemy) {
+            // 如果战斗场景未初始化，重新初始化
+            console.log('战斗场景未初始化，重新初始化...');
+            this.gameState.battle.inBattle = true;
+            this.initBattle3DScene();
+        }
+        
         // 播放攻击声音
         this.playSound('attack-sound');
         
