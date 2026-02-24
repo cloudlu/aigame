@@ -178,23 +178,23 @@
                     <i class="fa fa-user mr-1 text-accent"></i> <span id="current-user-nav">Guest</span>
                 </span>
                 <button id="login-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="登录已有账号">
-                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=login%20button%20icon%20winter%20theme%20blue%20crystal%20style%20clean%20minimal&image_size=square" alt="登录" class="w-full h-full object-cover">
+                    <i class="fa fa-sign-in text-accent"></i>
                 </button>
                 <button id="register-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="注册新账号">
-                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=register%20button%20icon%20winter%20theme%20green%20crystal%20style%20clean%20minimal&image_size=square" alt="注册" class="w-full h-full object-cover">
+                    <i class="fa fa-user-plus text-accent"></i>
                 </button>
                 <button id="logout-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden hidden" data-tooltip="退出当前账号">
-                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=logout%20button%20icon%20winter%20theme%20red%20crystal%20style%20clean%20minimal&image_size=square" alt="登出" class="w-full h-full object-cover">
+                    <i class="fa fa-sign-out text-accent"></i>
                 </button>
                 <button id="save-game" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="保存游戏进度">
-                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=save%20button%20icon%20winter%20theme%20purple%20crystal%20style%20clean%20minimal&image_size=square" alt="保存" class="w-full h-full object-cover">
+                    <i class="fa fa-save text-accent"></i>
                 </button>
                 <button id="load-game" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="重置游戏进度">
-                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=reset%20button%20icon%20winter%20theme%20yellow%20crystal%20style%20clean%20minimal&image_size=square" alt="重置" class="w-full h-full object-cover">
+                    <i class="fa fa-refresh text-accent"></i>
                 </button>
                 <div class="relative">
                     <button id="settings-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="游戏设置选项">
-                        <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=settings%20button%20icon%20winter%20theme%20white%20crystal%20style%20clean%20minimal&image_size=square" alt="设置" class="w-full h-full object-cover">
+                        <i class="fa fa-cog text-accent"></i>
                     </button>
                     <div id="settings-dropdown" class="hidden absolute top-full right-0 mt-1 bg-dark/90 border border-glass rounded-lg p-2 min-w-[250px] z-50">
                         <button id="export-game" class="w-full text-left px-3 py-2 text-sm hover:bg-primary/20 rounded flex items-center">
@@ -340,17 +340,17 @@
                                 <!-- 人物图形 -->
                                 <div class="w-full h-full flex items-center justify-center">
                                     <!-- 人物身体 -->
-                                    <img id="character-body" src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cute%20cartoon%203D%20winter%20survivor%20character%2C%20stylish%20winter%20clothing%2C%20chibi%20style%2C%20clean%20white%20background%2C%20no%20equipment%2C%20professional%203D%20render%2C%20bright%20colorful%20lighting&image_size=square" alt="人物身体" class="w-full h-full object-contain">
+                                    <img id="character-body" src="Images/default-character.png" alt="人物身体" class="w-full h-full object-contain">
                                     <!-- 武器 -->
-                                    <img id="character-weapon" src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cute%20cartoon%203D%20ice%20crystal%20sword%2C%20winter%20themed%20weapon%2C%20chibi%20style%2C%20clean%20white%20background%2C%20professional%203D%20render%2C%20bright%20colorful%20lighting%2C%20no%20character&image_size=square" alt="武器" class="absolute top-2/3 left-12 w-12 h-12 object-contain transform -translate-y-1/2 -rotate-30 opacity-0 transition-opacity">
+                                    <img id="character-weapon" src="Images/weapon-sword.png" alt="武器" class="absolute top-2/3 left-12 w-12 h-12 object-contain transform -translate-y-1/2 -rotate-30 opacity-0 transition-opacity">
                                     <!-- 护甲 -->
-                                    <img id="character-armor" src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cute%20cartoon%203D%20ice%20crystal%20chest%20plate%2C%20winter%20themed%20armor%2C%20chibi%20style%2C%20clean%20white%20background%2C%20professional%203D%20render%2C%20bright%20colorful%20lighting%2C%20no%20character&image_size=square" alt="护甲" class="absolute top-1/2 left-1/2 w-16 h-16 object-contain transform -translate-x-1/2 -translate-y-1/2 opacity-0 transition-opacity">
+                                    <img id="character-armor" src="Images/armor-chestplate.png" alt="护甲" class="absolute top-1/2 left-1/2 w-16 h-16 object-contain transform -translate-x-1/2 -translate-y-1/2 opacity-0 transition-opacity">
                                     <!-- 头盔 -->
-                                    <img id="character-helmet" src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cute%20cartoon%203D%20ice%20crystal%20helmet%2C%20winter%20themed%20headgear%2C%20chibi%20style%2C%20clean%20white%20background%2C%20professional%203D%20render%2C%20bright%20colorful%20lighting%2C%20no%20character&image_size=square" alt="头盔" class="absolute top-10 left-1/2 w-8 h-8 object-contain transform -translate-x-1/2 opacity-0 transition-opacity">
+                                    <img id="character-helmet" src="Images/helmet.png" alt="头盔" class="absolute top-10 left-1/2 w-8 h-8 object-contain transform -translate-x-1/2 opacity-0 transition-opacity">
                                     <!-- 靴子 -->
-                                    <img id="character-boots" src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cute%20cartoon%203D%20ice%20crystal%20boots%2C%20winter%20themed%20footwear%2C%20chibi%20style%2C%20clean%20white%20background%2C%20professional%203D%20render%2C%20bright%20colorful%20lighting%2C%20no%20character&image_size=square" alt="靴子" class="absolute bottom-10 left-1/2 w-8 h-8 object-contain transform -translate-x-1/2 opacity-0 transition-opacity">
+                                    <img id="character-boots" src="Images/boots.png" alt="靴子" class="absolute bottom-10 left-1/2 w-8 h-8 object-contain transform -translate-x-1/2 opacity-0 transition-opacity">
                                     <!-- 饰品 -->
-                                    <img id="character-accessory" src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cute%20cartoon%203D%20ice%20crystal%20necklace%2C%20winter%20themed%20accessory%2C%20chibi%20style%2C%20clean%20white%20background%2C%20professional%203D%20render%2C%20bright%20colorful%20lighting%2C%20no%20character&image_size=square" alt="饰品" class="absolute top-1/2 left-1/2 w-6 h-6 object-contain transform -translate-x-1/2 -translate-y-1/2 opacity-0 transition-opacity">
+                                    <img id="character-accessory" src="Images/accessory-necklace.png" alt="饰品" class="absolute top-1/2 left-1/2 w-6 h-6 object-contain transform -translate-x-1/2 -translate-y-1/2 opacity-0 transition-opacity">
                                 </div>
                             </div>
                         </div>
@@ -358,26 +358,32 @@
                     
                     <!-- 装备管理 -->
                     <div class="mt-4 space-y-2">
-                        <div class="flex flex-wrap justify-center gap-2">
-                            <button id="equip-item-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="从背包中装备物品">
-                                <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=equip%20item%20button%20winter%20theme%20blue%20crystal%20style%20clean%20minimal&image_size=square" alt="装备物品" class="w-full h-full object-cover">
-                            </button>
-                            <button id="unequip-item-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="卸下当前装备">
-                                <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=unequip%20item%20button%20winter%20theme%20green%20crystal%20style%20clean%20minimal&image_size=square" alt="卸下装备" class="w-full h-full object-cover">
-                            </button>
-                            <button id="open-inventory-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="打开背包查看物品">
-                                <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=open%20inventory%20button%20winter%20theme%20purple%20crystal%20style%20clean%20minimal&image_size=square" alt="打开背包" class="w-full h-full object-cover">
-                            </button>
-                            <button id="refine-weapon-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="精炼当前装备">
-                                <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=refine%20weapon%20button%20winter%20theme%20yellow%20crystal%20style%20clean%20minimal&image_size=square" alt="精炼装备" class="w-full h-full object-cover">
-                            </button>
-                            <button id="disassemble-item-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="分解当前装备">
-                                <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=disassemble%20item%20button%20winter%20theme%20red%20crystal%20style%20clean%20minimal&image_size=square" alt="分解装备" class="w-full h-full object-cover">
-                            </button>
-                            <button id="craft-equipment-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="合成装备">
-                                <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=craft%20equipment%20button%20winter%20theme%20green%20crystal%20style%20clean%20minimal&image_size=square" alt="合成装备" class="w-full h-full object-cover">
-                            </button>
-                        </div>
+                        <div class="grid grid-cols-4 gap-2 justify-items-center">
+                                <button id="equip-item-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="从背包中装备物品">
+                                    <i class="fa fa-plus text-accent"></i>
+                                </button>
+                                <button id="unequip-item-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="卸下当前装备">
+                                    <i class="fa fa-minus text-accent"></i>
+                                </button>
+                                <button id="open-inventory-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="打开背包查看物品">
+                                    <i class="fa fa-briefcase text-accent"></i>
+                                </button>
+                                <button id="refine-weapon-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="精炼当前装备">
+                                    <i class="fa fa-star text-accent"></i>
+                                </button>
+                                <button id="disassemble-item-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="分解当前装备">
+                                    <i class="fa fa-trash text-accent"></i>
+                                </button>
+                                <button id="craft-equipment-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="合成装备">
+                                    <i class="fa fa-cogs text-accent"></i>
+                                </button>
+                                <button id="auto-craft-equipment-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="自动合成装备">
+                                    <i class="fa fa-magic text-accent"></i>
+                                </button>
+                                <button id="auto-equip-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="一键装备最好的装备">
+                                    <i class="fa fa-shield text-accent"></i>
+                                </button>
+                            </div>
                     </div>
                     
                     <!-- 装备精炼信息 -->
@@ -462,7 +468,7 @@
                         <div class="flex justify-between items-center mb-4">
                             <h2 class="text-xl font-bold text-white">探索地图</h2>
                             <button id="refresh-enemy-btn" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="刷新随机敌人">
-                                <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=refresh%20enemy%20button%20winter%20theme%20purple%20crystal%20style%20clean%20minimal&image_size=square" alt="刷新敌人" class="w-full h-full object-cover">
+                                <i class="fa fa-refresh text-white"></i>
                             </button>
                         </div>
                         <div id="battle-area">
@@ -523,20 +529,20 @@
                                 <!-- 普通攻击和技能攻击一起放到左边 -->
                                 <div class="flex space-x-2">
                                     <button id="attack-btn" class="btn-primary bg-primary hover:bg-primary/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="对敌人进行普通攻击，不消耗能量">
-                                        <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=normal%20attack%20button%20winter%20theme%20red%20crystal%20style%20clean%20minimal&image_size=square" alt="普通攻击" class="w-full h-full object-cover">
-                                    </button>
-                                    <button id="skill-0" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="强力攻击: 造成2倍普通伤害，消耗20能量，需要1级">
-                                        <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=powerful%20attack%20skill%20button%20winter%20theme%20yellow%20crystal%20style%20clean%20minimal&image_size=square" alt="强力攻击" class="w-full h-full object-cover">
-                                    </button>
-                                    <button id="skill-1" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="防御姿态: 减少50%受到的敌人伤害，消耗15能量，需要10级">
-                                        <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=defense%20stance%20skill%20button%20winter%20theme%20blue%20crystal%20style%20clean%20minimal&image_size=square" alt="防御姿态" class="w-full h-full object-cover">
-                                    </button>
-                                    <button id="skill-2" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="生命恢复: 恢复20%最大生命值，消耗25能量，需要20级">
-                                        <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=life%20heal%20skill%20button%20winter%20theme%20green%20crystal%20style%20clean%20minimal&image_size=square" alt="生命恢复" class="w-full h-full object-cover">
-                                    </button>
-                                    <button id="skill-3" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="幸运一击: 有70%几率造成3倍伤害，消耗30能量，需要30级">
-                                        <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=lucky%20strike%20skill%20button%20winter%20theme%20purple%20crystal%20style%20clean%20minimal&image_size=square" alt="幸运一击" class="w-full h-full object-cover">
-                                    </button>
+                                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=normal%20attack%20button%20winter%20theme%20red%20crystal%20style%20clean%20minimal&image_size=square" alt="普通攻击" class="w-full h-full object-cover">
+                                </button>
+                                <button id="skill-0" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="强力攻击: 造成2倍普通伤害，消耗20能量，需要1级">
+                                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=powerful%20attack%20skill%20button%20winter%20theme%20yellow%20crystal%20style%20clean%20minimal&image_size=square" alt="强力攻击" class="w-full h-full object-cover">
+                                </button>
+                                <button id="skill-1" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="防御姿态: 减少50%受到的敌人伤害，消耗15能量，需要10级">
+                                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=defense%20stance%20skill%20button%20winter%20theme%20blue%20crystal%20style%20clean%20minimal&image_size=square" alt="防御姿态" class="w-full h-full object-cover">
+                                </button>
+                                <button id="skill-2" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="生命恢复: 恢复20%最大生命值，消耗25能量，需要20级">
+                                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=life%20heal%20skill%20button%20winter%20theme%20green%20crystal%20style%20clean%20minimal&image_size=square" alt="生命恢复" class="w-full h-full object-cover">
+                                </button>
+                                <button id="skill-3" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="幸运一击: 有70%几率造成3倍伤害，消耗30能量，需要30级">
+                                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=lucky%20strike%20skill%20button%20winter%20theme%20purple%20crystal%20style%20clean%20minimal&image_size=square" alt="幸运一击" class="w-full h-full object-cover">
+                                </button>
                                 </div>
                                 
                                 <!-- 自动战斗和自动收集按钮 -->

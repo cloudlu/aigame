@@ -445,9 +445,14 @@ class EndlessWinterGame {
         // 创建纹理加载器
         this.textureLoader = new THREE.TextureLoader();
         
-        // 加载地面纹理 - 使用本地图片
+        // 添加时间戳避免缓存
+        const timestamp = new Date().getTime();
+        
+        // 加载地面纹理 - 使用URL形式
+        const groundUrl = `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20style%20xianxia%20ground%20texture%2C%20ancient%20chinese%20landscape%2C%20high%20quality%20texture%2C%20ink%20painting%20style&image_size=square&t=${timestamp}`;
+        console.log('加载地面纹理:', groundUrl);
         this.textureLoader.load(
-            'Images/map-background-1.png',
+            groundUrl,
             (texture) => {
                 this.textures.ground = texture;
                 this.textures.ground.wrapS = THREE.RepeatWrapping;
@@ -455,48 +460,74 @@ class EndlessWinterGame {
                 this.textures.ground.repeat.set(5, 5);
                 console.log('地面纹理加载完成');
             },
-            undefined,
+            (xhr) => {
+                console.log('地面纹理加载进度:', (xhr.loaded / xhr.total * 100) + '%');
+            },
             (error) => {
                 console.log('地面纹理加载失败:', error);
+                // 加载失败时使用备用纹理
+                this.textures.ground = new THREE.Texture();
+                this.textures.ground.needsUpdate = true;
             }
         );
         
-        // 加载天空纹理 - 使用本地图片
+        // 加载天空纹理 - 使用URL形式
+        const skyUrl = `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20style%20xianxia%20sky%20texture%2C%20ancient%20chinese%20sky%2C%20clouds%2C%20high%20quality%20texture%2C%20ink%20painting%20style&image_size=square&t=${timestamp}`;
+        console.log('加载天空纹理:', skyUrl);
         this.textureLoader.load(
-            'Images/map-background-10.png',
+            skyUrl,
             (texture) => {
                 this.textures.sky = texture;
                 console.log('天空纹理加载完成');
             },
-            undefined,
+            (xhr) => {
+                console.log('天空纹理加载进度:', (xhr.loaded / xhr.total * 100) + '%');
+            },
             (error) => {
                 console.log('天空纹理加载失败:', error);
+                // 加载失败时使用备用纹理
+                this.textures.sky = new THREE.Texture();
+                this.textures.sky.needsUpdate = true;
             }
         );
         
-        // 加载人物纹理 - 使用本地图片
+        // 加载人物纹理 - 使用URL形式
+        const characterUrl = `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20style%20xianxia%20character%20texture%2C%20ancient%20chinese%20warrior%2C%20high%20quality%20texture%2C%20ink%20painting%20style&image_size=square&t=${timestamp}`;
+        console.log('加载人物纹理:', characterUrl);
         this.textureLoader.load(
-            'Images/male-character.png',
+            characterUrl,
             (texture) => {
                 this.textures.character = texture;
                 console.log('人物纹理加载完成');
             },
-            undefined,
+            (xhr) => {
+                console.log('人物纹理加载进度:', (xhr.loaded / xhr.total * 100) + '%');
+            },
             (error) => {
                 console.log('人物纹理加载失败:', error);
+                // 加载失败时使用备用纹理
+                this.textures.character = new THREE.Texture();
+                this.textures.character.needsUpdate = true;
             }
         );
         
-        // 加载敌人纹理 - 使用本地图片
+        // 加载敌人纹理 - 使用URL形式
+        const enemyUrl = `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20style%20xianxia%20fantasy%20beast%20texture%2C%20ancient%20chinese%20mythical%20creature%2C%20high%20quality%20texture%2C%20ink%20painting%20style&image_size=square&t=${timestamp}`;
+        console.log('加载敌人纹理:', enemyUrl);
         this.textureLoader.load(
-            'Images/female-character.png',
+            enemyUrl,
             (texture) => {
                 this.textures.enemy = texture;
                 console.log('敌人纹理加载完成');
             },
-            undefined,
+            (xhr) => {
+                console.log('敌人纹理加载进度:', (xhr.loaded / xhr.total * 100) + '%');
+            },
             (error) => {
                 console.log('敌人纹理加载失败:', error);
+                // 加载失败时使用备用纹理
+                this.textures.enemy = new THREE.Texture();
+                this.textures.enemy.needsUpdate = true;
             }
         );
         
@@ -505,6 +536,9 @@ class EndlessWinterGame {
     
     // 生成3D地图背景配置
     generateMapBackgrounds() {
+        // 添加时间戳避免缓存
+        const timestamp = new Date().getTime();
+        
         // 生成10个不同的仙侠风格3D地图背景配置
         this.gameState.mapBackgrounds = [
             {
@@ -516,7 +550,7 @@ class EndlessWinterGame {
                 fogNear: 10,
                 fogFar: 50,
                 features: ["mountains", "clouds", "ancient temples"],
-                imageUrl: "Images/map-background-1.png"
+                imageUrl: `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20style%20xianxia%20mountain%20landscape%2C%20ancient%20chinese%20mountains%2C%20high%20quality%2C%20ink%20painting%20style&image_size=square&t=${timestamp}`
             },
             {
                 type: "xianxia-forest",
@@ -527,7 +561,7 @@ class EndlessWinterGame {
                 fogNear: 10,
                 fogFar: 50,
                 features: ["ancient trees", "magical creatures", "spirit stones"],
-                imageUrl: "Images/map-background-2.png"
+                imageUrl: `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20style%20xianxia%20forest%2C%20ancient%20chinese%20forest%2C%20high%20quality%2C%20ink%20painting%20style&image_size=square&t=${timestamp}`
             },
             {
                 type: "xianxia-lake",
@@ -538,7 +572,7 @@ class EndlessWinterGame {
                 fogNear: 10,
                 fogFar: 50,
                 features: ["crystal clear water", "lotus flowers", "water spirits"],
-                imageUrl: "Images/map-background-3.png"
+                imageUrl: `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20style%20xianxia%20lake%2C%20ancient%20chinese%20lake%2C%20lotus%20flowers%2C%20high%20quality%2C%20ink%20painting%20style&image_size=square&t=${timestamp}`
             },
             {
                 type: "xianxia-desert",
@@ -549,7 +583,7 @@ class EndlessWinterGame {
                 fogNear: 10,
                 fogFar: 50,
                 features: ["ancient ruins", "sand dunes", "mirages"],
-                imageUrl: "Images/map-background-4.png"
+                imageUrl: `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20style%20xianxia%20desert%2C%20ancient%20chinese%20desert%2C%20ancient%20ruins%2C%20high%20quality%2C%20ink%20painting%20style&image_size=square&t=${timestamp}`
             },
             {
                 type: "xianxia-cave",
@@ -560,7 +594,7 @@ class EndlessWinterGame {
                 fogNear: 5,
                 fogFar: 20,
                 features: ["spirit crystals", "ancient inscriptions", "magical beasts"],
-                imageUrl: "Images/map-background-5.png"
+                imageUrl: `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20style%20xianxia%20cave%2C%20ancient%20chinese%20cave%2C%20spirit%20crystals%2C%20high%20quality%2C%20ink%20painting%20style&image_size=square&t=${timestamp}`
             },
             {
                 type: "xianxia-heaven",
@@ -571,7 +605,7 @@ class EndlessWinterGame {
                 fogNear: 10,
                 fogFar: 50,
                 features: ["floating islands", "celestial palaces", "divine beasts"],
-                imageUrl: "Images/map-background-6.png"
+                imageUrl: `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20style%20xianxia%20heaven%2C%20floating%20islands%2C%20celestial%20palaces%2C%20high%20quality%2C%20ink%20painting%20style&image_size=square&t=${timestamp}`
             },
             {
                 type: "xianxia-volcano",
@@ -582,7 +616,7 @@ class EndlessWinterGame {
                 fogNear: 10,
                 fogFar: 50,
                 features: ["magical lava", "fire spirits", "ancient fire temples"],
-                imageUrl: "Images/map-background-7.png"
+                imageUrl: `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20style%20xianxia%20volcano%2C%20magical%20lava%2C%20fire%20spirits%2C%20high%20quality%2C%20ink%20painting%20style&image_size=square&t=${timestamp}`
             },
             {
                 type: "xianxia-beach",
@@ -593,7 +627,7 @@ class EndlessWinterGame {
                 fogNear: 10,
                 fogFar: 50,
                 features: ["golden sand", "magical pearls", "sea spirits"],
-                imageUrl: "Images/map-background-8.png"
+                imageUrl: `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20style%20xianxia%20beach%2C%20golden%20sand%2C%20magical%20pearls%2C%20high%20quality%2C%20ink%20painting%20style&image_size=square&t=${timestamp}`
             },
             {
                 type: "xianxia-plains",
@@ -604,7 +638,7 @@ class EndlessWinterGame {
                 fogNear: 10,
                 fogFar: 50,
                 features: ["ancient battlefields", "spirit herbs", "wandering cultivators"],
-                imageUrl: "Images/map-background-9.png"
+                imageUrl: `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20style%20xianxia%20plains%2C%20ancient%20battlefields%2C%20spirit%20herbs%2C%20high%20quality%2C%20ink%20painting%20style&image_size=square&t=${timestamp}`
             },
             {
                 type: "xianxia-canyon",
@@ -615,7 +649,7 @@ class EndlessWinterGame {
                 fogNear: 10,
                 fogFar: 50,
                 features: ["deep gorges", "ancient bridges", "wind spirits"],
-                imageUrl: "Images/map-background-10.png"
+                imageUrl: `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20style%20xianxia%20canyon%2C%20deep%20gorges%2C%20ancient%20bridges%2C%20high%20quality%2C%20ink%20painting%20style&image_size=square&t=${timestamp}`
             }
         ];
     }
@@ -3213,6 +3247,16 @@ class EndlessWinterGame {
             this.showCraftMenu();
         });
         
+        // 自动合成装备按钮
+        document.getElementById('auto-craft-equipment-btn').addEventListener('click', () => {
+            this.autoCraftEquipment();
+        });
+        
+        // 一键装备最好的装备按钮
+        document.getElementById('auto-equip-btn').addEventListener('click', () => {
+            this.autoEquipBestGear();
+        });
+        
         // 特殊技按钮
         document.getElementById('skill-0').addEventListener('click', () => {
             this.useSkill(0);
@@ -3306,6 +3350,18 @@ class EndlessWinterGame {
         document.addEventListener('keydown', (e) => {
             this.handleKeyPress(e);
         });
+        
+        // 添加页面卸载时保存数据的事件监听器
+        window.addEventListener('beforeunload', () => {
+            this.saveGameState();
+            console.log('页面卸载前保存游戏状态');
+        });
+        
+        // 添加定期保存机制
+        setInterval(() => {
+            this.saveGameState();
+            console.log('定期保存游戏状态');
+        }, 30000); // 每30秒自动保存一次
     }
     
     // 处理键盘按键事件
@@ -4622,15 +4678,16 @@ class EndlessWinterGame {
     updateCharacterBodyImage() {
         const characterBodyElement = document.getElementById('character-body');
         if (characterBodyElement) {
+            const timestamp = new Date().getTime();
             if (this.gameState.user.loggedIn && this.gameState.user.gender) {
                 if (this.gameState.user.gender === '男') {
-                    characterBodyElement.src = 'Images/male-character.png';
+                    characterBodyElement.src = `Images/male-character.png?${timestamp}`;
                 } else if (this.gameState.user.gender === '女') {
-                    characterBodyElement.src = 'Images/female-character.png';
+                    characterBodyElement.src = `Images/female-character.png?${timestamp}`;
                 }
             } else {
                 // 未登录时使用默认形象
-                characterBodyElement.src = 'Images/default-character.png';
+                characterBodyElement.src = `Images/default-character.png?${timestamp}`;
             }
         }
     }
@@ -5406,6 +5463,19 @@ class EndlessWinterGame {
         // 计算分解返还材料
         const returns = this.calculateDisassembleReturns(item);
         
+        // 添加确认窗口，防止误分解操作
+        const confirmMessage = `确定要分解${slot === 'weapon' ? '武器' : slot === 'armor' ? '护甲' : slot === 'helmet' ? '头盔' : slot === 'boots' ? '靴子' : '饰品'} ${item.name}吗？
+
+分解后将获得：
+木材：${returns.wood}
+铁矿：${returns.iron}
+水晶：${returns.crystal}`;
+        
+        if (!confirm(confirmMessage)) {
+            this.addBattleLog('分解操作已取消！');
+            return;
+        }
+        
         // 获得材料
         this.gameState.resources.wood += returns.wood;
         this.gameState.resources.iron += returns.iron;
@@ -5426,6 +5496,28 @@ class EndlessWinterGame {
         // 添加日志
         this.addBattleLog(`成功分解${slot === 'weapon' ? '武器' : slot === 'armor' ? '护甲' : slot === 'helmet' ? '头盔' : slot === 'boots' ? '靴子' : '饰品'} ${item.name}！`);
         this.addBattleLog(`获得了 ${returns.wood} 木材，${returns.iron} 铁矿，${returns.crystal} 水晶！`);
+        
+        // 分解后保存游戏状态
+        this.saveGameState();
+    }
+    
+    // 保存游戏状态
+    saveGameState() {
+        try {
+            if (this.gameState.user.loggedIn) {
+                const currentUserId = this.gameState.user.userId;
+                localStorage.setItem(`endlessWinterGame_${currentUserId}`, JSON.stringify(this.gameState));
+                localStorage.setItem('endlessWinterCurrentUser', JSON.stringify(this.gameState.user));
+                console.log('游戏状态已保存');
+            } else {
+                // 保存访客状态
+                const guestId = 'guest';
+                localStorage.setItem(`endlessWinterGame_${guestId}`, JSON.stringify(this.gameState));
+                console.log('访客游戏状态已保存');
+            }
+        } catch (error) {
+            console.error('保存游戏状态失败:', error);
+        }
     }
     
     // 显示合成菜单
@@ -5548,11 +5640,105 @@ class EndlessWinterGame {
             this.addBattleLog(`消耗了3个${craftable.level}级${craftable.typeName}，只获得了1个${craftable.level}级${failedEquipment.name}！`);
         }
         
-        // 更新UI
-        this.updateUI();
+        // 合成后保存游戏状态
+        this.saveGameState();
+    }
+    
+    // 自动合成装备
+    autoCraftEquipment() {
+        let hasCraftable = true;
+        let craftedCount = 0;
         
-        // 更新血条显示
-        this.updateHealthBars();
+        // 循环合成，直到没有可合成的装备为止
+        while (hasCraftable) {
+            const craftableEquipment = this.checkCraftableEquipment();
+            
+            if (craftableEquipment.length === 0) {
+                hasCraftable = false;
+                break;
+            }
+            
+            // 按等级从低到高排序，优先合成低等级装备
+            craftableEquipment.sort((a, b) => a.level - b.level);
+            
+            // 合成第一个可合成的装备
+            this.craftEquipment(craftableEquipment[0]);
+            craftedCount++;
+            
+            // 限制最大合成次数，防止无限循环
+            if (craftedCount >= 10) {
+                break;
+            }
+        }
+        
+        if (craftedCount > 0) {
+            this.addBattleLog(`自动合成完成！共合成了${craftedCount}次装备。`);
+        } else {
+            this.addBattleLog('没有可合成的装备！');
+        }
+    }
+    
+    // 一键装备最好的装备
+    autoEquipBestGear() {
+        const inventory = this.gameState.player.inventory;
+        if (!inventory || inventory.length === 0) {
+            this.addBattleLog('背包中没有装备！');
+            return;
+        }
+        
+        // 按装备类型分组
+        const equipmentByType = {};
+        for (const item of inventory) {
+            if (item.type && item.type !== 'consumable') {
+                if (!equipmentByType[item.type]) {
+                    equipmentByType[item.type] = [];
+                }
+                equipmentByType[item.type].push(item);
+            }
+        }
+        
+        let equippedCount = 0;
+        
+        // 对每种类型的装备，找出最好的并装备
+        for (const type in equipmentByType) {
+            const items = equipmentByType[type];
+            if (items.length === 0) continue;
+            
+            // 按装备好坏排序
+            items.sort((a, b) => {
+                if (this.compareEquipment(a, b)) {
+                    return -1;
+                } else {
+                    return 1;
+                }
+            });
+            
+            // 获得最好的装备
+            const bestItem = items[0];
+            
+            // 检查是否比当前装备更好
+            const currentItem = this.gameState.player.equipment[type];
+            if (!currentItem || this.compareEquipment(bestItem, currentItem)) {
+                // 从背包中移除该装备
+                const index = inventory.indexOf(bestItem);
+                if (index > -1) {
+                    inventory.splice(index, 1);
+                }
+                
+                // 装备最好的装备
+                this.equipItem(bestItem);
+                equippedCount++;
+            }
+        }
+        
+        if (equippedCount > 0) {
+            this.addBattleLog(`一键装备完成！共装备了${equippedCount}件最好的装备。`);
+        } else {
+            this.addBattleLog('背包中没有比当前装备更好的装备！');
+        }
+        
+        // 保存游戏状态
+        this.saveGameState();
     }
     
     // 生成合成后的装备
