@@ -681,11 +681,13 @@ class EndlessWinterGame {
             this.gameState.enemy = enemyInfo;
             
             // 从场景怪物数据中移除该敌人
-            const index = this.gameState.sceneMonsters.findIndex(monster => 
-                monster.cellIndex === enemyInfo.cellIndex
-            );
-            if (index > -1) {
-                this.gameState.sceneMonsters.splice(index, 1);
+            if (this.gameState.sceneMonsters) {
+                const index = this.gameState.sceneMonsters.findIndex(monster => 
+                    monster.cellIndex === enemyInfo.cellIndex
+                );
+                if (index > -1) {
+                    this.gameState.sceneMonsters.splice(index, 1);
+                }
             }
             
             // 从3D场景中移除该敌人的代码已移至initBattle3DScene()函数中，该函数会清理旧的3D场景
@@ -911,11 +913,106 @@ class EndlessWinterGame {
                 // 为精英怪添加特殊样式
                 enemyInfo.classList.add('border-yellow-500');
                 enemyInfo.classList.add('bg-yellow-900/20');
+            } else if (this.gameState.enemy.isBoss) {
+                eliteBadge.classList.remove('hidden');
+                eliteBadge.textContent = 'BOSS';
+                eliteBadge.className = 'ml-2 text-xs bg-purple-500 text-white px-1.5 py-0.5 rounded font-bold';
+                // 为BOSS添加特殊样式
+                enemyInfo.classList.add('border-purple-500');
+                enemyInfo.classList.add('bg-purple-900/20');
             } else {
                 eliteBadge.classList.add('hidden');
-                // 移除精英怪特殊样式
+                // 移除精英怪和BOSS特殊样式
                 enemyInfo.classList.remove('border-yellow-500');
                 enemyInfo.classList.remove('bg-yellow-900/20');
+                enemyInfo.classList.remove('border-purple-500');
+                enemyInfo.classList.remove('bg-purple-900/20');
+            }
+        }
+        
+        // 更新敌人装备掉率信息
+        const enemyDropRatesElement = document.getElementById('enemy-drop-rates');
+        if (enemyDropRatesElement) {
+            // 基础掉率
+            let dropRates = {
+                white: 0.4,
+                blue: 0.3,
+                purple: 0.15,
+                gold: 0.1,
+                legendary: 0.05
+            };
+            
+            // 根据怪物类型调整掉率
+            if (this.gameState.enemy.isBoss) {
+                // BOSS掉率调整
+                dropRates = {
+                    white: 0.2,
+                    blue: 0.3,
+                    purple: 0.25,
+                    gold: 0.2,
+                    legendary: 0.05
+                };
+            } else if (this.gameState.enemy.isElite) {
+                // 精英怪掉率调整
+                dropRates = {
+                    white: 0.3,
+                    blue: 0.35,
+                    purple: 0.2,
+                    gold: 0.1,
+                    legendary: 0.05
+                };
+            }
+            
+            // 考虑幸运值影响（每点幸运值提高0.5%的高品质装备掉率）
+            const luck = this.gameState.player.luck || 0;
+            const luckBonus = luck * 0.005;
+            
+            // 调整掉率，提高高品质装备的概率
+            const adjustedRates = {
+                white: Math.max(0, dropRates.white - luckBonus * 2),
+                blue: Math.max(0, dropRates.blue - luckBonus),
+                purple: Math.max(0, dropRates.purple + luckBonus * 0.5),
+                gold: Math.max(0, dropRates.gold + luckBonus * 1),
+                legendary: Math.max(0, dropRates.legendary + luckBonus * 1.5)
+            };
+            
+            // 归一化概率
+            const totalProbability = Object.values(adjustedRates).reduce((sum, rate) => sum + rate, 0);
+            const normalizedRates = {};
+            for (const [rarity, rate] of Object.entries(adjustedRates)) {
+                normalizedRates[rarity] = rate / totalProbability;
+            }
+            
+            // 生成掉率显示元素
+            enemyDropRatesElement.innerHTML = '';
+            
+            // 品质颜色映射
+            const rarityColors = {
+                white: 'bg-white/10',
+                blue: 'bg-blue-500/20',
+                purple: 'bg-purple-500/20',
+                gold: 'bg-yellow-500/20',
+                legendary: 'bg-red-500/20'
+            };
+            
+            // 品质名称映射
+            const rarityNames = {
+                white: '白色',
+                blue: '蓝色',
+                purple: '紫色',
+                gold: '金色',
+                legendary: '传说'
+            };
+            
+            // 添加掉率信息
+            for (const [rarity, rate] of Object.entries(normalizedRates)) {
+                const ratePercent = Math.round(rate * 100);
+                if (ratePercent > 0) {
+                    const rateElement = document.createElement('span');
+                    rateElement.className = `text-xs ${rarityColors[rarity]} px-1.5 py-0.5 rounded`;
+                    rateElement.textContent = `${rarityNames[rarity]}: ${ratePercent}%`;
+                    enemyDropRatesElement.appendChild(rateElement);
+                }
             }
         }
         
@@ -3689,6 +3786,87 @@ class EndlessWinterGame {
         enemyName.className = 'font-bold text-white text-xl mb-4';
         enemyName.textContent = enemyInfo.name;
         
+        // 计算掉落概率
+        let dropRates = {
+            white: 0.4,
+            blue: 0.3,
+            purple: 0.15,
+            gold: 0.1,
+            legendary: 0.05
+        };
+        
+        // 根据怪物类型调整掉率
+        if (enemyInfo.isBoss) {
+            // BOSS掉率调整
+            dropRates = {
+                white: 0.2,
+                blue: 0.3,
+                purple: 0.25,
+                gold: 0.2,
+                legendary: 0.05
+            };
+        } else if (enemyInfo.isElite) {
+            // 精英怪掉率调整
+            dropRates = {
+                white: 0.3,
+                blue: 0.35,
+                purple: 0.2,
+                gold: 0.1,
+                legendary: 0.05
+            };
+        }
+        
+        // 考虑幸运值影响（每点幸运值提高0.5%的高品质装备掉率）
+        const luck = this.gameState.player.luck || 0;
+        const luckBonus = luck * 0.005;
+        
+        // 调整掉率，提高高品质装备的概率
+        const adjustedRates = {
+            white: Math.max(0, dropRates.white - luckBonus * 2),
+            blue: Math.max(0, dropRates.blue - luckBonus),
+            purple: Math.max(0, dropRates.purple + luckBonus * 0.5),
+            gold: Math.max(0, dropRates.gold + luckBonus * 1),
+            legendary: Math.max(0, dropRates.legendary + luckBonus * 1.5)
+        };
+        
+        // 归一化概率
+        const totalProbability = Object.values(adjustedRates).reduce((sum, rate) => sum + rate, 0);
+        const normalizedRates = {};
+        for (const [rarity, rate] of Object.entries(adjustedRates)) {
+            normalizedRates[rarity] = rate / totalProbability;
+        }
+        
+        // 生成掉率显示HTML
+        const rarityColors = {
+            white: 'bg-white/10',
+            blue: 'bg-blue-500/20',
+            purple: 'bg-purple-500/20',
+            gold: 'bg-yellow-500/20',
+            legendary: 'bg-red-500/20'
+        };
+        
+        const rarityNames = {
+            white: '白色',
+            blue: '蓝色',
+            purple: '紫色',
+            gold: '金色',
+            legendary: '传说'
+        };
+        
+        let dropRatesHTML = '<div class="mt-3 pt-3 border-t border-dark/50">';
+        dropRatesHTML += '<p class="text-xs text-light/70 mb-1">装备掉率:</p>';
+        dropRatesHTML += '<div class="flex flex-wrap gap-2">';
+        
+        for (const [rarity, rate] of Object.entries(normalizedRates)) {
+            const ratePercent = Math.round(rate * 100);
+            if (ratePercent > 0) {
+                dropRatesHTML += `<span class="text-xs ${rarityColors[rarity]} px-1.5 py-0.5 rounded">${rarityNames[rarity]}: ${ratePercent}%</span>`;
+            }
+        }
+        
+        dropRatesHTML += '</div>';
+        dropRatesHTML += '</div>';
+        
         const enemyDetails = document.createElement('div');
         enemyDetails.className = 'text-light/80 mb-6 space-y-2';
         enemyDetails.innerHTML = `
@@ -3697,6 +3875,7 @@ class EndlessWinterGame {
             <div>攻击: <span class="text-accent">${enemyInfo.attack}</span></div>
             <div>防御: <span class="text-accent">${enemyInfo.defense}</span></div>
             ${enemyInfo.isBoss ? '<div>能量: <span class="text-accent">100/100</span></div>' : ''}
+            ${dropRatesHTML}
         `;
         
         // 确认和取消按钮
@@ -3707,14 +3886,26 @@ class EndlessWinterGame {
         cancelButton.className = 'flex-1 bg-dark/50 hover:bg-dark/70 text-white py-2 px-4 rounded border border-dark/70 transition-colors';
         cancelButton.textContent = '取消';
         cancelButton.addEventListener('click', () => {
-            document.body.removeChild(confirmationDiv);
+            try {
+                if (document.body.contains(confirmationDiv)) {
+                    document.body.removeChild(confirmationDiv);
+                }
+            } catch (e) {
+                console.log('移除确认窗口时出错:', e);
+            }
         });
         
         const confirmButton = document.createElement('button');
         confirmButton.className = 'flex-1 bg-accent hover:bg-accent/80 text-white py-2 px-4 rounded transition-colors';
         confirmButton.textContent = '确认攻击';
         confirmButton.addEventListener('click', () => {
-            document.body.removeChild(confirmationDiv);
+            try {
+                if (document.body.contains(confirmationDiv)) {
+                    document.body.removeChild(confirmationDiv);
+                }
+            } catch (e) {
+                console.log('移除确认窗口时出错:', e);
+            }
             this.encounterEnemy(enemyInfo);
         });
         
@@ -3994,12 +4185,18 @@ class EndlessWinterGame {
     
     // 生成装备掉落
     generateEquipmentDrop() {
-        // 计算掉落概率（精英怪提高掉落概率）
-        const baseDropChance = this.gameState.enemy.isElite ? 0.8 : 0.5;
-        const dropChance = baseDropChance;
+        // 计算掉落概率（普通、精英、BOSS怪物不同掉落概率）
+        let baseDropChance;
+        if (this.gameState.enemy.isBoss) {
+            baseDropChance = 1.0; // BOSS必定掉落
+        } else if (this.gameState.enemy.isElite) {
+            baseDropChance = 0.8; // 精英怪高掉落概率
+        } else {
+            baseDropChance = 0.5; // 普通怪物基础掉落概率
+        }
         
         // 随机决定是否掉落
-        if (Math.random() > dropChance) {
+        if (Math.random() > baseDropChance) {
             return null;
         }
         
@@ -4010,7 +4207,7 @@ class EndlessWinterGame {
         // 根据敌人等级确定装备等级（每10级怪物掉同一等级装备）
         const equipmentLevel = Math.max(1, Math.floor((this.gameState.enemy.level - 1) / 10) + 1);
         
-        // 随机确定装备品质
+        // 随机确定装备品质（考虑怪物类型和幸运值）
         const rarity = this.getRandomRarity();
         const rarityInfo = this.gameState.equipmentRarities.find(r => r.name === rarity);
         
@@ -4043,12 +4240,63 @@ class EndlessWinterGame {
         };
     }
     
-    // 随机获取装备品质
+    // 随机获取装备品质（考虑怪物类型和幸运值）
     getRandomRarity() {
+        // 基础掉率
+        let dropRates = {
+            white: 0.4,
+            blue: 0.3,
+            purple: 0.15,
+            gold: 0.1,
+            legendary: 0.05
+        };
+        
+        // 根据怪物类型调整掉率
+        if (this.gameState.enemy.isBoss) {
+            // BOSS掉率调整
+            dropRates = {
+                white: 0.2,
+                blue: 0.3,
+                purple: 0.25,
+                gold: 0.2,
+                legendary: 0.05
+            };
+        } else if (this.gameState.enemy.isElite) {
+            // 精英怪掉率调整
+            dropRates = {
+                white: 0.3,
+                blue: 0.35,
+                purple: 0.2,
+                gold: 0.1,
+                legendary: 0.05
+            };
+        }
+        
+        // 考虑幸运值影响（每点幸运值提高0.5%的高品质装备掉率）
+        const luck = this.gameState.player.luck || 0;
+        const luckBonus = luck * 0.005;
+        
+        // 调整掉率，提高高品质装备的概率
+        const adjustedRates = {
+            white: Math.max(0, dropRates.white - luckBonus * 2),
+            blue: Math.max(0, dropRates.blue - luckBonus),
+            purple: Math.max(0, dropRates.purple + luckBonus * 0.5),
+            gold: Math.max(0, dropRates.gold + luckBonus * 1),
+            legendary: Math.max(0, dropRates.legendary + luckBonus * 1.5)
+        };
+        
+        // 归一化概率
+        const totalProbability = Object.values(adjustedRates).reduce((sum, rate) => sum + rate, 0);
+        const normalizedRates = {};
+        for (const [rarity, rate] of Object.entries(adjustedRates)) {
+            normalizedRates[rarity] = rate / totalProbability;
+        }
+        
+        // 随机选择品质
         const rand = Math.random();
         let cumulativeProbability = 0;
         
-        for (const [rarity, probability] of Object.entries(this.gameState.dropRates)) {
+        for (const [rarity, probability] of Object.entries(normalizedRates)) {
             cumulativeProbability += probability;
             if (rand <= cumulativeProbability) {
                 return rarity;

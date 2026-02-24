@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>无尽冬日 - 游戏简化版</title>
+    <title>无尽战斗</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='%231e293b'/%3E%3Ccircle cx='8' cy='8' r='5' fill='%2360a5fa'/%3E%3Cpath d='M8 3v10M3 8h10' stroke='%23ffffff' stroke-width='1' stroke-linecap='round'/%3E%3C/svg%3E">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -171,7 +171,7 @@
         <!-- 顶部导航栏 -->
         <nav class="bg-dark/80 border-b border-glass py-2 px-4 flex justify-between items-center">
             <div class="flex items-center">
-                <h1 class="text-xl font-bold text-accent">无尽冬日</h1>
+                <h1 class="text-xl font-bold text-accent">无尽战斗</h1>
             </div>
             <div class="flex items-center space-x-3">
                 <span class="text-sm text-light/90">
@@ -508,6 +508,17 @@
                                     <p class="text-sm text-light/70">攻击: <span id="enemy-attack">8</span></p>
                                 </div>
                             </div>
+                            <!-- 装备掉率信息 -->
+                            <div class="mt-3 pt-3 border-t border-dark/50">
+                                <p class="text-xs text-light/70 mb-1">装备掉率:</p>
+                                <div id="enemy-drop-rates" class="flex flex-wrap gap-2">
+                                    <span class="text-xs bg-white/10 px-1.5 py-0.5 rounded">白色: 40%</span>
+                                    <span class="text-xs bg-blue-500/20 px-1.5 py-0.5 rounded">蓝色: 30%</span>
+                                    <span class="text-xs bg-purple-500/20 px-1.5 py-0.5 rounded">紫色: 15%</span>
+                                    <span class="text-xs bg-yellow-500/20 px-1.5 py-0.5 rounded">金色: 10%</span>
+                                    <span class="text-xs bg-red-500/20 px-1.5 py-0.5 rounded">传说: 5%</span>
+                                </div>
+                            </div>
                         </div>
                         <div class="flex justify-between items-center mb-3">
                             <!-- 普通攻击和技能攻击一起放到左边 -->
@@ -813,7 +824,7 @@
 
         <!-- 游戏底部 -->
         <footer class="py-3 px-6 border-t border-glass text-center text-sm text-light/50">
-            <p>无尽冬日 - 游戏简化版 &copy; 2026</p>
+            <p>无尽战斗 - 网页版 &copy; 2026</p>
         </footer>
     </div>
 
