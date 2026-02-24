@@ -153,7 +153,7 @@ class EndlessWinterGame {
                     image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20ice%20bear%2C%20cute%20style%2C%20winter%20theme%2C%20simple%20background&size=512x512"
                 },
                 {
-                    name: "Frost Giant",
+                    name: "冰霜巨人",
                     baseHp: 100,
                     baseAttack: 18,
                     baseDefense: 6,
@@ -161,6 +161,76 @@ class EndlessWinterGame {
                     resourceMultiplier: 1.5,
                     icon: "fa-user",
                     image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20frost%20giant%2C%20cute%20style%2C%20winter%20theme%2C%20simple%20background&size=512x512"
+                },
+                {
+                    name: "妖狐",
+                    baseHp: 40,
+                    baseAttack: 10,
+                    baseDefense: 3,
+                    expMultiplier: 1.2,
+                    resourceMultiplier: 1.1,
+                    icon: "fa-cat",
+                    image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20fox%20spirit%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+                },
+                {
+                    name: "山精",
+                    baseHp: 80,
+                    baseAttack: 15,
+                    baseDefense: 5,
+                    expMultiplier: 1.8,
+                    resourceMultiplier: 1.3,
+                    icon: "fa-tree",
+                    image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20mountain%20spirit%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+                },
+                {
+                    name: "水怪",
+                    baseHp: 70,
+                    baseAttack: 14,
+                    baseDefense: 4,
+                    expMultiplier: 1.6,
+                    resourceMultiplier: 1.25,
+                    icon: "fa-tint",
+                    image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20water%20monster%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+                },
+                {
+                    name: "火灵",
+                    baseHp: 50,
+                    baseAttack: 20,
+                    baseDefense: 2,
+                    expMultiplier: 1.4,
+                    resourceMultiplier: 1.15,
+                    icon: "fa-fire",
+                    image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20fire%20spirit%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+                },
+                {
+                    name: "土妖",
+                    baseHp: 120,
+                    baseAttack: 16,
+                    baseDefense: 8,
+                    expMultiplier: 2.2,
+                    resourceMultiplier: 1.6,
+                    icon: "fa-mountain",
+                    image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20earth%20demon%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+                },
+                {
+                    name: "风魔",
+                    baseHp: 60,
+                    baseAttack: 18,
+                    baseDefense: 3,
+                    expMultiplier: 1.7,
+                    resourceMultiplier: 1.3,
+                    icon: "fa-wind",
+                    image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20wind%20demon%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+                },
+                {
+                    name: "雷兽",
+                    baseHp: 90,
+                    baseAttack: 22,
+                    baseDefense: 4,
+                    expMultiplier: 2.0,
+                    resourceMultiplier: 1.4,
+                    icon: "fa-bolt",
+                    image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20thunder%20beast%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
                 }
             ],
             // 当前敌人
@@ -327,6 +397,9 @@ class EndlessWinterGame {
             }
         }
         
+        // 加载纹理
+        this.loadTextures();
+        
         // 初始化3D战斗场景
         this.initBattle3DScene();
     }
@@ -335,146 +408,214 @@ class EndlessWinterGame {
     preloadImages() {
         // 预加载人物形象图片
         const maleCharacter = new Image();
-        maleCharacter.src = 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cute%20cartoon%203D%20winter%20survivor%20male%20character%2C%20stylish%20winter%20clothing%2C%20chibi%20style%2C%20clean%20white%20background%2C%20no%20equipment%2C%20professional%203D%20render%2C%20bright%20colorful%20lighting&image_size=square';
+        maleCharacter.src = 'Images/male-character.png';
         
         const femaleCharacter = new Image();
-        femaleCharacter.src = 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cute%20cartoon%203D%20winter%20survivor%20female%20character%2C%20stylish%20winter%20clothing%2C%20chibi%20style%2C%20clean%20white%20background%2C%20no%20equipment%2C%20professional%203D%20render%2C%20bright%20colorful%20lighting&image_size=square';
+        femaleCharacter.src = 'Images/female-character.png';
         
         const defaultCharacter = new Image();
-        defaultCharacter.src = 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cute%20cartoon%203D%20winter%20survivor%20character%2C%20stylish%20winter%20clothing%2C%20chibi%20style%2C%20clean%20white%20background%2C%20no%20equipment%2C%20professional%203D%20render%2C%20bright%20colorful%20lighting&image_size=square';
+        defaultCharacter.src = 'Images/default-character.png';
         
         // 预加载装备图片
         const weaponImage = new Image();
-        weaponImage.src = 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cute%20cartoon%203D%20ice%20crystal%20sword%2C%20winter%20themed%20weapon%2C%20chibi%20style%2C%20clean%20white%20background%2C%20professional%203D%20render%2C%20bright%20colorful%20lighting%2C%20no%20character&image_size=square';
+        weaponImage.src = 'Images/weapon-sword.png';
         
         const armorImage = new Image();
-        armorImage.src = 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cute%20cartoon%203D%20ice%20crystal%20chest%20plate%2C%20winter%20themed%20armor%2C%20chibi%20style%2C%20clean%20white%20background%2C%20professional%203D%20render%2C%20bright%20colorful%20lighting%2C%20no%20character&image_size=square';
+        armorImage.src = 'Images/armor-chestplate.png';
         
         const helmetImage = new Image();
-        helmetImage.src = 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cute%20cartoon%203D%20ice%20crystal%20helmet%2C%20winter%20themed%20headgear%2C%20chibi%20style%2C%20clean%20white%20background%2C%20professional%203D%20render%2C%20bright%20colorful%20lighting%2C%20no%20character&image_size=square';
+        helmetImage.src = 'Images/helmet.png';
         
         const bootsImage = new Image();
-        bootsImage.src = 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cute%20cartoon%203D%20ice%20crystal%20boots%2C%20winter%20themed%20footwear%2C%20chibi%20style%2C%20clean%20white%20background%2C%20professional%203D%20render%2C%20bright%20colorful%20lighting%2C%20no%20character&image_size=square';
+        bootsImage.src = 'Images/boots.png';
         
         const accessoryImage = new Image();
-        accessoryImage.src = 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cute%20cartoon%203D%20ice%20crystal%20necklace%2C%20winter%20themed%20accessory%2C%20chibi%20style%2C%20clean%20white%20background%2C%20professional%203D%20render%2C%20bright%20colorful%20lighting%2C%20no%20character&image_size=square';
+        accessoryImage.src = 'Images/accessory-necklace.png';
         
         this.addBattleLog('图片预加载中...');
     }
     
+    // 加载纹理
+    loadTextures() {
+        console.log('开始加载纹理...');
+        
+        // 存储纹理
+        this.textures = {};
+        
+        // 创建纹理加载器
+        this.textureLoader = new THREE.TextureLoader();
+        
+        // 加载地面纹理 - 使用本地图片
+        this.textureLoader.load(
+            'Images/map-background-1.png',
+            (texture) => {
+                this.textures.ground = texture;
+                this.textures.ground.wrapS = THREE.RepeatWrapping;
+                this.textures.ground.wrapT = THREE.RepeatWrapping;
+                this.textures.ground.repeat.set(5, 5);
+                console.log('地面纹理加载完成');
+            },
+            undefined,
+            (error) => {
+                console.log('地面纹理加载失败:', error);
+            }
+        );
+        
+        // 加载天空纹理 - 使用本地图片
+        this.textureLoader.load(
+            'Images/map-background-10.png',
+            (texture) => {
+                this.textures.sky = texture;
+                console.log('天空纹理加载完成');
+            },
+            undefined,
+            (error) => {
+                console.log('天空纹理加载失败:', error);
+            }
+        );
+        
+        // 加载人物纹理 - 使用本地图片
+        this.textureLoader.load(
+            'Images/male-character.png',
+            (texture) => {
+                this.textures.character = texture;
+                console.log('人物纹理加载完成');
+            },
+            undefined,
+            (error) => {
+                console.log('人物纹理加载失败:', error);
+            }
+        );
+        
+        // 加载敌人纹理 - 使用本地图片
+        this.textureLoader.load(
+            'Images/female-character.png',
+            (texture) => {
+                this.textures.enemy = texture;
+                console.log('敌人纹理加载完成');
+            },
+            undefined,
+            (error) => {
+                console.log('敌人纹理加载失败:', error);
+            }
+        );
+        
+        console.log('纹理加载完成');
+    }
+    
     // 生成3D地图背景配置
     generateMapBackgrounds() {
-        // 生成10个不同的3D地图背景配置
+        // 生成10个不同的仙侠风格3D地图背景配置
         this.gameState.mapBackgrounds = [
             {
-                type: "snow",
-                name: "雪地场景",
+                type: "xianxia-mountain",
+                name: "仙侠山峰",
                 skyColor: 0x87ceeb,
-                groundColor: 0xf0f8ff,
+                groundColor: 0x8b4513,
                 fogColor: 0x87ceeb,
                 fogNear: 10,
                 fogFar: 50,
-                features: ["snow", "trees", "ice"],
-                imageUrl: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=winter%20forest%20map%20background%2C%20snowy%20trees%2C%20frozen%20lake%2C%20peaceful%20atmosphere%2C%20top-down%20view%2C%20cartoon%20style&image_size=landscape_16_9"
+                features: ["mountains", "clouds", "ancient temples"],
+                imageUrl: "Images/map-background-1.png"
             },
             {
-                type: "water",
-                name: "水中场景",
-                skyColor: 0x0066cc,
-                groundColor: 0x0099ff,
-                fogColor: 0x0066cc,
-                fogNear: 10,
-                fogFar: 50,
-                features: ["water", "coral", "fish"],
-                imageUrl: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=underwater%20map%20background%2C%20coral%20reefs%2C%20fish%2C%20clear%20water%2C%20top-down%20view%2C%20cartoon%20style&image_size=landscape_16_9"
-            },
-            {
-                type: "space",
-                name: "太空场景",
-                skyColor: 0x000033,
-                groundColor: 0x333366,
-                fogColor: 0x000033,
-                fogNear: 10,
-                fogFar: 50,
-                features: ["stars", "planets", "asteroids"],
-                imageUrl: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=space%20map%20background%2C%20stars%2C%20planets%2C%20asteroids%2C%20dark%20space%2C%20top-down%20view%2C%20cartoon%20style&image_size=landscape_16_9"
-            },
-            {
-                type: "forest",
-                name: "森林场景",
+                type: "xianxia-forest",
+                name: "仙侠森林",
                 skyColor: 0x4d88ff,
                 groundColor: 0x228b22,
                 fogColor: 0x4d88ff,
                 fogNear: 10,
                 fogFar: 50,
-                features: ["trees", "bushes", "animals"],
-                imageUrl: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=forest%20map%20background%2C%20green%20trees%2C%20bushes%2C%20animals%2C%20top-down%20view%2C%20cartoon%20style&image_size=landscape_16_9"
+                features: ["ancient trees", "magical creatures", "spirit stones"],
+                imageUrl: "Images/map-background-2.png"
             },
             {
-                type: "desert",
-                name: "沙漠场景",
+                type: "xianxia-lake",
+                name: "仙侠湖泊",
+                skyColor: 0x0066cc,
+                groundColor: 0x0099ff,
+                fogColor: 0x0066cc,
+                fogNear: 10,
+                fogFar: 50,
+                features: ["crystal clear water", "lotus flowers", "water spirits"],
+                imageUrl: "Images/map-background-3.png"
+            },
+            {
+                type: "xianxia-desert",
+                name: "仙侠沙漠",
                 skyColor: 0xffcc66,
                 groundColor: 0xffcc66,
                 fogColor: 0xffcc66,
                 fogNear: 10,
                 fogFar: 50,
-                features: ["sand", "cacti", "pyramids"],
-                imageUrl: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=desert%20map%20background%2C%20sand%20dunes%2C%20cacti%2C%20pyramids%2C%20top-down%20view%2C%20cartoon%20style&image_size=landscape_16_9"
+                features: ["ancient ruins", "sand dunes", "mirages"],
+                imageUrl: "Images/map-background-4.png"
             },
             {
-                type: "mountain",
-                name: "山地场景",
-                skyColor: 0x87ceeb,
-                groundColor: 0x8b4513,
-                fogColor: 0x87ceeb,
-                fogNear: 10,
-                fogFar: 50,
-                features: ["rocks", "peaks", "clouds"],
-                imageUrl: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=mountain%20map%20background%2C%20rocky%20peaks%2C%20clouds%2C%20challenging%20terrain%2C%20top-down%20view%2C%20cartoon%20style&image_size=landscape_16_9"
-            },
-            {
-                type: "cave",
-                name: "洞穴场景",
+                type: "xianxia-cave",
+                name: "仙侠洞穴",
                 skyColor: 0x333333,
                 groundColor: 0x666666,
                 fogColor: 0x333333,
                 fogNear: 5,
                 fogFar: 20,
-                features: ["crystals", "stalactites", "darkness"],
-                imageUrl: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cave%20map%20background%2C%20glowing%20crystals%2C%20stalactites%2C%20dark%20atmosphere%2C%20top-down%20view%2C%20cartoon%20style&image_size=landscape_16_9"
+                features: ["spirit crystals", "ancient inscriptions", "magical beasts"],
+                imageUrl: "Images/map-background-5.png"
             },
             {
-                type: "village",
-                name: "村庄场景",
-                skyColor: 0x87ceeb,
-                groundColor: 0x8b4513,
-                fogColor: 0x87ceeb,
-                fogNear: 10,
-                fogFar: 50,
-                features: ["houses", "streets", "people"],
-                imageUrl: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=village%20map%20background%2C%20houses%2C%20streets%2C%20people%2C%20peaceful%20atmosphere%2C%20top-down%20view%2C%20cartoon%20style&image_size=landscape_16_9"
-            },
-            {
-                type: "volcano",
-                name: "火山场景",
-                skyColor: 0xff6633,
-                groundColor: 0x8b4513,
-                fogColor: 0xff6633,
-                fogNear: 10,
-                fogFar: 50,
-                features: ["lava", "smoke", "rocks"],
-                imageUrl: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=volcano%20map%20background%2C%20lava%20flows%2C%20smoke%20vents%2C%20rocky%20terrain%2C%20top-down%20view%2C%20cartoon%20style&image_size=landscape_16_9"
-            },
-            {
-                type: "heaven",
-                name: "天空场景",
+                type: "xianxia-heaven",
+                name: "仙侠仙境",
                 skyColor: 0x87ceeb,
                 groundColor: 0xffffff,
                 fogColor: 0x87ceeb,
                 fogNear: 10,
                 fogFar: 50,
-                features: ["clouds", "angels", "rainbow"],
-                imageUrl: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=heaven%20map%20background%2C%20floating%20clouds%2C%20rainbow%2C%20angels%2C%20magical%20atmosphere%2C%20top-down%20view%2C%20cartoon%20style&image_size=landscape_16_9"
+                features: ["floating islands", "celestial palaces", "divine beasts"],
+                imageUrl: "Images/map-background-6.png"
+            },
+            {
+                type: "xianxia-volcano",
+                name: "仙侠火山",
+                skyColor: 0xff6633,
+                groundColor: 0x8b4513,
+                fogColor: 0xff6633,
+                fogNear: 10,
+                fogFar: 50,
+                features: ["magical lava", "fire spirits", "ancient fire temples"],
+                imageUrl: "Images/map-background-7.png"
+            },
+            {
+                type: "xianxia-beach",
+                name: "仙侠海滩",
+                skyColor: 0x87ceeb,
+                groundColor: 0xffffcc,
+                fogColor: 0x87ceeb,
+                fogNear: 10,
+                fogFar: 50,
+                features: ["golden sand", "magical pearls", "sea spirits"],
+                imageUrl: "Images/map-background-8.png"
+            },
+            {
+                type: "xianxia-plains",
+                name: "仙侠平原",
+                skyColor: 0x87ceeb,
+                groundColor: 0x90ee90,
+                fogColor: 0x87ceeb,
+                fogNear: 10,
+                fogFar: 50,
+                features: ["ancient battlefields", "spirit herbs", "wandering cultivators"],
+                imageUrl: "Images/map-background-9.png"
+            },
+            {
+                type: "xianxia-canyon",
+                name: "仙侠峡谷",
+                skyColor: 0x87ceeb,
+                groundColor: 0x8b4513,
+                fogColor: 0x87ceeb,
+                fogNear: 10,
+                fogFar: 50,
+                features: ["deep gorges", "ancient bridges", "wind spirits"],
+                imageUrl: "Images/map-background-10.png"
             }
         ];
     }
@@ -619,7 +760,7 @@ class EndlessWinterGame {
                 }
                 
                 // 随机选择敌人类型
-                const enemyTypes = ['雪原狼', '冰原熊', 'Frost Giant'];
+                const enemyTypes = ['雪原狼', '冰原熊', '冰霜巨人', '妖狐', '山精', '水怪', '火灵', '土妖', '风魔', '雷兽'];
                 const enemyTypeName = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
                 
                 // 创建敌人信息
@@ -1479,28 +1620,26 @@ class EndlessWinterGame {
         // 添加地面
         const groundGeometry = new THREE.PlaneGeometry(20, 20);
         
-        // 获取地面颜色
-        let groundColor;
-        if (isBattle) {
-            // 战斗场景地面颜色 - 火山陆地
-            groundColor = 0x8b4513; // 棕色火山陆地
+        // 创建地面材质
+        let groundMaterial;
+        if (this.textures && this.textures.ground) {
+            // 使用加载的地面纹理
+            groundMaterial = new THREE.MeshPhongMaterial({ 
+                map: this.textures.ground,
+                side: THREE.DoubleSide,
+                shininess: isBattle ? 20 : 50,
+                specular: isBattle ? 0x442200 : 0xffffff
+            });
         } else {
-            // 探险场景地面颜色
-            groundColor = 0xf0f8ff; // 默认雪白色
-            if (this.gameState.mapBackgrounds.length > 0 && this.gameState.currentBackgroundIndex !== undefined) {
-                const currentBackground = this.gameState.mapBackgrounds[this.gameState.currentBackgroundIndex];
-                if (currentBackground && currentBackground.groundColor) {
-                    groundColor = currentBackground.groundColor;
-                }
-            }
+            // 使用默认颜色
+            const groundColor = isBattle ? 0x8b4513 : 0xf0f8ff;
+            groundMaterial = new THREE.MeshPhongMaterial({ 
+                color: groundColor, 
+                side: THREE.DoubleSide,
+                shininess: isBattle ? 20 : 50,
+                specular: isBattle ? 0x442200 : 0xffffff
+            });
         }
-        
-        const groundMaterial = new THREE.MeshPhongMaterial({ 
-            color: groundColor, 
-            side: THREE.DoubleSide,
-            shininess: isBattle ? 20 : 50,
-            specular: isBattle ? 0x442200 : 0xffffff
-        });
         const ground = new THREE.Mesh(groundGeometry, groundMaterial);
         ground.rotation.x = -Math.PI / 2;
         ground.position.y = -1.5;
@@ -1733,8 +1872,8 @@ class EndlessWinterGame {
                 let enemyTypeName = '雪原狼';
                 if (enemyInfo.name.includes('冰原熊')) {
                     enemyTypeName = '冰原熊';
-                } else if (enemyInfo.name.includes('Frost Giant')) {
-                    enemyTypeName = 'Frost Giant';
+                } else if (enemyInfo.name.includes('冰霜巨人')) {
+                    enemyTypeName = '冰霜巨人';
                 }
                 
                 // 根据敌人类型设置不同的颜色和几何体
@@ -1755,7 +1894,7 @@ class EndlessWinterGame {
                         });
                         enemyGeometry = new THREE.SphereGeometry(0.2); // 熊形（球体）
                         break;
-                    case 'Frost Giant':
+                    case '冰霜巨人':
                         enemyMaterial = new THREE.MeshPhongMaterial({ 
                             color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x4682b4), 
                             shininess: 50,
@@ -1838,7 +1977,7 @@ class EndlessWinterGame {
                 const finalHp = Math.floor(baseHp * (1 + bonus));
                 
                 // 随机选择敌人类型
-                const enemyTypes = ['雪原狼', '冰原熊', 'Frost Giant'];
+                const enemyTypes = ['雪原狼', '冰原熊', '冰霜巨人', '妖狐', '山精', '水怪', '火灵', '土妖', '风魔', '雷兽'];
                 const enemyTypeName = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
                 
                 // 创建敌人信息
@@ -1887,7 +2026,7 @@ class EndlessWinterGame {
                         });
                         enemyGeometry = new THREE.SphereGeometry(0.2); // 熊形（球体）
                         break;
-                    case 'Frost Giant':
+                    case '冰霜巨人':
                         enemyMaterial = new THREE.MeshPhongMaterial({ 
                             color: isBoss ? 0xff00ff : (isElite ? 0xffff00 : 0x4682b4), 
                             shininess: 50,
@@ -2111,23 +2250,47 @@ class EndlessWinterGame {
         const playerGroup = new THREE.Group();
         
         // 玩家材质
-        const playerBodyMaterial = new THREE.MeshPhongMaterial({ 
-            color: 0x60a5fa, 
-            shininess: 100,
-            specular: 0x111111
-        });
+        let playerBodyMaterial;
+        let playerHeadMaterial;
+        let playerClothesMaterial;
         
-        const playerHeadMaterial = new THREE.MeshPhongMaterial({ 
-            color: 0xffd7b5, 
-            shininess: 100,
-            specular: 0x111111
-        });
-        
-        const playerClothesMaterial = new THREE.MeshPhongMaterial({ 
-            color: 0x3b82f6, 
-            shininess: 100,
-            specular: 0x111111
-        });
+        if (this.textures && this.textures.character) {
+            playerBodyMaterial = new THREE.MeshPhongMaterial({ 
+                map: this.textures.character,
+                shininess: 100,
+                specular: 0x111111
+            });
+            
+            playerHeadMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xffd7b5, 
+                shininess: 100,
+                specular: 0x111111
+            });
+            
+            playerClothesMaterial = new THREE.MeshPhongMaterial({ 
+                map: this.textures.character,
+                shininess: 100,
+                specular: 0x111111
+            });
+        } else {
+            playerBodyMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x60a5fa, 
+                shininess: 100,
+                specular: 0x111111
+            });
+            
+            playerHeadMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xffd7b5, 
+                shininess: 100,
+                specular: 0x111111
+            });
+            
+            playerClothesMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x3b82f6, 
+                shininess: 100,
+                specular: 0x111111
+            });
+        }
         
         // 身体（使用圆柱体）
         const bodyGeometry = new THREE.CylinderGeometry(0.4, 0.5, 0.8, 8);
@@ -2227,17 +2390,34 @@ class EndlessWinterGame {
         const wolfGroup = new THREE.Group();
         
         // 狼材质
-        const wolfBodyMaterial = new THREE.MeshPhongMaterial({ 
-            color: 0x8b4513, 
-            shininess: 50,
-            specular: 0x111111
-        });
+        let wolfBodyMaterial;
+        let wolfAccentMaterial;
         
-        const wolfAccentMaterial = new THREE.MeshPhongMaterial({ 
-            color: 0xd2b48c, 
-            shininess: 50,
-            specular: 0x111111
-        });
+        if (this.textures && this.textures.enemy) {
+            wolfBodyMaterial = new THREE.MeshPhongMaterial({ 
+                map: this.textures.enemy,
+                shininess: 50,
+                specular: 0x111111
+            });
+            
+            wolfAccentMaterial = new THREE.MeshPhongMaterial({ 
+                map: this.textures.enemy,
+                shininess: 50,
+                specular: 0x111111
+            });
+        } else {
+            wolfBodyMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x8b4513, 
+                shininess: 50,
+                specular: 0x111111
+            });
+            
+            wolfAccentMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xd2b48c, 
+                shininess: 50,
+                specular: 0x111111
+            });
+        }
         
         // 身体
         const bodyGeometry = new THREE.CylinderGeometry(0.4, 0.6, 1.2, 8);
@@ -2345,17 +2525,34 @@ class EndlessWinterGame {
         const bearGroup = new THREE.Group();
         
         // 熊材质
-        const bearBodyMaterial = new THREE.MeshPhongMaterial({ 
-            color: 0x8b4513, 
-            shininess: 50,
-            specular: 0x111111
-        });
+        let bearBodyMaterial;
+        let bearAccentMaterial;
         
-        const bearAccentMaterial = new THREE.MeshPhongMaterial({ 
-            color: 0xd2b48c, 
-            shininess: 50,
-            specular: 0x111111
-        });
+        if (this.textures && this.textures.enemy) {
+            bearBodyMaterial = new THREE.MeshPhongMaterial({ 
+                map: this.textures.enemy,
+                shininess: 50,
+                specular: 0x111111
+            });
+            
+            bearAccentMaterial = new THREE.MeshPhongMaterial({ 
+                map: this.textures.enemy,
+                shininess: 50,
+                specular: 0x111111
+            });
+        } else {
+            bearBodyMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x8b4513, 
+                shininess: 50,
+                specular: 0x111111
+            });
+            
+            bearAccentMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xd2b48c, 
+                shininess: 50,
+                specular: 0x111111
+            });
+        }
         
         // 身体
         const bodyGeometry = new THREE.CylinderGeometry(0.6, 0.8, 1.5, 8);
@@ -2453,11 +2650,21 @@ class EndlessWinterGame {
         const snakeGroup = new THREE.Group();
         
         // 蛇材质
-        const snakeBodyMaterial = new THREE.MeshPhongMaterial({ 
-            color: 0x006400, 
-            shininess: 50,
-            specular: 0x111111
-        });
+        let snakeBodyMaterial;
+        
+        if (this.textures && this.textures.enemy) {
+            snakeBodyMaterial = new THREE.MeshPhongMaterial({ 
+                map: this.textures.enemy,
+                shininess: 50,
+                specular: 0x111111
+            });
+        } else {
+            snakeBodyMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x006400, 
+                shininess: 50,
+                specular: 0x111111
+            });
+        }
         
         // 身体（使用多个圆柱体连接）
         for (let i = 0; i < 5; i++) {
@@ -2520,17 +2727,34 @@ class EndlessWinterGame {
         const wolfGroup = new THREE.Group();
         
         // 敌人材质 - 狼的颜色
-        const wolfBodyMaterial = new THREE.MeshPhongMaterial({ 
-            color: 0x8b4513, 
-            shininess: 50,
-            specular: 0x111111
-        });
+        let wolfBodyMaterial;
+        let wolfAccentMaterial;
         
-        const wolfAccentMaterial = new THREE.MeshPhongMaterial({ 
-            color: 0xd2b48c, 
-            shininess: 50,
-            specular: 0x111111
-        });
+        if (this.textures && this.textures.enemy) {
+            wolfBodyMaterial = new THREE.MeshPhongMaterial({ 
+                map: this.textures.enemy,
+                shininess: 50,
+                specular: 0x111111
+            });
+            
+            wolfAccentMaterial = new THREE.MeshPhongMaterial({ 
+                map: this.textures.enemy,
+                shininess: 50,
+                specular: 0x111111
+            });
+        } else {
+            wolfBodyMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x8b4513, 
+                shininess: 50,
+                specular: 0x111111
+            });
+            
+            wolfAccentMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xd2b48c, 
+                shininess: 50,
+                specular: 0x111111
+            });
+        }
         
         // 身体
         const bodyGeometry = new THREE.CylinderGeometry(0.4, 0.6, 1.2, 8);
@@ -3046,7 +3270,7 @@ class EndlessWinterGame {
         
         // 刷新敌人按钮
         document.getElementById('refresh-enemy-btn').addEventListener('click', () => {
-            this.refreshEnemy();
+            this.generateMiniMap(); // 重新生成整个地图的敌人，确保与用户等级匹配
             
             // 随机刷新3D场景背景
             if (this.gameState.mapBackgrounds.length > 0) {
@@ -4386,13 +4610,13 @@ class EndlessWinterGame {
         if (characterBodyElement) {
             if (this.gameState.user.loggedIn && this.gameState.user.gender) {
                 if (this.gameState.user.gender === '男') {
-                    characterBodyElement.src = 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cute%20cartoon%203D%20winter%20survivor%20male%20character%2C%20stylish%20winter%20clothing%2C%20chibi%20style%2C%20clean%20white%20background%2C%20no%20equipment%2C%20professional%203D%20render%2C%20bright%20colorful%20lighting&image_size=square';
+                    characterBodyElement.src = 'Images/male-character.png';
                 } else if (this.gameState.user.gender === '女') {
-                    characterBodyElement.src = 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cute%20cartoon%203D%20winter%20survivor%20female%20character%2C%20stylish%20winter%20clothing%2C%20chibi%20style%2C%20clean%20white%20background%2C%20no%20equipment%2C%20professional%203D%20render%2C%20bright%20colorful%20lighting&image_size=square';
+                    characterBodyElement.src = 'Images/female-character.png';
                 }
             } else {
                 // 未登录时使用默认形象
-                characterBodyElement.src = 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cute%20cartoon%203D%20winter%20survivor%20character%2C%20stylish%20winter%20clothing%2C%20chibi%20style%2C%20clean%20white%20background%2C%20no%20equipment%2C%20professional%203D%20render%2C%20bright%20colorful%20lighting&image_size=square';
+                characterBodyElement.src = 'Images/default-character.png';
             }
         }
     }
@@ -4536,7 +4760,7 @@ class EndlessWinterGame {
         const defense = Math.floor(enemyType.baseDefense * enemyLevel * eliteBonus);
         
         this.gameState.enemy = {
-            name: isElite ? `Elite ${enemyType.name}` : enemyType.name,
+            name: isElite ? `精英${enemyType.name}` : enemyType.name,
             level: enemyLevel,
             hp: hp,
             maxHp: hp,
@@ -5553,7 +5777,7 @@ class EndlessWinterGame {
                         image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20ice%20bear%2C%20cute%20style%2C%20winter%20theme%2C%20simple%20background&size=512x512"
                     },
                     {
-                        name: "Frost Giant",
+                        name: "冰霜巨人",
                         baseHp: 100,
                         baseAttack: 18,
                         baseDefense: 6,
@@ -5715,10 +5939,21 @@ class EndlessWinterGame {
                 }
             }
             
+            // 获取用户认证数据
+            const usersAuthData = localStorage.getItem('endlessWinterUsers');
+            let usersAuth;
+            try {
+                usersAuth = JSON.parse(usersAuthData || '{}');
+            } catch (e) {
+                console.error('解析用户认证数据失败:', e);
+                usersAuth = {};
+            }
+            
             // 创建存档数据
             const saveData = {
                 currentUser: this.gameState.user,
                 allUsers: allUsersData,
+                usersAuth: usersAuth,
                 timestamp: new Date().toISOString(),
                 version: "1.0"
             };
@@ -5767,6 +6002,12 @@ class EndlessWinterGame {
                                 localStorage.setItem(`endlessWinterGame_${userData.userId}`, JSON.stringify(userData.gameState));
                                 importedUserCount++;
                             }
+                        }
+                        
+                        // 导入用户认证数据
+                        if (saveData.usersAuth) {
+                            localStorage.setItem('endlessWinterUsers', JSON.stringify(saveData.usersAuth));
+                            console.log('用户认证数据导入成功');
                         }
                         
                         // 设置当前用户的游戏状态
@@ -5853,25 +6094,70 @@ class EndlessWinterGame {
     login(username, password) {
         try {
             // 从本地存储获取用户数据
-            const users = JSON.parse(localStorage.getItem('endlessWinterUsers') || '{}');
+            console.log('开始登录，用户名:', username);
+            const usersData = localStorage.getItem('endlessWinterUsers');
+            console.log('用户数据:', usersData);
+            
+            let users;
+            try {
+                users = JSON.parse(usersData || '{}');
+                console.log('解析后的用户数据:', users);
+            } catch (parseError) {
+                console.error('解析用户数据失败:', parseError);
+                users = {};
+                this.addBattleLog('用户数据损坏，正在修复...');
+            }
             
             let isPasswordCorrect = false;
             let userGender = null;
             let needUpdateGender = false;
+            
+            // 检查用户是否存在
+            if (!users[username]) {
+                console.log('用户不存在:', username);
+                
+                // 检查是否存在对应的游戏状态数据
+                const savedGame = localStorage.getItem(`endlessWinterGame_${username}`);
+                if (savedGame) {
+                    console.log('发现对应的游戏状态数据，提示用户创建密码');
+                    // 如果存在游戏状态数据，提示用户设置新密码
+                    const newPassword = prompt('用户不存在，但发现对应的游戏数据。请设置新密码以恢复账号:');
+                    if (newPassword) {
+                        // 创建新的用户认证数据
+                        users[username] = {
+                            password: newPassword,
+                            gender: '男' // 默认性别，可以后续修改
+                        };
+                        localStorage.setItem('endlessWinterUsers', JSON.stringify(users));
+                        this.addBattleLog('用户账号已恢复！请使用新设置的密码登录。');
+                        return;
+                    }
+                }
+                
+                this.addBattleLog('登录失败！用户不存在。');
+                return;
+            }
             
             // 兼容旧的用户数据格式
             if (typeof users[username] === 'string') {
                 // 旧格式：直接存储密码字符串
                 isPasswordCorrect = users[username] === password;
                 needUpdateGender = true;
+                console.log('使用旧格式验证密码，结果:', isPasswordCorrect);
             } else if (users[username] && users[username].password) {
                 // 新格式：存储包含password和gender的对象
                 isPasswordCorrect = users[username].password === password;
                 userGender = users[username].gender;
                 needUpdateGender = !userGender;
+                console.log('使用新格式验证密码，结果:', isPasswordCorrect);
+            } else {
+                console.log('用户数据格式错误:', users[username]);
+                this.addBattleLog('登录失败！用户数据格式错误。');
+                return;
             }
             
             if (isPasswordCorrect) {
+                console.log('密码验证成功，开始加载游戏状态');
                 // 如果需要更新性别信息
                 if (needUpdateGender) {
                     const gender = prompt('请为您的账号选择性别 (男/女):');
@@ -5896,18 +6182,89 @@ class EndlessWinterGame {
                 // 加载用户对应的游戏状态
                 const userId = username;
                 const savedGame = localStorage.getItem(`endlessWinterGame_${userId}`);
+                console.log('游戏状态数据:', savedGame);
                 
-                if (savedGame) {
-                    // 使用保存的游戏状态
-                    this.gameState = JSON.parse(savedGame);
-                    // 更新用户信息
-                    this.gameState.user = {
-                        loggedIn: true,
-                        username: username,
-                        userId: userId,
-                        gender: userGender
-                    };
-                } else {
+                try {
+                    if (savedGame) {
+                        // 使用保存的游戏状态
+                        this.gameState = JSON.parse(savedGame);
+                        // 更新用户信息
+                        this.gameState.user = {
+                            loggedIn: true,
+                            username: username,
+                            userId: userId,
+                            gender: userGender
+                        };
+                        console.log('游戏状态加载成功');
+                    } else {
+                        // 创建新的游戏状态
+                        console.log('游戏状态不存在，创建新状态');
+                        this.gameState.user = {
+                            loggedIn: true,
+                            username: username,
+                            userId: userId,
+                            gender: userGender
+                        };
+                        // 重置玩家属性
+                        this.gameState.player = {
+                            level: 1,
+                            exp: 0,
+                            maxExp: 100,
+                            attack: 10,
+                            defense: 5,
+                            hp: 100,
+                            maxHp: 100,
+                            luck: 2,
+                            equipment: {
+                                weapon: null,
+                                armor: null,
+                                helmet: null,
+                                boots: null,
+                                accessory: null
+                            },
+                            equipmentEffects: {
+                                attack: 0,
+                                defense: 0,
+                                hp: 0,
+                                luck: 0
+                            },
+                            inventory: [],
+                            skills: [
+                                {
+                                    name: "强力攻击",
+                                    description: "造成2倍普通伤害",
+                                    energyCost: 20,
+                                    damageMultiplier: 2,
+                                    levelRequired: 1
+                                },
+                                {
+                                    name: "防御姿态",
+                                    description: "减少50%受到的伤害",
+                                    energyCost: 15,
+                                    defenseBonus: 0.5,
+                                    levelRequired: 10
+                                },
+                                {
+                                    name: "生命恢复",
+                                    description: "恢复20%最大生命值",
+                                    energyCost: 25,
+                                    healPercentage: 0.2,
+                                    levelRequired: 20
+                                },
+                                {
+                                    name: "幸运一击",
+                                    description: "有几率造成3倍伤害",
+                                    energyCost: 30,
+                                    criticalMultiplier: 3,
+                                    criticalChance: 0.7,
+                                    levelRequired: 30
+                                }
+                            ]
+                        };
+                    }
+                } catch (gameLoadError) {
+                    console.error('加载游戏状态失败:', gameLoadError);
+                    this.addBattleLog('游戏数据损坏，正在创建新的游戏状态...');
                     // 创建新的游戏状态
                     this.gameState.user = {
                         loggedIn: true,
@@ -5976,15 +6333,18 @@ class EndlessWinterGame {
                 this.addBattleLog(`登录成功！欢迎回来，${username}！`);
                 this.updateUI();
                 this.updateCharacterBodyImage();
+                this.generateMiniMap(); // 刷新敌人，确保与用户等级匹配
                 
                 // 保存登录状态
                 localStorage.setItem('endlessWinterCurrentUser', JSON.stringify(this.gameState.user));
+                console.log('登录完成，状态已保存');
             } else {
-                this.addBattleLog('登录失败！用户名或密码错误。');
+                console.log('密码错误');
+                this.addBattleLog('登录失败！密码错误。');
             }
         } catch (error) {
-            this.addBattleLog('登录失败！');
-            console.error('登录失败:', error);
+            console.error('登录过程中发生错误:', error);
+            this.addBattleLog('登录失败！系统错误，请刷新页面重试。');
         }
     }
     
@@ -6012,6 +6372,7 @@ class EndlessWinterGame {
                 this.addBattleLog(`注册成功！欢迎，${username}！`);
                 this.updateUI();
                 this.updateCharacterBodyImage();
+                this.generateMiniMap(); // 刷新敌人，确保与用户等级匹配
                 
                 // 保存登录状态
                 localStorage.setItem('endlessWinterCurrentUser', JSON.stringify(this.gameState.user));
