@@ -1693,6 +1693,20 @@ class EndlessWinterGame {
         // 开始渲染循环
         this.animateBattle3D();
         
+        // 绑定鼠标点击事件来处理人物移动（只在探险场景中）
+        if (!isBattle) {
+            const container = document.getElementById('battle-3d-container');
+            if (container) {
+                // 移除可能存在的旧事件监听器
+                container.onclick = null;
+                // 添加新的鼠标点击事件监听器
+                container.addEventListener('click', (event) => {
+                    this.handleMouseClick(event, container);
+                });
+                console.log('鼠标点击事件已绑定到3D场景容器');
+            }
+        }
+        
         // 战斗场景执行淡入效果
         if (isBattle) {
             this.fadeInBattleScene();
