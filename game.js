@@ -3016,6 +3016,267 @@ class EndlessWinterGame {
         }, 200);
     }
     
+    // 播放防御动画
+    playDefenseAnimation() {
+        if (!this.battle3D || !this.battle3D.player) return;
+        
+        // 简单的防御动画：角色模型稍微后退并缩小
+        const player = this.battle3D.player;
+        
+        // 保存初始状态
+        const initialPosition = player.position.clone();
+        const initialScale = player.scale.clone();
+        
+        // 动画持续时间
+        const duration = 500; // 500毫秒
+        const startTime = Date.now();
+        
+        // 动画函数
+        const animate = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // 计算新位置和缩放
+            const newX = initialPosition.x - Math.sin(progress * Math.PI) * 0.3;
+            const newScale = initialScale.x * (1 - Math.sin(progress * Math.PI) * 0.1);
+            
+            player.position.x = newX;
+            player.scale.set(newScale, newScale, newScale);
+            
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                // 动画结束，恢复初始状态
+                player.position.x = initialPosition.x;
+                player.scale.set(initialScale.x, initialScale.y, initialScale.z);
+            }
+        };
+        
+        // 开始动画
+        animate();
+    }
+    
+    // 创建防御特效
+    createDefenseEffect() {
+        if (!this.battle3D || !this.battle3D.player) return;
+        
+        const player = this.battle3D.player;
+        
+        // 创建防御圆圈
+        const circleGeometry = new THREE.RingGeometry(1, 1.2, 32);
+        const circleMaterial = new THREE.MeshBasicMaterial({
+            color: 0x00ffff,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.7
+        });
+        
+        const defenseCircle = new THREE.Mesh(circleGeometry, circleMaterial);
+        defenseCircle.rotation.x = Math.PI / 2;
+        defenseCircle.position.y = 0.1;
+        
+        // 添加到玩家
+        player.add(defenseCircle);
+        
+        // 动画效果
+        const duration = 3000; // 3秒
+        const startTime = Date.now();
+        
+        const animate = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // 缩放和透明度变化
+            const scale = 1 + Math.sin(progress * Math.PI * 3) * 0.2;
+            const opacity = 0.7 * (1 - progress);
+            
+            defenseCircle.scale.set(scale, scale, scale);
+            defenseCircle.material.opacity = opacity;
+            
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                // 动画结束，移除圆圈
+                player.remove(defenseCircle);
+                circleGeometry.dispose();
+                circleMaterial.dispose();
+            }
+        };
+        
+        // 开始动画
+        animate();
+    }
+    
+    // 创建攻击特效
+    createAttackEffect(skillIndex) {
+        if (!this.battle3D || !this.battle3D.player || !this.battle3D.enemy) return;
+        
+        const player = this.battle3D.player;
+        const enemy = this.battle3D.enemy;
+        
+        // 根据技能索引创建不同的特效
+        let color;
+        switch (skillIndex) {
+            case 0: // 强力攻击
+                color = 0xff0000; // 红色
+                break;
+            case 3: // 幸运一击
+                color = 0xffff00; // 黄色
+                break;
+            default:
+                color = 0x00ff00; // 绿色
+        }
+        
+        // 创建攻击特效
+        const particles = new THREE.BufferGeometry();
+        const particleCount = 50;
+        
+        const positions = new Float32Array(particleCount * 3);
+        const colors = new Float32Array(particleCount * 3);
+        
+        const playerPos = player.position.clone();
+        const enemyPos = enemy.position.clone();
+        
+        for (let i = 0; i < particleCount; i++) {
+            // 从玩家位置出发
+            positions[i * 3] = playerPos.x;
+            positions[i * 3 + 1] = playerPos.y + Math.random() * 2;
+            positions[i * 3 + 2] = playerPos.z;
+            
+            // 颜色
+            colors[i * 3] = (color >> 16) / 255;
+            colors[i * 3 + 1] = ((color >> 8) & 0xff) / 255;
+            colors[i * 3 + 2] = (color & 0xff) / 255;
+        }
+        
+        particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        particles.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        
+        const particleMaterial = new THREE.PointsMaterial({
+            size: 0.05,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.8
+        });
+        
+        const particleSystem = new THREE.Points(particles, particleMaterial);
+        this.battle3D.scene.add(particleSystem);
+        
+        // 动画效果
+        const duration = 500; // 500毫秒
+        const startTime = Date.now();
+        
+        const animate = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            const positions = particleSystem.geometry.attributes.position.array;
+            for (let i = 0; i < particleCount; i++) {
+                const t = progress;
+                positions[i * 3] = playerPos.x + (enemyPos.x - playerPos.x) * t;
+                positions[i * 3 + 1] = playerPos.y + Math.random() * 2 + (enemyPos.y - playerPos.y) * t + Math.sin(t * Math.PI) * 1;
+                positions[i * 3 + 2] = playerPos.z + (enemyPos.z - playerPos.z) * t;
+            }
+            particleSystem.geometry.attributes.position.needsUpdate = true;
+            
+            // 透明度变化
+            particleSystem.material.opacity = 0.8 * (1 - progress);
+            
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                // 动画结束，移除特效
+                this.battle3D.scene.remove(particleSystem);
+                particles.dispose();
+                particleMaterial.dispose();
+            }
+        };
+        
+        // 开始动画
+        animate();
+    }
+    
+    // 显示伤害数字
+    showDamage(target, damage, color) {
+        if (!this.battle3D || !this.battle3D.scene) return;
+        
+        // 创建伤害文本
+        const canvas = document.createElement('canvas');
+        canvas.width = 384; // 增大3倍
+        canvas.height = 192; // 增大3倍
+        const context = canvas.getContext('2d');
+        
+        // 设置文本样式
+        context.font = 'bold 72px Arial'; // 增大3倍
+        context.fillStyle = color;
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        
+        // 绘制文本
+        const text = damage > 0 ? `-${damage}` : `+${Math.abs(damage)}`;
+        context.fillText(text, canvas.width / 2, canvas.height / 2);
+        
+        // 创建纹理
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.needsUpdate = true;
+        
+        // 创建平面
+        const geometry = new THREE.PlaneGeometry(3, 1.5); // 增大3倍
+        const material = new THREE.MeshBasicMaterial({
+            map: texture,
+            transparent: true,
+            side: THREE.DoubleSide
+        });
+        
+        const damageText = new THREE.Mesh(geometry, material);
+        
+        // 设置位置
+        if (target === this.gameState.player && this.battle3D.player) {
+            damageText.position.copy(this.battle3D.player.position);
+            damageText.position.y += 3; // 稍微提高位置，避免与角色重叠
+        } else if (target === this.gameState.enemy && this.battle3D.enemy) {
+            damageText.position.copy(this.battle3D.enemy.position);
+            damageText.position.y += 3; // 稍微提高位置，避免与敌人重叠
+        } else {
+            return;
+        }
+        
+        // 确保文本始终面向相机
+        damageText.lookAt(this.battle3D.camera.position);
+        
+        // 添加到场景
+        this.battle3D.scene.add(damageText);
+        
+        // 动画效果
+        const duration = 1000; // 1秒
+        const startTime = Date.now();
+        const initialPosition = damageText.position.clone();
+        
+        const animate = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // 向上移动
+            damageText.position.y = initialPosition.y + progress * 1.5; // 稍微增加移动距离
+            
+            // 透明度变化
+            damageText.material.opacity = 1 - progress;
+            
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                // 动画结束，移除文本
+                this.battle3D.scene.remove(damageText);
+                geometry.dispose();
+                material.dispose();
+                texture.dispose();
+            }
+        };
+        
+        // 开始动画
+        animate();
+    }
+    
     // 播放敌人被攻击动画
     playEnemyHitAnimation() {
         if (!this.battle3D || !this.battle3D.enemy) return;
@@ -4563,8 +4824,16 @@ class EndlessWinterGame {
         // 播放技能释放声音（根据技能索引播放不同的声音）
         this.playSound(`skill-${skillIndex}-sound`);
         
-        // 播放攻击动画
-        this.playAttackAnimation();
+        // 根据技能类型播放不同的动画和特效
+        if (skill.defenseBonus) {
+            // 防御技能
+            this.playDefenseAnimation();
+            this.createDefenseEffect();
+        } else {
+            // 攻击技能
+            this.playAttackAnimation();
+            this.createAttackEffect(skillIndex);
+        }
         
         // 延迟执行技能效果，让动画有时间播放
         setTimeout(() => {
@@ -4589,6 +4858,9 @@ class EndlessWinterGame {
                 }
                 this.addBattleLog(`你使用了${skill.name}，对${this.gameState.enemy.name}造成了${playerDamage}点伤害！`);
                 
+                // 显示敌人伤害
+                this.showDamage(this.gameState.enemy, playerDamage, 'red');
+                
                 // 检查敌人是否死亡
                 if (this.gameState.enemy.hp <= 0) {
                     this.enemyDefeated();
@@ -4601,11 +4873,17 @@ class EndlessWinterGame {
                 const enemyDamage = Math.max(1, Math.floor((this.gameState.enemy.attack - finalDefense) * (1 - skill.defenseBonus)));
                 this.gameState.player.hp -= enemyDamage;
                 this.addBattleLog(`${this.gameState.enemy.name}对你造成了${enemyDamage}点伤害（已防御）！`);
+                
+                // 显示玩家伤害
+                this.showDamage(this.gameState.player, enemyDamage, 'yellow');
             } else if (skill.healPercentage) {
                 // 生命恢复
                 const healAmount = Math.floor(this.gameState.player.maxHp * skill.healPercentage);
                 this.gameState.player.hp = Math.min(this.gameState.player.hp + healAmount, this.gameState.player.maxHp);
                 this.addBattleLog(`你使用了${skill.name}，恢复了${healAmount}点生命值！`);
+                
+                // 显示恢复效果
+                this.showDamage(this.gameState.player, healAmount, 'green');
             } else if (skill.criticalMultiplier) {
                 // 幸运一击
                 let playerDamage;
@@ -4624,6 +4902,9 @@ class EndlessWinterGame {
                     this.gameState.enemy.hp = 0;
                 }
                 
+                // 显示敌人伤害
+                this.showDamage(this.gameState.enemy, playerDamage, 'red');
+                
                 // 检查敌人是否死亡
                 if (this.gameState.enemy.hp <= 0) {
                     this.enemyDefeated();
@@ -4640,6 +4921,9 @@ class EndlessWinterGame {
                     this.gameState.player.hp = 0;
                 }
                 this.addBattleLog(`${this.gameState.enemy.name}对你造成了${enemyDamage}点伤害！`);
+                
+                // 显示玩家伤害
+                this.showDamage(this.gameState.player, enemyDamage, 'red');
             }
             
             // 检查玩家是否死亡
