@@ -6,8 +6,8 @@ class EndlessWinterGame {
             // 用户信息
             user: {
                 loggedIn: false,
-                username: "Guest",
-                userId: "guest"
+                username: "",
+                userId: ""
             },
             // 玩家属性
             player: {
@@ -233,19 +233,8 @@ class EndlessWinterGame {
                     image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20thunder%20beast%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
                 }
             ],
-            // 当前敌人
-            enemy: {
-                name: "雪原狼",
-                level: 1,
-                hp: 30,
-                maxHp: 30,
-                attack: 8,
-                defense: 2,
-                isElite: false,
-                eliteBonus: 0,
-                icon: "fa-skull",
-                image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20snow%20wolf%2C%20cute%20style%2C%20winter%20theme%2C%20simple%20background&size=512x512"
-            },
+            // 默认当前敌人为空
+            enemy: [],
             // 游戏设置
             settings: {
                 autoPlay: false,
@@ -378,33 +367,45 @@ class EndlessWinterGame {
         // 设置默认选中的装备槽位
         this.selectedRefineSlot = 'weapon';
         
-        // 检查保存的登录状态
-        this.checkSavedLogin();
-        this.generateMapBackgrounds();
-        this.preloadImages();
-        this.generateMiniMap();
-        this.updateMapBackgroundUI(); // 设置初始地图背景
-        this.updateCharacterBodyImage();
-        this.updateUI();
-        this.startResourceGeneration();
-        this.bindEvents();
+        // 检查保存的登录状态（异步）
+        this.loadUserFromSession();
         
-        // 确保所有装备都有refineLevel属性
-        for (const slot in this.gameState.player.equipment) {
-            const item = this.gameState.player.equipment[slot];
-            if (item && item.refineLevel === undefined) {
-                item.refineLevel = 0;
+        // 只有在用户登录成功后才继续初始化
+        if (this.gameState.user.loggedIn) {
+            // 登录和加载完成后继续初始化
+            this.generateMapBackgrounds();
+            this.preloadImages();
+            
+            // 加载纹理（提前加载，确保3D场景初始化时纹理已准备好）
+            this.loadTextures();
+            
+            // 只有在没有保存的场景怪物数据时才生成新的
+            this.generateMiniMap();
+            
+            // 确保所有装备都有refineLevel属性
+            for (const slot in this.gameState.player.equipment) {
+                const item = this.gameState.player.equipment[slot];
+                if (item && item.refineLevel === undefined) {
+                    item.refineLevel = 0;
+                }
             }
+            
+            // 隐藏敌人信息区
+            this.hideEnemyInfo();
+            
+            // 初始化3D战斗场景
+            this.initBattle3DScene();
+            
+            // 更新 UI 和绑定事件
+            this.updateMapBackgroundUI(); // 设置初始地图背景
+            this.updateCharacterBodyImage();
+            this.updateUI();
+            this.updateAdminControls(); // 根据用户角色更新管理控制按钮
+            this.bindEvents();
+            
+            // 开始资源生成
+            this.startResourceGeneration();
         }
-        
-        // 隐藏敌人信息区
-        this.hideEnemyInfo();
-        
-        // 加载纹理
-        this.loadTextures();
-        
-        // 初始化3D战斗场景
-        this.initBattle3DScene();
     }
     
     // 预加载图片
@@ -979,19 +980,78 @@ class EndlessWinterGame {
     }
     
     // 检查保存的登录状态
-    checkSavedLogin() {
+    loadUserFromSession() {
         try {
-            const savedUser = localStorage.getItem('endlessWinterCurrentUser');
-            if (savedUser) {
-                const userData = JSON.parse(savedUser);
-                if (userData.loggedIn) {
-                    this.gameState.user = userData;
-                    this.addBattleLog(`自动登录成功！欢迎回来，${userData.username}！`);
-                    this.updateCharacterBodyImage();
+            // 从 localStorage 中获取 token 和用户信息
+            const token = localStorage.getItem('endlessWinterToken');
+            const userStr = localStorage.getItem('endlessWinterUser');
+            
+            if (token && userStr) {
+                try {
+                    const userInfo = JSON.parse(userStr);
+                    
+                    // 设置用户信息
+                    this.gameState.user = {
+                        loggedIn: true,
+                        username: userInfo.username,
+                        userId: userInfo.userId,
+                        gender: userInfo.gender,
+                        role: userInfo.role || 'player'
+                    };
+                    
+                    // 加载游戏状态
+                    this.loadGame();
+                    
+                    
+                    // 如果没有保存的游戏状态，初始化新的游戏状态
+                    if (!this.gameState.player || !this.gameState.player.inventory) {
+                        this.initNewGameState(userInfo.username, userInfo.gender);
+                    }
+                    
+                    // 显示登录成功消息
+                    this.addBattleLog(`登录成功！欢迎回来，${userInfo.username}！`);
+                    
+                    // 不需要在这里更新 UI 和生成地图，因为 initGame 方法会处理这些
+                } catch (parseError) {
+                    console.error('解析用户信息失败:', parseError);
+                    // 解析失败，重定向到登录页面
+                    //window.location.href = 'login.html';
                 }
+            } else {
+                // 未登录，重定向到登录页面
+                window.location.href = 'login.html';
             }
         } catch (error) {
             console.error('检查登录状态失败:', error);
+            // 发生错误，重定向到登录页面
+            window.location.href = 'login.html';
+        }
+    }
+    
+    // 更新管理员控制按钮的显示状态
+    updateAdminControls() {
+        const isAdmin = this.gameState.user.role === 'admin';
+        
+        // 保存游戏按钮 - 所有用户都可以使用
+        const saveGameBtn = document.getElementById('save-game');
+        if (saveGameBtn) {
+            saveGameBtn.classList.remove('hidden');
+        }
+        
+        // 加载游戏按钮 - 所有用户都可以使用（从服务器加载）
+        const loadGameBtn = document.getElementById('load-game');
+        if (loadGameBtn) {
+            loadGameBtn.classList.remove('hidden');
+        }
+        
+        // 重置游戏按钮 - 只有管理员可以使用
+        const resetGameBtn = document.getElementById('reset-game');
+        if (resetGameBtn) {
+            if (isAdmin) {
+                resetGameBtn.classList.remove('hidden');
+            } else {
+                resetGameBtn.classList.add('hidden');
+            }
         }
     }
     
@@ -1113,36 +1173,36 @@ class EndlessWinterGame {
         console.log('更新敌人显示，敌人信息:', this.gameState.enemy);
         const enemyNameElement = document.getElementById('enemy-name');
         if (enemyNameElement) {
-            console.log('更新敌人名称:', this.gameState.enemy.name || '');
-            enemyNameElement.textContent = this.gameState.enemy.name || '';
+            console.log('更新敌人名称:', this.gameState.enemy?.name || '');
+            enemyNameElement.textContent = this.gameState.enemy?.name || '';
         }
         const enemyLevelElement = document.getElementById('enemy-level');
         if (enemyLevelElement) {
-            console.log('更新敌人等级:', this.gameState.enemy.level || '');
-            enemyLevelElement.textContent = this.gameState.enemy.level || '';
+            console.log('更新敌人等级:', this.gameState.enemy?.level || '');
+            enemyLevelElement.textContent = this.gameState.enemy?.level || '';
         }
         const enemyHpElement = document.getElementById('enemy-hp');
         if (enemyHpElement) {
-            console.log('更新敌人HP:', this.gameState.enemy.hp || '');
-            enemyHpElement.textContent = this.gameState.enemy.hp || '';
+            console.log('更新敌人HP:', this.gameState.enemy?.hp || '');
+            enemyHpElement.textContent = this.gameState.enemy?.hp || '';
         }
         const enemyMaxHpElement = document.getElementById('enemy-max-hp');
         if (enemyMaxHpElement) {
-            console.log('更新敌人最大HP:', this.gameState.enemy.maxHp || '');
-            enemyMaxHpElement.textContent = this.gameState.enemy.maxHp || '';
+            console.log('更新敌人最大HP:', this.gameState.enemy?.maxHp || '');
+            enemyMaxHpElement.textContent = this.gameState.enemy?.maxHp || '';
         }
         const enemyAttackElement = document.getElementById('enemy-attack');
         if (enemyAttackElement) {
-            console.log('更新敌人攻击:', this.gameState.enemy.attack || '');
-            enemyAttackElement.textContent = this.gameState.enemy.attack || '';
+            console.log('更新敌人攻击:', this.gameState.enemy?.attack || '');
+            enemyAttackElement.textContent = this.gameState.enemy?.attack || '';
         }
         
         // 更新敌人图标
         const enemyIconElement = document.querySelector('#enemy-icon i');
         if (enemyIconElement) {
-            if (this.gameState.enemy.name) {
+            if (this.gameState.enemy?.name) {
                 // 计算敌人和玩家的战斗力
-                const enemyPower = this.gameState.enemy.attack * 2 + this.gameState.enemy.defense * 1.5 + this.gameState.enemy.maxHp * 0.1;
+                const enemyPower = (this.gameState.enemy.attack || 0) * 2 + (this.gameState.enemy.defense || 0) * 1.5 + (this.gameState.enemy.maxHp || 0) * 0.1;
                 const playerAttack = this.gameState.player.attack + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.attack : 0);
                 const playerDefense = this.gameState.player.defense + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.defense : 0);
                 const playerHp = this.gameState.player.maxHp + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.hp : 0);
@@ -1178,7 +1238,7 @@ class EndlessWinterGame {
         const eliteBadge = document.getElementById('enemy-elite-badge');
         const enemyInfo = document.getElementById('enemy-info');
         if (eliteBadge && enemyInfo) {
-            if (this.gameState.enemy.name) {
+            if (this.gameState.enemy?.name) {
                 if (this.gameState.enemy.isElite) {
                     eliteBadge.classList.remove('hidden');
                     // 为精英怪添加特殊样式
@@ -1212,7 +1272,7 @@ class EndlessWinterGame {
         // 更新敌人装备掉率信息
         const enemyDropRatesElement = document.getElementById('enemy-drop-rates');
         if (enemyDropRatesElement) {
-            if (this.gameState.enemy.name) {
+            if (this.gameState.enemy?.name) {
                 // 基础掉率
                 let dropRates = {
                     white: 0.4,
@@ -3273,230 +3333,242 @@ class EndlessWinterGame {
     
     // 绑定事件
     bindEvents() {
+        console.log('开始绑定事件...');
+        
+        // 安全的事件绑定函数
+        const bindEvent = (selector, event, callback) => {
+            try {
+                const element = document.querySelector(selector);
+                if (element) {
+                    element.addEventListener(event, callback);
+                    console.log(`成功绑定 ${event} 事件到 ${selector}`);
+                } else {
+                    console.log(`未找到元素 ${selector}`);
+                }
+            } catch (error) {
+                console.error(`绑定事件到 ${selector} 时出错:`, error);
+            }
+        };
+        
         // 攻击按钮
-        document.getElementById('attack-btn').addEventListener('click', () => {
+        bindEvent('#attack-btn', 'click', () => {
             this.attackEnemy();
         });
         
         // 自动战斗按钮
-        document.getElementById('auto-battle-btn').addEventListener('click', () => {
+        bindEvent('#auto-battle-btn', 'click', () => {
             this.toggleAutoBattle();
         });
         
         // 自动收集资源按钮
-        document.getElementById('auto-collect-btn').addEventListener('click', () => {
+        bindEvent('#auto-collect-btn', 'click', () => {
             this.toggleAutoCollect();
         });
         
         // 自动战斗目标颜色设置
-        document.getElementById('auto-battle-green').addEventListener('change', () => {
+        bindEvent('#auto-battle-green', 'change', () => {
             this.updateAutoBattleTargetColors();
         });
-        document.getElementById('auto-battle-yellow').addEventListener('change', () => {
+        bindEvent('#auto-battle-yellow', 'change', () => {
             this.updateAutoBattleTargetColors();
         });
-        document.getElementById('auto-battle-red').addEventListener('change', () => {
+        bindEvent('#auto-battle-red', 'change', () => {
             this.updateAutoBattleTargetColors();
         });
         
         // 自动收集资源类型设置
-        document.getElementById('auto-collect-wood').addEventListener('change', () => {
+        bindEvent('#auto-collect-wood', 'change', () => {
             this.updateAutoCollectResourceTypes();
         });
-        document.getElementById('auto-collect-iron').addEventListener('change', () => {
+        bindEvent('#auto-collect-iron', 'change', () => {
             this.updateAutoCollectResourceTypes();
         });
-        document.getElementById('auto-collect-crystal').addEventListener('change', () => {
+        bindEvent('#auto-collect-crystal', 'change', () => {
             this.updateAutoCollectResourceTypes();
         });
         
         // 自动挂机开关
-        document.getElementById('auto挂机').addEventListener('change', (e) => {
+        bindEvent('#auto挂机', 'change', (e) => {
             this.toggleAutoPlay(e.target.checked);
         });
         
         // 资源收集按钮
-        document.getElementById('collect-wood').addEventListener('click', () => {
+        bindEvent('#collect-wood', 'click', () => {
             this.collectResource('wood');
         });
         
-        document.getElementById('collect-iron').addEventListener('click', () => {
+        bindEvent('#collect-iron', 'click', () => {
             this.collectResource('iron');
         });
         
-        document.getElementById('collect-crystal').addEventListener('click', () => {
+        bindEvent('#collect-crystal', 'click', () => {
             this.collectResource('crystal');
         });
         
         // 游戏设置按钮
-        document.getElementById('save-game').addEventListener('click', () => {
-            this.saveGame();
-        });
+
         
-        document.getElementById('load-game').addEventListener('click', () => {
-            this.resetGame();
-        });
-        
-        // 导出存档按钮
-        document.getElementById('export-game').addEventListener('click', () => {
-            this.exportGame();
-        });
-        
-        // 导入存档按钮
-        document.getElementById('import-game').addEventListener('change', (e) => {
-            this.importGame(e.target.files[0]);
-        });
+
         
         // 用户相关按钮
-        document.getElementById('login-btn').addEventListener('click', () => {
+        bindEvent('#login-btn', 'click', () => {
             this.showLoginForm();
         });
         
-        document.getElementById('register-btn').addEventListener('click', () => {
+        bindEvent('#register-btn', 'click', () => {
             this.showRegisterForm();
         });
         
-        document.getElementById('logout-btn').addEventListener('click', () => {
+        bindEvent('#logout-btn', 'click', () => {
             this.logout();
         });
         
         // 装备相关按钮
-        document.getElementById('equip-item-btn').addEventListener('click', () => {
+        bindEvent('#equip-item-btn', 'click', () => {
             this.showEquipMenu();
         });
         
-        document.getElementById('unequip-item-btn').addEventListener('click', () => {
+        bindEvent('#unequip-item-btn', 'click', () => {
             this.showUnequipMenu();
         });
         
         // 背包按钮
-        document.getElementById('open-inventory-btn').addEventListener('click', () => {
+        bindEvent('#open-inventory-btn', 'click', () => {
             this.showInventory();
         });
         
         // 为装备槽位添加点击事件
-        document.querySelectorAll('.equipment-slot').forEach(slot => {
-            slot.addEventListener('click', () => {
-                const selectedSlot = slot.dataset.slot;
-                this.updateRefineInfo(selectedSlot);
-                this.updateDisassembleInfo(selectedSlot);
-                // 存储当前选中的装备槽位
-                this.selectedRefineSlot = selectedSlot;
-                // 更新装备槽位的样式
-                document.querySelectorAll('.equipment-slot').forEach(s => {
-                    s.classList.remove('border-accent');
+        try {
+            const equipmentSlots = document.querySelectorAll('.equipment-slot');
+            equipmentSlots.forEach(slot => {
+                slot.addEventListener('click', () => {
+                    const selectedSlot = slot.dataset.slot;
+                    this.updateRefineInfo(selectedSlot);
+                    this.updateDisassembleInfo(selectedSlot);
+                    // 存储当前选中的装备槽位
+                    this.selectedRefineSlot = selectedSlot;
+                    // 更新装备槽位的样式
+                    document.querySelectorAll('.equipment-slot').forEach(s => {
+                        s.classList.remove('border-accent');
+                    });
+                    slot.classList.add('border-accent');
                 });
-                slot.classList.add('border-accent');
+                
+                // 添加双击事件来卸下装备
+                slot.addEventListener('dblclick', () => {
+                    const selectedSlot = slot.dataset.slot;
+                    const item = this.gameState.player.equipment[selectedSlot];
+                    if (item) {
+                        this.unequipItem(selectedSlot);
+                    }
+                });
             });
-            
-            // 添加双击事件来卸下装备
-            slot.addEventListener('dblclick', () => {
-                const selectedSlot = slot.dataset.slot;
-                const item = this.gameState.player.equipment[selectedSlot];
-                if (item) {
-                    this.unequipItem(selectedSlot);
-                }
-            });
-        });
+            console.log(`成功绑定 ${equipmentSlots.length} 个装备槽位事件`);
+        } catch (error) {
+            console.error('绑定装备槽位事件时出错:', error);
+        }
         
         // 精炼装备按钮
-        document.getElementById('refine-weapon-btn').addEventListener('click', () => {
+        bindEvent('#refine-weapon-btn', 'click', () => {
             const slot = this.selectedRefineSlot || 'weapon';
             this.refineEquipment(slot);
         });
         
         // 分解装备按钮
-        document.getElementById('disassemble-item-btn').addEventListener('click', () => {
+        bindEvent('#disassemble-item-btn', 'click', () => {
             const slot = this.selectedRefineSlot || 'weapon';
             this.disassembleEquipment(slot);
         });
         
         // 合成装备按钮
-        document.getElementById('craft-equipment-btn').addEventListener('click', () => {
+        bindEvent('#craft-equipment-btn', 'click', () => {
             this.showCraftMenu();
         });
         
         // 自动合成装备按钮
-        document.getElementById('auto-craft-equipment-btn').addEventListener('click', () => {
+        bindEvent('#auto-craft-equipment-btn', 'click', () => {
             this.autoCraftEquipment();
         });
         
         // 一键装备最好的装备按钮
-        document.getElementById('auto-equip-btn').addEventListener('click', () => {
+        bindEvent('#auto-equip-btn', 'click', () => {
             this.autoEquipBestGear();
         });
         
         // 特殊技按钮
-        document.getElementById('skill-0').addEventListener('click', () => {
+        bindEvent('#skill-0', 'click', () => {
             this.useSkill(0);
         });
         
-        document.getElementById('skill-1').addEventListener('click', () => {
+        bindEvent('#skill-1', 'click', () => {
             this.useSkill(1);
         });
         
-        document.getElementById('skill-2').addEventListener('click', () => {
+        bindEvent('#skill-2', 'click', () => {
             this.useSkill(2);
         });
         
-        document.getElementById('skill-3').addEventListener('click', () => {
+        bindEvent('#skill-3', 'click', () => {
             this.useSkill(3);
         });
         
         // 商店购买按钮
-        document.getElementById('buy-health-potion').addEventListener('click', () => {
+        bindEvent('#buy-health-potion', 'click', () => {
             this.buyShopItem('health_potion');
         });
         
-        document.getElementById('buy-energy-potion').addEventListener('click', () => {
+        bindEvent('#buy-energy-potion', 'click', () => {
             this.buyShopItem('energy_potion');
         });
         
-        document.getElementById('buy-attack-potion').addEventListener('click', () => {
+        bindEvent('#buy-attack-potion', 'click', () => {
             this.buyShopItem('attack_potion');
         });
         
-        document.getElementById('buy-defense-potion').addEventListener('click', () => {
+        bindEvent('#buy-defense-potion', 'click', () => {
             this.buyShopItem('defense_potion');
         });
         
-        document.getElementById('buy-basic-sword').addEventListener('click', () => {
+        bindEvent('#buy-basic-sword', 'click', () => {
             this.buyShopItem('basic_sword');
         });
         
-        document.getElementById('buy-basic-armor').addEventListener('click', () => {
+        bindEvent('#buy-basic-armor', 'click', () => {
             this.buyShopItem('basic_armor');
         });
         
-        document.getElementById('buy-basic-helmet').addEventListener('click', () => {
+        bindEvent('#buy-basic-helmet', 'click', () => {
             this.buyShopItem('basic_helmet');
         });
         
-        document.getElementById('buy-basic-boots').addEventListener('click', () => {
+        // 剩余的按钮事件绑定
+        bindEvent('#buy-basic-boots', 'click', () => {
             this.buyShopItem('basic_boots');
         });
         
-        document.getElementById('reset-game').addEventListener('click', () => {
+        bindEvent('#reset-game', 'click', () => {
             this.resetGame();
         });
         
         // 设置按钮下拉菜单
-        document.getElementById('settings-btn').addEventListener('click', () => {
+        bindEvent('#settings-btn', 'click', () => {
             const dropdown = document.getElementById('settings-dropdown');
-            dropdown.classList.toggle('hidden');
+            if (dropdown) {
+                dropdown.classList.toggle('hidden');
+            }
         });
         
         // 点击其他地方关闭下拉菜单
         document.addEventListener('click', (e) => {
             const settingsBtn = document.getElementById('settings-btn');
             const dropdown = document.getElementById('settings-dropdown');
-            if (!settingsBtn.contains(e.target) && !dropdown.contains(e.target)) {
+            if (settingsBtn && dropdown && !settingsBtn.contains(e.target) && !dropdown.contains(e.target)) {
                 dropdown.classList.add('hidden');
             }
         });
         
         // 刷新敌人按钮
-        document.getElementById('refresh-enemy-btn').addEventListener('click', () => {
+        bindEvent('#refresh-enemy-btn', 'click', () => {
             this.generateMiniMap(); // 重新生成整个地图的敌人，确保与用户等级匹配
             
             // 随机刷新3D场景背景
@@ -3513,7 +3585,7 @@ class EndlessWinterGame {
         });
         
         // 攻击确认按钮
-        document.getElementById('attack-confirm-btn').addEventListener('click', () => {
+        bindEvent('#attack-confirm-btn', 'click', () => {
             if (this.gameState.enemy) {
                 this.encounterEnemy(this.gameState.enemy);
             }
@@ -3536,8 +3608,9 @@ class EndlessWinterGame {
         // 添加定期保存机制
         setInterval(() => {
             this.saveGameState();
-            console.log('定期保存游戏状态');
-        }, 30000); // 每30秒自动保存一次
+        }, 60000); // 每60秒自动保存
+        
+        console.log('事件绑定完成');
     }
     
     // 处理键盘按键事件
@@ -4348,7 +4421,10 @@ class EndlessWinterGame {
         console.log('调用了showAttackConfirmation，敌人信息:', enemyInfo);
         // 更新游戏状态中的敌人信息
         this.gameState.enemy = enemyInfo;
+        // 设置战斗状态
+        this.gameState.battle.inBattle = true;
         console.log('更新后的游戏状态敌人信息:', this.gameState.enemy);
+        console.log('设置战斗状态为:', this.gameState.battle.inBattle);
         
         // 直接更新敌人信息区域的UI元素
         const enemyNameElement = document.getElementById('enemy-name');
@@ -5611,8 +5687,13 @@ class EndlessWinterGame {
     saveGame() {
         try {
             const userId = this.gameState.user.loggedIn ? this.gameState.user.userId : 'guest';
-            localStorage.setItem(`endlessWinterGame_${userId}`, JSON.stringify(this.gameState));
-            this.addBattleLog('游戏保存成功！');
+            // 只使用服务器端保存
+            if (this.gameState.user.loggedIn) {
+                this.saveToServer(userId, this.gameState);
+                this.addBattleLog('游戏保存成功！');
+            } else {
+                this.addBattleLog('访客模式无法保存游戏！');
+            }
         } catch (error) {
             this.addBattleLog('游戏保存失败！');
             console.error('保存游戏失败:', error);
@@ -5623,13 +5704,26 @@ class EndlessWinterGame {
     loadGame() {
         try {
             const userId = this.gameState.user.loggedIn ? this.gameState.user.userId : 'guest';
-            const savedGame = localStorage.getItem(`endlessWinterGame_${userId}`);
-            if (savedGame) {
-                this.gameState = JSON.parse(savedGame);
-                this.addBattleLog('游戏加载成功！');
-                this.updateUI();
+            
+            // 保存用户信息
+            const userInfo = { ...this.gameState.user };
+            
+            // 只从服务器加载
+            if (this.gameState.user.loggedIn) {
+                const serverGameState = this.loadFromServer(userId);
+                if (serverGameState) {
+                    // 保留用户信息，只更新游戏的其他部分
+                    const { user, ...gameData } = serverGameState;
+                    this.gameState = { ...gameData, user: userInfo };
+                    console.error(serverGameState);
+                    console.error(this.gameState);
+                    this.addBattleLog('从服务器加载游戏成功！');
+                    return;
+                } else {
+                    this.addBattleLog('没有找到保存的游戏！');
+                }
             } else {
-                this.addBattleLog('没有找到保存的游戏！');
+                this.addBattleLog('访客模式无法加载游戏！');
             }
         } catch (error) {
             this.addBattleLog('游戏加载失败！');
@@ -5951,17 +6045,73 @@ class EndlessWinterGame {
         try {
             if (this.gameState.user.loggedIn) {
                 const currentUserId = this.gameState.user.userId;
-                localStorage.setItem(`endlessWinterGame_${currentUserId}`, JSON.stringify(this.gameState));
-                localStorage.setItem('endlessWinterCurrentUser', JSON.stringify(this.gameState.user));
+                // 只使用服务器端保存
+                this.saveToServer(currentUserId, this.gameState);
                 console.log('游戏状态已保存');
             } else {
-                // 保存访客状态
-                const guestId = 'guest';
-                localStorage.setItem(`endlessWinterGame_${guestId}`, JSON.stringify(this.gameState));
-                console.log('访客游戏状态已保存');
+                // 访客模式不保存游戏状态
+                console.log('访客游戏状态不保存');
             }
         } catch (error) {
             console.error('保存游戏状态失败:', error);
+        }
+    }
+    
+    // 保存到服务器
+    async saveToServer(userId, gameState) {
+        try {
+            const token = localStorage.getItem('endlessWinterToken');
+            
+            const response = await fetch('http://localhost:3001/api/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ gameState })
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                console.log('服务器端保存成功');
+            } else {
+                console.error('服务器端保存失败:', result.error);
+                // 如果token无效，重定向到登录页面
+                if (result.error === 'Invalid token' || result.error === 'No token provided') {
+                    this.logout();
+                }
+            }
+        } catch (error) {
+            console.error('服务器端保存出错:', error);
+        }
+    }
+    
+    // 从服务器加载
+    loadFromServer(userId) {
+        try {
+            const token = localStorage.getItem('endlessWinterToken');
+            
+            const response = fetch('http://localhost:3001/api/load', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            const result = response.json();
+            if (result.success) {
+                console.log('服务器端加载成功');
+                return result.gameState;
+            } else {
+                console.error('服务器端加载失败:', result.error);
+                // 如果token无效，重定向到登录页面
+                if (result.error === 'Invalid token' || result.error === 'No token provided') {
+                    this.logout();
+                }
+                return null;
+            }
+        } catch (error) {
+            console.error('服务器端加载出错:', error);
+            return null;
         }
     }
     
@@ -6557,157 +6707,7 @@ class EndlessWinterGame {
         }
     }
     
-    // 导出存档
-    exportGame() {
-        try {
-            // 先保存当前的游戏状态到localStorage，确保导出的存档包含最新的游戏状态
-            this.saveGame();
-            
-            // 收集所有用户的游戏状态
-            const allUsersData = [];
-            
-            // 遍历localStorage，找出所有用户的游戏数据
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key.startsWith('endlessWinterGame_')) {
-                    try {
-                        const userData = JSON.parse(localStorage.getItem(key));
-                        if (userData && userData.user) {
-                            allUsersData.push({
-                                userId: key.replace('endlessWinterGame_', ''),
-                                gameState: userData
-                            });
-                        }
-                    } catch (e) {
-                        console.error('解析用户数据失败:', e);
-                    }
-                }
-            }
-            
-            // 获取用户认证数据
-            const usersAuthData = localStorage.getItem('endlessWinterUsers');
-            let usersAuth;
-            try {
-                usersAuth = JSON.parse(usersAuthData || '{}');
-            } catch (e) {
-                console.error('解析用户认证数据失败:', e);
-                usersAuth = {};
-            }
-            
-            // 创建存档数据
-            const saveData = {
-                currentUser: this.gameState.user,
-                allUsers: allUsersData,
-                usersAuth: usersAuth,
-                timestamp: new Date().toISOString(),
-                version: "1.0"
-            };
-            
-            // 转换为JSON字符串
-            const jsonData = JSON.stringify(saveData, null, 2);
-            
-            // 创建Blob对象
-            const blob = new Blob([jsonData], { type: 'application/json' });
-            
-            // 创建下载链接
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `endlessWinter_save_${new Date().toISOString().slice(0, 10)}.json`;
-            a.click();
-            
-            // 清理
-            URL.revokeObjectURL(url);
-            
-            this.addBattleLog('存档导出成功！已导出所有用户数据！');
-        } catch (error) {
-            this.addBattleLog('存档导出失败！');
-            console.error('导出存档失败:', error);
-        }
-    }
     
-    // 导入存档
-    importGame(file) {
-        if (!file) return;
-        
-        try {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const saveData = JSON.parse(e.target.result);
-                    
-                    // 验证存档数据
-                    if (saveData.allUsers) {
-                        // 导入所有用户的游戏状态
-                        let importedUserCount = 0;
-                        
-                        // 遍历所有用户数据并保存
-                        for (const userData of saveData.allUsers) {
-                            if (userData.userId && userData.gameState) {
-                                localStorage.setItem(`endlessWinterGame_${userData.userId}`, JSON.stringify(userData.gameState));
-                                importedUserCount++;
-                            }
-                        }
-                        
-                        // 导入用户认证数据
-                        if (saveData.usersAuth) {
-                            localStorage.setItem('endlessWinterUsers', JSON.stringify(saveData.usersAuth));
-                            console.log('用户认证数据导入成功');
-                        }
-                        
-                        // 设置当前用户的游戏状态
-                        if (saveData.currentUser) {
-                            // 查找当前用户的游戏状态
-                            const currentUserData = saveData.allUsers.find(user => 
-                                user.userId === (saveData.currentUser.loggedIn ? saveData.currentUser.userId : 'guest')
-                            );
-                            
-                            if (currentUserData) {
-                                this.gameState = currentUserData.gameState;
-                            }
-                        } else if (saveData.allUsers.length > 0) {
-                            // 如果没有指定当前用户，使用第一个用户的数据
-                            this.gameState = saveData.allUsers[0].gameState;
-                        }
-                        
-                        this.addBattleLog(`存档导入成功！已导入 ${importedUserCount} 个用户的数据！`);
-                        this.updateUI();
-                        
-                        // 同时更新用户登录状态
-                        if (this.gameState.user) {
-                            localStorage.setItem('endlessWinterCurrentUser', JSON.stringify(this.gameState.user));
-                        }
-                    } else if (saveData.gameState) {
-                        // 兼容旧版本存档格式
-                        this.gameState = saveData.gameState;
-                        this.addBattleLog('存档导入成功！（旧版本格式）');
-                        this.updateUI();
-                        
-                        // 保存到本地存储（使用用户ID作为键）
-                        const userId = this.gameState.user.loggedIn ? this.gameState.user.userId : 'guest';
-                        localStorage.setItem(`endlessWinterGame_${userId}`, JSON.stringify(this.gameState));
-                        
-                        // 同时更新用户登录状态
-                        if (this.gameState.user) {
-                            localStorage.setItem('endlessWinterCurrentUser', JSON.stringify(this.gameState.user));
-                        }
-                    } else {
-                        this.addBattleLog('无效的存档文件！');
-                    }
-                } catch (error) {
-                    this.addBattleLog('存档解析失败！');
-                    console.error('解析存档失败:', error);
-                }
-            };
-            reader.onerror = () => {
-                this.addBattleLog('文件读取失败！');
-            };
-            reader.readAsText(file);
-        } catch (error) {
-            this.addBattleLog('存档导入失败！');
-            console.error('导入存档失败:', error);
-        }
-    }
     
     // 显示登录表单
     showLoginForm() {
@@ -6738,255 +6738,35 @@ class EndlessWinterGame {
     // 登录
     login(username, password) {
         try {
-            // 从本地存储获取用户数据
             console.log('开始登录，用户名:', username);
-            const usersData = localStorage.getItem('endlessWinterUsers');
-            console.log('用户数据:', usersData);
             
-            let users;
-            try {
-                users = JSON.parse(usersData || '{}');
-                console.log('解析后的用户数据:', users);
-            } catch (parseError) {
-                console.error('解析用户数据失败:', parseError);
-                users = {};
-                this.addBattleLog('用户数据损坏，正在修复...');
-            }
+            // 这里应该调用服务器端的登录API进行认证
+            // 暂时使用模拟认证，后续需要实现服务器端认证
             
-            let isPasswordCorrect = false;
-            let userGender = null;
-            let needUpdateGender = false;
+            // 模拟登录成功
+            const userGender = '男'; // 默认性别，可以后续修改
             
-            // 检查用户是否存在
-            if (!users[username]) {
-                console.log('用户不存在:', username);
-                
-                // 检查是否存在对应的游戏状态数据
-                const savedGame = localStorage.getItem(`endlessWinterGame_${username}`);
-                if (savedGame) {
-                    console.log('发现对应的游戏状态数据，提示用户创建密码');
-                    // 如果存在游戏状态数据，提示用户设置新密码
-                    const newPassword = prompt('用户不存在，但发现对应的游戏数据。请设置新密码以恢复账号:');
-                    if (newPassword) {
-                        // 创建新的用户认证数据
-                        users[username] = {
-                            password: newPassword,
-                            gender: '男' // 默认性别，可以后续修改
-                        };
-                        localStorage.setItem('endlessWinterUsers', JSON.stringify(users));
-                        this.addBattleLog('用户账号已恢复！请使用新设置的密码登录。');
-                        return;
-                    }
-                }
-                
-                this.addBattleLog('登录失败！用户不存在。');
-                return;
-            }
+            console.log('登录成功，开始加载游戏状态');
             
-            // 兼容旧的用户数据格式
-            if (typeof users[username] === 'string') {
-                // 旧格式：直接存储密码字符串
-                isPasswordCorrect = users[username] === password;
-                needUpdateGender = true;
-                console.log('使用旧格式验证密码，结果:', isPasswordCorrect);
-            } else if (users[username] && users[username].password) {
-                // 新格式：存储包含password和gender的对象
-                isPasswordCorrect = users[username].password === password;
-                userGender = users[username].gender;
-                needUpdateGender = !userGender;
-                console.log('使用新格式验证密码，结果:', isPasswordCorrect);
-            } else {
-                console.log('用户数据格式错误:', users[username]);
-                this.addBattleLog('登录失败！用户数据格式错误。');
-                return;
-            }
+            // 从服务器加载用户对应的游戏状态
+            this.loadGame();
             
-            if (isPasswordCorrect) {
-                console.log('密码验证成功，开始加载游戏状态');
-                // 如果需要更新性别信息
-                if (needUpdateGender) {
-                    const gender = prompt('请为您的账号选择性别 (男/女):');
-                    if (gender === '男' || gender === '女') {
-                        userGender = gender;
-                        // 更新本地存储中的用户数据
-                        users[username] = {
-                            password: typeof users[username] === 'string' ? users[username] : users[username].password,
-                            gender: gender
-                        };
-                        localStorage.setItem('endlessWinterUsers', JSON.stringify(users));
-                        this.addBattleLog('性别信息已更新！');
-                    }
-                }
-                
-                // 保存当前游戏状态（如果用户已登录）
-                if (this.gameState.user.loggedIn) {
-                    const currentUserId = this.gameState.user.userId;
-                    localStorage.setItem(`endlessWinterGame_${currentUserId}`, JSON.stringify(this.gameState));
-                }
-                
-                // 加载用户对应的游戏状态
-                const userId = username;
-                const savedGame = localStorage.getItem(`endlessWinterGame_${userId}`);
-                console.log('游戏状态数据:', savedGame);
-                
-                try {
-                    if (savedGame) {
-                        // 使用保存的游戏状态
-                        this.gameState = JSON.parse(savedGame);
-                        // 更新用户信息
-                        this.gameState.user = {
-                            loggedIn: true,
-                            username: username,
-                            userId: userId,
-                            gender: userGender
-                        };
-                        console.log('游戏状态加载成功');
-                    } else {
-                        // 创建新的游戏状态
-                        console.log('游戏状态不存在，创建新状态');
-                        this.gameState.user = {
-                            loggedIn: true,
-                            username: username,
-                            userId: userId,
-                            gender: userGender
-                        };
-                        // 重置玩家属性
-                        this.gameState.player = {
-                            level: 1,
-                            exp: 0,
-                            maxExp: 100,
-                            attack: 10,
-                            defense: 5,
-                            hp: 100,
-                            maxHp: 100,
-                            luck: 2,
-                            equipment: {
-                                weapon: null,
-                                armor: null,
-                                helmet: null,
-                                boots: null,
-                                accessory: null
-                            },
-                            equipmentEffects: {
-                                attack: 0,
-                                defense: 0,
-                                hp: 0,
-                                luck: 0
-                            },
-                            inventory: [],
-                            skills: [
-                                {
-                                    name: "强力攻击",
-                                    description: "造成2倍普通伤害",
-                                    energyCost: 20,
-                                    damageMultiplier: 2,
-                                    levelRequired: 1
-                                },
-                                {
-                                    name: "防御姿态",
-                                    description: "减少50%受到的伤害",
-                                    energyCost: 15,
-                                    defenseBonus: 0.5,
-                                    levelRequired: 10
-                                },
-                                {
-                                    name: "生命恢复",
-                                    description: "恢复20%最大生命值",
-                                    energyCost: 25,
-                                    healPercentage: 0.2,
-                                    levelRequired: 20
-                                },
-                                {
-                                    name: "幸运一击",
-                                    description: "有几率造成3倍伤害",
-                                    energyCost: 30,
-                                    criticalMultiplier: 3,
-                                    criticalChance: 0.7,
-                                    levelRequired: 30
-                                }
-                            ]
-                        };
-                    }
-                } catch (gameLoadError) {
-                    console.error('加载游戏状态失败:', gameLoadError);
-                    this.addBattleLog('游戏数据损坏，正在创建新的游戏状态...');
-                    // 创建新的游戏状态
-                    this.gameState.user = {
-                        loggedIn: true,
-                        username: username,
-                        userId: userId,
-                        gender: userGender
-                    };
-                    // 重置玩家属性
-                    this.gameState.player = {
-                        level: 1,
-                        exp: 0,
-                        maxExp: 100,
-                        attack: 10,
-                        defense: 5,
-                        hp: 100,
-                        maxHp: 100,
-                        luck: 2,
-                        equipment: {
-                            weapon: null,
-                            armor: null,
-                            helmet: null,
-                            boots: null,
-                            accessory: null
-                        },
-                        equipmentEffects: {
-                            attack: 0,
-                            defense: 0,
-                            hp: 0,
-                            luck: 0
-                        },
-                        inventory: [],
-                        skills: [
-                            {
-                                name: "强力攻击",
-                                description: "造成2倍普通伤害",
-                                energyCost: 20,
-                                damageMultiplier: 2,
-                                levelRequired: 1
-                            },
-                            {
-                                name: "防御姿态",
-                                description: "减少50%受到的伤害",
-                                energyCost: 15,
-                                defenseBonus: 0.5,
-                                levelRequired: 10
-                            },
-                            {
-                                name: "生命恢复",
-                                description: "恢复20%最大生命值",
-                                energyCost: 25,
-                                healPercentage: 0.2,
-                                levelRequired: 20
-                            },
-                            {
-                                name: "幸运一击",
-                                description: "有几率造成3倍伤害",
-                                energyCost: 30,
-                                criticalMultiplier: 3,
-                                criticalChance: 0.7,
-                                levelRequired: 30
-                            }
-                        ]
-                    };
-                }
-                
-                this.addBattleLog(`登录成功！欢迎回来，${username}！`);
-                this.updateUI();
-                this.updateCharacterBodyImage();
-                this.generateMiniMap(); // 刷新敌人，确保与用户等级匹配
-                
-                // 保存登录状态
-                localStorage.setItem('endlessWinterCurrentUser', JSON.stringify(this.gameState.user));
-                console.log('登录完成，状态已保存');
-            } else {
-                console.log('密码错误');
-                this.addBattleLog('登录失败！密码错误。');
-            }
+            // 更新用户信息
+            this.gameState.user = {
+                loggedIn: true,
+                username: username,
+                userId: username,
+                gender: userGender,
+                role: 'player'
+            };
+            
+            this.addBattleLog(`登录成功！欢迎回来，${username}！`);
+            this.updateUI();
+            this.updateCharacterBodyImage();
+            this.updateAdminControls(); // 根据用户角色更新管理控制按钮
+            this.generateMiniMap(); // 刷新敌人，确保与用户等级匹配
+            
+            console.log('登录完成');
         } catch (error) {
             console.error('登录过程中发生错误:', error);
             this.addBattleLog('登录失败！系统错误，请刷新页面重试。');
@@ -6996,32 +6776,24 @@ class EndlessWinterGame {
     // 注册
     register(username, password, gender) {
         try {
-            // 从本地存储获取用户数据
-            const users = JSON.parse(localStorage.getItem('endlessWinterUsers') || '{}');
+            // 这里应该调用服务器端的注册API
+            // 暂时使用模拟注册，后续需要实现服务器端注册
             
-            if (users[username]) {
-                this.addBattleLog('注册失败！用户名已存在。');
-            } else {
-                // 注册成功
-                users[username] = { password: password, gender: gender };
-                localStorage.setItem('endlessWinterUsers', JSON.stringify(users));
-                
-                // 自动登录
-                this.gameState.user = {
-                    loggedIn: true,
-                    username: username,
-                    userId: username,
-                    gender: gender
-                };
-                
-                this.addBattleLog(`注册成功！欢迎，${username}！`);
-                this.updateUI();
-                this.updateCharacterBodyImage();
-                this.generateMiniMap(); // 刷新敌人，确保与用户等级匹配
-                
-                // 保存登录状态
-                localStorage.setItem('endlessWinterCurrentUser', JSON.stringify(this.gameState.user));
-            }
+            // 模拟注册成功
+            // 自动登录
+            this.gameState.user = {
+                loggedIn: true,
+                username: username,
+                userId: username,
+                gender: gender,
+                role: 'player'
+            };
+            
+            this.addBattleLog(`注册成功！欢迎，${username}！`);
+            this.updateUI();
+            this.updateCharacterBodyImage();
+            this.updateAdminControls(); // 根据用户角色更新管理控制按钮
+            this.generateMiniMap(); // 刷新敌人，确保与用户等级匹配
         } catch (error) {
             this.addBattleLog('注册失败！');
             console.error('注册失败:', error);
@@ -7029,34 +6801,53 @@ class EndlessWinterGame {
     }
     
     // 登出
-    logout() {
-        // 保存当前用户的游戏状态
-        if (this.gameState.user.loggedIn) {
-            const currentUserId = this.gameState.user.userId;
-            localStorage.setItem(`endlessWinterGame_${currentUserId}`, JSON.stringify(this.gameState));
+    async logout() {
+        try {
+            // 保存当前用户的游戏状态到服务器
+            if (this.gameState.user.loggedIn) {
+                const currentUserId = this.gameState.user.userId;
+                await this.saveToServer(currentUserId, this.gameState);
+            }
+            
+            // 调用服务器端登出API
+            const token = localStorage.getItem('endlessWinterToken');
+            if (token) {
+                await fetch('http://localhost:3001/api/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+            }
+            
+            // 清除localStorage中的token和用户信息
+            localStorage.removeItem('endlessWinterToken');
+            localStorage.removeItem('endlessWinterUser');
+            
+            // 立即重定向到登录页面，添加logout参数以触发强制清除
+            // 使用 replace 方法避免浏览器历史记录问题
+            setTimeout(() => {
+                // 使用 replace 方法确保不会回到已登录状态，并添加logout参数
+                window.location.replace('login.html?logout=true');
+            }, 100);
+        } catch (error) {
+            console.error('登出错误:', error);
+            // 即使出错，也要清除本地存储并重定向到登录页面
+            localStorage.removeItem('endlessWinterToken');
+            localStorage.removeItem('endlessWinterUser');
+            window.location.replace('login.html?logout=true');
         }
+    }
+    
+    // 初始化新的游戏状态
+    initNewGameState(username, gender) {
+        // 保存用户信息
+        const userInfo = { ...this.gameState.user };
         
-        // 加载访客的游戏状态
-        const guestId = 'guest';
-        const savedGame = localStorage.getItem(`endlessWinterGame_${guestId}`);
-        
-        if (savedGame) {
-            // 使用保存的访客游戏状态
-            this.gameState = JSON.parse(savedGame);
-            this.gameState.user = {
-                loggedIn: false,
-                username: "Guest",
-                userId: "guest"
-            };
-        } else {
-            // 创建新的访客游戏状态
-            this.gameState.user = {
-                loggedIn: false,
-                username: "Guest",
-                userId: "guest"
-            };
-            // 重置玩家属性
-            this.gameState.player = {
+        // 重置游戏状态
+        this.gameState = {
+            user: userInfo,
+            player: {
                 level: 1,
                 exp: 0,
                 maxExp: 100,
@@ -7110,14 +6901,23 @@ class EndlessWinterGame {
                         levelRequired: 30
                     }
                 ]
-            };
-        }
-        
-        this.addBattleLog('登出成功！');
-        this.updateUI();
-        
-        // 清除登录状态
-        localStorage.removeItem('endlessWinterCurrentUser');
+            },
+            resources: {
+                wood: 0,
+                iron: 0,
+                crystal: 0
+            },
+            sceneMonsters: [],
+            battle: {
+                inBattle: false,
+                enemy: null,
+                battleLog: []
+            },
+            map: {
+                currentBackground: 'forest',
+                currentLocation: 'forest'
+            }
+        };
     }
     
     // 计算装备效果
