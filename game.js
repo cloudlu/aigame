@@ -529,40 +529,60 @@ class EndlessWinterGame {
                     }
                 }
                 
-                // 根据当前地图背景选择敌人类型
-                let enemyTypes = [];
-                // 确保mapBackgrounds和currentBackgroundIndex存在
-                if (this.gameState.mapBackgrounds && this.gameState.currentBackgroundIndex !== undefined) {
-                    const currentBackground = this.gameState.mapBackgrounds[this.gameState.currentBackgroundIndex];
-                    
-                    if (currentBackground) {
-                        switch (currentBackground.type) {
-                            case 'xianxia-mountain':
-                                enemyTypes = ['山妖', '岩怪', '神雕', '石精', '山魈'];
-                                break;
-                            case 'xianxia-forest':
-                                enemyTypes = ['树精', '花妖', '狐仙', '鹿灵', '木怪'];
-                                break;
-                            case 'xianxia-lake':
-                                enemyTypes = ['水怪', '蛟蛇', '龟妖', '鱼精', '水仙'];
-                                break;
-                            case 'xianxia-desert':
-                                enemyTypes = ['沙妖', '蝎精', '蛇怪', '沙漠巨蜥', '沙虫'];
-                                break;
-                            case 'xianxia-cave':
-                                enemyTypes = ['洞穴蝙蝠', '石怪', '蜘蛛精', '蚯蚓怪', '洞穴幽灵'];
-                                break;
-                            default:
-                                enemyTypes = ['妖狐', '山精', '水怪', '火灵', '土妖', '风魔', '雷兽'];
+                // 根据当前地图类型和玩家等级选择敌人
+                let selectedEnemyType;
+                if (this.gameState.enemyTypes && this.gameState.enemyTypes.length > 0) {
+                    // 获取当前地图类型
+                    let mapType = 'xianxia-mountain'; // 默认地图
+                    if (this.gameState.mapBackgrounds && this.gameState.currentBackgroundIndex !== undefined) {
+                        const currentBackground = this.gameState.mapBackgrounds[this.gameState.currentBackgroundIndex];
+                        if (currentBackground && currentBackground.type) {
+                            mapType = currentBackground.type;
                         }
-                    } else {
-                        enemyTypes = ['妖狐', '山精', '水怪', '火灵', '土妖', '风魔', '雷兽'];
+                    }
+                    
+                    // 从地图敌人映射中获取当前地图的敌人列表
+                    const mapEnemies = this.gameState.mapEnemyMapping && this.gameState.mapEnemyMapping[mapType] ? 
+                        this.gameState.mapEnemyMapping[mapType] : 
+                        this.gameState.enemyTypes.map(enemy => enemy.name);
+                    
+                    // 随机选择一个敌人名称
+                    const randomEnemyName = mapEnemies[Math.floor(Math.random() * mapEnemies.length)];
+                    
+                    // 从enemyTypes中找到对应的敌人类型
+                    selectedEnemyType = this.gameState.enemyTypes.find(enemy => enemy.name === randomEnemyName);
+                    
+                    // 如果找不到对应敌人，使用默认敌人
+                    if (!selectedEnemyType) {
+                        // 根据敌人等级选择合适的敌人类型
+                        let enemyTypeIndex = 0;
+                        if (enemyLevel >= 5) {
+                            enemyTypeIndex = Math.min(Math.floor(enemyLevel / 5), this.gameState.enemyTypes.length - 1);
+                        } else {
+                            enemyTypeIndex = Math.floor(Math.random() * Math.min(enemyLevel, this.gameState.enemyTypes.length));
+                        }
+                        
+                        // 随机选择敌人类型（有概率遇到高级敌人）
+                        const randomFactor = Math.random();
+                        if (randomFactor > 0.7 && enemyTypeIndex < this.gameState.enemyTypes.length - 1) {
+                            enemyTypeIndex++;
+                        }
+                        
+                        selectedEnemyType = this.gameState.enemyTypes[enemyTypeIndex];
                     }
                 } else {
-                    enemyTypes = ['妖狐', '山精', '水怪', '火灵', '土妖', '风魔', '雷兽'];
+                    // 如果没有敌人类型数据，使用默认值
+                    selectedEnemyType = {
+                        name: '妖狐',
+                        baseHp: 40,
+                        baseAttack: 10,
+                        baseDefense: 3,
+                        expMultiplier: 1.2,
+                        resourceMultiplier: 1.1,
+                        icon: 'fa-skull',
+                        image: `https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20fox%2C%20cute%20style%2C%20winter%20theme%2C%20simple%20background&size=512x512`
+                    };
                 }
-                
-                const enemyTypeName = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
                 
                 // 创建敌人信息
                 const enemyInfo = {
@@ -576,11 +596,11 @@ class EndlessWinterGame {
                     isElite: isElite,
                     isBoss: isBoss,
                     bonus: bonus,
-                    name: isBoss ? `BOSS${enemyTypeName}` : (isElite ? `精英${enemyTypeName}` : enemyTypeName),
-                    icon: isBoss ? 'fa-star' : (isElite ? 'fa-diamond' : 'fa-skull'),
-                    image: `https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20${enemyTypeName.toLowerCase().replace(/\s+/g, '%20')}%2C%20cute%20style%2C%20winter%20theme%2C%20simple%20background&size=512x512`,
-                    expMultiplier: 1.5 * (isBoss ? 2.0 : (isElite ? 1.5 : 1)),
-                    resourceMultiplier: 1.2 * (isBoss ? 2.0 : (isElite ? 1.5 : 1)),
+                    name: isBoss ? `BOSS${selectedEnemyType.name}` : (isElite ? `精英${selectedEnemyType.name}` : selectedEnemyType.name),
+                    icon: isBoss ? 'fa-star' : (isElite ? 'fa-diamond' : selectedEnemyType.icon),
+                    image: selectedEnemyType.image,
+                    expMultiplier: selectedEnemyType.expMultiplier * (isBoss ? 2.0 : (isElite ? 1.5 : 1)),
+                    resourceMultiplier: selectedEnemyType.resourceMultiplier * (isBoss ? 2.0 : (isElite ? 1.5 : 1)),
                     position: { x, z }, // 存储3D空间中的位置
                     cellIndex: i // 存储对应的2D格子索引
                 };
@@ -4967,21 +4987,44 @@ class EndlessWinterGame {
         const maxLevel = this.gameState.player.level + 3;
         const enemyLevel = Math.floor(Math.random() * (maxLevel - minLevel + 1)) + minLevel;
         
-        // 根据玩家等级选择敌人类型
-        let enemyTypeIndex = 0;
-        if (enemyLevel >= 5) {
-            enemyTypeIndex = Math.min(Math.floor(enemyLevel / 5), this.gameState.enemyTypes.length - 1);
-        } else {
-            enemyTypeIndex = Math.floor(Math.random() * Math.min(enemyLevel, this.gameState.enemyTypes.length));
+        // 获取当前地图类型
+        let mapType = 'xianxia-mountain'; // 默认地图
+        if (this.gameState.mapBackgrounds && this.gameState.currentBackgroundIndex !== undefined) {
+            const currentBackground = this.gameState.mapBackgrounds[this.gameState.currentBackgroundIndex];
+            if (currentBackground && currentBackground.type) {
+                mapType = currentBackground.type;
+            }
         }
         
-        // 随机选择敌人类型（有概率遇到高级敌人）
-        const randomFactor = Math.random();
-        if (randomFactor > 0.7 && enemyTypeIndex < this.gameState.enemyTypes.length - 1) {
-            enemyTypeIndex++;
-        }
+        // 从地图敌人映射中获取当前地图的敌人列表
+        const mapEnemies = this.gameState.mapEnemyMapping && this.gameState.mapEnemyMapping[mapType] ? 
+            this.gameState.mapEnemyMapping[mapType] : 
+            this.gameState.enemyTypes.map(enemy => enemy.name);
         
-        const enemyType = this.gameState.enemyTypes[enemyTypeIndex];
+        // 随机选择一个敌人名称
+        const randomEnemyName = mapEnemies[Math.floor(Math.random() * mapEnemies.length)];
+        
+        // 从enemyTypes中找到对应的敌人类型
+        let enemyType = this.gameState.enemyTypes.find(enemy => enemy.name === randomEnemyName);
+        
+        // 如果找不到对应敌人，使用默认敌人
+        if (!enemyType) {
+            // 根据玩家等级选择合适的敌人类型
+            let enemyTypeIndex = 0;
+            if (enemyLevel >= 5) {
+                enemyTypeIndex = Math.min(Math.floor(enemyLevel / 5), this.gameState.enemyTypes.length - 1);
+            } else {
+                enemyTypeIndex = Math.floor(Math.random() * Math.min(enemyLevel, this.gameState.enemyTypes.length));
+            }
+            
+            // 随机选择敌人类型（有概率遇到高级敌人）
+            const randomFactor = Math.random();
+            if (randomFactor > 0.7 && enemyTypeIndex < this.gameState.enemyTypes.length - 1) {
+                enemyTypeIndex++;
+            }
+            
+            enemyType = this.gameState.enemyTypes[enemyTypeIndex];
+        }
         
         // 计算是否为精英怪（15%概率）
         const isElite = Math.random() < 0.15;

@@ -154,8 +154,352 @@ const gameMetadata = {
             resourceMultiplier: 1.4,
             icon: "fa-bolt",
             image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20thunder%20beast%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "山妖",
+            baseHp: 75,
+            baseAttack: 14,
+            baseDefense: 5,
+            expMultiplier: 1.7,
+            resourceMultiplier: 1.3,
+            icon: "fa-mountain",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20mountain%20demon%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "岩怪",
+            baseHp: 100,
+            baseAttack: 12,
+            baseDefense: 8,
+            expMultiplier: 1.9,
+            resourceMultiplier: 1.4,
+            icon: "fa-mountain",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20rock%20golem%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "神雕",
+            baseHp: 60,
+            baseAttack: 16,
+            baseDefense: 4,
+            expMultiplier: 1.6,
+            resourceMultiplier: 1.2,
+            icon: "fa-dove",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20celestial%20eagle%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "石精",
+            baseHp: 90,
+            baseAttack: 13,
+            baseDefense: 7,
+            expMultiplier: 1.8,
+            resourceMultiplier: 1.35,
+            icon: "fa-mountain",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20stone%20spirit%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "山魈",
+            baseHp: 85,
+            baseAttack: 15,
+            baseDefense: 5,
+            expMultiplier: 1.75,
+            resourceMultiplier: 1.3,
+            icon: "fa-user",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20mountain%20spirit%20monkey%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "树精",
+            baseHp: 95,
+            baseAttack: 12,
+            baseDefense: 6,
+            expMultiplier: 1.8,
+            resourceMultiplier: 1.3,
+            icon: "fa-tree",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20tree%20spirit%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "花妖",
+            baseHp: 55,
+            baseAttack: 14,
+            baseDefense: 3,
+            expMultiplier: 1.5,
+            resourceMultiplier: 1.15,
+            icon: "fa-leaf",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20flower%20spirit%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "狐仙",
+            baseHp: 45,
+            baseAttack: 18,
+            baseDefense: 2,
+            expMultiplier: 1.6,
+            resourceMultiplier: 1.2,
+            icon: "fa-cat",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20fox%20fairy%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "鹿灵",
+            baseHp: 65,
+            baseAttack: 13,
+            baseDefense: 4,
+            expMultiplier: 1.6,
+            resourceMultiplier: 1.2,
+            icon: "fa-paw",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20deer%20spirit%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "木怪",
+            baseHp: 80,
+            baseAttack: 11,
+            baseDefense: 6,
+            expMultiplier: 1.7,
+            resourceMultiplier: 1.25,
+            icon: "fa-tree",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20wood%20monster%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "蛟蛇",
+            baseHp: 85,
+            baseAttack: 16,
+            baseDefense: 4,
+            expMultiplier: 1.75,
+            resourceMultiplier: 1.3,
+            icon: "fa-dragon",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20water%20serpent%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "龟妖",
+            baseHp: 110,
+            baseAttack: 10,
+            baseDefense: 9,
+            expMultiplier: 2.0,
+            resourceMultiplier: 1.4,
+            icon: "fa-tint",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20turtle%20demon%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "鱼精",
+            baseHp: 40,
+            baseAttack: 12,
+            baseDefense: 2,
+            expMultiplier: 1.3,
+            resourceMultiplier: 1.1,
+            icon: "fa-tint",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20fish%20spirit%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "水仙",
+            baseHp: 50,
+            baseAttack: 15,
+            baseDefense: 3,
+            expMultiplier: 1.5,
+            resourceMultiplier: 1.15,
+            icon: "fa-tint",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20water%20fairy%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "沙妖",
+            baseHp: 70,
+            baseAttack: 14,
+            baseDefense: 5,
+            expMultiplier: 1.6,
+            resourceMultiplier: 1.25,
+            icon: "fa-mountain",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20sand%20demon%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "蝎精",
+            baseHp: 65,
+            baseAttack: 17,
+            baseDefense: 3,
+            expMultiplier: 1.65,
+            resourceMultiplier: 1.25,
+            icon: "fa-bug",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20scorpion%20demon%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "蛇怪",
+            baseHp: 60,
+            baseAttack: 16,
+            baseDefense: 3,
+            expMultiplier: 1.55,
+            resourceMultiplier: 1.2,
+            icon: "fa-dragon",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20snake%20monster%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "沙漠巨蜥",
+            baseHp: 95,
+            baseAttack: 15,
+            baseDefense: 6,
+            expMultiplier: 1.85,
+            resourceMultiplier: 1.35,
+            icon: "fa-dragon",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20desert%20lizard%20giant%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "沙虫",
+            baseHp: 80,
+            baseAttack: 13,
+            baseDefense: 5,
+            expMultiplier: 1.7,
+            resourceMultiplier: 1.3,
+            icon: "fa-bug",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20sand%20worm%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "洞穴蝙蝠",
+            baseHp: 35,
+            baseAttack: 12,
+            baseDefense: 2,
+            expMultiplier: 1.2,
+            resourceMultiplier: 1.05,
+            icon: "fa-bat",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20cave%20bat%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "蜘蛛精",
+            baseHp: 55,
+            baseAttack: 14,
+            baseDefense: 3,
+            expMultiplier: 1.5,
+            resourceMultiplier: 1.15,
+            icon: "fa-bug",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20spider%20demon%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "蚯蚓怪",
+            baseHp: 70,
+            baseAttack: 10,
+            baseDefense: 5,
+            expMultiplier: 1.6,
+            resourceMultiplier: 1.2,
+            icon: "fa-bug",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20earthworm%20monster%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "洞穴幽灵",
+            baseHp: 45,
+            baseAttack: 16,
+            baseDefense: 2,
+            expMultiplier: 1.5,
+            resourceMultiplier: 1.15,
+            icon: "fa-ghost",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20cave%20ghost%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "熔岩巨兽",
+            baseHp: 120,
+            baseAttack: 18,
+            baseDefense: 7,
+            expMultiplier: 2.2,
+            resourceMultiplier: 1.6,
+            icon: "fa-fire",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20lava%20beast%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "凤凰",
+            baseHp: 85,
+            baseAttack: 20,
+            baseDefense: 4,
+            expMultiplier: 1.9,
+            resourceMultiplier: 1.4,
+            icon: "fa-fire",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20phoenix%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "火凤凰",
+            baseHp: 95,
+            baseAttack: 22,
+            baseDefense: 5,
+            expMultiplier: 2.0,
+            resourceMultiplier: 1.45,
+            icon: "fa-fire",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20fire%20phoenix%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "仙鹤",
+            baseHp: 60,
+            baseAttack: 14,
+            baseDefense: 4,
+            expMultiplier: 1.6,
+            resourceMultiplier: 1.2,
+            icon: "fa-dove",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20celestial%20crane%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "麒麟",
+            baseHp: 110,
+            baseAttack: 19,
+            baseDefense: 7,
+            expMultiplier: 2.1,
+            resourceMultiplier: 1.55,
+            icon: "fa-dragon",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20qilin%20mythical%20beast%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "龙王",
+            baseHp: 130,
+            baseAttack: 21,
+            baseDefense: 8,
+            expMultiplier: 2.3,
+            resourceMultiplier: 1.65,
+            icon: "fa-dragon",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20dragon%20king%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "海妖",
+            baseHp: 75,
+            baseAttack: 16,
+            baseDefense: 4,
+            expMultiplier: 1.7,
+            resourceMultiplier: 1.3,
+            icon: "fa-tint",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20sea%20demon%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "海怪",
+            baseHp: 105,
+            baseAttack: 15,
+            baseDefense: 6,
+            expMultiplier: 1.95,
+            resourceMultiplier: 1.4,
+            icon: "fa-tint",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20sea%20monster%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "鲛人",
+            baseHp: 65,
+            baseAttack: 17,
+            baseDefense: 3,
+            expMultiplier: 1.65,
+            resourceMultiplier: 1.25,
+            icon: "fa-user",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20mermaid%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
         }
     ],
+    
+    // 地图与敌人的映射关系
+    mapEnemyMapping: {
+        "xianxia-mountain": ["山妖", "岩怪", "神雕", "石精", "山魈", "山精", "风魔", "雷兽", "麒麟", "岩巨人", "山神", "山鬼", "山妖王", "岩妖", "石怪", "山魈王", "神雕王", "石精王", "岩怪王", "山妖王"],
+        "xianxia-forest": ["树精", "花妖", "狐仙", "鹿灵", "木怪", "妖狐", "风魔", "树妖", "花仙", "狐妖", "鹿妖", "木妖", "树精王", "花妖王", "狐仙王", "鹿灵王", "木怪王", "森林守护者", "森林精灵", "森林之王"],
+        "xianxia-lake": ["水怪", "蛟蛇", "龟妖", "鱼精", "水仙", "鲛人", "海妖", "海怪", "龙王", "水精灵", "湖妖", "水妖", "水怪王", "蛟蛇王", "龟妖王", "鱼精王", "水仙王", "鲛人王", "海妖王", "龙王"],
+        "xianxia-desert": ["沙妖", "蝎精", "蛇怪", "沙漠巨蜥", "沙虫", "风魔", "土妖", "沙漠精灵", "沙漠巨人", "沙漠守护者", "沙妖王", "蝎精王", "蛇怪王", "沙漠巨蜥王", "沙虫王", "沙漠领主", "沙漠守护神", "沙漠妖皇", "沙漠兽王", "沙漠尊者"],
+        "xianxia-cave": ["洞穴蝙蝠", "石怪", "蜘蛛精", "蚯蚓怪", "洞穴幽灵", "土妖", "岩怪", "石精", "洞穴守护者", "洞穴精灵", "洞穴蝙蝠王", "石怪王", "蜘蛛精王", "蚯蚓怪王", "洞穴幽灵王", "洞穴领主", "洞穴守护神", "洞穴妖皇", "洞穴兽王", "洞穴尊者"],
+        "xianxia-heaven": ["仙鹤", "麒麟", "凤凰", "火凤凰", "雷兽", "风魔", "天庭守卫", "天仙境者", "天庭神将", "天庭仙女", "仙鹤王", "麒麟王", "凤凰王", "火凤凰王", "雷兽王", "风魔王", "天庭守护者", "天仙境主", "天庭神将", "天庭仙女"],
+        "xianxia-volcano": ["火灵", "熔岩巨兽", "凤凰", "火凤凰", "火妖", "火山精灵", "火山守护者", "熔岩巨人", "火凤凰王", "火灵王", "熔岩巨兽王", "火山领主", "火山守护神", "火山妖皇", "火山兽王", "火山尊者", "火凤凰", "熔岩巨兽", "火灵", "火山精灵"],
+        "xianxia-beach": ["水怪", "鱼精", "鲛人", "海妖", "海怪", "龙王", "海滩精灵", "海滩守护者", "水怪王", "鱼精王", "鲛人王", "海妖王", "海怪王", "龙王", "海滩领主", "海滩守护神", "海滩妖皇", "海滩兽王", "海滩尊者", "海精灵"]
+    },
+    
+    // 地图等级范围
+    mapLevelRanges: {
+        "xianxia-mountain": { min: 1, max: 10 },
+        "xianxia-forest": { min: 5, max: 15 },
+        "xianxia-lake": { min: 10, max: 20 },
+        "xianxia-desert": { min: 15, max: 25 },
+        "xianxia-cave": { min: 20, max: 30 },
+        "xianxia-heaven": { min: 25, max: 35 },
+        "xianxia-volcano": { min: 30, max: 40 },
+        "xianxia-beach": { min: 1, max: 10 }
+    },
     
     // 特殊技
     skills: [

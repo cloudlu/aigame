@@ -172,7 +172,7 @@ app.post('/api/save', verifyToken, (req, res) => {
         }
         
         // 过滤掉元数据部分和不需要存储的临时数据
-        const metadataFields = ['equipmentRarities', 'equipmentTemplates', 'dropRates', 'enemyTypes', 'skills', 'shop', 'mapBackgrounds', 'sceneMonsters'];
+        const metadataFields = ['equipmentRarities', 'equipmentTemplates', 'dropRates', 'enemyTypes', 'skills', 'shop', 'mapBackgrounds', 'sceneMonsters', 'user'];
         metadataFields.forEach(field => {
             if (gameState[field]) {
                 delete gameState[field];
