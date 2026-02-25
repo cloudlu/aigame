@@ -1170,30 +1170,24 @@ class EndlessWinterGame {
         this.initTooltips();
         
         // 更新敌人显示
-        console.log('更新敌人显示，敌人信息:', this.gameState.enemy);
         const enemyNameElement = document.getElementById('enemy-name');
         if (enemyNameElement) {
-            console.log('更新敌人名称:', this.gameState.enemy?.name || '');
             enemyNameElement.textContent = this.gameState.enemy?.name || '';
         }
         const enemyLevelElement = document.getElementById('enemy-level');
         if (enemyLevelElement) {
-            console.log('更新敌人等级:', this.gameState.enemy?.level || '');
             enemyLevelElement.textContent = this.gameState.enemy?.level || '';
         }
         const enemyHpElement = document.getElementById('enemy-hp');
         if (enemyHpElement) {
-            console.log('更新敌人HP:', this.gameState.enemy?.hp || '');
             enemyHpElement.textContent = this.gameState.enemy?.hp || '';
         }
         const enemyMaxHpElement = document.getElementById('enemy-max-hp');
         if (enemyMaxHpElement) {
-            console.log('更新敌人最大HP:', this.gameState.enemy?.maxHp || '');
             enemyMaxHpElement.textContent = this.gameState.enemy?.maxHp || '';
         }
         const enemyAttackElement = document.getElementById('enemy-attack');
         if (enemyAttackElement) {
-            console.log('更新敌人攻击:', this.gameState.enemy?.attack || '');
             enemyAttackElement.textContent = this.gameState.enemy?.attack || '';
         }
         
@@ -1424,7 +1418,7 @@ class EndlessWinterGame {
         
         // 只有在没有敌人信息时才隐藏敌人信息区
         // 这样2D敌人点击后信息会保持显示
-        if (!this.gameState.battle.inBattle && !this.gameState.enemy.name) {
+        if (!this.gameState.battle.inBattle && !this.gameState.enemy) {
             this.hideEnemyInfo();
         }
     }
@@ -2429,18 +2423,20 @@ class EndlessWinterGame {
             this.battle3D.playerEnergyBar.fill.position.x = (playerEnergyPercent - 1) * 0.7;
         }
         
-        // 更新敌人血条
-        if (this.battle3D.enemyHealthBar && this.battle3D.enemyHealthBar.fill) {
-            const enemyHealthPercent = Math.max(0, this.gameState.enemy.hp / this.gameState.enemy.maxHp);
-            this.battle3D.enemyHealthBar.fill.scale.x = enemyHealthPercent;
-            this.battle3D.enemyHealthBar.fill.position.x = (enemyHealthPercent - 1) * 0.7;
-        }
-        
-        // 更新敌人能量条（如果是BOSS）
-        if (this.battle3D.enemyEnergyBar && this.battle3D.enemyEnergyBar.fill && this.gameState.enemy.isBoss) {
-            const enemyEnergyPercent = Math.max(0, this.gameState.enemy.energy / this.gameState.enemy.maxEnergy);
-            this.battle3D.enemyEnergyBar.fill.scale.x = enemyEnergyPercent;
-            this.battle3D.enemyEnergyBar.fill.position.x = (enemyEnergyPercent - 1) * 0.7;
+        if(this.gameState.enemy && this.gameState.enemy.name) {
+            // 更新敌人血条
+            if (this.battle3D.enemyHealthBar && this.battle3D.enemyHealthBar.fill) {
+                const enemyHealthPercent = Math.max(0, this.gameState.enemy.hp / this.gameState.enemy.maxHp);
+                this.battle3D.enemyHealthBar.fill.scale.x = enemyHealthPercent;
+                this.battle3D.enemyHealthBar.fill.position.x = (enemyHealthPercent - 1) * 0.7;
+            }
+            
+            // 更新敌人能量条（如果是BOSS）
+            if (this.battle3D.enemyEnergyBar && this.battle3D.enemyEnergyBar.fill && this.gameState.enemy.isBoss) {
+                const enemyEnergyPercent = Math.max(0, this.gameState.enemy.energy / this.gameState.enemy.maxEnergy);
+                this.battle3D.enemyEnergyBar.fill.scale.x = enemyEnergyPercent;
+                this.battle3D.enemyEnergyBar.fill.position.x = (enemyEnergyPercent - 1) * 0.7;
+            }
         }
     }
     
@@ -3706,16 +3702,15 @@ class EndlessWinterGame {
             
             this.isMoving = true;
             console.log('设置鼠标目标位置:', this.mouseTarget);
+            
         }
     }
     
     // 检查玩家与敌人的碰撞
     checkEnemyCollision() {
         if (!this.battle3D || !this.battle3D.player || !this.battle3D.enemies) return;
-        
         const playerPos = this.battle3D.player.position;
         let enemyEncountered = false;
-        
         // 遍历所有敌人，检查碰撞
         for (let i = 0; i < this.battle3D.enemies.length; i++) {
             const enemy = this.battle3D.enemies[i];
@@ -3736,7 +3731,6 @@ class EndlessWinterGame {
                 }
             }
         }
-        
         // 如果没有碰到敌人，确保敌人信息区域显示默认状态（空白）
         if (!enemyEncountered && !this.gameState.battle.inBattle) {
             // 无论当前是否有敌人信息，都隐藏敌人信息区
@@ -3928,11 +3922,11 @@ class EndlessWinterGame {
     
     // 淡出战斗场景并恢复地图场景
     fadeOutAndRestoreMapScene() {
+
         if (!this.battle3D || !this.battle3D.renderer || !this.battle3D.renderer.domElement) {
             this.restoreMapScene();
             return;
         }
-        
         const rendererElement = this.battle3D.renderer.domElement;
         let opacity = 1;
         const fadeDuration = 1000; // 淡出持续时间（毫秒）
@@ -3950,7 +3944,6 @@ class EndlessWinterGame {
                 this.restoreMapScene();
             }
         };
-        
         fadeOut();
     }
     
@@ -5683,22 +5676,6 @@ class EndlessWinterGame {
         battleLogElement.scrollTop = battleLogElement.scrollHeight;
     }
     
-    // 保存游戏
-    saveGame() {
-        try {
-            const userId = this.gameState.user.loggedIn ? this.gameState.user.userId : 'guest';
-            // 只使用服务器端保存
-            if (this.gameState.user.loggedIn) {
-                this.saveToServer(userId, this.gameState);
-                this.addBattleLog('游戏保存成功！');
-            } else {
-                this.addBattleLog('访客模式无法保存游戏！');
-            }
-        } catch (error) {
-            this.addBattleLog('游戏保存失败！');
-            console.error('保存游戏失败:', error);
-        }
-    }
     
     // 加载游戏
     loadGame() {
@@ -5710,18 +5687,17 @@ class EndlessWinterGame {
             
             // 只从服务器加载
             if (this.gameState.user.loggedIn) {
-                const serverGameState = this.loadFromServer(userId);
-                if (serverGameState) {
-                    // 保留用户信息，只更新游戏的其他部分
-                    const { user, ...gameData } = serverGameState;
-                    this.gameState = { ...gameData, user: userInfo };
-                    console.error(serverGameState);
-                    console.error(this.gameState);
-                    this.addBattleLog('从服务器加载游戏成功！');
-                    return;
-                } else {
-                    this.addBattleLog('没有找到保存的游戏！');
-                }
+                (async () => {
+                    const serverGameState = await this.loadFromServer(userId);
+                    if (serverGameState) {
+                        // 保留用户信息，只更新游戏的其他部分
+                        const { user, ...gameData } = serverGameState;
+                        this.gameState = { ...gameData, user: userInfo };
+                        this.addBattleLog('从服务器加载游戏成功！');
+                    } else {
+                        this.addBattleLog('没有找到保存的游戏！');
+                    }
+                })();
             } else {
                 this.addBattleLog('访客模式无法加载游戏！');
             }
@@ -6035,9 +6011,6 @@ class EndlessWinterGame {
         // 添加日志
         this.addBattleLog(`成功分解${slot === 'weapon' ? '武器' : slot === 'armor' ? '护甲' : slot === 'helmet' ? '头盔' : slot === 'boots' ? '靴子' : '饰品'} ${item.name}！`);
         this.addBattleLog(`获得了 ${returns.wood} 木材，${returns.iron} 铁矿，${returns.crystal} 水晶！`);
-        
-        // 分解后保存游戏状态
-        this.saveGameState();
     }
     
     // 保存游戏状态
@@ -6087,17 +6060,17 @@ class EndlessWinterGame {
     }
     
     // 从服务器加载
-    loadFromServer(userId) {
+    async loadFromServer(userId) {
         try {
             const token = localStorage.getItem('endlessWinterToken');
             
-            const response = fetch('http://localhost:3001/api/load', {
+            const response = await fetch('http://localhost:3001/api/load', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
             });
             
-            const result = response.json();
+            const result = await response.json();
             if (result.success) {
                 console.log('服务器端加载成功');
                 return result.gameState;
@@ -6235,8 +6208,6 @@ class EndlessWinterGame {
             this.addBattleLog(`消耗了3个${craftable.level}级${craftable.typeName}，只获得了1个${craftable.level}级${failedEquipment.name}！`);
         }
         
-        // 合成后保存游戏状态
-        this.saveGameState();
     }
     
     // 自动合成装备
@@ -6331,9 +6302,6 @@ class EndlessWinterGame {
         } else {
             this.addBattleLog('背包中没有比当前装备更好的装备！');
         }
-        
-        // 保存游戏状态
-        this.saveGameState();
     }
     
     // 生成合成后的装备
