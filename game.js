@@ -37,87 +37,14 @@ class EndlessWinterGame {
                 // 背包
                 inventory: [],
                 // 特殊技
-                skills: [
-                    {
-                        name: "强力攻击",
-                        description: "造成2倍普通伤害",
-                        energyCost: 20,
-                        damageMultiplier: 2,
-                        levelRequired: 1
-                    },
-                    {
-                        name: "防御姿态",
-                        description: "减少50%受到的伤害",
-                        energyCost: 15,
-                        defenseBonus: 0.5,
-                        levelRequired: 10
-                    },
-                    {
-                        name: "生命恢复",
-                        description: "恢复20%最大生命值",
-                        energyCost: 25,
-                        healPercentage: 0.2,
-                        levelRequired: 20
-                    },
-                    {
-                        name: "幸运一击",
-                        description: "有几率造成3倍伤害",
-                        energyCost: 30,
-                        criticalMultiplier: 3,
-                        criticalChance: 0.7,
-                        levelRequired: 30
-                    }
-                ]
+                skills: []
             },
             // 装备品质定义
-            equipmentRarities: [
-                { name: "white", displayName: "白色", multiplier: 1, color: "text-gray-400" },
-                { name: "blue", displayName: "蓝色", multiplier: 1.5, color: "text-blue-400" },
-                { name: "purple", displayName: "紫色", multiplier: 2, color: "text-purple-400" },
-                { name: "gold", displayName: "黄金", multiplier: 2.5, color: "text-yellow-400" },
-                { name: "legendary", displayName: "传奇", multiplier: 3, color: "text-orange-400" }
-            ],
+            equipmentRarities: [],
             // 装备模板
-            equipmentTemplates: [
-                {
-                    type: "weapon",
-                    baseStats: { attack: 5 },
-                    namePrefixes: ["", "锋利的", "坚固的", "魔法的", "神圣的", "传奇的"],
-                    nameSuffixes: ["剑", "长刀", "战斧", "长矛", "匕首", "大剑"]
-                },
-                {
-                    type: "armor",
-                    baseStats: { defense: 3 },
-                    namePrefixes: ["", "轻便的", "坚固的", "魔法的", "神圣的", "传奇的"],
-                    nameSuffixes: ["护甲", "胸甲", "锁甲", "板甲", "皮甲", "鳞甲"]
-                },
-                {
-                    type: "helmet",
-                    baseStats: { defense: 2, hp: 10 },
-                    namePrefixes: ["", "轻便的", "坚固的", "魔法的", "神圣的", "传奇的"],
-                    nameSuffixes: ["头盔", "头冠", "兜帽", "面具", "头盔", "战盔"]
-                },
-                {
-                    type: "boots",
-                    baseStats: { defense: 1, luck: 1 },
-                    namePrefixes: ["", "轻便的", "坚固的", "魔法的", "神圣的", "传奇的"],
-                    nameSuffixes: ["靴子", "战靴", "皮靴", "钢靴", "魔靴", "神靴"]
-                },
-                {
-                    type: "accessory",
-                    baseStats: { luck: 2, hp: 5 },
-                    namePrefixes: ["", "简单的", "精致的", "魔法的", "神圣的", "传奇的"],
-                    nameSuffixes: ["戒指", "项链", "护符", "徽章"]
-                }
-            ],
+            equipmentTemplates: [],
             // 装备掉落概率
-            dropRates: {
-                white: 0.4,
-                blue: 0.3,
-                purple: 0.15,
-                gold: 0.1,
-                legendary: 0.05
-            },
+            dropRates: {},
             // 资源系统
             resources: {
                 energy: 100,
@@ -131,108 +58,7 @@ class EndlessWinterGame {
                 crystalRate: 0.2
             },
             // 敌人类型
-            enemyTypes: [
-                {
-                    name: "雪原狼",
-                    baseHp: 30,
-                    baseAttack: 8,
-                    baseDefense: 2,
-                    expMultiplier: 1,
-                    resourceMultiplier: 1,
-                    icon: "fa-skull",
-                    image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20snow%20wolf%2C%20cute%20style%2C%20winter%20theme%2C%20simple%20background&size=512x512"
-                },
-                {
-                    name: "冰原熊",
-                    baseHp: 60,
-                    baseAttack: 12,
-                    baseDefense: 4,
-                    expMultiplier: 1.5,
-                    resourceMultiplier: 1.2,
-                    icon: "fa-paw",
-                    image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20ice%20bear%2C%20cute%20style%2C%20winter%20theme%2C%20simple%20background&size=512x512"
-                },
-                {
-                    name: "冰霜巨人",
-                    baseHp: 100,
-                    baseAttack: 18,
-                    baseDefense: 6,
-                    expMultiplier: 2,
-                    resourceMultiplier: 1.5,
-                    icon: "fa-user",
-                    image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20frost%20giant%2C%20cute%20style%2C%20winter%20theme%2C%20simple%20background&size=512x512"
-                },
-                {
-                    name: "妖狐",
-                    baseHp: 40,
-                    baseAttack: 10,
-                    baseDefense: 3,
-                    expMultiplier: 1.2,
-                    resourceMultiplier: 1.1,
-                    icon: "fa-cat",
-                    image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20fox%20spirit%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
-                },
-                {
-                    name: "山精",
-                    baseHp: 80,
-                    baseAttack: 15,
-                    baseDefense: 5,
-                    expMultiplier: 1.8,
-                    resourceMultiplier: 1.3,
-                    icon: "fa-tree",
-                    image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20mountain%20spirit%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
-                },
-                {
-                    name: "水怪",
-                    baseHp: 70,
-                    baseAttack: 14,
-                    baseDefense: 4,
-                    expMultiplier: 1.6,
-                    resourceMultiplier: 1.25,
-                    icon: "fa-tint",
-                    image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20water%20monster%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
-                },
-                {
-                    name: "火灵",
-                    baseHp: 50,
-                    baseAttack: 20,
-                    baseDefense: 2,
-                    expMultiplier: 1.4,
-                    resourceMultiplier: 1.15,
-                    icon: "fa-fire",
-                    image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20fire%20spirit%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
-                },
-                {
-                    name: "土妖",
-                    baseHp: 120,
-                    baseAttack: 16,
-                    baseDefense: 8,
-                    expMultiplier: 2.2,
-                    resourceMultiplier: 1.6,
-                    icon: "fa-mountain",
-                    image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20earth%20demon%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
-                },
-                {
-                    name: "风魔",
-                    baseHp: 60,
-                    baseAttack: 18,
-                    baseDefense: 3,
-                    expMultiplier: 1.7,
-                    resourceMultiplier: 1.3,
-                    icon: "fa-wind",
-                    image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20wind%20demon%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
-                },
-                {
-                    name: "雷兽",
-                    baseHp: 90,
-                    baseAttack: 22,
-                    baseDefense: 4,
-                    expMultiplier: 2.0,
-                    resourceMultiplier: 1.4,
-                    icon: "fa-bolt",
-                    image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20thunder%20beast%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
-                }
-            ],
+            enemyTypes: [],
             // 默认当前敌人为空
             enemy: [],
             // 游戏设置
@@ -264,88 +90,7 @@ class EndlessWinterGame {
             },
             // 商店系统
             shop: {
-                items: [
-                    {
-                        id: "health_potion",
-                        name: "生命药水",
-                        description: "恢复50%最大生命值",
-                        price: 50,
-                        type: "consumable",
-                        effect: "heal",
-                        value: 0.5
-                    },
-                    {
-                        id: "energy_potion",
-                        name: "能量药水",
-                        description: "恢复满能量",
-                        price: 30,
-                        type: "consumable",
-                        effect: "energy",
-                        value: 1
-                    },
-                    {
-                        id: "attack_potion",
-                        name: "攻击药水",
-                        description: "临时提升20%攻击力",
-                        price: 40,
-                        type: "consumable",
-                        effect: "attack",
-                        value: 0.2
-                    },
-                    {
-                        id: "defense_potion",
-                        name: "防御药水",
-                        description: "临时提升20%防御力",
-                        price: 40,
-                        type: "consumable",
-                        effect: "defense",
-                        value: 0.2
-                    },
-                    {
-                        id: "basic_sword",
-                        name: "基础剑",
-                        description: "基础攻击力+10",
-                        price: 100,
-                        type: "equipment",
-                        equipmentType: "weapon",
-                        stats: { attack: 10 },
-                        level: 1,
-                        refineLevel: 0
-                    },
-                    {
-                        id: "basic_armor",
-                        name: "基础护甲",
-                        description: "基础防御力+8",
-                        price: 80,
-                        type: "equipment",
-                        equipmentType: "armor",
-                        stats: { defense: 8 },
-                        level: 1,
-                        refineLevel: 0
-                    },
-                    {
-                        id: "basic_helmet",
-                        name: "基础头盔",
-                        description: "基础防御力+5，生命值+20",
-                        price: 60,
-                        type: "equipment",
-                        equipmentType: "helmet",
-                        stats: { defense: 5, hp: 20 },
-                        level: 1,
-                        refineLevel: 0
-                    },
-                    {
-                        id: "basic_boots",
-                        name: "基础靴子",
-                        description: "基础防御力+3，幸运值+2",
-                        price: 40,
-                        type: "equipment",
-                        equipmentType: "boots",
-                        stats: { defense: 3, luck: 2 },
-                        level: 1,
-                        refineLevel: 0
-                    }
-                ]
+                items: []
             }
         };
         
@@ -372,39 +117,114 @@ class EndlessWinterGame {
         
         // 只有在用户登录成功后才继续初始化
         if (this.gameState.user.loggedIn) {
-            // 登录和加载完成后继续初始化
-            this.generateMapBackgrounds();
-            this.preloadImages();
-            
-            // 加载纹理（提前加载，确保3D场景初始化时纹理已准备好）
-            this.loadTextures();
-            
-            // 只有在没有保存的场景怪物数据时才生成新的
-            this.generateMiniMap();
-            
-            // 确保所有装备都有refineLevel属性
-            for (const slot in this.gameState.player.equipment) {
-                const item = this.gameState.player.equipment[slot];
-                if (item && item.refineLevel === undefined) {
-                    item.refineLevel = 0;
+            // 先获取元数据，然后再初始化其他内容
+            this.fetchGameMetadata().then(() => {
+                // 登录和加载完成后继续初始化
+                this.preloadImages();
+                
+                // 加载纹理（提前加载，确保3D场景初始化时纹理已准备好）
+                this.loadTextures();
+                
+                // 只有在没有保存的场景怪物数据时才生成新的
+                this.generateMiniMap();
+                
+                // 确保所有装备都有refineLevel属性
+                for (const slot in this.gameState.player.equipment) {
+                    const item = this.gameState.player.equipment[slot];
+                    if (item && item.refineLevel === undefined) {
+                        item.refineLevel = 0;
+                    }
                 }
+                
+                // 隐藏敌人信息区
+                this.hideEnemyInfo();
+                
+                // 初始化3D战斗场景
+                this.initBattle3DScene();
+                
+                // 更新 UI 和绑定事件
+                this.updateMapBackgroundUI(); // 设置初始地图背景
+                this.updateCharacterBodyImage();
+                this.updateUI();
+                this.updateAdminControls(); // 根据用户角色更新管理控制按钮
+                this.bindEvents();
+                
+                // 开始资源生成
+                this.startResourceGeneration();
+            }).catch(error => {
+                console.error('获取元数据失败:', error);
+                // 不再使用本地 fallback 机制，直接显示错误信息
+                this.addBattleLog('无法从服务器加载游戏数据，请检查服务器连接！');
+                // 仍然继续初始化其他功能，即使没有元数据
+                this.preloadImages();
+                this.loadTextures();
+                this.generateMiniMap();
+                this.hideEnemyInfo();
+                this.initBattle3DScene();
+                this.updateMapBackgroundUI();
+                this.updateCharacterBodyImage();
+                this.updateUI();
+                this.updateAdminControls();
+                this.bindEvents();
+                this.startResourceGeneration();
+            });
+        }
+    }
+    
+    // 从服务器获取游戏元数据
+    async fetchGameMetadata() {
+        try {
+            // 获取token
+            const token = localStorage.getItem('endlessWinterToken');
+            if (!token) {
+                throw new Error('用户未登录，无法获取游戏数据');
             }
             
-            // 隐藏敌人信息区
-            this.hideEnemyInfo();
+            // 确保使用正确的端口和路径
+            const response = await fetch('/api/metadata', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
             
-            // 初始化3D战斗场景
-            this.initBattle3DScene();
+            // 检查响应结构
+            if (!data.success || !data.metadata) {
+                throw new Error('无效的元数据响应');
+            }
             
-            // 更新 UI 和绑定事件
-            this.updateMapBackgroundUI(); // 设置初始地图背景
-            this.updateCharacterBodyImage();
-            this.updateUI();
-            this.updateAdminControls(); // 根据用户角色更新管理控制按钮
-            this.bindEvents();
+            const metadata = data.metadata;
             
-            // 开始资源生成
-            this.startResourceGeneration();
+            // 更新游戏状态中的元数据
+            if (metadata.equipmentRarities) {
+                this.gameState.equipmentRarities = metadata.equipmentRarities;
+            }
+            if (metadata.equipmentTemplates) {
+                this.gameState.equipmentTemplates = metadata.equipmentTemplates;
+            }
+            if (metadata.dropRates) {
+                this.gameState.dropRates = metadata.dropRates;
+            }
+            if (metadata.enemyTypes) {
+                this.gameState.enemyTypes = metadata.enemyTypes;
+            }
+            if (metadata.skills) {
+                this.gameState.player.skills = metadata.skills;
+            }
+            if (metadata.shop) {
+                this.gameState.shop = metadata.shop;
+            }
+            if (metadata.mapBackgrounds) {
+                this.gameState.mapBackgrounds = metadata.mapBackgrounds;
+            }
+            
+            this.addBattleLog('从服务器加载游戏数据成功！');
+        } catch (error) {
+            console.error('获取元数据失败:', error);
+            throw error;
         }
     }
     
@@ -441,20 +261,14 @@ class EndlessWinterGame {
     
     // 加载纹理
     loadTextures() {
-        console.log('开始加载纹理...');
-        
         // 存储纹理
         this.textures = {};
         
         // 创建纹理加载器
         this.textureLoader = new THREE.TextureLoader();
         
-        // 添加时间戳避免缓存
-        const timestamp = new Date().getTime();
-        
-        // 加载地面纹理 - 使用URL形式
-        const groundUrl = `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20style%20xianxia%20ground%20texture%2C%20ancient%20chinese%20landscape%2C%20high%20quality%20texture%2C%20ink%20painting%20style&image_size=square&t=${timestamp}`;
-        console.log('加载地面纹理:', groundUrl);
+        // 加载地面纹理 - 使用本地图片
+        const groundUrl = 'Images/image_1.png';
         this.textureLoader.load(
             groundUrl,
             (texture) => {
@@ -462,196 +276,59 @@ class EndlessWinterGame {
                 this.textures.ground.wrapS = THREE.RepeatWrapping;
                 this.textures.ground.wrapT = THREE.RepeatWrapping;
                 this.textures.ground.repeat.set(5, 5);
-                console.log('地面纹理加载完成');
             },
             (xhr) => {
-                console.log('地面纹理加载进度:', (xhr.loaded / xhr.total * 100) + '%');
             },
             (error) => {
-                console.log('地面纹理加载失败:', error);
                 // 加载失败时不创建空纹理，让后续代码使用默认颜色
                 this.textures.ground = null;
             }
         );
         
-        // 加载天空纹理 - 使用URL形式
-        const skyUrl = `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20style%20xianxia%20sky%20texture%2C%20ancient%20chinese%20sky%2C%20clouds%2C%20high%20quality%20texture%2C%20ink%20painting%20style&image_size=square&t=${timestamp}`;
-        console.log('加载天空纹理:', skyUrl);
+        // 加载天空纹理 - 使用本地图片
+        const skyUrl = 'Images/image_2.png';
         this.textureLoader.load(
             skyUrl,
             (texture) => {
                 this.textures.sky = texture;
-                console.log('天空纹理加载完成');
             },
             (xhr) => {
-                console.log('天空纹理加载进度:', (xhr.loaded / xhr.total * 100) + '%');
             },
             (error) => {
-                console.log('天空纹理加载失败:', error);
                 // 加载失败时不创建空纹理，让后续代码使用默认颜色
                 this.textures.sky = null;
             }
         );
         
-        // 加载人物纹理 - 使用URL形式
-        const characterUrl = `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20style%20xianxia%20character%20texture%2C%20ancient%20chinese%20warrior%2C%20high%20quality%20texture%2C%20ink%20painting%20style&image_size=square&t=${timestamp}`;
-        console.log('加载人物纹理:', characterUrl);
+        // 加载人物纹理 - 使用本地图片
+        const characterUrl = 'Images/image_3.png';
         this.textureLoader.load(
             characterUrl,
             (texture) => {
                 this.textures.character = texture;
-                console.log('人物纹理加载完成');
             },
             (xhr) => {
-                console.log('人物纹理加载进度:', (xhr.loaded / xhr.total * 100) + '%');
             },
             (error) => {
-                console.log('人物纹理加载失败:', error);
                 // 加载失败时不创建空纹理，让后续代码使用默认颜色
                 this.textures.character = null;
             }
         );
         
-        // 加载敌人纹理 - 使用URL形式
-        const enemyUrl = `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20style%20xianxia%20fantasy%20beast%20texture%2C%20ancient%20chinese%20mythical%20creature%2C%20high%20quality%20texture%2C%20ink%20painting%20style&image_size=square&t=${timestamp}`;
-        console.log('加载敌人纹理:', enemyUrl);
+        // 加载敌人纹理 - 使用本地图片
+        const enemyUrl = 'Images/image_4.png';
         this.textureLoader.load(
             enemyUrl,
             (texture) => {
                 this.textures.enemy = texture;
-                console.log('敌人纹理加载完成');
             },
             (xhr) => {
-                console.log('敌人纹理加载进度:', (xhr.loaded / xhr.total * 100) + '%');
             },
             (error) => {
-                console.log('敌人纹理加载失败:', error);
                 // 加载失败时不创建空纹理，让后续代码使用默认颜色
                 this.textures.enemy = null;
             }
         );
-        
-        console.log('纹理加载完成');
-    }
-    
-    // 生成3D地图背景配置
-    generateMapBackgrounds() {
-        // 添加时间戳避免缓存
-        const timestamp = new Date().getTime();
-        
-        // 生成10个不同的仙侠风格3D地图背景配置
-        this.gameState.mapBackgrounds = [
-            {
-                type: "xianxia-mountain",
-                name: "仙侠山峰",
-                skyColor: 0x87ceeb,
-                groundColor: 0x8b4513,
-                fogColor: 0x87ceeb,
-                fogNear: 10,
-                fogFar: 50,
-                features: ["mountains", "clouds", "ancient temples"],
-                imageUrl: `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20style%20xianxia%20mountain%20landscape%2C%20ancient%20chinese%20mountains%2C%20high%20quality%2C%20ink%20painting%20style&image_size=square&t=${timestamp}`
-            },
-            {
-                type: "xianxia-forest",
-                name: "仙侠森林",
-                skyColor: 0x4d88ff,
-                groundColor: 0x228b22,
-                fogColor: 0x4d88ff,
-                fogNear: 10,
-                fogFar: 50,
-                features: ["ancient trees", "magical creatures", "spirit stones"],
-                imageUrl: `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20style%20xianxia%20forest%2C%20ancient%20chinese%20forest%2C%20high%20quality%2C%20ink%20painting%20style&image_size=square&t=${timestamp}`
-            },
-            {
-                type: "xianxia-lake",
-                name: "仙侠湖泊",
-                skyColor: 0x0066cc,
-                groundColor: 0x0099ff,
-                fogColor: 0x0066cc,
-                fogNear: 10,
-                fogFar: 50,
-                features: ["crystal clear water", "lotus flowers", "water spirits"],
-                imageUrl: `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20style%20xianxia%20lake%2C%20ancient%20chinese%20lake%2C%20lotus%20flowers%2C%20high%20quality%2C%20ink%20painting%20style&image_size=square&t=${timestamp}`
-            },
-            {
-                type: "xianxia-desert",
-                name: "仙侠沙漠",
-                skyColor: 0xffcc66,
-                groundColor: 0xffcc66,
-                fogColor: 0xffcc66,
-                fogNear: 10,
-                fogFar: 50,
-                features: ["ancient ruins", "sand dunes", "mirages"],
-                imageUrl: `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20style%20xianxia%20desert%2C%20ancient%20chinese%20desert%2C%20ancient%20ruins%2C%20high%20quality%2C%20ink%20painting%20style&image_size=square&t=${timestamp}`
-            },
-            {
-                type: "xianxia-cave",
-                name: "仙侠洞穴",
-                skyColor: 0x333333,
-                groundColor: 0x666666,
-                fogColor: 0x333333,
-                fogNear: 5,
-                fogFar: 20,
-                features: ["spirit crystals", "ancient inscriptions", "magical beasts"],
-                imageUrl: `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20style%20xianxia%20cave%2C%20ancient%20chinese%20cave%2C%20spirit%20crystals%2C%20high%20quality%2C%20ink%20painting%20style&image_size=square&t=${timestamp}`
-            },
-            {
-                type: "xianxia-heaven",
-                name: "仙侠仙境",
-                skyColor: 0x87ceeb,
-                groundColor: 0xffffff,
-                fogColor: 0x87ceeb,
-                fogNear: 10,
-                fogFar: 50,
-                features: ["floating islands", "celestial palaces", "divine beasts"],
-                imageUrl: `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20style%20xianxia%20heaven%2C%20floating%20islands%2C%20celestial%20palaces%2C%20high%20quality%2C%20ink%20painting%20style&image_size=square&t=${timestamp}`
-            },
-            {
-                type: "xianxia-volcano",
-                name: "仙侠火山",
-                skyColor: 0xff6633,
-                groundColor: 0x8b4513,
-                fogColor: 0xff6633,
-                fogNear: 10,
-                fogFar: 50,
-                features: ["magical lava", "fire spirits", "ancient fire temples"],
-                imageUrl: `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20style%20xianxia%20volcano%2C%20magical%20lava%2C%20fire%20spirits%2C%20high%20quality%2C%20ink%20painting%20style&image_size=square&t=${timestamp}`
-            },
-            {
-                type: "xianxia-beach",
-                name: "仙侠海滩",
-                skyColor: 0x87ceeb,
-                groundColor: 0xffffcc,
-                fogColor: 0x87ceeb,
-                fogNear: 10,
-                fogFar: 50,
-                features: ["golden sand", "magical pearls", "sea spirits"],
-                imageUrl: `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20style%20xianxia%20beach%2C%20golden%20sand%2C%20magical%20pearls%2C%20high%20quality%2C%20ink%20painting%20style&image_size=square&t=${timestamp}`
-            },
-            {
-                type: "xianxia-plains",
-                name: "仙侠平原",
-                skyColor: 0x87ceeb,
-                groundColor: 0x90ee90,
-                fogColor: 0x87ceeb,
-                fogNear: 10,
-                fogFar: 50,
-                features: ["ancient battlefields", "spirit herbs", "wandering cultivators"],
-                imageUrl: `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20style%20xianxia%20plains%2C%20ancient%20battlefields%2C%20spirit%20herbs%2C%20high%20quality%2C%20ink%20painting%20style&image_size=square&t=${timestamp}`
-            },
-            {
-                type: "xianxia-canyon",
-                name: "仙侠峡谷",
-                skyColor: 0x87ceeb,
-                groundColor: 0x8b4513,
-                fogColor: 0x87ceeb,
-                fogNear: 10,
-                fogFar: 50,
-                features: ["deep gorges", "ancient bridges", "wind spirits"],
-                imageUrl: `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20style%20xianxia%20canyon%2C%20deep%20gorges%2C%20ancient%20bridges%2C%20high%20quality%2C%20ink%20painting%20style&image_size=square&t=${timestamp}`
-            }
-        ];
     }
     
     // 更新地图背景
@@ -721,7 +398,7 @@ class EndlessWinterGame {
         const eliteCount = Math.ceil(totalEnemies * 0.3); // 30% 精英
         const normalCount = totalEnemies - bossCount - eliteCount; // 剩下的普通怪
         
-        console.log(`生成敌人: 总数=${totalEnemies}, BOSS=${bossCount}, 精英=${eliteCount}, 普通=${normalCount}`);
+        
         
         // 创建敌人分布
         const enemyDistribution = [];
@@ -835,27 +512,32 @@ class EndlessWinterGame {
                 
                 // 根据当前地图背景选择敌人类型
                 let enemyTypes = [];
-                const currentBackground = this.gameState.mapBackgrounds[this.gameState.currentBackgroundIndex];
-                
-                if (currentBackground) {
-                    switch (currentBackground.type) {
-                        case 'xianxia-mountain':
-                            enemyTypes = ['山妖', '岩怪', '神雕', '石精', '山魈'];
-                            break;
-                        case 'xianxia-forest':
-                            enemyTypes = ['树精', '花妖', '狐仙', '鹿灵', '木怪'];
-                            break;
-                        case 'xianxia-lake':
-                            enemyTypes = ['水怪', '蛟蛇', '龟妖', '鱼精', '水仙'];
-                            break;
-                        case 'xianxia-desert':
-                            enemyTypes = ['沙妖', '蝎精', '蛇怪', '沙漠巨蜥', '沙虫'];
-                            break;
-                        case 'xianxia-cave':
-                            enemyTypes = ['洞穴蝙蝠', '石怪', '蜘蛛精', '蚯蚓怪', '洞穴幽灵'];
-                            break;
-                        default:
-                            enemyTypes = ['妖狐', '山精', '水怪', '火灵', '土妖', '风魔', '雷兽'];
+                // 确保mapBackgrounds和currentBackgroundIndex存在
+                if (this.gameState.mapBackgrounds && this.gameState.currentBackgroundIndex !== undefined) {
+                    const currentBackground = this.gameState.mapBackgrounds[this.gameState.currentBackgroundIndex];
+                    
+                    if (currentBackground) {
+                        switch (currentBackground.type) {
+                            case 'xianxia-mountain':
+                                enemyTypes = ['山妖', '岩怪', '神雕', '石精', '山魈'];
+                                break;
+                            case 'xianxia-forest':
+                                enemyTypes = ['树精', '花妖', '狐仙', '鹿灵', '木怪'];
+                                break;
+                            case 'xianxia-lake':
+                                enemyTypes = ['水怪', '蛟蛇', '龟妖', '鱼精', '水仙'];
+                                break;
+                            case 'xianxia-desert':
+                                enemyTypes = ['沙妖', '蝎精', '蛇怪', '沙漠巨蜥', '沙虫'];
+                                break;
+                            case 'xianxia-cave':
+                                enemyTypes = ['洞穴蝙蝠', '石怪', '蜘蛛精', '蚯蚓怪', '洞穴幽灵'];
+                                break;
+                            default:
+                                enemyTypes = ['妖狐', '山精', '水怪', '火灵', '土妖', '风魔', '雷兽'];
+                        }
+                    } else {
+                        enemyTypes = ['妖狐', '山精', '水怪', '火灵', '土妖', '风魔', '雷兽'];
                     }
                 } else {
                     enemyTypes = ['妖狐', '山精', '水怪', '火灵', '土妖', '风魔', '雷兽'];
@@ -933,7 +615,7 @@ class EndlessWinterGame {
                                 this.battle3D.scene.remove(enemy.model);
                             }
                         } catch (e) {
-                            console.log('移除3D敌人模型时出错:', e);
+
                         }
                         // 从敌人列表中移除
                         this.battle3D.enemies.splice(i, 1);
@@ -954,9 +636,7 @@ class EndlessWinterGame {
             this.saveUILayout();
             
             // 设置战斗状态
-            console.log('Setting battle state to true');
             this.gameState.battle.inBattle = true;
-            console.log('Battle state after setting:', this.gameState.battle.inBattle);
             
             // 切换到战斗UI布局
             this.switchToBattleUILayout();
@@ -1015,7 +695,7 @@ class EndlessWinterGame {
                 } catch (parseError) {
                     console.error('解析用户信息失败:', parseError);
                     // 解析失败，重定向到登录页面
-                    //window.location.href = 'login.html';
+                    window.location.href = 'login.html';
                 }
             } else {
                 // 未登录，重定向到登录页面
@@ -1031,28 +711,7 @@ class EndlessWinterGame {
     // 更新管理员控制按钮的显示状态
     updateAdminControls() {
         const isAdmin = this.gameState.user.role === 'admin';
-        
-        // 保存游戏按钮 - 所有用户都可以使用
-        const saveGameBtn = document.getElementById('save-game');
-        if (saveGameBtn) {
-            saveGameBtn.classList.remove('hidden');
-        }
-        
-        // 加载游戏按钮 - 所有用户都可以使用（从服务器加载）
-        const loadGameBtn = document.getElementById('load-game');
-        if (loadGameBtn) {
-            loadGameBtn.classList.remove('hidden');
-        }
-        
-        // 重置游戏按钮 - 只有管理员可以使用
-        const resetGameBtn = document.getElementById('reset-game');
-        if (resetGameBtn) {
-            if (isAdmin) {
-                resetGameBtn.classList.remove('hidden');
-            } else {
-                resetGameBtn.classList.add('hidden');
-            }
-        }
+        console.debug("新功能，待开发！");
     }
     
     // 更新UI显示
@@ -1477,12 +1136,9 @@ class EndlessWinterGame {
     
     // 播放声音
     playSound(soundId) {
-        console.log('尝试播放声音:', soundId);
-        
         // 检查声音是否在冷却中
         const now = Date.now();
         if (this.soundCooldowns[soundId] && now - this.soundCooldowns[soundId] < 1000) {
-            console.log('声音在冷却中，跳过播放:', soundId);
             return;
         }
         
@@ -1492,18 +1148,12 @@ class EndlessWinterGame {
         const soundElement = document.getElementById(soundId);
         if (soundElement) {
             try {
-                console.log('找到声音元素:', soundId);
-                console.log('声音元素readyState:', soundElement.readyState);
-                console.log('声音元素src:', soundElement.src);
-                
                 // 确保音量设置为最大
                 soundElement.volume = 1;
-                console.log('音量设置为:', soundElement.volume);
                 
                 // 先停止当前声音，确保不会重复播放
                 soundElement.pause();
                 soundElement.currentTime = 0;
-                console.log('重置播放位置为:', soundElement.currentTime);
                 
                 // 停止所有正在播放的声音
                 if (soundId === 'battle-music') {
@@ -1524,7 +1174,7 @@ class EndlessWinterGame {
                                 otherSoundElement.pause();
                                 otherSoundElement.currentTime = 0;
                             } catch (e) {
-                                console.log('停止其他声音失败:', sound, e);
+
                             }
                         }
                     });
@@ -1536,7 +1186,7 @@ class EndlessWinterGame {
                             battleMusicElement.pause();
                             battleMusicElement.currentTime = 0;
                         } catch (e) {
-                            console.log('停止战斗音乐失败:', e);
+
                         }
                     }
                     
@@ -1558,7 +1208,7 @@ class EndlessWinterGame {
                                     otherSoundElement.pause();
                                     otherSoundElement.currentTime = 0;
                                 } catch (e) {
-                                    console.log('停止其他声音失败:', sound, e);
+    
                                 }
                             }
                         });
@@ -1579,23 +1229,18 @@ class EndlessWinterGame {
                 if (soundElement.readyState >= 2) {
                     // 播放声音
                     soundElement.play().then(() => {
-                        console.log('声音播放成功:', soundId);
                         
                         // 对于升级声音，设置定时器确保只播放一次
                         if (soundId === 'levelup-sound') {
-                            console.log('为升级声音设置自动停止定时器');
                             setTimeout(() => {
                                 try {
                                     soundElement.pause();
                                     soundElement.currentTime = 0;
-                                    console.log('升级声音自动停止');
                                 } catch (error) {
-                                    console.log('停止升级声音失败:', error);
                                 }
                             }, 3000); // 3秒后停止声音
                         }
                     }).catch(error => {
-                        console.log('播放声音失败:', error);
                         
                         // 忽略AbortError，这是由于快速切换声音导致的
                         if (error.name !== 'AbortError') {
@@ -1603,34 +1248,32 @@ class EndlessWinterGame {
                             try {
                                 soundElement.currentTime = 0;
                                 soundElement.play();
-                                console.log('尝试另一种播放方式:', soundId);
                             } catch (e) {
-                                console.log('第二种播放方式也失败:', e);
                             }
                         }
                     });
                 } else {
                     // 定义一次性的播放处理函数
                     this.soundPlayHandlers[soundId] = () => {
-                        console.log('声音元素加载完成，开始播放:', soundId);
+                        ('声音元素加载完成，开始播放:', soundId);
                         soundElement.play().then(() => {
-                            console.log('声音播放成功:', soundId);
+                            ('声音播放成功:', soundId);
                             
                             // 对于升级声音，设置定时器确保只播放一次
                             if (soundId === 'levelup-sound') {
-                                console.log('为升级声音设置自动停止定时器');
+                                ('为升级声音设置自动停止定时器');
                                 setTimeout(() => {
                                     try {
                                         soundElement.pause();
                                         soundElement.currentTime = 0;
-                                        console.log('升级声音自动停止');
+                                        ('升级声音自动停止');
                                     } catch (error) {
-                                        console.log('停止升级声音失败:', error);
+                                        ('停止升级声音失败:', error);
                                     }
                                 }, 3000); // 3秒后停止声音
                             }
                         }).catch(error => {
-                            console.log('播放声音失败:', error);
+                            ('播放声音失败:', error);
                         });
                     };
                     
@@ -1639,13 +1282,13 @@ class EndlessWinterGame {
                     
                     // 尝试加载声音
                     soundElement.load();
-                    console.log('开始加载声音:', soundId);
+                    ('开始加载声音:', soundId);
                 }
             } catch (error) {
-                console.log('播放声音失败:', error);
+                ('播放声音失败:', error);
             }
         } else {
-            console.log('未找到声音元素:', soundId);
+            ('未找到声音元素:', soundId);
         }
     }
     
@@ -1670,7 +1313,7 @@ class EndlessWinterGame {
                         container.removeChild(this.battle3D.renderer.domElement);
                     }
                 } catch (e) {
-                    console.log('移除渲染器时出错:', e);
+                    ('移除渲染器时出错:', e);
                 }
                 this.battle3D.renderer.dispose();
                 this.battle3D.renderer = null;
@@ -1706,7 +1349,6 @@ class EndlessWinterGame {
         
         // 保存当前战斗状态
         const isBattle = this.gameState.battle.inBattle;
-        console.log('Current battle state before creating scene:', isBattle);
         
         // 如果不是战斗状态，重置敌人信息，确保敌人信息区域显示为默认状态
         if (!isBattle) {
@@ -1759,8 +1401,6 @@ class EndlessWinterGame {
         this.battle3D.renderer.setSize(container.clientWidth, container.clientHeight);
         
         // 调试：检查战斗状态
-        console.log('initBattle3DScene - inBattle:', isBattle);
-        
         // 当不在战斗状态且没有敌人时，确保敌人信息区域显示为默认状态
         if (!isBattle && (!this.gameState.enemy || !this.gameState.enemy.name)) {
             this.hideEnemyInfo();
@@ -1769,12 +1409,10 @@ class EndlessWinterGame {
         // 设置背景颜色和雾效
         if (isBattle) {
             // 战斗场景背景设置 - 火山背景
-            console.log('Using battle scene background');
             this.battle3D.renderer.setClearColor(0x1a1a2e, 1); // 深色火山背景
             // 战斗场景不使用雾效，以便更好地显示火山效果
         } else {
             // 探险场景背景设置
-            console.log('Using exploration scene background');
             if (this.gameState.mapBackgrounds.length > 0 && this.gameState.currentBackgroundIndex !== undefined) {
                 const currentBackground = this.gameState.mapBackgrounds[this.gameState.currentBackgroundIndex];
                 if (currentBackground) {
@@ -1934,7 +1572,7 @@ class EndlessWinterGame {
                 container.addEventListener('click', (event) => {
                     this.handleMouseClick(event, container);
                 });
-                console.log('鼠标点击事件已绑定到3D场景容器');
+                ('鼠标点击事件已绑定到3D场景容器');
             }
         }
         
@@ -2223,27 +1861,32 @@ class EndlessWinterGame {
                 
                 // 根据当前地图背景选择敌人类型
                 let enemyTypes = [];
-                const currentBackground = this.gameState.mapBackgrounds[this.gameState.currentBackgroundIndex];
-                
-                if (currentBackground) {
-                    switch (currentBackground.type) {
-                        case 'xianxia-mountain':
-                            enemyTypes = ['山妖', '岩怪', '神雕', '石精', '山魈'];
-                            break;
-                        case 'xianxia-forest':
-                            enemyTypes = ['树精', '花妖', '狐仙', '鹿灵', '木怪'];
-                            break;
-                        case 'xianxia-lake':
-                            enemyTypes = ['水怪', '蛟蛇', '龟妖', '鱼精', '水仙'];
-                            break;
-                        case 'xianxia-desert':
-                            enemyTypes = ['沙妖', '蝎精', '蛇怪', '沙漠巨蜥', '沙虫'];
-                            break;
-                        case 'xianxia-cave':
-                            enemyTypes = ['洞穴蝙蝠', '石怪', '蜘蛛精', '蚯蚓怪', '洞穴幽灵'];
-                            break;
-                        default:
-                            enemyTypes = ['妖狐', '山精', '水怪', '火灵', '土妖', '风魔', '雷兽'];
+                // 确保mapBackgrounds和currentBackgroundIndex存在
+                if (this.gameState.mapBackgrounds && this.gameState.currentBackgroundIndex !== undefined) {
+                    const currentBackground = this.gameState.mapBackgrounds[this.gameState.currentBackgroundIndex];
+                    
+                    if (currentBackground) {
+                        switch (currentBackground.type) {
+                            case 'xianxia-mountain':
+                                enemyTypes = ['山妖', '岩怪', '神雕', '石精', '山魈'];
+                                break;
+                            case 'xianxia-forest':
+                                enemyTypes = ['树精', '花妖', '狐仙', '鹿灵', '木怪'];
+                                break;
+                            case 'xianxia-lake':
+                                enemyTypes = ['水怪', '蛟蛇', '龟妖', '鱼精', '水仙'];
+                                break;
+                            case 'xianxia-desert':
+                                enemyTypes = ['沙妖', '蝎精', '蛇怪', '沙漠巨蜥', '沙虫'];
+                                break;
+                            case 'xianxia-cave':
+                                enemyTypes = ['洞穴蝙蝠', '石怪', '蜘蛛精', '蚯蚓怪', '洞穴幽灵'];
+                                break;
+                            default:
+                                enemyTypes = ['妖狐', '山精', '水怪', '火灵', '土妖', '风魔', '雷兽'];
+                        }
+                    } else {
+                        enemyTypes = ['妖狐', '山精', '水怪', '火灵', '土妖', '风魔', '雷兽'];
                     }
                 } else {
                     enemyTypes = ['妖狐', '山精', '水怪', '火灵', '土妖', '风魔', '雷兽'];
@@ -3133,7 +2776,7 @@ class EndlessWinterGame {
     // 3D战斗场景动画循环
     animateBattle3D() {
         if (!this.battle3D || !this.battle3D.renderer || !this.battle3D.scene || !this.battle3D.camera) {
-            console.log('战斗场景未初始化，停止动画循环');
+            ('战斗场景未初始化，停止动画循环');
             return;
         }
         
@@ -3171,7 +2814,7 @@ class EndlessWinterGame {
                         // 到达目标位置
                         this.isMoving = false;
                         this.mouseTarget = null;
-                        console.log('到达鼠标目标位置');
+                        ('到达鼠标目标位置');
                     }
                 } else {
                     // 战斗场景中玩家轻微呼吸动画
@@ -3329,7 +2972,6 @@ class EndlessWinterGame {
     
     // 绑定事件
     bindEvents() {
-        console.log('开始绑定事件...');
         
         // 安全的事件绑定函数
         const bindEvent = (selector, event, callback) => {
@@ -3337,9 +2979,9 @@ class EndlessWinterGame {
                 const element = document.querySelector(selector);
                 if (element) {
                     element.addEventListener(event, callback);
-                    console.log(`成功绑定 ${event} 事件到 ${selector}`);
+                    (`成功绑定 ${event} 事件到 ${selector}`);
                 } else {
-                    console.log(`未找到元素 ${selector}`);
+                    (`未找到元素 ${selector}`);
                 }
             } catch (error) {
                 console.error(`绑定事件到 ${selector} 时出错:`, error);
@@ -3459,7 +3101,7 @@ class EndlessWinterGame {
                     }
                 });
             });
-            console.log(`成功绑定 ${equipmentSlots.length} 个装备槽位事件`);
+            (`成功绑定 ${equipmentSlots.length} 个装备槽位事件`);
         } catch (error) {
             console.error('绑定装备槽位事件时出错:', error);
         }
@@ -3603,7 +3245,7 @@ class EndlessWinterGame {
         // 添加页面卸载时保存数据的事件监听器
         window.addEventListener('beforeunload', () => {
             this.saveGameState();
-            console.log('页面卸载前保存游戏状态');
+            ('页面卸载前保存游戏状态');
         });
         
         // 添加定期保存机制
@@ -3611,7 +3253,7 @@ class EndlessWinterGame {
             this.saveGameState();
         }, 60000); // 每60秒自动保存
         
-        console.log('事件绑定完成');
+        ('事件绑定完成');
     }
     
     // 处理键盘按键事件
@@ -3705,9 +3347,7 @@ class EndlessWinterGame {
             this.mouseTarget.x = Math.max(-8, Math.min(8, this.mouseTarget.x));
             this.mouseTarget.z = Math.max(-8, Math.min(8, this.mouseTarget.z));
             
-            this.isMoving = true;
-            console.log('设置鼠标目标位置:', this.mouseTarget);
-            
+            this.isMoving = true;    
         }
     }
     
@@ -3730,14 +3370,15 @@ class EndlessWinterGame {
                 
                 // 如果玩家离敌人足够近（小于0.5单位），触发遇敌
                 if (distance < 0.5) {
-                    this.triggerEnemyEncounter(enemy);
+                    this.showAttackConfirmation(enemy.info);
                     enemyEncountered = true;
                     break;
                 }
             }
         }
         // 如果没有碰到敌人，确保敌人信息区域显示默认状态（空白）
-        if (!enemyEncountered && !this.gameState.battle.inBattle) {
+        if (!enemyEncountered) {
+            this.gameState.battle.inBattle = false
             // 无论当前是否有敌人信息，都隐藏敌人信息区
             this.hideEnemyInfo();
             // 清除游戏状态中的敌人信息
@@ -3745,16 +3386,6 @@ class EndlessWinterGame {
         }
     }
     
-    // 触发敌人遭遇
-    triggerEnemyEncounter(enemy) {
-        console.log('3D场景遇到敌人:', enemy.info.name);
-        
-        // 与2D场景行为一致，直接更新敌人信息区域
-        this.showAttackConfirmation(enemy.info);
-        
-        // 不标记敌人为非活跃，也不从场景中移除敌人模型
-        // 敌人只有在被击败后才会消失
-    }
     
     // 保存地图场景状态
     saveMapState() {
@@ -3767,7 +3398,6 @@ class EndlessWinterGame {
     
     // 创建单独的3D战斗场景
     createBattleScene(enemyInfo) {
-        console.log('开始创建战斗场景...');
         
         // 播放战斗音乐
         this.playSound('battle-music');
@@ -3799,8 +3429,6 @@ class EndlessWinterGame {
             console.error('找不到battle-3d-container元素');
             return;
         }
-        
-        console.log('容器大小:', container.clientWidth, 'x', container.clientHeight);
         
         this.battle3D = {
             scene: new THREE.Scene(),
@@ -3899,8 +3527,6 @@ class EndlessWinterGame {
         
         // 执行淡入效果
         this.fadeInBattleScene();
-        
-        console.log('战斗场景创建完成');
     }
     
     // 淡入战斗场景
@@ -4095,7 +3721,6 @@ class EndlessWinterGame {
     
     // 恢复地图场景
     restoreMapScene() {
-        console.log('开始恢复地图场景...');
         
         // 停止所有声音
         const soundElements = [
@@ -4121,7 +3746,6 @@ class EndlessWinterGame {
                     // 停止声音并重置播放位置
                     soundElement.pause();
                     soundElement.currentTime = 0;
-                    console.log('停止声音:', soundId);
                 } catch (error) {
                     console.log('停止声音失败:', soundId, error);
                 }
@@ -4157,7 +3781,6 @@ class EndlessWinterGame {
         
         // 恢复保存的敌人分布
         if (this.mapState && this.mapState.sceneMonsters) {
-            console.log('恢复保存的敌人分布，原始数量:', this.mapState.sceneMonsters.length);
             
             // 检查当前敌人是否被击败
             const enemyDefeated = this.gameState.enemy && this.gameState.enemy.hp <= 0;
@@ -4166,31 +3789,24 @@ class EndlessWinterGame {
                 // 如果敌人被击败，从保存的场景怪物中移除该敌人
                 const currentEnemyCellIndex = this.gameState.enemy.cellIndex;
                 if (currentEnemyCellIndex !== undefined) {
-                    console.log('敌人被击败，移除cellIndex:', currentEnemyCellIndex);
                     this.mapState.sceneMonsters = this.mapState.sceneMonsters.filter(monster => 
                         monster.cellIndex !== currentEnemyCellIndex
                     );
-                    console.log('移除后剩余敌人数量:', this.mapState.sceneMonsters.length);
                 }
             }
             
             // 恢复场景怪物状态
             this.gameState.sceneMonsters = JSON.parse(JSON.stringify(this.mapState.sceneMonsters));
-            console.log('恢复后的场景怪物数量:', this.gameState.sceneMonsters.length);
-            console.log('恢复后的场景怪物数据:', this.gameState.sceneMonsters);
             
             // 只有当所有敌人都被击败时才重新生成新的敌人分布
             if (this.gameState.sceneMonsters.length === 0) {
-                console.log('所有敌人已被击败，重新生成敌人分布');
                 this.generateMiniMap();
             } else {
-                console.log('恢复之前的敌人分布，剩余敌人数量:', this.gameState.sceneMonsters.length);
                 // 重新渲染小地图
                 this.renderMiniMap();
             }
         } else {
             // 如果没有保存的状态，重新生成小地图
-            console.log('没有保存的状态，重新生成敌人分布');
             this.generateMiniMap();
         }
         
@@ -4206,7 +3822,6 @@ class EndlessWinterGame {
         // 恢复玩家位置
         if (this.mapState && this.mapState.playerPosition && this.battle3D && this.battle3D.player) {
             this.battle3D.player.position.copy(this.mapState.playerPosition);
-            console.log('恢复玩家位置:', this.mapState.playerPosition);
         }
         
         // 淡入地图场景
@@ -4214,25 +3829,18 @@ class EndlessWinterGame {
         
         // 设置战斗状态
         this.gameState.battle.inBattle = false;
-        
-        console.log('地图场景恢复完成');
     }
     
     // 创建敌人图标
     createEnemyIcon(enemyInfo) {
         // 调试信息
-        console.log('createEnemyIcon - enemyInfo:', enemyInfo);
+        ('createEnemyIcon - enemyInfo:', enemyInfo);
         
         // 计算敌人和玩家的战斗力
         const enemyPower = enemyInfo.attack * 2 + (enemyInfo.defense || 0) * 1.5 + enemyInfo.maxHp * 0.1;
         const playerAttack = this.gameState.player.attack + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.attack : 0);
         const playerDefense = this.gameState.player.defense + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.defense : 0);
         const playerPower = playerAttack * 2 + playerDefense * 1.5 + this.gameState.player.maxHp * 0.1;
-        
-        // 调试信息
-        console.log('Enemy power:', enemyPower);
-        console.log('Player power:', playerPower);
-        console.log('Power ratio:', enemyPower / playerPower);
         
         // 根据战斗力差距设置敌人图标颜色
         let enemyIconColor = 'text-green-500';
@@ -4259,7 +3867,6 @@ class EndlessWinterGame {
         enemyIcon.addEventListener('click', () => {
             try {
                 const enemyInfo = JSON.parse(enemyIcon.dataset.enemyInfo);
-                console.log('点击了2D敌人，敌人信息:', enemyInfo);
                 this.showAttackConfirmation(enemyInfo);
             } catch (error) {
                 console.error('解析敌人信息失败:', error);
@@ -4416,13 +4023,10 @@ class EndlessWinterGame {
     
     // 显示攻击确认窗口（修改为更新敌人信息区）
     showAttackConfirmation(enemyInfo) {
-        console.log('调用了showAttackConfirmation，敌人信息:', enemyInfo);
         // 更新游戏状态中的敌人信息
         this.gameState.enemy = enemyInfo;
         // 设置战斗状态
         this.gameState.battle.inBattle = true;
-        console.log('更新后的游戏状态敌人信息:', this.gameState.enemy);
-        console.log('设置战斗状态为:', this.gameState.battle.inBattle);
         
         // 直接更新敌人信息区域的UI元素
         const enemyNameElement = document.getElementById('enemy-name');
@@ -4596,20 +4200,13 @@ class EndlessWinterGame {
         // 显示攻击确认按钮，隐藏技能按钮
         const attackConfirmBtn = document.getElementById('attack-confirm-btn');
         const attackSkills = document.getElementById('attack-skills');
-        console.log('显示攻击确认按钮，隐藏技能按钮');
-        console.log('attackConfirmBtn:', attackConfirmBtn);
-        console.log('attackSkills:', attackSkills);
         if (attackConfirmBtn) {
-            console.log('攻击确认按钮当前类:', attackConfirmBtn.className);
             // 强制移除hidden类，确保按钮显示
             attackConfirmBtn.classList.remove('hidden');
-            console.log('攻击确认按钮修改后类:', attackConfirmBtn.className);
         }
         if (attackSkills) {
             attackSkills.classList.add('hidden');
         }
-        
-        console.log('敌人信息更新完成');
     }
     
     // 显示敌人操作按钮
@@ -5142,11 +4739,9 @@ class EndlessWinterGame {
     
     // 检查升级
     checkLevelUp() {
-        console.log('调用checkLevelUp函数');
-        console.log('当前经验:', this.gameState.player.exp, '最大经验:', this.gameState.player.maxExp);
-        
+   
         if (this.gameState.player.exp >= this.gameState.player.maxExp) {
-            console.log('触发升级逻辑');
+
             // 升级
             this.gameState.player.level++;
             this.gameState.player.exp -= this.gameState.player.maxExp;
@@ -5169,7 +4764,6 @@ class EndlessWinterGame {
             this.gameState.resources.ironRate += 0.1;
             this.gameState.resources.crystalRate += 0.05;
             
-            console.log('准备播放升级声音');
             // 播放升级声音
             this.playSound('levelup-sound');
             
@@ -5179,8 +4773,6 @@ class EndlessWinterGame {
             this.triggerLevelUpAnimation();
             
             console.log('升级逻辑执行完成');
-        } else {
-            console.log('经验不足，未触发升级');
         }
     }
     
@@ -5699,6 +5291,21 @@ class EndlessWinterGame {
                         const { user, ...gameData } = serverGameState;
                         this.gameState = { ...gameData, user: userInfo };
                         this.addBattleLog('从服务器加载游戏成功！');
+                        // 先获取元数据，然后再生成场景怪物
+                        try {
+                            await this.fetchGameMetadata();
+                            // 重新生成场景怪物
+                            this.generateMiniMap();
+                            // 更新UI
+                            this.updateUI();
+                        } catch (error) {
+                            console.error('获取元数据失败:', error);
+                            this.addBattleLog('获取游戏数据失败，使用默认数据！');
+                            // 即使元数据获取失败，也要生成场景怪物
+                            this.generateMiniMap();
+                            // 更新UI
+                            this.updateUI();
+                        }
                     } else {
                         this.addBattleLog('没有找到保存的游戏！');
                     }
@@ -6025,10 +5632,6 @@ class EndlessWinterGame {
                 const currentUserId = this.gameState.user.userId;
                 // 只使用服务器端保存
                 this.saveToServer(currentUserId, this.gameState);
-                console.log('游戏状态已保存');
-            } else {
-                // 访客模式不保存游戏状态
-                console.log('访客游戏状态不保存');
             }
         } catch (error) {
             console.error('保存游戏状态失败:', error);
@@ -6050,9 +5653,7 @@ class EndlessWinterGame {
             });
             
             const result = await response.json();
-            if (result.success) {
-                console.log('服务器端保存成功');
-            } else {
+            if (!result.success) {
                 console.error('服务器端保存失败:', result.error);
                 // 如果token无效，重定向到登录页面
                 if (result.error === 'Invalid token' || result.error === 'No token provided') {
@@ -6077,7 +5678,6 @@ class EndlessWinterGame {
             
             const result = await response.json();
             if (result.success) {
-                console.log('服务器端加载成功');
                 return result.gameState;
             } else {
                 console.error('服务器端加载失败:', result.error);
@@ -6682,96 +6282,10 @@ class EndlessWinterGame {
     
     
     
-    // 显示登录表单
-    showLoginForm() {
-        const username = prompt('请输入用户名:');
-        const password = prompt('请输入密码:');
-        
-        if (username && password) {
-            this.login(username, password);
-        }
-    }
+ 
     
-    // 显示注册表单
-    showRegisterForm() {
-        const username = prompt('请输入新用户名:');
-        const password = prompt('请输入新密码:');
-        const confirmPassword = prompt('请确认密码:');
-        const gender = prompt('请选择性别 (男/女):');
-        
-        if (username && password && password === confirmPassword && (gender === '男' || gender === '女')) {
-            this.register(username, password, gender);
-        } else if (password !== confirmPassword) {
-            this.addBattleLog('密码确认不一致！');
-        } else if (gender !== '男' && gender !== '女') {
-            this.addBattleLog('请输入正确的性别 (男/女)！');
-        }
-    }
     
-    // 登录
-    login(username, password) {
-        try {
-            console.log('开始登录，用户名:', username);
-            
-            // 这里应该调用服务器端的登录API进行认证
-            // 暂时使用模拟认证，后续需要实现服务器端认证
-            
-            // 模拟登录成功
-            const userGender = '男'; // 默认性别，可以后续修改
-            
-            console.log('登录成功，开始加载游戏状态');
-            
-            // 从服务器加载用户对应的游戏状态
-            this.loadGame();
-            
-            // 更新用户信息
-            this.gameState.user = {
-                loggedIn: true,
-                username: username,
-                userId: username,
-                gender: userGender,
-                role: 'player'
-            };
-            
-            this.addBattleLog(`登录成功！欢迎回来，${username}！`);
-            this.updateUI();
-            this.updateCharacterBodyImage();
-            this.updateAdminControls(); // 根据用户角色更新管理控制按钮
-            this.generateMiniMap(); // 刷新敌人，确保与用户等级匹配
-            
-            console.log('登录完成');
-        } catch (error) {
-            console.error('登录过程中发生错误:', error);
-            this.addBattleLog('登录失败！系统错误，请刷新页面重试。');
-        }
-    }
     
-    // 注册
-    register(username, password, gender) {
-        try {
-            // 这里应该调用服务器端的注册API
-            // 暂时使用模拟注册，后续需要实现服务器端注册
-            
-            // 模拟注册成功
-            // 自动登录
-            this.gameState.user = {
-                loggedIn: true,
-                username: username,
-                userId: username,
-                gender: gender,
-                role: 'player'
-            };
-            
-            this.addBattleLog(`注册成功！欢迎，${username}！`);
-            this.updateUI();
-            this.updateCharacterBodyImage();
-            this.updateAdminControls(); // 根据用户角色更新管理控制按钮
-            this.generateMiniMap(); // 刷新敌人，确保与用户等级匹配
-        } catch (error) {
-            this.addBattleLog('注册失败！');
-            console.error('注册失败:', error);
-        }
-    }
     
     // 登出
     async logout() {
@@ -7535,16 +7049,13 @@ class EndlessWinterGame {
 // 检查THREE.js是否加载完成
 function checkThreeJsLoaded() {
     if (typeof THREE !== 'undefined') {
-        console.log('THREE.js 加载成功');
         window.game = new EndlessWinterGame();
     } else {
-        console.log('等待 THREE.js 加载...');
         setTimeout(checkThreeJsLoaded, 100);
     }
 }
 
 // 初始化游戏
 window.onload = function() {
-    console.log('页面加载完成，开始检查 THREE.js');
     checkThreeJsLoaded();
 };

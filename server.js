@@ -164,12 +164,20 @@ function verifyToken(req, res, next) {
 // 保存游戏状态
 app.post('/api/save', verifyToken, (req, res) => {
     try {
-        const { gameState } = req.body;
+        let { gameState } = req.body;
         const userId = req.user.userId;
         
         if (!gameState) {
             return res.status(400).json({ error: 'Missing gameState' });
         }
+        
+        // 过滤掉元数据部分和不需要存储的临时数据
+        const metadataFields = ['equipmentRarities', 'equipmentTemplates', 'dropRates', 'enemyTypes', 'skills', 'shop', 'mapBackgrounds', 'sceneMonsters'];
+        metadataFields.forEach(field => {
+            if (gameState[field]) {
+                delete gameState[field];
+            }
+        });
         
         // 生成保存文件路径
         const saveFilePath = path.join(SAVE_DIR, `${userId}.json`);
@@ -263,6 +271,19 @@ app.post('/api/delete-account', verifyToken, async (req, res) => {
     } catch (error) {
         console.error('Error deleting account:', error);
         res.status(500).json({ error: 'Failed to delete account' });
+    }
+});
+
+// 导入游戏元数据
+import gameMetadata from './game-metadata.js';
+
+// 游戏元数据API - 需要登录验证
+app.get('/api/metadata', verifyToken, (req, res) => {
+    try {
+        res.json({ success: true, metadata: gameMetadata });
+    } catch (error) {
+        console.error('Error getting metadata:', error);
+        res.status(500).json({ error: 'Failed to get game metadata' });
     }
 });
 
