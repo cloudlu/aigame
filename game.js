@@ -397,6 +397,9 @@ class EndlessWinterGame {
             }
         }
         
+        // 隐藏敌人信息区
+        this.hideEnemyInfo();
+        
         // 加载纹理
         this.loadTextures();
         
@@ -465,9 +468,8 @@ class EndlessWinterGame {
             },
             (error) => {
                 console.log('地面纹理加载失败:', error);
-                // 加载失败时使用备用纹理
-                this.textures.ground = new THREE.Texture();
-                this.textures.ground.needsUpdate = true;
+                // 加载失败时不创建空纹理，让后续代码使用默认颜色
+                this.textures.ground = null;
             }
         );
         
@@ -485,9 +487,8 @@ class EndlessWinterGame {
             },
             (error) => {
                 console.log('天空纹理加载失败:', error);
-                // 加载失败时使用备用纹理
-                this.textures.sky = new THREE.Texture();
-                this.textures.sky.needsUpdate = true;
+                // 加载失败时不创建空纹理，让后续代码使用默认颜色
+                this.textures.sky = null;
             }
         );
         
@@ -505,9 +506,8 @@ class EndlessWinterGame {
             },
             (error) => {
                 console.log('人物纹理加载失败:', error);
-                // 加载失败时使用备用纹理
-                this.textures.character = new THREE.Texture();
-                this.textures.character.needsUpdate = true;
+                // 加载失败时不创建空纹理，让后续代码使用默认颜色
+                this.textures.character = null;
             }
         );
         
@@ -525,9 +525,8 @@ class EndlessWinterGame {
             },
             (error) => {
                 console.log('敌人纹理加载失败:', error);
-                // 加载失败时使用备用纹理
-                this.textures.enemy = new THREE.Texture();
-                this.textures.enemy.needsUpdate = true;
+                // 加载失败时不创建空纹理，让后续代码使用默认颜色
+                this.textures.enemy = null;
             }
         );
         
@@ -711,6 +710,44 @@ class EndlessWinterGame {
         this.gameState.sceneMonsters = [];
         
         // 生成5x5的地图格子
+        const totalCells = 25;
+        const playerCell = 12; // 玩家初始位置
+        const availableCells = totalCells - 1; // 减去玩家位置
+        
+        // 计算敌人数量和类型
+        const totalEnemies = Math.max(10, Math.floor(availableCells * 0.8)); // 至少10个敌人，最多80%的格子
+        const bossCount = Math.ceil(totalEnemies * 0.1); // 10% BOSS
+        const eliteCount = Math.ceil(totalEnemies * 0.3); // 30% 精英
+        const normalCount = totalEnemies - bossCount - eliteCount; // 剩下的普通怪
+        
+        console.log(`生成敌人: 总数=${totalEnemies}, BOSS=${bossCount}, 精英=${eliteCount}, 普通=${normalCount}`);
+        
+        // 创建敌人分布
+        const enemyDistribution = [];
+        
+        // 添加BOSS
+        for (let i = 0; i < bossCount; i++) {
+            enemyDistribution.push('boss');
+        }
+        
+        // 添加精英
+        for (let i = 0; i < eliteCount; i++) {
+            enemyDistribution.push('elite');
+        }
+        
+        // 添加普通怪
+        for (let i = 0; i < normalCount; i++) {
+            enemyDistribution.push('normal');
+        }
+        
+        // 随机打乱敌人分布
+        for (let i = enemyDistribution.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [enemyDistribution[i], enemyDistribution[j]] = [enemyDistribution[j], enemyDistribution[i]];
+        }
+        
+        let enemyIndex = 0;
+        
         for (let i = 0; i < 25; i++) {
             const gridCell = document.createElement('div');
             gridCell.className = 'bg-dark/30 rounded flex items-center justify-center';
@@ -722,8 +759,8 @@ class EndlessWinterGame {
             const x = (col - 2) * 4; // 每个格子4单位宽度
             const z = (row - 2) * 4; // 每个格子4单位高度
             
-            // 随机生成敌人（30%概率）
-            if (Math.random() < 0.3 && i !== 12) { // 避免在玩家初始位置生成敌人
+            // 在非玩家位置生成敌人
+            if (i !== playerCell && enemyIndex < enemyDistribution.length) {
                 // 生成随机敌人等级（与玩家等级相近）
                 const playerLevel = this.gameState.player.level;
                 const enemyLevel = Math.max(1, Math.min(playerLevel + 3, playerLevel + Math.floor(Math.random() * 3) - 1));
@@ -733,21 +770,23 @@ class EndlessWinterGame {
                 const baseDefense = enemyLevel * 2;
                 const baseHp = enemyLevel * 30;
                 
-                // 随机生成敌人类型
-                const randomValue = Math.random();
+                // 根据分布生成敌人类型
+                const enemyType = enemyDistribution[enemyIndex];
                 let isElite = false;
                 let isBoss = false;
                 let bonus = 0;
                 
-                if (randomValue < 0.05) {
-                    // 5%概率生成boss
+                if (enemyType === 'boss') {
+                    // BOSS
                     isBoss = true;
                     bonus = 1.0;
-                } else if (randomValue < 0.15) {
-                    // 10%概率生成精英怪
+                } else if (enemyType === 'elite') {
+                    // 精英怪
                     isElite = true;
                     bonus = 0.5;
                 }
+                
+                enemyIndex++;
                 
                 // 计算最终属性
                 const finalAttack = Math.floor(baseAttack * (1 + bonus));
@@ -793,8 +832,34 @@ class EndlessWinterGame {
                     }
                 }
                 
-                // 随机选择敌人类型
-                const enemyTypes = ['雪原狼', '冰原熊', '冰霜巨人', '妖狐', '山精', '水怪', '火灵', '土妖', '风魔', '雷兽'];
+                // 根据当前地图背景选择敌人类型
+                let enemyTypes = [];
+                const currentBackground = this.gameState.mapBackgrounds[this.gameState.currentBackgroundIndex];
+                
+                if (currentBackground) {
+                    switch (currentBackground.type) {
+                        case 'xianxia-mountain':
+                            enemyTypes = ['山妖', '岩怪', '神雕', '石精', '山魈'];
+                            break;
+                        case 'xianxia-forest':
+                            enemyTypes = ['树精', '花妖', '狐仙', '鹿灵', '木怪'];
+                            break;
+                        case 'xianxia-lake':
+                            enemyTypes = ['水怪', '蛟蛇', '龟妖', '鱼精', '水仙'];
+                            break;
+                        case 'xianxia-desert':
+                            enemyTypes = ['沙妖', '蝎精', '蛇怪', '沙漠巨蜥', '沙虫'];
+                            break;
+                        case 'xianxia-cave':
+                            enemyTypes = ['洞穴蝙蝠', '石怪', '蜘蛛精', '蚯蚓怪', '洞穴幽灵'];
+                            break;
+                        default:
+                            enemyTypes = ['妖狐', '山精', '水怪', '火灵', '土妖', '风魔', '雷兽'];
+                    }
+                } else {
+                    enemyTypes = ['妖狐', '山精', '水怪', '火灵', '土妖', '风魔', '雷兽'];
+                }
+                
                 const enemyTypeName = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
                 
                 // 创建敌人信息
@@ -821,23 +886,8 @@ class EndlessWinterGame {
                 // 存储到场景怪物数据中
                 this.gameState.sceneMonsters.push(enemyInfo);
                 
-                const enemyIcon = document.createElement('div');
-                
-                // 设置敌人图标样式
-                enemyIcon.className = `w-6 h-6 rounded-full ${enemyColorClass} flex items-center justify-center cursor-pointer transition-colors`;
-                enemyIcon.innerHTML = `<i class="fa fa-skull text-xs ${enemyTextColorClass}"></i>`;
-                
-                // 存储敌人信息
-                enemyIcon.dataset.enemyInfo = JSON.stringify(enemyInfo);
-                
-                // 添加敌人信息提示
-                enemyIcon.setAttribute('data-tooltip', `${enemyInfo.name}\n等级: ${enemyInfo.level}\nHP: ${enemyInfo.hp}\n攻击: ${enemyInfo.attack}\n防御: ${enemyInfo.defense}${enemyInfo.isBoss ? '\n能量: 100/100' : ''}`);
-                
-                // 添加点击事件
-                enemyIcon.addEventListener('click', () => {
-                    const enemyInfo = JSON.parse(enemyIcon.dataset.enemyInfo);
-                    this.showAttackConfirmation(enemyInfo);
-                });
+                // 使用通用方法创建敌人图标
+                const enemyIcon = this.createEnemyIcon(enemyInfo);
                 
                 gridCell.appendChild(enemyIcon);
             }
@@ -852,6 +902,9 @@ class EndlessWinterGame {
     // 遭遇敌人
     encounterEnemy(enemyInfo, initScene = true) {
         if (enemyInfo) {
+            // 保存当前地图场景状态，包括玩家位置
+            this.saveMapState();
+            
             // 使用传入的敌人信息
             this.gameState.enemy = enemyInfo;
             
@@ -865,8 +918,28 @@ class EndlessWinterGame {
                 }
             }
             
-            // 保存当前地图场景状态，包括玩家位置
-            this.saveMapState();
+            // 从3D场景中移除对应的敌人模型
+            if (this.battle3D && this.battle3D.enemies) {
+                for (let i = this.battle3D.enemies.length - 1; i >= 0; i--) {
+                    const enemy = this.battle3D.enemies[i];
+                    if (enemy.info.name === enemyInfo.name && 
+                        enemy.info.level === enemyInfo.level &&
+                        enemy.info.position.x === enemyInfo.position.x &&
+                        enemy.info.position.z === enemyInfo.position.z) {
+                        // 从场景中移除敌人模型
+                        try {
+                            if (this.battle3D.scene && enemy.model) {
+                                this.battle3D.scene.remove(enemy.model);
+                            }
+                        } catch (e) {
+                            console.log('移除3D敌人模型时出错:', e);
+                        }
+                        // 从敌人列表中移除
+                        this.battle3D.enemies.splice(i, 1);
+                        break;
+                    }
+                }
+            }
         } else {
             // 刷新敌人
             this.refreshEnemy();
@@ -886,6 +959,16 @@ class EndlessWinterGame {
             
             // 切换到战斗UI布局
             this.switchToBattleUILayout();
+            
+            // 隐藏攻击确认按钮，显示技能按钮
+            const attackConfirmBtn = document.getElementById('attack-confirm-btn');
+            const attackSkills = document.getElementById('attack-skills');
+            if (attackConfirmBtn) {
+                attackConfirmBtn.classList.add('hidden');
+            }
+            if (attackSkills) {
+                attackSkills.classList.remove('hidden');
+            }
             
             // 创建完整的战斗场景
             this.createBattleScene(this.gameState.enemy);
@@ -1027,54 +1110,65 @@ class EndlessWinterGame {
         this.initTooltips();
         
         // 更新敌人显示
+        console.log('更新敌人显示，敌人信息:', this.gameState.enemy);
         const enemyNameElement = document.getElementById('enemy-name');
         if (enemyNameElement) {
-            enemyNameElement.textContent = this.gameState.enemy.name;
+            console.log('更新敌人名称:', this.gameState.enemy.name || '');
+            enemyNameElement.textContent = this.gameState.enemy.name || '';
         }
         const enemyLevelElement = document.getElementById('enemy-level');
         if (enemyLevelElement) {
-            enemyLevelElement.textContent = this.gameState.enemy.level;
+            console.log('更新敌人等级:', this.gameState.enemy.level || '');
+            enemyLevelElement.textContent = this.gameState.enemy.level || '';
         }
         const enemyHpElement = document.getElementById('enemy-hp');
         if (enemyHpElement) {
-            enemyHpElement.textContent = this.gameState.enemy.hp;
+            console.log('更新敌人HP:', this.gameState.enemy.hp || '');
+            enemyHpElement.textContent = this.gameState.enemy.hp || '';
         }
         const enemyMaxHpElement = document.getElementById('enemy-max-hp');
         if (enemyMaxHpElement) {
-            enemyMaxHpElement.textContent = this.gameState.enemy.maxHp;
+            console.log('更新敌人最大HP:', this.gameState.enemy.maxHp || '');
+            enemyMaxHpElement.textContent = this.gameState.enemy.maxHp || '';
         }
         const enemyAttackElement = document.getElementById('enemy-attack');
         if (enemyAttackElement) {
-            enemyAttackElement.textContent = this.gameState.enemy.attack;
+            console.log('更新敌人攻击:', this.gameState.enemy.attack || '');
+            enemyAttackElement.textContent = this.gameState.enemy.attack || '';
         }
         
         // 更新敌人图标
         const enemyIconElement = document.querySelector('#enemy-icon i');
         if (enemyIconElement) {
-            // 计算敌人和玩家的战斗力
-            const enemyPower = this.gameState.enemy.attack * 2 + this.gameState.enemy.defense * 1.5 + this.gameState.enemy.maxHp * 0.1;
-            const playerAttack = this.gameState.player.attack + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.attack : 0);
-            const playerDefense = this.gameState.player.defense + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.defense : 0);
-            const playerHp = this.gameState.player.maxHp + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.hp : 0);
-            const playerPower = playerAttack * 2 + playerDefense * 1.5 + playerHp * 0.1;
-            
-            // 根据战斗力对比确定敌人颜色
-            let enemyColorClass = 'text-danger'; // 默认红色
-            if (this.gameState.enemy.isBoss) {
-                enemyColorClass = 'text-purple-500'; // BOSS显示紫色
-            } else if (this.gameState.enemy.isElite) {
-                enemyColorClass = 'text-yellow-500'; // 精英怪显示黄色
-            } else {
-                const powerRatio = enemyPower / playerPower;
-                if (powerRatio < 0.7) {
-                    enemyColorClass = 'text-green-500'; // 比玩家弱显示绿色
-                } else if (powerRatio < 1.3) {
-                    enemyColorClass = 'text-yellow-500'; // 和玩家差不多显示黄色
+            if (this.gameState.enemy.name) {
+                // 计算敌人和玩家的战斗力
+                const enemyPower = this.gameState.enemy.attack * 2 + this.gameState.enemy.defense * 1.5 + this.gameState.enemy.maxHp * 0.1;
+                const playerAttack = this.gameState.player.attack + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.attack : 0);
+                const playerDefense = this.gameState.player.defense + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.defense : 0);
+                const playerHp = this.gameState.player.maxHp + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.hp : 0);
+                const playerPower = playerAttack * 2 + playerDefense * 1.5 + playerHp * 0.1;
+                
+                // 根据战斗力对比确定敌人颜色
+                let enemyColorClass = 'text-danger'; // 默认红色
+                if (this.gameState.enemy.isBoss) {
+                    enemyColorClass = 'text-purple-500'; // BOSS显示紫色
+                } else if (this.gameState.enemy.isElite) {
+                    enemyColorClass = 'text-yellow-500'; // 精英怪显示黄色
                 } else {
-                    enemyColorClass = 'text-red-500'; // 比玩家厉害显示红色
+                    const powerRatio = enemyPower / playerPower;
+                    if (powerRatio < 0.7) {
+                        enemyColorClass = 'text-green-500'; // 比玩家弱显示绿色
+                    } else if (powerRatio < 1.3) {
+                        enemyColorClass = 'text-yellow-500'; // 和玩家差不多显示黄色
+                    } else {
+                        enemyColorClass = 'text-red-500'; // 比玩家厉害显示红色
+                    }
                 }
+                enemyIconElement.className = `fa ${this.gameState.enemy.icon} text-xl ${enemyColorClass}`;
+            } else {
+                // 没有敌人时显示问号图标
+                enemyIconElement.className = 'fa fa-question text-xl text-gray-500';
             }
-            enemyIconElement.className = `fa ${this.gameState.enemy.icon} text-xl ${enemyColorClass}`;
         }
         
         // 更新人物装备显示
@@ -1084,18 +1178,27 @@ class EndlessWinterGame {
         const eliteBadge = document.getElementById('enemy-elite-badge');
         const enemyInfo = document.getElementById('enemy-info');
         if (eliteBadge && enemyInfo) {
-            if (this.gameState.enemy.isElite) {
-                eliteBadge.classList.remove('hidden');
-                // 为精英怪添加特殊样式
-                enemyInfo.classList.add('border-yellow-500');
-                enemyInfo.classList.add('bg-yellow-900/20');
-            } else if (this.gameState.enemy.isBoss) {
-                eliteBadge.classList.remove('hidden');
-                eliteBadge.textContent = 'BOSS';
-                eliteBadge.className = 'ml-2 text-xs bg-purple-500 text-white px-1.5 py-0.5 rounded font-bold';
-                // 为BOSS添加特殊样式
-                enemyInfo.classList.add('border-purple-500');
-                enemyInfo.classList.add('bg-purple-900/20');
+            if (this.gameState.enemy.name) {
+                if (this.gameState.enemy.isElite) {
+                    eliteBadge.classList.remove('hidden');
+                    // 为精英怪添加特殊样式
+                    enemyInfo.classList.add('border-yellow-500');
+                    enemyInfo.classList.add('bg-yellow-900/20');
+                } else if (this.gameState.enemy.isBoss) {
+                    eliteBadge.classList.remove('hidden');
+                    eliteBadge.textContent = 'BOSS';
+                    eliteBadge.className = 'ml-2 text-xs bg-purple-500 text-white px-1.5 py-0.5 rounded font-bold';
+                    // 为BOSS添加特殊样式
+                    enemyInfo.classList.add('border-purple-500');
+                    enemyInfo.classList.add('bg-purple-900/20');
+                } else {
+                    eliteBadge.classList.add('hidden');
+                    // 移除精英怪和BOSS特殊样式
+                    enemyInfo.classList.remove('border-yellow-500');
+                    enemyInfo.classList.remove('bg-yellow-900/20');
+                    enemyInfo.classList.remove('border-purple-500');
+                    enemyInfo.classList.remove('bg-purple-900/20');
+                }
             } else {
                 eliteBadge.classList.add('hidden');
                 // 移除精英怪和BOSS特殊样式
@@ -1109,86 +1212,91 @@ class EndlessWinterGame {
         // 更新敌人装备掉率信息
         const enemyDropRatesElement = document.getElementById('enemy-drop-rates');
         if (enemyDropRatesElement) {
-            // 基础掉率
-            let dropRates = {
-                white: 0.4,
-                blue: 0.3,
-                purple: 0.15,
-                gold: 0.1,
-                legendary: 0.05
-            };
-            
-            // 根据怪物类型调整掉率
-            if (this.gameState.enemy.isBoss) {
-                // BOSS掉率调整
-                dropRates = {
-                    white: 0.2,
+            if (this.gameState.enemy.name) {
+                // 基础掉率
+                let dropRates = {
+                    white: 0.4,
                     blue: 0.3,
-                    purple: 0.25,
-                    gold: 0.2,
-                    legendary: 0.05
-                };
-            } else if (this.gameState.enemy.isElite) {
-                // 精英怪掉率调整
-                dropRates = {
-                    white: 0.3,
-                    blue: 0.35,
-                    purple: 0.2,
+                    purple: 0.15,
                     gold: 0.1,
                     legendary: 0.05
                 };
-            }
-            
-            // 考虑幸运值影响（每点幸运值提高0.5%的高品质装备掉率）
-            const luck = this.gameState.player.luck || 0;
-            const luckBonus = luck * 0.005;
-            
-            // 调整掉率，提高高品质装备的概率
-            const adjustedRates = {
-                white: Math.max(0, dropRates.white - luckBonus * 2),
-                blue: Math.max(0, dropRates.blue - luckBonus),
-                purple: Math.max(0, dropRates.purple + luckBonus * 0.5),
-                gold: Math.max(0, dropRates.gold + luckBonus * 1),
-                legendary: Math.max(0, dropRates.legendary + luckBonus * 1.5)
-            };
-            
-            // 归一化概率
-            const totalProbability = Object.values(adjustedRates).reduce((sum, rate) => sum + rate, 0);
-            const normalizedRates = {};
-            for (const [rarity, rate] of Object.entries(adjustedRates)) {
-                normalizedRates[rarity] = rate / totalProbability;
-            }
-            
-            // 生成掉率显示元素
-            enemyDropRatesElement.innerHTML = '';
-            
-            // 品质颜色映射
-            const rarityColors = {
-                white: 'bg-white/10',
-                blue: 'bg-blue-500/20',
-                purple: 'bg-purple-500/20',
-                gold: 'bg-yellow-500/20',
-                legendary: 'bg-red-500/20'
-            };
-            
-            // 品质名称映射
-            const rarityNames = {
-                white: '白色',
-                blue: '蓝色',
-                purple: '紫色',
-                gold: '金色',
-                legendary: '传说'
-            };
-            
-            // 添加掉率信息
-            for (const [rarity, rate] of Object.entries(normalizedRates)) {
-                const ratePercent = Math.round(rate * 100);
-                if (ratePercent > 0) {
-                    const rateElement = document.createElement('span');
-                    rateElement.className = `text-xs ${rarityColors[rarity]} px-1.5 py-0.5 rounded`;
-                    rateElement.textContent = `${rarityNames[rarity]}: ${ratePercent}%`;
-                    enemyDropRatesElement.appendChild(rateElement);
+                
+                // 根据怪物类型调整掉率
+                if (this.gameState.enemy.isBoss) {
+                    // BOSS掉率调整
+                    dropRates = {
+                        white: 0.2,
+                        blue: 0.3,
+                        purple: 0.25,
+                        gold: 0.2,
+                        legendary: 0.05
+                    };
+                } else if (this.gameState.enemy.isElite) {
+                    // 精英怪掉率调整
+                    dropRates = {
+                        white: 0.3,
+                        blue: 0.35,
+                        purple: 0.2,
+                        gold: 0.1,
+                        legendary: 0.05
+                    };
                 }
+                
+                // 考虑幸运值影响（每点幸运值提高0.5%的高品质装备掉率）
+                const luck = this.gameState.player.luck || 0;
+                const luckBonus = luck * 0.005;
+                
+                // 调整掉率，提高高品质装备的概率
+                const adjustedRates = {
+                    white: Math.max(0, dropRates.white - luckBonus * 2),
+                    blue: Math.max(0, dropRates.blue - luckBonus),
+                    purple: Math.max(0, dropRates.purple + luckBonus * 0.5),
+                    gold: Math.max(0, dropRates.gold + luckBonus * 1),
+                    legendary: Math.max(0, dropRates.legendary + luckBonus * 1.5)
+                };
+                
+                // 归一化概率
+                const totalProbability = Object.values(adjustedRates).reduce((sum, rate) => sum + rate, 0);
+                const normalizedRates = {};
+                for (const [rarity, rate] of Object.entries(adjustedRates)) {
+                    normalizedRates[rarity] = rate / totalProbability;
+                }
+                
+                // 生成掉率显示元素
+                enemyDropRatesElement.innerHTML = '';
+                
+                // 品质颜色映射
+                const rarityColors = {
+                    white: 'bg-white/10',
+                    blue: 'bg-blue-500/20',
+                    purple: 'bg-purple-500/20',
+                    gold: 'bg-yellow-500/20',
+                    legendary: 'bg-red-500/20'
+                };
+                
+                // 品质名称映射
+                const rarityNames = {
+                    white: '白色',
+                    blue: '蓝色',
+                    purple: '紫色',
+                    gold: '金色',
+                    legendary: '传说'
+                };
+                
+                // 添加掉率信息
+                for (const [rarity, rate] of Object.entries(normalizedRates)) {
+                    const ratePercent = Math.round(rate * 100);
+                    if (ratePercent > 0) {
+                        const rateElement = document.createElement('span');
+                        rateElement.className = `text-xs ${rarityColors[rarity]} px-1.5 py-0.5 rounded`;
+                        rateElement.textContent = `${rarityNames[rarity]}: ${ratePercent}%`;
+                        enemyDropRatesElement.appendChild(rateElement);
+                    }
+                }
+            } else {
+                // 没有敌人时清空掉率信息
+                enemyDropRatesElement.innerHTML = '';
             }
         }
         
@@ -1253,6 +1361,12 @@ class EndlessWinterGame {
         
         // 更新精炼信息
         this.updateRefineInfo(this.selectedRefineSlot);
+        
+        // 只有在没有敌人信息时才隐藏敌人信息区
+        // 这样2D敌人点击后信息会保持显示
+        if (!this.gameState.battle.inBattle && !this.gameState.enemy.name) {
+            this.hideEnemyInfo();
+        }
     }
     
     // 格式化时间
@@ -1540,6 +1654,30 @@ class EndlessWinterGame {
         const isBattle = this.gameState.battle.inBattle;
         console.log('Current battle state before creating scene:', isBattle);
         
+        // 如果不是战斗状态，重置敌人信息，确保敌人信息区域显示为默认状态
+        if (!isBattle) {
+            // 重置敌人信息
+            this.gameState.enemy = {
+                name: "",
+                level: "",
+                hp: "",
+                maxHp: "",
+                attack: "",
+                defense: "",
+                energy: 0,
+                maxEnergy: 0,
+                isElite: false,
+                isBoss: false,
+                bonus: 0,
+                icon: "fa-question",
+                image: "",
+                expMultiplier: 1,
+                resourceMultiplier: 1
+            };
+            // 更新UI，确保敌人信息区域显示为默认状态
+            this.updateUI();
+        }
+        
         // 创建场景
         this.battle3D = {
             scene: new THREE.Scene(),
@@ -1568,6 +1706,11 @@ class EndlessWinterGame {
         
         // 调试：检查战斗状态
         console.log('initBattle3DScene - inBattle:', isBattle);
+        
+        // 当不在战斗状态且没有敌人时，确保敌人信息区域显示为默认状态
+        if (!isBattle && (!this.gameState.enemy || !this.gameState.enemy.name)) {
+            this.hideEnemyInfo();
+        }
         
         // 设置背景颜色和雾效
         if (isBattle) {
@@ -2024,8 +2167,34 @@ class EndlessWinterGame {
                 const finalDefense = Math.floor(baseDefense * (1 + bonus));
                 const finalHp = Math.floor(baseHp * (1 + bonus));
                 
-                // 随机选择敌人类型
-                const enemyTypes = ['雪原狼', '冰原熊', '冰霜巨人', '妖狐', '山精', '水怪', '火灵', '土妖', '风魔', '雷兽'];
+                // 根据当前地图背景选择敌人类型
+                let enemyTypes = [];
+                const currentBackground = this.gameState.mapBackgrounds[this.gameState.currentBackgroundIndex];
+                
+                if (currentBackground) {
+                    switch (currentBackground.type) {
+                        case 'xianxia-mountain':
+                            enemyTypes = ['山妖', '岩怪', '神雕', '石精', '山魈'];
+                            break;
+                        case 'xianxia-forest':
+                            enemyTypes = ['树精', '花妖', '狐仙', '鹿灵', '木怪'];
+                            break;
+                        case 'xianxia-lake':
+                            enemyTypes = ['水怪', '蛟蛇', '龟妖', '鱼精', '水仙'];
+                            break;
+                        case 'xianxia-desert':
+                            enemyTypes = ['沙妖', '蝎精', '蛇怪', '沙漠巨蜥', '沙虫'];
+                            break;
+                        case 'xianxia-cave':
+                            enemyTypes = ['洞穴蝙蝠', '石怪', '蜘蛛精', '蚯蚓怪', '洞穴幽灵'];
+                            break;
+                        default:
+                            enemyTypes = ['妖狐', '山精', '水怪', '火灵', '土妖', '风魔', '雷兽'];
+                    }
+                } else {
+                    enemyTypes = ['妖狐', '山精', '水怪', '火灵', '土妖', '风魔', '雷兽'];
+                }
+                
                 const enemyTypeName = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
                 
                 // 创建敌人信息
@@ -3343,6 +3512,13 @@ class EndlessWinterGame {
             this.updateUI();
         });
         
+        // 攻击确认按钮
+        document.getElementById('attack-confirm-btn').addEventListener('click', () => {
+            if (this.gameState.enemy) {
+                this.encounterEnemy(this.gameState.enemy);
+            }
+        });
+        
         // 初始化所有按钮的tooltip
         this.initTooltips();
         
@@ -3465,6 +3641,7 @@ class EndlessWinterGame {
         if (!this.battle3D || !this.battle3D.player || !this.battle3D.enemies) return;
         
         const playerPos = this.battle3D.player.position;
+        let enemyEncountered = false;
         
         // 遍历所有敌人，检查碰撞
         for (let i = 0; i < this.battle3D.enemies.length; i++) {
@@ -3481,45 +3658,39 @@ class EndlessWinterGame {
                 // 如果玩家离敌人足够近（小于0.5单位），触发遇敌
                 if (distance < 0.5) {
                     this.triggerEnemyEncounter(enemy);
+                    enemyEncountered = true;
                     break;
                 }
             }
+        }
+        
+        // 如果没有碰到敌人，确保敌人信息区域显示默认状态（空白）
+        if (!enemyEncountered && !this.gameState.battle.inBattle) {
+            // 无论当前是否有敌人信息，都隐藏敌人信息区
+            this.hideEnemyInfo();
+            // 清除游戏状态中的敌人信息
+            this.gameState.enemy = null;
         }
     }
     
     // 触发敌人遭遇
     triggerEnemyEncounter(enemy) {
-        // 显示遇敌提示，让玩家决定是否攻击
-        if (confirm(`你遇到了${enemy.info.name}！\n等级: ${enemy.info.level}\nHP: ${enemy.info.hp}\n攻击: ${enemy.info.attack}\n防御: ${enemy.info.defense}\n\n是否发起攻击？`)) {
-            console.log('开始创建战斗场景...');
-            
-            // 标记敌人为非活跃
-            enemy.active = false;
-            // 从场景中移除敌人模型
-            try {
-                if (this.battle3D && this.battle3D.scene && enemy.model) {
-                    this.battle3D.scene.remove(enemy.model);
-                }
-            } catch (e) {
-                console.log('移除敌人模型时出错:', e);
-            }
-            
-            // 保存当前地图场景状态
-            this.saveMapState();
-            
-            // 进入战斗模式，使用与2D地图相同的逻辑
-            this.encounterEnemy(enemy.info, true);
-        }
+        console.log('3D场景遇到敌人:', enemy.info.name);
+        
+        // 与2D场景行为一致，直接更新敌人信息区域
+        this.showAttackConfirmation(enemy.info);
+        
+        // 不标记敌人为非活跃，也不从场景中移除敌人模型
+        // 敌人只有在被击败后才会消失
     }
     
     // 保存地图场景状态
     saveMapState() {
-        if (this.battle3D) {
-            this.mapState = {
-                playerPosition: this.battle3D.player.position.clone(),
-                enemies: this.battle3D.enemies.filter(e => e.active)
-            };
-        }
+        this.mapState = {
+            playerPosition: this.battle3D ? this.battle3D.player.position.clone() : null,
+            enemies: this.battle3D ? this.battle3D.enemies.filter(e => e.active) : [],
+            sceneMonsters: JSON.parse(JSON.stringify(this.gameState.sceneMonsters))
+        };
     }
     
     // 创建单独的3D战斗场景
@@ -3913,8 +4084,44 @@ class EndlessWinterGame {
         // 设置战斗状态为false
         this.gameState.battle.inBattle = false;
         
-        // 重新生成小地图和敌人
-        this.generateMiniMap();
+        // 恢复保存的敌人分布
+        if (this.mapState && this.mapState.sceneMonsters) {
+            console.log('恢复保存的敌人分布，原始数量:', this.mapState.sceneMonsters.length);
+            
+            // 检查当前敌人是否被击败
+            const enemyDefeated = this.gameState.enemy && this.gameState.enemy.hp <= 0;
+            
+            if (enemyDefeated) {
+                // 如果敌人被击败，从保存的场景怪物中移除该敌人
+                const currentEnemyCellIndex = this.gameState.enemy.cellIndex;
+                if (currentEnemyCellIndex !== undefined) {
+                    console.log('敌人被击败，移除cellIndex:', currentEnemyCellIndex);
+                    this.mapState.sceneMonsters = this.mapState.sceneMonsters.filter(monster => 
+                        monster.cellIndex !== currentEnemyCellIndex
+                    );
+                    console.log('移除后剩余敌人数量:', this.mapState.sceneMonsters.length);
+                }
+            }
+            
+            // 恢复场景怪物状态
+            this.gameState.sceneMonsters = JSON.parse(JSON.stringify(this.mapState.sceneMonsters));
+            console.log('恢复后的场景怪物数量:', this.gameState.sceneMonsters.length);
+            console.log('恢复后的场景怪物数据:', this.gameState.sceneMonsters);
+            
+            // 只有当所有敌人都被击败时才重新生成新的敌人分布
+            if (this.gameState.sceneMonsters.length === 0) {
+                console.log('所有敌人已被击败，重新生成敌人分布');
+                this.generateMiniMap();
+            } else {
+                console.log('恢复之前的敌人分布，剩余敌人数量:', this.gameState.sceneMonsters.length);
+                // 重新渲染小地图
+                this.renderMiniMap();
+            }
+        } else {
+            // 如果没有保存的状态，重新生成小地图
+            console.log('没有保存的状态，重新生成敌人分布');
+            this.generateMiniMap();
+        }
         
         // 重新初始化地图场景
         this.initBattle3DScene();
@@ -3922,9 +4129,13 @@ class EndlessWinterGame {
         // 恢复UI布局
         this.restoreUILayout();
         
+        // 隐藏敌人信息区
+        this.hideEnemyInfo();
+        
         // 恢复玩家位置
         if (this.mapState && this.mapState.playerPosition && this.battle3D && this.battle3D.player) {
             this.battle3D.player.position.copy(this.mapState.playerPosition);
+            console.log('恢复玩家位置:', this.mapState.playerPosition);
         }
         
         // 淡入地图场景
@@ -3934,6 +4145,86 @@ class EndlessWinterGame {
         this.gameState.battle.inBattle = false;
         
         console.log('地图场景恢复完成');
+    }
+    
+    // 创建敌人图标
+    createEnemyIcon(enemyInfo) {
+        // 调试信息
+        console.log('createEnemyIcon - enemyInfo:', enemyInfo);
+        
+        // 计算敌人和玩家的战斗力
+        const enemyPower = enemyInfo.attack * 2 + (enemyInfo.defense || 0) * 1.5 + enemyInfo.maxHp * 0.1;
+        const playerAttack = this.gameState.player.attack + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.attack : 0);
+        const playerDefense = this.gameState.player.defense + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.defense : 0);
+        const playerPower = playerAttack * 2 + playerDefense * 1.5 + this.gameState.player.maxHp * 0.1;
+        
+        // 调试信息
+        console.log('Enemy power:', enemyPower);
+        console.log('Player power:', playerPower);
+        console.log('Power ratio:', enemyPower / playerPower);
+        
+        // 根据战斗力差距设置敌人图标颜色
+        let enemyIconColor = 'text-green-500';
+        let enemyBgColor = 'bg-green-500/30';
+        if (enemyPower > playerPower * 1.5) {
+            enemyIconColor = 'text-red-500';
+            enemyBgColor = 'bg-red-500/30';
+        } else if (enemyPower > playerPower) {
+            enemyIconColor = 'text-yellow-500';
+            enemyBgColor = 'bg-yellow-500/30';
+        }
+        
+        const enemyIcon = document.createElement('div');
+        enemyIcon.className = `w-6 h-6 rounded-full ${enemyBgColor} flex items-center justify-center ${enemyIconColor} cursor-pointer transition-colors`;
+        enemyIcon.innerHTML = `<i class="fa fa-skull text-xs ${enemyIconColor}"></i>`;
+        
+        // 存储敌人信息
+        enemyIcon.dataset.enemyInfo = JSON.stringify(enemyInfo);
+        
+        // 添加敌人信息提示
+        enemyIcon.setAttribute('data-tooltip', `${enemyInfo.name}\n等级: ${enemyInfo.level}\nHP: ${enemyInfo.hp}/${enemyInfo.maxHp}\n攻击: ${enemyInfo.attack}\n防御: ${enemyInfo.defense}${enemyInfo.isBoss ? '\n能量: 100/100' : ''}`);
+        
+        // 添加点击事件
+        enemyIcon.addEventListener('click', () => {
+            try {
+                const enemyInfo = JSON.parse(enemyIcon.dataset.enemyInfo);
+                console.log('点击了2D敌人，敌人信息:', enemyInfo);
+                this.showAttackConfirmation(enemyInfo);
+            } catch (error) {
+                console.error('解析敌人信息失败:', error);
+            }
+        });
+        
+        return enemyIcon;
+    }
+    
+    // 重新渲染小地图
+    renderMiniMap() {
+        const mapGrid = document.getElementById('map-grid');
+        mapGrid.innerHTML = '';
+        
+        // 生成5x5的地图格子
+        for (let i = 0; i < 25; i++) {
+            const gridCell = document.createElement('div');
+            gridCell.className = 'bg-dark/30 rounded flex items-center justify-center';
+            gridCell.dataset.cellIndex = i;
+            
+            // 检查当前格子是否有敌人
+            const enemyInCell = this.gameState.sceneMonsters.find(monster => monster.cellIndex === i);
+            if (enemyInCell) {
+                // 使用通用方法创建敌人图标
+                const enemyIcon = this.createEnemyIcon(enemyInCell);
+                gridCell.appendChild(enemyIcon);
+            }
+            
+            mapGrid.appendChild(gridCell);
+        }
+        
+        // 更新地图背景
+        this.updateMapBackground();
+        
+        // 重新初始化tooltip
+        this.initTooltips();
     }
     
     // 淡入地图场景
@@ -3962,12 +4253,16 @@ class EndlessWinterGame {
     
     // 攻击敌人
     attackEnemy() {
+        // 只有在战斗模式中才能使用普通攻击
+        if (!this.gameState.battle.inBattle) {
+            this.addBattleLog('只有在战斗模式中才能使用普通攻击！');
+            return;
+        }
+        
         // 确保战斗场景已初始化
         if (!this.battle3D || !this.battle3D.player || !this.battle3D.enemy) {
-            // 如果战斗场景未初始化，重新初始化
-            console.log('战斗场景未初始化，重新初始化...');
-            this.gameState.battle.inBattle = true;
-            this.initBattle3DScene();
+            this.addBattleLog('战斗场景未初始化！');
+            return;
         }
         
         // 播放攻击声音
@@ -4046,161 +4341,305 @@ class EndlessWinterGame {
         
         // 更新血条显示
         this.updateHealthBars();
-        
-        // 更新血条显示
-        this.updateHealthBars();
     }
     
-    // 显示攻击确认窗口
+    // 显示攻击确认窗口（修改为更新敌人信息区）
     showAttackConfirmation(enemyInfo) {
-        // 创建确认窗口元素
-        const confirmationDiv = document.createElement('div');
-        confirmationDiv.className = 'fixed inset-0 bg-black/70 flex items-center justify-center z-50';
-        confirmationDiv.id = 'attack-confirmation';
+        console.log('调用了showAttackConfirmation，敌人信息:', enemyInfo);
+        // 更新游戏状态中的敌人信息
+        this.gameState.enemy = enemyInfo;
+        console.log('更新后的游戏状态敌人信息:', this.gameState.enemy);
         
-        // 创建确认窗口内容
-        const confirmationContent = document.createElement('div');
-        confirmationContent.className = 'bg-dark border border-accent rounded-lg p-6 max-w-md w-full';
+        // 直接更新敌人信息区域的UI元素
+        const enemyNameElement = document.getElementById('enemy-name');
+        if (enemyNameElement) {
+            enemyNameElement.textContent = enemyInfo.name || '';
+        }
+        const enemyLevelElement = document.getElementById('enemy-level');
+        if (enemyLevelElement) {
+            enemyLevelElement.textContent = enemyInfo.level || '';
+        }
+        const enemyHpElement = document.getElementById('enemy-hp');
+        if (enemyHpElement) {
+            enemyHpElement.textContent = enemyInfo.hp || '';
+        }
+        const enemyMaxHpElement = document.getElementById('enemy-max-hp');
+        if (enemyMaxHpElement) {
+            enemyMaxHpElement.textContent = enemyInfo.maxHp || '';
+        }
+        const enemyAttackElement = document.getElementById('enemy-attack');
+        if (enemyAttackElement) {
+            enemyAttackElement.textContent = enemyInfo.attack || '';
+        }
         
-        // 敌人信息
-        const enemyName = document.createElement('h3');
-        enemyName.className = 'font-bold text-white text-xl mb-4';
-        enemyName.textContent = enemyInfo.name;
+        // 更新敌人图标
+        const enemyIconElement = document.querySelector('#enemy-icon i');
+        if (enemyIconElement) {
+            // 计算敌人和玩家的战斗力
+            const enemyPower = enemyInfo.attack * 2 + (enemyInfo.defense || 0) * 1.5 + enemyInfo.maxHp * 0.1;
+            const playerAttack = this.gameState.player.attack + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.attack : 0);
+            const playerDefense = this.gameState.player.defense + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.defense : 0);
+            const playerHp = this.gameState.player.maxHp + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.hp : 0);
+            const playerPower = playerAttack * 2 + playerDefense * 1.5 + playerHp * 0.1;
+            
+            // 根据战斗力对比确定敌人颜色
+            let enemyColorClass = 'text-danger'; // 默认红色
+            if (enemyInfo.isBoss) {
+                enemyColorClass = 'text-purple-500'; // BOSS显示紫色
+            } else if (enemyInfo.isElite) {
+                enemyColorClass = 'text-yellow-500'; // 精英怪显示黄色
+            } else {
+                const powerRatio = enemyPower / playerPower;
+                if (powerRatio < 0.7) {
+                    enemyColorClass = 'text-green-500'; // 比玩家弱显示绿色
+                } else if (powerRatio < 1.3) {
+                    enemyColorClass = 'text-yellow-500'; // 和玩家差不多显示黄色
+                } else {
+                    enemyColorClass = 'text-red-500'; // 比玩家厉害显示红色
+                }
+            }
+            enemyIconElement.className = `fa ${enemyInfo.icon || 'fa-skull'} text-xl ${enemyColorClass}`;
+        }
         
-        // 计算掉落概率
-        let dropRates = {
-            white: 0.4,
-            blue: 0.3,
-            purple: 0.15,
-            gold: 0.1,
-            legendary: 0.05
-        };
+        // 更新精英标识
+        const eliteBadge = document.getElementById('enemy-elite-badge');
+        const enemyInfoElement = document.getElementById('enemy-info');
+        if (eliteBadge && enemyInfoElement) {
+            if (enemyInfo.isElite) {
+                eliteBadge.classList.remove('hidden');
+                eliteBadge.textContent = '精英';
+                eliteBadge.className = 'ml-2 text-xs bg-yellow-500 text-black px-1.5 py-0.5 rounded font-bold';
+                // 为精英怪添加特殊样式
+                enemyInfoElement.classList.add('border-yellow-500');
+                enemyInfoElement.classList.add('bg-yellow-900/20');
+                enemyInfoElement.classList.remove('border-purple-500');
+                enemyInfoElement.classList.remove('bg-purple-900/20');
+            } else if (enemyInfo.isBoss) {
+                eliteBadge.classList.remove('hidden');
+                eliteBadge.textContent = 'BOSS';
+                eliteBadge.className = 'ml-2 text-xs bg-purple-500 text-white px-1.5 py-0.5 rounded font-bold';
+                // 为BOSS添加特殊样式
+                enemyInfoElement.classList.add('border-purple-500');
+                enemyInfoElement.classList.add('bg-purple-900/20');
+                enemyInfoElement.classList.remove('border-yellow-500');
+                enemyInfoElement.classList.remove('bg-yellow-900/20');
+            } else {
+                eliteBadge.classList.add('hidden');
+                // 移除精英怪和BOSS特殊样式
+                enemyInfoElement.classList.remove('border-yellow-500');
+                enemyInfoElement.classList.remove('bg-yellow-900/20');
+                enemyInfoElement.classList.remove('border-purple-500');
+                enemyInfoElement.classList.remove('bg-purple-900/20');
+            }
+        }
         
-        // 根据怪物类型调整掉率
-        if (enemyInfo.isBoss) {
-            // BOSS掉率调整
-            dropRates = {
-                white: 0.2,
+        // 更新敌人装备掉率信息
+        const enemyDropRatesElement = document.getElementById('enemy-drop-rates');
+        if (enemyDropRatesElement) {
+            // 基础掉率
+            let dropRates = {
+                white: 0.4,
                 blue: 0.3,
-                purple: 0.25,
-                gold: 0.2,
-                legendary: 0.05
-            };
-        } else if (enemyInfo.isElite) {
-            // 精英怪掉率调整
-            dropRates = {
-                white: 0.3,
-                blue: 0.35,
-                purple: 0.2,
+                purple: 0.15,
                 gold: 0.1,
                 legendary: 0.05
             };
-        }
-        
-        // 考虑幸运值影响（每点幸运值提高0.5%的高品质装备掉率）
-        const luck = this.gameState.player.luck || 0;
-        const luckBonus = luck * 0.005;
-        
-        // 调整掉率，提高高品质装备的概率
-        const adjustedRates = {
-            white: Math.max(0, dropRates.white - luckBonus * 2),
-            blue: Math.max(0, dropRates.blue - luckBonus),
-            purple: Math.max(0, dropRates.purple + luckBonus * 0.5),
-            gold: Math.max(0, dropRates.gold + luckBonus * 1),
-            legendary: Math.max(0, dropRates.legendary + luckBonus * 1.5)
-        };
-        
-        // 归一化概率
-        const totalProbability = Object.values(adjustedRates).reduce((sum, rate) => sum + rate, 0);
-        const normalizedRates = {};
-        for (const [rarity, rate] of Object.entries(adjustedRates)) {
-            normalizedRates[rarity] = rate / totalProbability;
-        }
-        
-        // 生成掉率显示HTML
-        const rarityColors = {
-            white: 'bg-white/10',
-            blue: 'bg-blue-500/20',
-            purple: 'bg-purple-500/20',
-            gold: 'bg-yellow-500/20',
-            legendary: 'bg-red-500/20'
-        };
-        
-        const rarityNames = {
-            white: '白色',
-            blue: '蓝色',
-            purple: '紫色',
-            gold: '金色',
-            legendary: '传说'
-        };
-        
-        let dropRatesHTML = '<div class="mt-3 pt-3 border-t border-dark/50">';
-        dropRatesHTML += '<p class="text-xs text-light/70 mb-1">装备掉率:</p>';
-        dropRatesHTML += '<div class="flex flex-wrap gap-2">';
-        
-        for (const [rarity, rate] of Object.entries(normalizedRates)) {
-            const ratePercent = Math.round(rate * 100);
-            if (ratePercent > 0) {
-                dropRatesHTML += `<span class="text-xs ${rarityColors[rarity]} px-1.5 py-0.5 rounded">${rarityNames[rarity]}: ${ratePercent}%</span>`;
+            
+            // 根据怪物类型调整掉率
+            if (enemyInfo.isBoss) {
+                // BOSS掉率调整
+                dropRates = {
+                    white: 0.2,
+                    blue: 0.3,
+                    purple: 0.25,
+                    gold: 0.2,
+                    legendary: 0.05
+                };
+            } else if (enemyInfo.isElite) {
+                // 精英怪掉率调整
+                dropRates = {
+                    white: 0.3,
+                    blue: 0.35,
+                    purple: 0.2,
+                    gold: 0.1,
+                    legendary: 0.05
+                };
             }
-        }
-        
-        dropRatesHTML += '</div>';
-        dropRatesHTML += '</div>';
-        
-        const enemyDetails = document.createElement('div');
-        enemyDetails.className = 'text-light/80 mb-6 space-y-2';
-        enemyDetails.innerHTML = `
-            <div>等级: <span class="text-accent">${enemyInfo.level}</span></div>
-            <div>HP: <span class="text-danger">${enemyInfo.hp}/${enemyInfo.maxHp}</span></div>
-            <div>攻击: <span class="text-accent">${enemyInfo.attack}</span></div>
-            <div>防御: <span class="text-accent">${enemyInfo.defense}</span></div>
-            ${enemyInfo.isBoss ? '<div>能量: <span class="text-accent">100/100</span></div>' : ''}
-            ${dropRatesHTML}
-        `;
-        
-        // 确认和取消按钮
-        const buttonContainer = document.createElement('div');
-        buttonContainer.className = 'flex justify-between space-x-4';
-        
-        const cancelButton = document.createElement('button');
-        cancelButton.className = 'flex-1 bg-dark/50 hover:bg-dark/70 text-white py-2 px-4 rounded border border-dark/70 transition-colors';
-        cancelButton.textContent = '取消';
-        cancelButton.addEventListener('click', () => {
-            try {
-                if (document.body.contains(confirmationDiv)) {
-                    document.body.removeChild(confirmationDiv);
+            
+            // 考虑幸运值影响（每点幸运值提高0.5%的高品质装备掉率）
+            const luck = this.gameState.player.luck || 0;
+            const luckBonus = luck * 0.005;
+            
+            // 调整掉率，提高高品质装备的概率
+            const adjustedRates = {
+                white: Math.max(0, dropRates.white - luckBonus * 2),
+                blue: Math.max(0, dropRates.blue - luckBonus),
+                purple: Math.max(0, dropRates.purple + luckBonus * 0.5),
+                gold: Math.max(0, dropRates.gold + luckBonus * 1),
+                legendary: Math.max(0, dropRates.legendary + luckBonus * 1.5)
+            };
+            
+            // 归一化概率
+            const totalProbability = Object.values(adjustedRates).reduce((sum, rate) => sum + rate, 0);
+            const normalizedRates = {};
+            for (const [rarity, rate] of Object.entries(adjustedRates)) {
+                normalizedRates[rarity] = rate / totalProbability;
+            }
+            
+            // 生成掉率显示元素
+            enemyDropRatesElement.innerHTML = '';
+            
+            // 品质颜色映射
+            const rarityColors = {
+                white: 'bg-white/10',
+                blue: 'bg-blue-500/20',
+                purple: 'bg-purple-500/20',
+                gold: 'bg-yellow-500/20',
+                legendary: 'bg-red-500/20'
+            };
+            
+            // 品质名称映射
+            const rarityNames = {
+                white: '白色',
+                blue: '蓝色',
+                purple: '紫色',
+                gold: '金色',
+                legendary: '传说'
+            };
+            
+            // 添加掉率信息
+            for (const [rarity, rate] of Object.entries(normalizedRates)) {
+                const ratePercent = Math.round(rate * 100);
+                if (ratePercent > 0) {
+                    const rateElement = document.createElement('span');
+                    rateElement.className = `text-xs ${rarityColors[rarity]} px-1.5 py-0.5 rounded`;
+                    rateElement.textContent = `${rarityNames[rarity]}: ${ratePercent}%`;
+                    enemyDropRatesElement.appendChild(rateElement);
                 }
-            } catch (e) {
-                console.log('移除确认窗口时出错:', e);
             }
-        });
+        }
         
-        const confirmButton = document.createElement('button');
-        confirmButton.className = 'flex-1 bg-accent hover:bg-accent/80 text-white py-2 px-4 rounded transition-colors';
-        confirmButton.textContent = '确认攻击';
-        confirmButton.addEventListener('click', () => {
-            try {
-                if (document.body.contains(confirmationDiv)) {
-                    document.body.removeChild(confirmationDiv);
-                }
-            } catch (e) {
-                console.log('移除确认窗口时出错:', e);
+        // 显示攻击确认按钮，隐藏技能按钮
+        const attackConfirmBtn = document.getElementById('attack-confirm-btn');
+        const attackSkills = document.getElementById('attack-skills');
+        console.log('显示攻击确认按钮，隐藏技能按钮');
+        console.log('attackConfirmBtn:', attackConfirmBtn);
+        console.log('attackSkills:', attackSkills);
+        if (attackConfirmBtn) {
+            console.log('攻击确认按钮当前类:', attackConfirmBtn.className);
+            // 强制移除hidden类，确保按钮显示
+            attackConfirmBtn.classList.remove('hidden');
+            console.log('攻击确认按钮修改后类:', attackConfirmBtn.className);
+        }
+        if (attackSkills) {
+            attackSkills.classList.add('hidden');
+        }
+        
+        console.log('敌人信息更新完成');
+    }
+    
+    // 显示敌人操作按钮
+    showEnemyActionButtons() {
+        // 检查是否已有按钮容器
+        let buttonContainer = document.getElementById('enemy-action-buttons');
+        if (!buttonContainer) {
+            // 创建按钮容器
+            buttonContainer = document.createElement('div');
+            buttonContainer.id = 'enemy-action-buttons';
+            buttonContainer.className = 'mt-3 pt-3 border-t border-dark/50 flex justify-between';
+            
+            // 创建攻击按钮
+            const attackButton = document.createElement('button');
+            attackButton.id = 'enemy-attack-btn';
+            attackButton.className = 'flex-1 bg-accent hover:bg-accent/80 text-white py-2 px-4 rounded transition-colors';
+            attackButton.textContent = '攻击';
+            attackButton.addEventListener('click', () => {
+                // 遭遇敌人
+                this.encounterEnemy(this.gameState.enemy);
+            });
+            
+            // 创建取消按钮
+            const cancelButton = document.createElement('button');
+            cancelButton.id = 'enemy-cancel-btn';
+            cancelButton.className = 'flex-1 bg-dark/50 hover:bg-dark/70 text-white py-2 px-4 rounded border border-dark/70 transition-colors';
+            cancelButton.textContent = '取消';
+            cancelButton.addEventListener('click', () => {
+                // 隐藏敌人信息区
+                this.hideEnemyInfo();
+            });
+            
+            // 添加按钮到容器
+            buttonContainer.appendChild(cancelButton);
+            buttonContainer.appendChild(attackButton);
+            
+            // 添加到敌人信息区
+            const enemyInfoElement = document.getElementById('enemy-info');
+            if (enemyInfoElement) {
+                enemyInfoElement.appendChild(buttonContainer);
             }
-            this.encounterEnemy(enemyInfo);
-        });
+        } else {
+            // 显示已有的按钮容器
+            buttonContainer.classList.remove('hidden');
+        }
+    }
+    
+    // 清空敌人信息区
+    hideEnemyInfo() {
+        // 清空敌人信息
+        const enemyNameElement = document.getElementById('enemy-name');
+        if (enemyNameElement) {
+            enemyNameElement.textContent = '';
+        }
+        const enemyLevelElement = document.getElementById('enemy-level');
+        if (enemyLevelElement) {
+            enemyLevelElement.textContent = '';
+        }
+        const enemyHpElement = document.getElementById('enemy-hp');
+        if (enemyHpElement) {
+            enemyHpElement.textContent = '';
+        }
+        const enemyMaxHpElement = document.getElementById('enemy-max-hp');
+        if (enemyMaxHpElement) {
+            enemyMaxHpElement.textContent = '';
+        }
+        const enemyAttackElement = document.getElementById('enemy-attack');
+        if (enemyAttackElement) {
+            enemyAttackElement.textContent = '';
+        }
         
-        buttonContainer.appendChild(cancelButton);
-        buttonContainer.appendChild(confirmButton);
+        // 清空敌人图标
+        const enemyIconElement = document.querySelector('#enemy-icon i');
+        if (enemyIconElement) {
+            enemyIconElement.className = 'fa fa-question text-xl text-gray-500';
+        }
         
-        // 组装确认窗口
-        confirmationContent.appendChild(enemyName);
-        confirmationContent.appendChild(enemyDetails);
-        confirmationContent.appendChild(buttonContainer);
-        confirmationDiv.appendChild(confirmationContent);
+        // 隐藏精英标识
+        const eliteBadge = document.getElementById('enemy-elite-badge');
+        if (eliteBadge) {
+            eliteBadge.classList.add('hidden');
+        }
         
-        // 添加到页面
-        document.body.appendChild(confirmationDiv);
+        // 清空掉率信息
+        const enemyDropRatesElement = document.getElementById('enemy-drop-rates');
+        if (enemyDropRatesElement) {
+            enemyDropRatesElement.innerHTML = '';
+        }
+        
+        // 隐藏攻击确认按钮和技能按钮
+        const attackConfirmBtn = document.getElementById('attack-confirm-btn');
+        const attackSkills = document.getElementById('attack-skills');
+        if (attackConfirmBtn) {
+            attackConfirmBtn.classList.add('hidden');
+        }
+        if (attackSkills) {
+            attackSkills.classList.add('hidden');
+        }
+        
+        // 隐藏敌人操作按钮
+        const buttonContainer = document.getElementById('enemy-action-buttons');
+        if (buttonContainer) {
+            buttonContainer.classList.add('hidden');
+        }
     }
 
     // 敌人被击败
@@ -4351,6 +4790,12 @@ class EndlessWinterGame {
     
     // 使用特殊技
     useSkill(skillIndex) {
+        // 只有在战斗模式中才能使用技能
+        if (!this.gameState.battle.inBattle) {
+            this.addBattleLog('只有在战斗模式中才能使用技能！');
+            return;
+        }
+        
         const skill = this.gameState.player.skills[skillIndex];
         if (!skill) {
             this.addBattleLog('无效的技能！');

@@ -467,32 +467,19 @@
                     <div class="bg-glass border-glass rounded-lg p-4 hover:shadow-xl hover:shadow-accent/10 transition-all">
                         <div class="flex justify-between items-center mb-4">
                             <h2 class="text-xl font-bold text-white">探索地图</h2>
-                            <button id="refresh-enemy-btn" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="刷新随机敌人">
-                                <i class="fa fa-refresh text-white"></i>
-                            </button>
+                            <div class="flex space-x-2">
+                                <button id="auto-battle-btn" class="btn-primary bg-secondary hover:bg-secondary/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="自动进行战斗，消耗能量">
+                                    <i class="fa fa-bolt text-white"></i>
+                                </button>
+                                <button id="auto-collect-btn" class="btn-primary bg-secondary hover:bg-secondary/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="自动收集资源，消耗能量">
+                                    <i class="fa fa-leaf text-green-400"></i>
+                                </button>
+                                <button id="refresh-enemy-btn" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="刷新随机敌人">
+                                    <i class="fa fa-refresh text-white"></i>
+                                </button>
+                            </div>
                         </div>
                         <div id="battle-area">
-                            <!-- 3D探索场景 -->
-                            <div id="battle-3d-container" class="bg-dark/50 border border-glass rounded-lg p-3 mb-4 hover:shadow-lg hover:shadow-danger/20 transition-all" style="height: 500px; width: 100%; position: relative;">
-                                <!-- 3D场景将由JavaScript动态生成 -->
-                                <div style="color: white; position: absolute; top: 10px; left: 10px; z-index: 10;">3D探索场景</div>
-                            </div>
-                            
-                            <!-- 小地图 -->
-                            <div id="mini-map" class="bg-dark/50 border border-glass rounded-lg p-4 mb-4 relative" style="height: 150px;">
-                                <!-- 地图背景 -->
-                                <div id="map-background" class="absolute inset-0 rounded-lg overflow-hidden z-0 opacity-30">
-                                    <img src="" alt="地图背景" class="w-full h-full object-cover">
-                                </div>
-                                <div id="map-grid" class="grid grid-cols-5 gap-1 h-full relative z-10">
-                                    <!-- 地图格子将由JavaScript动态生成 -->
-                                </div>
-                                <!-- 玩家位置 -->
-                                <div id="player-position" class="absolute w-8 h-8 rounded-full bg-accent/50 flex items-center justify-center shadow-lg shadow-accent/30 animate-pulse z-10" style="top: 50%; left: 50%; transform: translate(-50%, -50%);">
-                                    <i class="fa fa-user text-white text-sm"></i>
-                                </div>
-                            </div>
-                            
                             <!-- 敌人信息 -->
                             <div id="enemy-info" class="enemy-card bg-danger/20 border border-danger/30 rounded-lg p-3 mb-4 hover:shadow-lg hover:shadow-danger/20 transition-all">
                                 <div class="flex items-center justify-between">
@@ -524,37 +511,54 @@
                                         <span class="text-xs bg-red-500/20 px-1.5 py-0.5 rounded">传说: 5%</span>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="flex justify-between items-center mb-3">
-                                <!-- 普通攻击和技能攻击一起放到左边 -->
-                                <div class="flex space-x-2">
-                                    <button id="attack-btn" class="btn-primary bg-primary hover:bg-primary/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="对敌人进行普通攻击，不消耗能量">
-                                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=normal%20attack%20button%20winter%20theme%20red%20crystal%20style%20clean%20minimal&image_size=square" alt="普通攻击" class="w-full h-full object-cover">
-                                </button>
-                                <button id="skill-0" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="强力攻击: 造成2倍普通伤害，消耗20能量，需要1级">
-                                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=powerful%20attack%20skill%20button%20winter%20theme%20yellow%20crystal%20style%20clean%20minimal&image_size=square" alt="强力攻击" class="w-full h-full object-cover">
-                                </button>
-                                <button id="skill-1" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="防御姿态: 减少50%受到的敌人伤害，消耗15能量，需要10级">
-                                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=defense%20stance%20skill%20button%20winter%20theme%20blue%20crystal%20style%20clean%20minimal&image_size=square" alt="防御姿态" class="w-full h-full object-cover">
-                                </button>
-                                <button id="skill-2" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="生命恢复: 恢复20%最大生命值，消耗25能量，需要20级">
-                                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=life%20heal%20skill%20button%20winter%20theme%20green%20crystal%20style%20clean%20minimal&image_size=square" alt="生命恢复" class="w-full h-full object-cover">
-                                </button>
-                                <button id="skill-3" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="幸运一击: 有70%几率造成3倍伤害，消耗30能量，需要30级">
-                                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=lucky%20strike%20skill%20button%20winter%20theme%20purple%20crystal%20style%20clean%20minimal&image_size=square" alt="幸运一击" class="w-full h-full object-cover">
-                                </button>
-                                </div>
-                                
-                                <!-- 自动战斗和自动收集按钮 -->
-                                <div class="flex space-x-2">
-                                    <button id="auto-battle-btn" class="btn-primary bg-secondary hover:bg-secondary/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="自动进行战斗，消耗能量">
-                                        <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=auto%20battle%20button%20winter%20theme%20green%20crystal%20style%20clean%20minimal&image_size=square" alt="自动战斗" class="w-full h-full object-cover">
-                                    </button>
-                                    <button id="auto-collect-btn" class="btn-primary bg-secondary hover:bg-secondary/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="自动收集资源，消耗能量">
-                                        <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=auto%20collect%20resources%20button%20winter%20theme%20blue%20crystal%20style%20clean%20minimal&image_size=square" alt="自动收集" class="w-full h-full object-cover">
+                                <!-- 攻击按钮和技能 -->
+                                <div class="mt-3 pt-3 border-t border-dark/50 flex justify-between items-center">
+                                    <!-- 战斗模式下的攻击技能 -->
+                                    <div class="flex space-x-2" id="attack-skills">
+                                        <button id="attack-btn" class="btn-primary bg-primary hover:bg-primary/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="对敌人进行普通攻击，不消耗能量">
+                                            <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=normal%20attack%20button%20winter%20theme%20red%20crystal%20style%20clean%20minimal&image_size=square" alt="普通攻击" class="w-full h-full object-cover">
+                                        </button>
+                                        <button id="skill-0" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="强力攻击: 造成2倍普通伤害，消耗20能量，需要1级">
+                                            <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=powerful%20attack%20skill%20button%20winter%20theme%20yellow%20crystal%20style%20clean%20minimal&image_size=square" alt="强力攻击" class="w-full h-full object-cover">
+                                        </button>
+                                        <button id="skill-1" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="防御姿态: 减少50%受到的敌人伤害，消耗15能量，需要10级">
+                                            <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=defense%20stance%20skill%20button%20winter%20theme%20blue%20crystal%20style%20clean%20minimal&image_size=square" alt="防御姿态" class="w-full h-full object-cover">
+                                        </button>
+                                        <button id="skill-2" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="生命恢复: 恢复20%最大生命值，消耗25能量，需要20级">
+                                            <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=life%20heal%20skill%20button%20winter%20theme%20green%20crystal%20style%20clean%20minimal&image_size=square" alt="生命恢复" class="w-full h-full object-cover">
+                                        </button>
+                                        <button id="skill-3" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="幸运一击: 有70%几率造成3倍伤害，消耗30能量，需要30级">
+                                            <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=lucky%20strike%20skill%20button%20winter%20theme%20purple%20crystal%20style%20clean%20minimal&image_size=square" alt="幸运一击" class="w-full h-full object-cover">
+                                        </button>
+                                    </div>
+                                    <!-- 确定攻击按钮 -->
+                                    <button id="attack-confirm-btn" class="btn-primary bg-primary hover:bg-primary/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="确定攻击，进入战斗模式">
+                                        <i class="fa fa-play text-white"></i>
                                     </button>
                                 </div>
                             </div>
+                            
+                            <!-- 3D探索场景 -->
+                            <div id="battle-3d-container" class="bg-dark/50 border border-glass rounded-lg p-3 mb-4 hover:shadow-lg hover:shadow-danger/20 transition-all" style="height: 500px; width: 100%; position: relative;">
+                                <!-- 3D场景将由JavaScript动态生成 -->
+                                <div style="color: white; position: absolute; top: 10px; left: 10px; z-index: 10;">3D探索场景</div>
+                            </div>
+                            
+                            <!-- 小地图 -->
+                            <div id="mini-map" class="bg-dark/50 border border-glass rounded-lg p-4 mb-4 relative" style="height: 150px;">
+                                <!-- 地图背景 -->
+                                <div id="map-background" class="absolute inset-0 rounded-lg overflow-hidden z-0 opacity-30">
+                                    <img src="" alt="地图背景" class="w-full h-full object-cover">
+                                </div>
+                                <div id="map-grid" class="grid grid-cols-5 gap-1 h-full relative z-10">
+                                    <!-- 地图格子将由JavaScript动态生成 -->
+                                </div>
+                                <!-- 玩家位置 -->
+                                <div id="player-position" class="absolute w-8 h-8 rounded-full bg-accent/50 flex items-center justify-center shadow-lg shadow-accent/30 animate-pulse z-10" style="top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                                    <i class="fa fa-user text-white text-sm"></i>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                 </div>
