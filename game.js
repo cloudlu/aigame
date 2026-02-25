@@ -392,47 +392,11 @@ class EndlessWinterGame {
         
         // 清空场景怪物数据
         this.gameState.sceneMonsters = [];
-        
-        // 生成5x5的地图格子
         const totalCells = 25;
-        const playerCell = 12; // 玩家初始位置
-        const availableCells = totalCells - 1; // 减去玩家位置
-        
-        // 计算敌人数量和类型
-        const totalEnemies = Math.max(10, Math.floor(availableCells * 0.8)); // 至少10个敌人，最多80%的格子
-        const bossCount = Math.ceil(totalEnemies * 0.1); // 10% BOSS
-        const eliteCount = Math.ceil(totalEnemies * 0.3); // 30% 精英
-        const normalCount = totalEnemies - bossCount - eliteCount; // 剩下的普通怪
-        
-        
-        
-        // 创建敌人分布
-        const enemyDistribution = [];
-        
-        // 添加BOSS
-        for (let i = 0; i < bossCount; i++) {
-            enemyDistribution.push('boss');
-        }
-        
-        // 添加精英
-        for (let i = 0; i < eliteCount; i++) {
-            enemyDistribution.push('elite');
-        }
-        
-        // 添加普通怪
-        for (let i = 0; i < normalCount; i++) {
-            enemyDistribution.push('normal');
-        }
-        
-        // 随机打乱敌人分布
-        for (let i = enemyDistribution.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [enemyDistribution[i], enemyDistribution[j]] = [enemyDistribution[j], enemyDistribution[i]];
-        }
-        
+        const enemyDistribution = this.createEnemyDistribution(totalCells);
+        const playerCell = 12;
         let enemyIndex = 0;
-        
-        for (let i = 0; i < 25; i++) {
+        for (let i = 0; i < totalCells; i++) {
             const gridCell = document.createElement('div');
             gridCell.className = 'bg-dark/30 rounded flex items-center justify-center';
             gridCell.dataset.cellIndex = i;
@@ -445,79 +409,11 @@ class EndlessWinterGame {
             
             // 在非玩家位置生成敌人
             if (i !== playerCell && enemyIndex < enemyDistribution.length) {
-                // 生成随机敌人等级（与玩家等级相近）
-                const playerLevel = this.gameState.player.level;
-                const enemyLevel = Math.max(1, Math.min(playerLevel + 3, playerLevel + Math.floor(Math.random() * 3) - 1));
-                
-                // 生成随机敌人属性
-                const baseAttack = enemyLevel * 8;
-                const baseDefense = enemyLevel * 2;
-                const baseHp = enemyLevel * 30;
-                
-                // 根据分布生成敌人类型
-                const enemyType = enemyDistribution[enemyIndex];
-                let isElite = false;
-                let isBoss = false;
-                let bonus = 0;
-                
-                if (enemyType === 'boss') {
-                    // BOSS
-                    isBoss = true;
-                    bonus = 1.0;
-                } else if (enemyType === 'elite') {
-                    // 精英怪
-                    isElite = true;
-                    bonus = 0.5;
-                }
-                
+
+                const enemyInfo = this.createEnemy(enemyDistribution, enemyIndex, x, z, i);
+
                 enemyIndex++;
-                
-                // 计算最终属性
-                const finalAttack = Math.floor(baseAttack * (1 + bonus));
-                const finalDefense = Math.floor(baseDefense * (1 + bonus));
-                const finalHp = Math.floor(baseHp * (1 + bonus));
-                
-                // 评估敌人强弱
-                const playerAttack = this.gameState.player.attack + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.attack : 0);
-                const playerDefense = this.gameState.player.defense + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.defense : 0);
-                const playerHp = this.gameState.player.maxHp + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.hp : 0);
-                
-                // 计算敌人和玩家的战斗力
-                const enemyPower = finalAttack * 2 + finalDefense * 1.5 + finalHp * 0.1;
-                const playerPower = playerAttack * 2 + playerDefense * 1.5 + playerHp * 0.1;
-                
-                // 根据战斗力对比确定敌人颜色
-                let enemyColorClass = '';
-                let enemyTextColorClass = '';
-                
-                if (isBoss) {
-                    // BOSS始终显示紫色
-                    enemyColorClass = 'bg-purple-500/70 hover:bg-purple-500/90';
-                    enemyTextColorClass = 'text-white';
-                } else if (isElite) {
-                    // 精英怪始终显示黄色
-                    enemyColorClass = 'bg-yellow-500/70 hover:bg-yellow-500/90';
-                    enemyTextColorClass = 'text-white';
-                } else {
-                    // 普通怪根据强弱显示不同颜色
-                    const powerRatio = enemyPower / playerPower;
-                    if (powerRatio < 0.7) {
-                        // 比玩家弱
-                        enemyColorClass = 'bg-green-500/70 hover:bg-green-500/90';
-                        enemyTextColorClass = 'text-white';
-                    } else if (powerRatio < 1.3) {
-                        // 和玩家差不多
-                        enemyColorClass = 'bg-yellow-500/70 hover:bg-yellow-500/90';
-                        enemyTextColorClass = 'text-white';
-                    } else {
-                        // 比玩家厉害
-                        enemyColorClass = 'bg-red-500/70 hover:bg-red-500/90';
-                        enemyTextColorClass = 'text-white';
-                    }
-                }
-                
-                const enemyInfo = this.createEnemy(enemyLevel, finalAttack, finalDefense, finalHp, bonus, isBoss, isElite, x, z, i);
-                
+
                 // 存储到场景怪物数据中
                 this.gameState.sceneMonsters.push(enemyInfo);
                 
@@ -533,8 +429,75 @@ class EndlessWinterGame {
         // 更新地图背景
         this.updateMapBackground();
     }
-    
-    createEnemy(enemyLevel, finalAttack, finalDefense, finalHp, bonus, isBoss, isElite, x, z, i) {
+
+    createEnemyDistribution(totalCells) {
+        const availableCells = totalCells - 1; // 减去玩家位置
+
+        // 计算敌人数量和类型
+        const totalEnemies = Math.max(10, Math.floor(availableCells * 0.8)); // 至少10个敌人，最多80%的格子
+        const bossCount = Math.ceil(totalEnemies * 0.1); // 10% BOSS
+        const eliteCount = Math.ceil(totalEnemies * 0.3); // 30% 精英
+        const normalCount = totalEnemies - bossCount - eliteCount; // 剩下的普通怪
+
+        // 创建敌人分布
+        const enemyDistribution = [];
+
+        // 添加BOSS
+        for (let i = 0; i < bossCount; i++) {
+            enemyDistribution.push('boss');
+        }
+
+        // 添加精英
+        for (let i = 0; i < eliteCount; i++) {
+            enemyDistribution.push('elite');
+        }
+
+        // 添加普通怪
+        for (let i = 0; i < normalCount; i++) {
+            enemyDistribution.push('normal');
+        }
+
+        // 随机打乱敌人分布
+        for (let i = enemyDistribution.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [enemyDistribution[i], enemyDistribution[j]] = [enemyDistribution[j], enemyDistribution[i]];
+        }
+
+        return enemyDistribution;
+    }
+
+    createEnemy(enemyDistribution, enemyIndex, x, z, i) {
+        // 生成随机敌人等级（与玩家等级相近）
+        const playerLevel = this.gameState.player.level;
+        const enemyLevel = Math.max(1, Math.min(playerLevel + 3, playerLevel + Math.floor(Math.random() * 3) - 1));
+
+        // 生成随机敌人属性
+        const baseAttack = enemyLevel * 8;
+        const baseDefense = enemyLevel * 2;
+        const baseHp = enemyLevel * 30;
+
+        // 根据分布生成敌人类型
+        const enemyType = enemyDistribution[enemyIndex];
+        let isElite = false;
+        let isBoss = false;
+        let bonus = 0;
+
+        if (enemyType === 'boss') {
+            // BOSS
+            isBoss = true;
+            bonus = 1.0;
+        } else if (enemyType === 'elite') {
+            // 精英怪
+            isElite = true;
+            bonus = 0.5;
+        }
+
+        // 计算最终属性
+        const finalAttack = Math.floor(baseAttack * (1 + bonus));
+        const finalDefense = Math.floor(baseDefense * (1 + bonus));
+        const finalHp = Math.floor(baseHp * (1 + bonus));
+
+
         // 根据当前地图类型和玩家等级选择敌人
         let selectedEnemyType;
         
@@ -1789,260 +1752,7 @@ class EndlessWinterGame {
             // 遍历场景怪物数据
             for (const enemyInfo of this.gameState.sceneMonsters) {
                 // 创建简单的敌人模型（不使用复杂的模型创建函数，避免冲突）
-                const enemyGroup = new THREE.Group();
-                
-                // 敌人材质
-                let enemyMaterial;
-                let enemyGeometry;
-                
-                // 从敌人名称中提取敌人类型（移除BOSS和精英前缀）
-                let enemyTypeName = enemyInfo.name;
-                if (enemyTypeName.startsWith('BOSS')) {
-                    enemyTypeName = enemyTypeName.substring(4); // 移除'BOSS'前缀
-                } else if (enemyTypeName.startsWith('精英')) {
-                    enemyTypeName = enemyTypeName.substring(2); // 移除'精英'前缀
-                }
-                
-                // 根据敌人类型设置不同的颜色和几何体
-                switch (enemyTypeName) {
-                    // 山地敌人
-                    case '山妖':
-                    case '岩怪':
-                    case '石精':
-                    case '山魈':
-                        enemyMaterial = new THREE.MeshPhongMaterial({ 
-                            color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x8b4513), 
-                            shininess: 50,
-                            specular: 0x111111
-                        });
-                        enemyGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.2); // 石头形（立方体）
-                        break;
-                    case '神雕':
-                        enemyMaterial = new THREE.MeshPhongMaterial({ 
-                            color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0xc0c0c0), 
-                            shininess: 50,
-                            specular: 0x111111
-                        });
-                        enemyGeometry = new THREE.SphereGeometry(0.18); // 鸟类（球体）
-                        break;
-                    
-                    // 森林敌人
-                    case '树精':
-                    case '木怪':
-                        enemyMaterial = new THREE.MeshPhongMaterial({ 
-                            color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x228B22), 
-                            shininess: 50,
-                            specular: 0x111111
-                        });
-                        enemyGeometry = new THREE.CylinderGeometry(0.1, 0.15, 0.3, 6); // 树形（圆柱体）
-                        break;
-                    case '花妖':
-                    case '狐仙':
-                    case '鹿灵':
-                        enemyMaterial = new THREE.MeshPhongMaterial({ 
-                            color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0xFF69B4), 
-                            shininess: 50,
-                            specular: 0x111111
-                        });
-                        enemyGeometry = new THREE.SphereGeometry(0.15); // 精灵形（球体）
-                        break;
-                    
-                    // 湖泊敌人
-                    case '水怪':
-                    case '蛟蛇':
-                    case '鱼精':
-                    case '水仙':
-                        enemyMaterial = new THREE.MeshPhongMaterial({ 
-                            color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x4169E1), 
-                            shininess: 50,
-                            specular: 0x111111
-                        });
-                        enemyGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.3, 8); // 水形（圆柱体）
-                        break;
-                    case '龟妖':
-                        enemyMaterial = new THREE.MeshPhongMaterial({ 
-                            color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x8B4513), 
-                            shininess: 50,
-                            specular: 0x111111
-                        });
-                        enemyGeometry = new THREE.SphereGeometry(0.2); // 龟形（球体）
-                        break;
-                    
-                    // 沙漠敌人
-                    case '沙妖':
-                    case '蝎精':
-                    case '蛇怪':
-                    case '沙虫':
-                        enemyMaterial = new THREE.MeshPhongMaterial({ 
-                            color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0xD2691E), 
-                            shininess: 50,
-                            specular: 0x111111
-                        });
-                        enemyGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.3, 6); // 沙漠生物（圆柱体）
-                        break;
-                    case '沙漠巨蜥':
-                        enemyMaterial = new THREE.MeshPhongMaterial({ 
-                            color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x8B4513), 
-                            shininess: 50,
-                            specular: 0x111111
-                        });
-                        enemyGeometry = new THREE.SphereGeometry(0.2); // 蜥形（球体）
-                        break;
-                    
-                    // 洞穴敌人
-                    case '洞穴蝙蝠':
-                    case '蜘蛛精':
-                        enemyMaterial = new THREE.MeshPhongMaterial({ 
-                            color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x2F4F4F), 
-                            shininess: 50,
-                            specular: 0x111111
-                        });
-                        enemyGeometry = new THREE.SphereGeometry(0.12); // 小型洞穴生物（小球体）
-                        break;
-                    case '蚯蚓怪':
-                    case '洞穴幽灵':
-                        enemyMaterial = new THREE.MeshPhongMaterial({ 
-                            color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x778899), 
-                            shininess: 50,
-                            specular: 0x111111
-                        });
-                        enemyGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.2, 6); // 洞穴生物（圆柱体）
-                        break;
-                    
-                    // 仙境敌人
-                    case '仙鹤':
-                    case '凤凰':
-                    case '火凤凰':
-                        enemyMaterial = new THREE.MeshPhongMaterial({ 
-                            color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0xFFD700), 
-                            shininess: 50,
-                            specular: 0x111111
-                        });
-                        enemyGeometry = new THREE.SphereGeometry(0.18); // 仙禽（球体）
-                        break;
-                    case '麒麟':
-                        enemyMaterial = new THREE.MeshPhongMaterial({ 
-                            color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0xFF4500), 
-                            shininess: 50,
-                            specular: 0x111111
-                        });
-                        enemyGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.2); // 神兽（立方体）
-                        break;
-                    
-                    // 火山敌人
-                    case '火灵':
-                    case '熔岩巨兽':
-                        enemyMaterial = new THREE.MeshPhongMaterial({ 
-                            color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0xFF4500), 
-                            shininess: 50,
-                            specular: 0x111111
-                        });
-                        enemyGeometry = new THREE.SphereGeometry(0.2); // 火形（球体）
-                        break;
-                    
-                    // 海滩敌人
-                    case '海妖':
-                    case '海怪':
-                    case '鲛人':
-                    case '龙王':
-                        enemyMaterial = new THREE.MeshPhongMaterial({ 
-                            color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x1E90FF), 
-                            shininess: 50,
-                            specular: 0x111111
-                        });
-                        enemyGeometry = new THREE.SphereGeometry(0.2); // 海怪（球体）
-                        break;
-                    
-                    // 传统敌人
-                    case '妖狐':
-                        enemyMaterial = new THREE.MeshPhongMaterial({ 
-                            color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0xFF69B4), 
-                            shininess: 50,
-                            specular: 0x111111
-                        });
-                        enemyGeometry = new THREE.CylinderGeometry(0.15, 0.25, 0.4, 8); // 狐形（圆柱体）
-                        break;
-                    case '山精':
-                        enemyMaterial = new THREE.MeshPhongMaterial({ 
-                            color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x228B22), 
-                            shininess: 50,
-                            specular: 0x111111
-                        });
-                        enemyGeometry = new THREE.CylinderGeometry(0.15, 0.2, 0.3, 6); // 山精（圆柱体）
-                        break;
-                    case '火灵':
-                        enemyMaterial = new THREE.MeshPhongMaterial({ 
-                            color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0xFF4500), 
-                            shininess: 50,
-                            specular: 0x111111
-                        });
-                        enemyGeometry = new THREE.SphereGeometry(0.15); // 火灵（球体）
-                        break;
-                    case '土妖':
-                        enemyMaterial = new THREE.MeshPhongMaterial({ 
-                            color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x8B4513), 
-                            shininess: 50,
-                            specular: 0x111111
-                        });
-                        enemyGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.2); // 土妖（立方体）
-                        break;
-                    case '风魔':
-                        enemyMaterial = new THREE.MeshPhongMaterial({ 
-                            color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x87CEEB), 
-                            shininess: 50,
-                            specular: 0x111111
-                        });
-                        enemyGeometry = new THREE.SphereGeometry(0.15); // 风魔（球体）
-                        break;
-                    case '雷兽':
-                        enemyMaterial = new THREE.MeshPhongMaterial({ 
-                            color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x9370DB), 
-                            shininess: 50,
-                            specular: 0x111111
-                        });
-                        enemyGeometry = new THREE.SphereGeometry(0.2); // 雷兽（球体）
-                        break;
-                    case '雪原狼':
-                        enemyMaterial = new THREE.MeshPhongMaterial({ 
-                            color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x8b4513), 
-                            shininess: 50,
-                            specular: 0x111111
-                        });
-                        enemyGeometry = new THREE.CylinderGeometry(0.15, 0.25, 0.4, 8); // 狼形（圆柱体）
-                        break;
-                    case '冰原熊':
-                        enemyMaterial = new THREE.MeshPhongMaterial({ 
-                            color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x696969), 
-                            shininess: 50,
-                            specular: 0x111111
-                        });
-                        enemyGeometry = new THREE.SphereGeometry(0.2); // 熊形（球体）
-                        break;
-                    case '冰霜巨人':
-                        enemyMaterial = new THREE.MeshPhongMaterial({ 
-                            color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x4682b4), 
-                            shininess: 50,
-                            specular: 0x111111
-                        });
-                        enemyGeometry = new THREE.BoxGeometry(0.2, 0.3, 0.2); // 巨人形（立方体）
-                        break;
-                    default:
-                        enemyMaterial = new THREE.MeshPhongMaterial({ 
-                            color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x708090), 
-                            shininess: 50,
-                            specular: 0x111111
-                        });
-                        enemyGeometry = new THREE.SphereGeometry(0.15); // 默认（小球体）
-                }
-                
-                const enemyMesh = new THREE.Mesh(enemyGeometry, enemyMaterial);
-                enemyGroup.add(enemyMesh);
-                
-                // 设置敌人位置
-                enemyGroup.position.x = enemyInfo.position.x;
-                enemyGroup.position.z = enemyInfo.position.z;
-                enemyGroup.position.y = 0;
-                
+                const enemyGroup = this.createEnemyGroup(enemyInfo);
                 // 添加敌人到场景
                 this.battle3D.scene.add(enemyGroup);
                 
@@ -2062,6 +1772,8 @@ class EndlessWinterGame {
             }
         } else {
             // 如果没有场景怪物数据，生成默认敌人
+            const enemyDistribution = this.createEnemyDistribution(25);
+            let enemyIndex = 0;
             for (let i = 0; i < 3; i++) {
                 // 随机位置，确保在场景范围内且不与玩家重叠
                 let x, z;
@@ -2069,90 +1781,12 @@ class EndlessWinterGame {
                     x = (Math.random() - 0.5) * 16;
                     z = (Math.random() - 0.5) * 16;
                 } while (Math.sqrt(x * x + z * z) < 1); // 确保敌人离玩家初始位置至少1单位
-                
-                // 生成随机敌人等级（与玩家等级相近）
-                const playerLevel = this.gameState.player.level;
-                const enemyLevel = Math.max(1, Math.min(playerLevel + 3, playerLevel + Math.floor(Math.random() * 3) - 1));
-                
-                // 生成随机敌人属性
-                const baseAttack = enemyLevel * 8;
-                const baseDefense = enemyLevel * 2;
-                const baseHp = enemyLevel * 30;
-                
-                // 随机生成敌人类型
-                const randomValue = Math.random();
-                let isElite = false;
-                let isBoss = false;
-                let bonus = 0;
-                
-                if (randomValue < 0.05) {
-                    // 5%概率生成boss
-                    isBoss = true;
-                    bonus = 1.0;
-                } else if (randomValue < 0.15) {
-                    // 10%概率生成精英怪
-                    isElite = true;
-                    bonus = 0.5;
-                }
-                
-                // 计算最终属性
-                const finalAttack = Math.floor(baseAttack * (1 + bonus));
-                const finalDefense = Math.floor(baseDefense * (1 + bonus));
-                const finalHp = Math.floor(baseHp * (1 + bonus));
-                
   
                 // 创建敌人信息
-                const enemyInfo = this.createEnemy(enemyLevel, finalAttack, finalDefense, finalHp, bonus, isBoss, isElite, x, z, Math.floor(Math.random() * 25)); // 随机分配一个2D格子索引
+                const enemyInfo = this.createEnemy(enemyDistribution, enemyIndex, x, z, Math.floor(Math.random() * 25)); // 随机分配一个2D格子索引
                 // 创建简单的敌人模型
-                const enemyGroup = new THREE.Group();
-                
-                // 敌人材质
-                let enemyMaterial;
-                let enemyGeometry;
-                
-                // 根据敌人类型设置不同的颜色和几何体
-                switch (enemyTypeName) {
-                    case '雪原狼':
-                        enemyMaterial = new THREE.MeshPhongMaterial({ 
-                            color: isBoss ? 0xff00ff : (isElite ? 0xffff00 : 0x8b4513), 
-                            shininess: 50,
-                            specular: 0x111111
-                        });
-                        enemyGeometry = new THREE.CylinderGeometry(0.15, 0.25, 0.4, 8); // 狼形（圆柱体）
-                        break;
-                    case '冰原熊':
-                        enemyMaterial = new THREE.MeshPhongMaterial({ 
-                            color: isBoss ? 0xff00ff : (isElite ? 0xffff00 : 0x696969), 
-                            shininess: 50,
-                            specular: 0x111111
-                        });
-                        enemyGeometry = new THREE.SphereGeometry(0.2); // 熊形（球体）
-                        break;
-                    case '冰霜巨人':
-                        enemyMaterial = new THREE.MeshPhongMaterial({ 
-                            color: isBoss ? 0xff00ff : (isElite ? 0xffff00 : 0x4682b4), 
-                            shininess: 50,
-                            specular: 0x111111
-                        });
-                        enemyGeometry = new THREE.BoxGeometry(0.2, 0.3, 0.2); // 巨人形（立方体）
-                        break;
-                    default:
-                        enemyMaterial = new THREE.MeshPhongMaterial({ 
-                            color: isBoss ? 0xff00ff : (isElite ? 0xffff00 : 0xff0000), 
-                            shininess: 50,
-                            specular: 0x111111
-                        });
-                        enemyGeometry = new THREE.SphereGeometry(0.15); // 默认（小球体）
-                }
-                
-                const enemyMesh = new THREE.Mesh(enemyGeometry, enemyMaterial);
-                enemyGroup.add(enemyMesh);
-                
-                // 设置敌人位置
-                enemyGroup.position.x = x;
-                enemyGroup.position.z = z;
-                enemyGroup.position.y = 0;
-                
+                const enemyGroup = this.createEnemyGroup(enemyInfo);
+                enemyIndex++;
                 // 添加敌人到场景
                 this.battle3D.scene.add(enemyGroup);
                 
@@ -2172,7 +1806,263 @@ class EndlessWinterGame {
             }
         }
     }
-    
+
+    createEnemyGroup(enemyInfo) {
+        const enemyGroup = new THREE.Group();
+        // 敌人材质
+        let enemyMaterial;
+        let enemyGeometry;
+
+        // 从敌人名称中提取敌人类型（移除BOSS和精英前缀）
+        let enemyTypeName = enemyInfo.name;
+        if (enemyTypeName.startsWith('BOSS')) {
+            enemyTypeName = enemyTypeName.substring(4); // 移除'BOSS'前缀
+        } else if (enemyTypeName.startsWith('精英')) {
+            enemyTypeName = enemyTypeName.substring(2); // 移除'精英'前缀
+        }
+
+        // 根据敌人类型设置不同的颜色和几何体
+        switch (enemyTypeName) {
+            // 山地敌人
+            case '山妖':
+            case '岩怪':
+            case '石精':
+            case '山魈':
+                enemyMaterial = new THREE.MeshPhongMaterial({
+                    color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x8b4513),
+                    shininess: 50,
+                    specular: 0x111111
+                });
+                enemyGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.2); // 石头形（立方体）
+                break;
+            case '神雕':
+                enemyMaterial = new THREE.MeshPhongMaterial({
+                    color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0xc0c0c0),
+                    shininess: 50,
+                    specular: 0x111111
+                });
+                enemyGeometry = new THREE.SphereGeometry(0.18); // 鸟类（球体）
+                break;
+
+            // 森林敌人
+            case '树精':
+            case '木怪':
+                enemyMaterial = new THREE.MeshPhongMaterial({
+                    color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x228B22),
+                    shininess: 50,
+                    specular: 0x111111
+                });
+                enemyGeometry = new THREE.CylinderGeometry(0.1, 0.15, 0.3, 6); // 树形（圆柱体）
+                break;
+            case '花妖':
+            case '狐仙':
+            case '鹿灵':
+                enemyMaterial = new THREE.MeshPhongMaterial({
+                    color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0xFF69B4),
+                    shininess: 50,
+                    specular: 0x111111
+                });
+                enemyGeometry = new THREE.SphereGeometry(0.15); // 精灵形（球体）
+                break;
+
+            // 湖泊敌人
+            case '水怪':
+            case '蛟蛇':
+            case '鱼精':
+            case '水仙':
+                enemyMaterial = new THREE.MeshPhongMaterial({
+                    color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x4169E1),
+                    shininess: 50,
+                    specular: 0x111111
+                });
+                enemyGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.3, 8); // 水形（圆柱体）
+                break;
+            case '龟妖':
+                enemyMaterial = new THREE.MeshPhongMaterial({
+                    color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x8B4513),
+                    shininess: 50,
+                    specular: 0x111111
+                });
+                enemyGeometry = new THREE.SphereGeometry(0.2); // 龟形（球体）
+                break;
+
+            // 沙漠敌人
+            case '沙妖':
+            case '蝎精':
+            case '蛇怪':
+            case '沙虫':
+                enemyMaterial = new THREE.MeshPhongMaterial({
+                    color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0xD2691E),
+                    shininess: 50,
+                    specular: 0x111111
+                });
+                enemyGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.3, 6); // 沙漠生物（圆柱体）
+                break;
+            case '沙漠巨蜥':
+                enemyMaterial = new THREE.MeshPhongMaterial({
+                    color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x8B4513),
+                    shininess: 50,
+                    specular: 0x111111
+                });
+                enemyGeometry = new THREE.SphereGeometry(0.2); // 蜥形（球体）
+                break;
+
+            // 洞穴敌人
+            case '洞穴蝙蝠':
+            case '蜘蛛精':
+                enemyMaterial = new THREE.MeshPhongMaterial({
+                    color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x2F4F4F),
+                    shininess: 50,
+                    specular: 0x111111
+                });
+                enemyGeometry = new THREE.SphereGeometry(0.12); // 小型洞穴生物（小球体）
+                break;
+            case '蚯蚓怪':
+            case '洞穴幽灵':
+                enemyMaterial = new THREE.MeshPhongMaterial({
+                    color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x778899),
+                    shininess: 50,
+                    specular: 0x111111
+                });
+                enemyGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.2, 6); // 洞穴生物（圆柱体）
+                break;
+
+            // 仙境敌人
+            case '仙鹤':
+            case '凤凰':
+            case '火凤凰':
+                enemyMaterial = new THREE.MeshPhongMaterial({
+                    color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0xFFD700),
+                    shininess: 50,
+                    specular: 0x111111
+                });
+                enemyGeometry = new THREE.SphereGeometry(0.18); // 仙禽（球体）
+                break;
+            case '麒麟':
+                enemyMaterial = new THREE.MeshPhongMaterial({
+                    color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0xFF4500),
+                    shininess: 50,
+                    specular: 0x111111
+                });
+                enemyGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.2); // 神兽（立方体）
+                break;
+
+            // 火山敌人
+            case '火灵':
+            case '熔岩巨兽':
+                enemyMaterial = new THREE.MeshPhongMaterial({
+                    color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0xFF4500),
+                    shininess: 50,
+                    specular: 0x111111
+                });
+                enemyGeometry = new THREE.SphereGeometry(0.2); // 火形（球体）
+                break;
+
+            // 海滩敌人
+            case '海妖':
+            case '海怪':
+            case '鲛人':
+            case '龙王':
+                enemyMaterial = new THREE.MeshPhongMaterial({
+                    color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x1E90FF),
+                    shininess: 50,
+                    specular: 0x111111
+                });
+                enemyGeometry = new THREE.SphereGeometry(0.2); // 海怪（球体）
+                break;
+
+            // 传统敌人
+            case '妖狐':
+                enemyMaterial = new THREE.MeshPhongMaterial({
+                    color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0xFF69B4),
+                    shininess: 50,
+                    specular: 0x111111
+                });
+                enemyGeometry = new THREE.CylinderGeometry(0.15, 0.25, 0.4, 8); // 狐形（圆柱体）
+                break;
+            case '山精':
+                enemyMaterial = new THREE.MeshPhongMaterial({
+                    color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x228B22),
+                    shininess: 50,
+                    specular: 0x111111
+                });
+                enemyGeometry = new THREE.CylinderGeometry(0.15, 0.2, 0.3, 6); // 山精（圆柱体）
+                break;
+            case '火灵':
+                enemyMaterial = new THREE.MeshPhongMaterial({
+                    color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0xFF4500),
+                    shininess: 50,
+                    specular: 0x111111
+                });
+                enemyGeometry = new THREE.SphereGeometry(0.15); // 火灵（球体）
+                break;
+            case '土妖':
+                enemyMaterial = new THREE.MeshPhongMaterial({
+                    color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x8B4513),
+                    shininess: 50,
+                    specular: 0x111111
+                });
+                enemyGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.2); // 土妖（立方体）
+                break;
+            case '风魔':
+                enemyMaterial = new THREE.MeshPhongMaterial({
+                    color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x87CEEB),
+                    shininess: 50,
+                    specular: 0x111111
+                });
+                enemyGeometry = new THREE.SphereGeometry(0.15); // 风魔（球体）
+                break;
+            case '雷兽':
+                enemyMaterial = new THREE.MeshPhongMaterial({
+                    color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x9370DB),
+                    shininess: 50,
+                    specular: 0x111111
+                });
+                enemyGeometry = new THREE.SphereGeometry(0.2); // 雷兽（球体）
+                break;
+            case '雪原狼':
+                enemyMaterial = new THREE.MeshPhongMaterial({
+                    color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x8b4513),
+                    shininess: 50,
+                    specular: 0x111111
+                });
+                enemyGeometry = new THREE.CylinderGeometry(0.15, 0.25, 0.4, 8); // 狼形（圆柱体）
+                break;
+            case '冰原熊':
+                enemyMaterial = new THREE.MeshPhongMaterial({
+                    color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x696969),
+                    shininess: 50,
+                    specular: 0x111111
+                });
+                enemyGeometry = new THREE.SphereGeometry(0.2); // 熊形（球体）
+                break;
+            case '冰霜巨人':
+                enemyMaterial = new THREE.MeshPhongMaterial({
+                    color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x4682b4),
+                    shininess: 50,
+                    specular: 0x111111
+                });
+                enemyGeometry = new THREE.BoxGeometry(0.2, 0.3, 0.2); // 巨人形（立方体）
+                break;
+            default:
+                enemyMaterial = new THREE.MeshPhongMaterial({
+                    color: enemyInfo.isBoss ? 0xff00ff : (enemyInfo.isElite ? 0xffff00 : 0x708090),
+                    shininess: 50,
+                    specular: 0x111111
+                });
+                enemyGeometry = new THREE.SphereGeometry(0.15); // 默认（小球体）
+        }
+
+        const enemyMesh = new THREE.Mesh(enemyGeometry, enemyMaterial);
+        enemyGroup.add(enemyMesh);
+
+        // 设置敌人位置
+        enemyGroup.position.x = enemyInfo.position.x;
+        enemyGroup.position.z = enemyInfo.position.z;
+        enemyGroup.position.y = 0;
+        return enemyGroup;
+    }
+
     // 创建血条
     createHealthBars() {
         // 创建玩家血条

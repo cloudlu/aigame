@@ -4,10 +4,10 @@ const gameMetadata = {
     // 装备品质定义
     equipmentRarities: [
         { name: "white", displayName: "白色", multiplier: 1, color: "text-gray-400" },
-        { name: "blue", displayName: "蓝色", multiplier: 1.5, color: "text-blue-400" },
-        { name: "purple", displayName: "紫色", multiplier: 2, color: "text-purple-400" },
-        { name: "gold", displayName: "黄金", multiplier: 2.5, color: "text-yellow-400" },
-        { name: "legendary", displayName: "传奇", multiplier: 3, color: "text-orange-400" }
+        { name: "blue", displayName: "蓝色", multiplier: 2, color: "text-blue-400" },
+        { name: "purple", displayName: "紫色", multiplier: 3, color: "text-purple-400" },
+        { name: "gold", displayName: "黄金", multiplier: 4, color: "text-yellow-400" },
+        { name: "legendary", displayName: "传奇", multiplier: 5, color: "text-orange-400" }
     ],
     
     // 装备模板
