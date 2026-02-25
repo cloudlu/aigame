@@ -199,7 +199,7 @@
         }
         
         // 登录功能
-        document.getElementById('login-submit').addEventListener('click', async function() {
+        async function login() {
             const username = document.getElementById('login-username').value;
             const password = document.getElementById('login-password').value;
             
@@ -233,10 +233,10 @@
                 console.error('登录错误:', error);
                 showError('登录失败，请稍后重试');
             }
-        });
+        }
         
         // 注册功能
-        document.getElementById('register-submit').addEventListener('click', async function() {
+        async function register() {
             const username = document.getElementById('register-username').value;
             const password = document.getElementById('register-password').value;
             const confirmPassword = document.getElementById('register-confirm-password').value;
@@ -276,6 +276,44 @@
             } catch (error) {
                 console.error('注册错误:', error);
                 showError('注册失败，请稍后重试');
+            }
+        }
+        
+        // 绑定登录事件
+        document.getElementById('login-submit').addEventListener('click', login);
+        
+        // 登录表单回车键
+        document.getElementById('login-username').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('login-password').focus();
+            }
+        });
+        
+        document.getElementById('login-password').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                login();
+            }
+        });
+        
+        // 绑定注册事件
+        document.getElementById('register-submit').addEventListener('click', register);
+        
+        // 注册表单回车键
+        document.getElementById('register-username').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('register-password').focus();
+            }
+        });
+        
+        document.getElementById('register-password').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('register-confirm-password').focus();
+            }
+        });
+        
+        document.getElementById('register-confirm-password').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                register();
             }
         });
         

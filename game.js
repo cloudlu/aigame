@@ -3546,6 +3546,11 @@ class EndlessWinterGame {
             this.resetGame();
         });
         
+        // 注销账号按钮
+        bindEvent('#delete-account-btn', 'click', () => {
+            this.deleteAccount();
+        });
+        
         // 设置按钮下拉菜单
         bindEvent('#settings-btn', 'click', () => {
             const dropdown = document.getElementById('settings-dropdown');
@@ -6804,6 +6809,100 @@ class EndlessWinterGame {
             localStorage.removeItem('endlessWinterToken');
             localStorage.removeItem('endlessWinterUser');
             window.location.replace('login.html?logout=true');
+        }
+    }
+    
+    // 注销用户
+    async deleteAccount() {
+        try {
+            const username = this.gameState.user.username;
+            
+            // 创建密码输入模态框
+            const modalHtml = `
+                <div id="password-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+                    <div class="bg-dark border border-glass rounded-xl p-6 max-w-md w-full">
+                        <h3 class="text-xl font-bold text-accent mb-4">确认注销账号</h3>
+                        <p class="text-light mb-4">请输入密码以确认注销账号：</p>
+                        <div class="mb-4">
+                            <input type="password" id="delete-password" class="w-full bg-dark/50 border border-glass rounded-lg px-4 py-2 text-light focus:outline-none">
+                        </div>
+                        <div class="flex space-x-3">
+                            <button id="cancel-delete" class="flex-1 bg-dark border border-glass rounded-lg px-4 py-2 text-light hover:bg-dark/80">取消</button>
+                            <button id="confirm-delete" class="flex-1 bg-danger rounded-lg px-4 py-2 text-white hover:bg-danger/80">确认注销</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 添加模态框到页面
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // 获取模态框元素
+            const modal = document.getElementById('password-modal');
+            const passwordInput = document.getElementById('delete-password');
+            const cancelBtn = document.getElementById('cancel-delete');
+            const confirmBtn = document.getElementById('confirm-delete');
+            
+            // 聚焦密码输入框
+            passwordInput.focus();
+            
+            // 回车键确认
+            passwordInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    confirmBtn.click();
+                }
+            });
+            
+            // 取消按钮点击事件
+            cancelBtn.addEventListener('click', function() {
+                modal.remove();
+            });
+            
+            // 确认按钮点击事件
+            confirmBtn.addEventListener('click', async function() {
+                const password = passwordInput.value;
+                
+                if (!password) {
+                    alert('请输入密码');
+                    return;
+                }
+                
+                const token = localStorage.getItem('endlessWinterToken');
+                
+                try {
+                    const response = await fetch('http://localhost:3001/api/delete-account', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ username, password })
+                    });
+                    
+                    const result = await response.json();
+                    modal.remove();
+                    
+                    if (result.success) {
+                        this.addBattleLog('账号注销成功！');
+                        // 清除本地存储的token和用户信息
+                        localStorage.removeItem('endlessWinterToken');
+                        localStorage.removeItem('endlessWinterUser');
+                        // 重定向到登录页面
+                        setTimeout(() => {
+                            window.location.href = 'login.html';
+                        }, 2000);
+                    } else {
+                        this.addBattleLog(`注销失败：${result.error}`);
+                    }
+                } catch (error) {
+                    console.error('注销用户失败:', error);
+                    this.addBattleLog('注销用户失败，请稍后再试');
+                    modal.remove();
+                }
+            }.bind(this));
+        } catch (error) {
+            console.error('注销用户失败:', error);
+            this.addBattleLog('注销用户失败，请稍后再试');
         }
     }
     

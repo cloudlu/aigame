@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
+import bcrypt from 'bcrypt';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -39,7 +40,7 @@ function generateToken() {
 }
 
 // 登录API
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
     try {
         const { username, password } = req.body;
         
@@ -56,7 +57,8 @@ app.post('/api/login', (req, res) => {
         const userData = JSON.parse(fs.readFileSync(userFilePath, 'utf8'));
         
         // 验证密码
-        if (userData.password !== password) {
+        const passwordMatch = await bcrypt.compare(password, userData.password);
+        if (!passwordMatch) {
             return res.status(401).json({ error: 'Invalid password' });
         }
         
@@ -88,7 +90,7 @@ app.post('/api/login', (req, res) => {
 });
 
 // 注册API
-app.post('/api/register', (req, res) => {
+app.post('/api/register', async (req, res) => {
     try {
         const { username, password, gender } = req.body;
         
@@ -102,9 +104,13 @@ app.post('/api/register', (req, res) => {
             return res.status(400).json({ error: 'User already exists' });
         }
         
+        // 生成密码哈希
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
+        
         // 创建新用户
         const userData = {
-            password: password,
+            password: hashedPassword,
             gender: gender,
             role: 'player'
         };
@@ -212,6 +218,51 @@ app.post('/api/logout', verifyToken, (req, res) => {
     } catch (error) {
         console.error('Error logging out:', error);
         res.status(500).json({ error: 'Failed to logout' });
+    }
+});
+
+// 注销用户API
+app.post('/api/delete-account', verifyToken, async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        const token = req.headers.authorization?.split(' ')[1];
+        
+        if (!username || !password) {
+            return res.status(400).json({ error: 'Missing username or password' });
+        }
+        
+        // 检查用户是否存在
+        const userFilePath = path.join(USERS_DIR, `${username}.json`);
+        if (!fs.existsSync(userFilePath)) {
+            return res.status(401).json({ error: 'User not found' });
+        }
+        
+        const userData = JSON.parse(fs.readFileSync(userFilePath, 'utf8'));
+        
+        // 验证密码
+        const passwordMatch = await bcrypt.compare(password, userData.password);
+        if (!passwordMatch) {
+            return res.status(401).json({ error: 'Invalid password' });
+        }
+        
+        // 删除用户文件
+        fs.unlinkSync(userFilePath);
+        
+        // 删除游戏存档文件
+        const saveFilePath = path.join(SAVE_DIR, `${username}.json`);
+        if (fs.existsSync(saveFilePath)) {
+            fs.unlinkSync(saveFilePath);
+        }
+        
+        // 删除token
+        if (token) {
+            users.delete(token);
+        }
+        
+        res.json({ success: true, message: 'Account deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting account:', error);
+        res.status(500).json({ error: 'Failed to delete account' });
     }
 });
 
