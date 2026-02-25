@@ -19,6 +19,8 @@ class EndlessWinterGame {
                 hp: 100,
                 maxHp: 100,
                 luck: 2,
+                energy: 100,
+                maxEnergy: 100,
                 // 装备栏
                 equipment: {
                     weapon: null,    // 武器
@@ -47,9 +49,6 @@ class EndlessWinterGame {
             dropRates: {},
             // 资源系统
             resources: {
-                energy: 100,
-                maxEnergy: 100,
-                energyRate: 2,
                 wood: 0,
                 woodRate: 1,
                 iron: 0,
@@ -219,6 +218,26 @@ class EndlessWinterGame {
             }
             if (metadata.mapBackgrounds) {
                 this.gameState.mapBackgrounds = metadata.mapBackgrounds;
+            }
+            if (metadata.player) {
+                // 保存player元数据供后续使用
+                this.playerMetadata = metadata.player;
+                // 如果是新游戏，使用初始属性
+                if (this.gameState.player.level === 1 && this.gameState.player.exp === 0) {
+                    if (metadata.player.initialStats) {
+                        Object.assign(this.gameState.player, metadata.player.initialStats);
+                    }
+                }
+            }
+            if (metadata.resources && metadata.resources.types) {
+                // 保存资源元数据供后续使用
+                this.resourceMetadata = metadata.resources;
+                // 初始化资源速率
+                metadata.resources.types.forEach(resource => {
+                    if (this.gameState.resources[resource.name]) {
+                        this.gameState.resources[`${resource.name}Rate`] = resource.baseRate;
+                    }
+                });
             }
             
             this.addBattleLog('从服务器加载游戏数据成功！');
@@ -719,9 +738,12 @@ class EndlessWinterGame {
         // 更新资源显示
         const energyElement = document.getElementById('energy');
         if (energyElement) {
-            energyElement.textContent = Math.floor(this.gameState.resources.energy);
-            // 更新能量恢复提示
-            energyElement.setAttribute('data-tooltip', `能量恢复: +${this.gameState.resources.energyRate}/秒`);
+            const energyCurrent = Math.floor(this.gameState.player.energy || 0);
+            const energyMax = this.gameState.player.maxEnergy || 100;
+            energyElement.textContent = `${energyCurrent}/${energyMax}`;
+            // 使用元数据中的回复速率，如果没有则使用默认值2
+            const energyRegenRate = this.playerMetadata?.regenRates?.energy || 2;
+            energyElement.setAttribute('data-tooltip', `能量恢复: +${energyRegenRate}/秒`);
         }
         const woodElement = document.getElementById('wood');
         if (woodElement) {
@@ -772,15 +794,28 @@ class EndlessWinterGame {
             }
             const attackElement = document.getElementById('attack');
             if (attackElement) {
-                attackElement.textContent = finalAttack;
+                const baseAttack = this.gameState.player.baseAttack || (this.gameState.player.attack - this.gameState.player.equipmentEffects.attack);
+                const baseFinalAttack = baseAttack + this.gameState.player.equipmentEffects.attack;
+                if (this.gameState.player.tempAttack) {
+                    attackElement.innerHTML = `${Math.floor(baseFinalAttack)}<span class="text-yellow-400">(${Math.floor(finalAttack)})</span>`;
+                } else {
+                    attackElement.textContent = Math.floor(finalAttack);
+                }
             }
             const defenseElement = document.getElementById('defense');
             if (defenseElement) {
-                defenseElement.textContent = finalDefense;
+                const baseDefense = this.gameState.player.baseDefense || (this.gameState.player.defense - this.gameState.player.equipmentEffects.defense);
+                const baseFinalDefense = baseDefense + this.gameState.player.equipmentEffects.defense;
+                if (this.gameState.player.tempDefense) {
+                    defenseElement.innerHTML = `${Math.floor(baseFinalDefense)}<span class="text-yellow-400">(${Math.floor(finalDefense)})</span>`;
+                } else {
+                    defenseElement.textContent = Math.floor(finalDefense);
+                }
             }
             const hpElement = document.getElementById('hp');
             if (hpElement) {
-                hpElement.textContent = finalHp;
+                const maxHp = this.gameState.player.maxHp + this.gameState.player.equipmentEffects.hp;
+                hpElement.textContent = `${Math.floor(finalHp)}/${Math.floor(maxHp)}`;
                 // 更新生命值恢复提示（每秒钟恢复1%最大生命值）
                 hpElement.setAttribute('data-tooltip', `生命值恢复: +${Math.floor(this.gameState.player.maxHp * 0.01)}/秒`);
             }
@@ -1099,12 +1134,6 @@ class EndlessWinterGame {
     
     // 生成资源
     generateResources() {
-        // 生成能量
-        this.gameState.resources.energy = Math.min(
-            this.gameState.resources.energy + this.gameState.resources.energyRate,
-            this.gameState.resources.maxEnergy
-        );
-        
         // 生成木材
         this.gameState.resources.wood += this.gameState.resources.woodRate;
         
@@ -1116,12 +1145,35 @@ class EndlessWinterGame {
         
         // 生命自动恢复
         if (this.gameState.player.hp < this.gameState.player.maxHp) {
-            // 每秒钟恢复1%的最大生命值
-            const healAmount = Math.floor(this.gameState.player.maxHp * 0.01);
+            // 使用元数据中的回复速率，如果没有则使用默认值0.5
+            const hpRegenRate = this.playerMetadata?.regenRates?.hp || 0.5;
             this.gameState.player.hp = Math.min(
-                this.gameState.player.hp + healAmount,
+                this.gameState.player.hp + hpRegenRate,
                 this.gameState.player.maxHp
             );
+        }
+        
+        // 能量自动恢复
+        if (this.gameState.player && this.gameState.player.energy !== undefined && this.gameState.player.maxEnergy !== undefined) {
+            if (this.gameState.player.energy < this.gameState.player.maxEnergy) {
+                // 使用元数据中的回复速率，如果没有则使用默认值2
+                const energyRegenRate = this.playerMetadata?.regenRates?.energy || 2;
+                this.gameState.player.energy = Math.min(
+                    this.gameState.player.energy + energyRegenRate,
+                    this.gameState.player.maxEnergy
+                );
+            }
+        } else {
+            // 确保能量属性存在
+            if (!this.gameState.player) {
+                this.gameState.player = {};
+            }
+            if (this.gameState.player.energy === undefined) {
+                this.gameState.player.energy = 100;
+            }
+            if (this.gameState.player.maxEnergy === undefined) {
+                this.gameState.player.maxEnergy = 100;
+            }
         }
         
         // 更新UI
@@ -2061,7 +2113,7 @@ class EndlessWinterGame {
         
         // 更新玩家能量条
         if (this.battle3D.playerEnergyBar && this.battle3D.playerEnergyBar.fill) {
-            const playerEnergyPercent = Math.max(0, this.gameState.resources.energy / this.gameState.resources.maxEnergy);
+            const playerEnergyPercent = Math.max(0, this.gameState.player.energy / this.gameState.player.maxEnergy);
             this.battle3D.playerEnergyBar.fill.scale.x = playerEnergyPercent;
             this.battle3D.playerEnergyBar.fill.position.x = (playerEnergyPercent - 1) * 0.7;
         }
@@ -3970,7 +4022,7 @@ class EndlessWinterGame {
         
         // 普通攻击恢复能量
         const energyRecovery = 5;
-        this.gameState.resources.energy = Math.min(this.gameState.resources.energy + energyRecovery, this.gameState.resources.maxEnergy);
+        this.gameState.player.energy = Math.min(this.gameState.player.energy + energyRecovery, this.gameState.player.maxEnergy);
         this.addBattleLog(`普通攻击恢复了${energyRecovery}点能量！`);
         
         // 检查敌人是否死亡
@@ -4353,7 +4405,7 @@ class EndlessWinterGame {
         
         // 杀死敌人恢复能量
         const killEnergyRecovery = 15;
-        this.gameState.resources.energy = Math.min(this.gameState.resources.energy + killEnergyRecovery, this.gameState.resources.maxEnergy);
+        this.gameState.player.energy = Math.min(this.gameState.player.energy + killEnergyRecovery, this.gameState.player.maxEnergy);
         this.addBattleLog(`杀死敌人恢复了${killEnergyRecovery}点能量！`);
         
         // 装备掉落
@@ -4480,7 +4532,7 @@ class EndlessWinterGame {
         }
         
         // 检查能量是否足够
-        if (this.gameState.resources.energy < skill.energyCost) {
+        if (this.gameState.player.energy < skill.energyCost) {
             this.addBattleLog(`能量不足，需要${skill.energyCost}点能量！`);
             return;
         }
@@ -4494,7 +4546,7 @@ class EndlessWinterGame {
         // 延迟执行技能效果，让动画有时间播放
         setTimeout(() => {
             // 消耗能量
-            this.gameState.resources.energy -= skill.energyCost;
+            this.gameState.player.energy -= skill.energyCost;
             
             // 计算装备效果
             this.calculateEquipmentEffects();
@@ -4521,7 +4573,7 @@ class EndlessWinterGame {
                 }
             } else if (skill.defenseBonus) {
                 // 防御姿态
-                this.addBattleLog(`你使用了${skill.name}，防御力提高了50%！`);
+                this.addBattleLog(`你使用了${skill.name}，本回合防御力提高了50%！`);
                 // 减少敌人反击伤害
                 const enemyDamage = Math.max(1, Math.floor((this.gameState.enemy.attack - finalDefense) * (1 - skill.defenseBonus)));
                 this.gameState.player.hp -= enemyDamage;
@@ -4755,11 +4807,10 @@ class EndlessWinterGame {
             this.gameState.player.luck += 1;
             
             // 提升能量上限
-            this.gameState.resources.maxEnergy += 10;
-            this.gameState.resources.energy = this.gameState.resources.maxEnergy; // 升级时充满能量
+            this.gameState.player.maxEnergy += 10;
+            this.gameState.player.energy = this.gameState.player.maxEnergy; // 升级时充满能量
             
             // 提升资源产出率
-            this.gameState.resources.energyRate += 0.5;
             this.gameState.resources.woodRate += 0.2;
             this.gameState.resources.ironRate += 0.1;
             this.gameState.resources.crystalRate += 0.05;
@@ -5024,7 +5075,7 @@ class EndlessWinterGame {
         if (!this.timers.autoBattleTimer) {
             this.timers.autoBattleTimer = setInterval(() => {
                 // 检查自动战斗是否启用
-                if (this.gameState.settings.autoBattleSettings.enabled && this.gameState.resources.energy >= 10) {
+                if (this.gameState.settings.autoBattleSettings.enabled && this.gameState.player.energy >= 10) {
                     // 检查当前敌人是否符合目标颜色
                     const enemyPower = this.gameState.enemy.attack * 2 + this.gameState.enemy.defense * 1.5 + this.gameState.enemy.maxHp * 0.1;
                     const playerAttack = this.gameState.player.attack + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.attack : 0);
@@ -5086,7 +5137,7 @@ class EndlessWinterGame {
                 if (this.gameState.settings.autoCollectSettings.enabled) {
                     // 收集指定类型的资源
                     for (const resourceType of this.gameState.settings.autoCollectSettings.resourceTypes) {
-                        if (this.gameState.resources.energy >= 5) {
+                        if (this.gameState.player.energy >= 5) {
                             this.collectResource(resourceType);
                         }
                     }
@@ -5110,14 +5161,14 @@ class EndlessWinterGame {
                 // 自动收集资源（如果启用）
                 if (this.gameState.settings.autoCollectSettings.enabled) {
                     for (const resourceType of this.gameState.settings.autoCollectSettings.resourceTypes) {
-                        if (this.gameState.resources.energy >= 5) {
+                        if (this.gameState.player.energy >= 5) {
                             this.collectResource(resourceType);
                         }
                     }
                 }
                 
                 // 自动战斗（如果启用）
-                if (this.gameState.settings.autoBattleSettings.enabled && this.gameState.resources.energy >= 10) {
+                if (this.gameState.settings.autoBattleSettings.enabled && this.gameState.player.energy >= 10) {
                     // 检查当前敌人是否符合目标颜色
                     const enemyPower = this.gameState.enemy.attack * 2 + this.gameState.enemy.defense * 1.5 + this.gameState.enemy.maxHp * 0.1;
                     const playerAttack = this.gameState.player.attack + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.attack : 0);
@@ -5182,13 +5233,13 @@ class EndlessWinterGame {
     
     // 收集资源
     collectResource(type) {
-        if (this.gameState.resources.energy < 5) {
+        if (this.gameState.player.energy < 5) {
             this.addBattleLog('能量不足，无法收集资源！');
             return;
         }
         
         // 消耗能量
-        this.gameState.resources.energy -= 5;
+        this.gameState.player.energy -= 5;
         
         // 显示进度条动画
         const progressBar = document.getElementById(`${type}-progress`);
@@ -5294,6 +5345,8 @@ class EndlessWinterGame {
                         // 先获取元数据，然后再生成场景怪物
                         try {
                             await this.fetchGameMetadata();
+                            // 检查临时状态是否过期
+                            this.checkTemporaryStats();
                             // 重新生成场景怪物
                             this.generateMiniMap();
                             // 更新UI
@@ -5301,6 +5354,8 @@ class EndlessWinterGame {
                         } catch (error) {
                             console.error('获取元数据失败:', error);
                             this.addBattleLog('获取游戏数据失败，使用默认数据！');
+                            // 检查临时状态是否过期
+                            this.checkTemporaryStats();
                             // 即使元数据获取失败，也要生成场景怪物
                             this.generateMiniMap();
                             // 更新UI
@@ -6777,6 +6832,79 @@ class EndlessWinterGame {
         this.updateHealthBars();
     }
     
+    // 重置临时状态
+    resetTemporaryStats() {
+        // 重置临时攻击和防御状态
+        if (this.gameState.player) {
+            // 移除临时状态属性
+            delete this.gameState.player.baseAttack;
+            delete this.gameState.player.baseDefense;
+            delete this.gameState.player.tempAttack;
+            delete this.gameState.player.tempDefense;
+            delete this.gameState.player.tempAttackExpires;
+            delete this.gameState.player.tempDefenseExpires;
+        }
+    }
+
+    // 检查临时状态是否过期
+    checkTemporaryStats() {
+        if (!this.gameState.player) return;
+        
+        const now = Date.now();
+        
+        // 检查攻击药水效果
+        if (this.gameState.player.tempAttackExpires) {
+            const attackExpires = this.gameState.player.tempAttackExpires;
+            if (now > attackExpires) {
+                // 攻击药水效果已过期
+                if (this.gameState.player.baseAttack) {
+                    this.gameState.player.attack = this.gameState.player.baseAttack;
+                }
+                delete this.gameState.player.baseAttack;
+                delete this.gameState.player.tempAttack;
+                delete this.gameState.player.tempAttackExpires;
+            } else {
+                // 攻击药水效果仍然有效，重新设置计时器
+                const remainingTime = attackExpires - now;
+                setTimeout(() => {
+                    if (this.gameState.player && this.gameState.player.baseAttack) {
+                        this.gameState.player.attack = this.gameState.player.baseAttack;
+                        this.gameState.player.tempAttack = null;
+                        this.gameState.player.tempAttackExpires = null;
+                        this.addBattleLog('攻击药水的效果消失了！');
+                        this.updateUI();
+                    }
+                }, remainingTime);
+            }
+        }
+        
+        // 检查防御药水效果
+        if (this.gameState.player.tempDefenseExpires) {
+            const defenseExpires = this.gameState.player.tempDefenseExpires;
+            if (now > defenseExpires) {
+                // 防御药水效果已过期
+                if (this.gameState.player.baseDefense) {
+                    this.gameState.player.defense = this.gameState.player.baseDefense;
+                }
+                delete this.gameState.player.baseDefense;
+                delete this.gameState.player.tempDefense;
+                delete this.gameState.player.tempDefenseExpires;
+            } else {
+                // 防御药水效果仍然有效，重新设置计时器
+                const remainingTime = defenseExpires - now;
+                setTimeout(() => {
+                    if (this.gameState.player && this.gameState.player.baseDefense) {
+                        this.gameState.player.defense = this.gameState.player.baseDefense;
+                        this.gameState.player.tempDefense = null;
+                        this.gameState.player.tempDefenseExpires = null;
+                        this.addBattleLog('防御药水的效果消失了！');
+                        this.updateUI();
+                    }
+                }, remainingTime);
+            }
+        }
+    }
+
     // 使用消耗品
     useConsumable(item) {
         switch (item.effect) {
@@ -6788,27 +6916,47 @@ class EndlessWinterGame {
                 break;
             case 'energy':
                 // 恢复能量
-                this.gameState.resources.energy = this.gameState.resources.maxEnergy;
+                this.gameState.player.energy = this.gameState.player.maxEnergy;
                 this.addBattleLog(`使用了 ${item.name}，能量恢复满了！`);
                 break;
             case 'attack':
                 // 临时提升攻击力
-                this.gameState.player.attack *= (1 + item.value);
-                this.addBattleLog(`使用了 ${item.name}，攻击力提升了 ${item.value * 100}%！`);
+                if (!this.gameState.player.baseAttack) {
+                    this.gameState.player.baseAttack = this.gameState.player.attack;
+                }
+                const attackMultiplier = 1 + item.value;
+                this.gameState.player.attack = this.gameState.player.baseAttack * attackMultiplier;
+                this.gameState.player.tempAttack = this.gameState.player.attack;
+                this.gameState.player.tempAttackExpires = Date.now() + 30000; // 30秒后过期
+                this.addBattleLog(`使用了 ${item.name}，攻击力提升了 ${item.value * 100}%，持续30秒！`);
                 // 30秒后效果消失
                 setTimeout(() => {
-                    this.gameState.player.attack /= (1 + item.value);
+                    if (this.gameState.player.baseAttack) {
+                        this.gameState.player.attack = this.gameState.player.baseAttack;
+                        this.gameState.player.tempAttack = null;
+                        this.gameState.player.tempAttackExpires = null;
+                    }
                     this.addBattleLog(`${item.name}的效果消失了！`);
                     this.updateUI();
                 }, 30000);
                 break;
             case 'defense':
                 // 临时提升防御力
-                this.gameState.player.defense *= (1 + item.value);
-                this.addBattleLog(`使用了 ${item.name}，防御力提升了 ${item.value * 100}%！`);
+                if (!this.gameState.player.baseDefense) {
+                    this.gameState.player.baseDefense = this.gameState.player.defense;
+                }
+                const defenseMultiplier = 1 + item.value;
+                this.gameState.player.defense = this.gameState.player.baseDefense * defenseMultiplier;
+                this.gameState.player.tempDefense = this.gameState.player.defense;
+                this.gameState.player.tempDefenseExpires = Date.now() + 30000; // 30秒后过期
+                this.addBattleLog(`使用了 ${item.name}，防御力提升了 ${item.value * 100}%，持续30秒！`);
                 // 30秒后效果消失
                 setTimeout(() => {
-                    this.gameState.player.defense /= (1 + item.value);
+                    if (this.gameState.player.baseDefense) {
+                        this.gameState.player.defense = this.gameState.player.baseDefense;
+                        this.gameState.player.tempDefense = null;
+                        this.gameState.player.tempDefenseExpires = null;
+                    }
                     this.addBattleLog(`${item.name}的效果消失了！`);
                     this.updateUI();
                 }, 30000);

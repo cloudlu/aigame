@@ -179,6 +179,13 @@ app.post('/api/save', verifyToken, (req, res) => {
             }
         });
         
+        // 删除resources对象中的energy相关属性
+        if (gameState.resources) {
+            delete gameState.resources.energy;
+            delete gameState.resources.maxEnergy;
+            delete gameState.resources.energyRate;
+        }
+        
         // 生成保存文件路径
         const saveFilePath = path.join(SAVE_DIR, `${userId}.json`);
         
