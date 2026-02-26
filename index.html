@@ -9,9 +9,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome -->
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    <!-- Three.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/controls/OrbitControls.js"></script>
+    <!-- Babylon.js (本地副本) -->
+    <script src="lib/babylon.js"></script>
+    <script src="lib/babylonjs.loaders.min.js"></script>
     <!-- 统一的 Tailwind 配置 -->
     <script>
         tailwind.config = {
@@ -362,8 +362,8 @@
                     <!-- 装备管理 -->
                     <div class="mt-4 space-y-2">
                         <div class="grid grid-cols-4 gap-2 justify-items-center">
-                                <button id="equip-item-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="从背包中装备物品">
-                                    <i class="fa fa-plus text-accent"></i>
+                                <button id="auto-equip-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="一键装备最好的装备">
+                                    <i class="fa fa-shield text-accent"></i>
                                 </button>
                                 <button id="unequip-item-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="卸下当前装备">
                                     <i class="fa fa-minus text-accent"></i>
@@ -373,18 +373,6 @@
                                 </button>
                                 <button id="refine-weapon-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="精炼当前装备">
                                     <i class="fa fa-star text-accent"></i>
-                                </button>
-                                <button id="disassemble-item-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="分解当前装备">
-                                    <i class="fa fa-trash text-accent"></i>
-                                </button>
-                                <button id="craft-equipment-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="合成装备">
-                                    <i class="fa fa-cogs text-accent"></i>
-                                </button>
-                                <button id="auto-craft-equipment-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="自动合成装备">
-                                    <i class="fa fa-magic text-accent"></i>
-                                </button>
-                                <button id="auto-equip-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="一键装备最好的装备">
-                                    <i class="fa fa-shield text-accent"></i>
                                 </button>
                             </div>
                     </div>
@@ -516,24 +504,6 @@
                                 </div>
                                 <!-- 攻击按钮和技能 -->
                                 <div class="mt-3 pt-3 border-t border-dark/50 flex justify-between items-center">
-                                    <!-- 战斗模式下的攻击技能 -->
-                                    <div class="flex space-x-2" id="attack-skills">
-                                        <button id="attack-btn" class="btn-primary bg-primary hover:bg-primary/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="对敌人进行普通攻击，不消耗能量">
-                                            <img src="Images/attack-button.png" alt="普通攻击" class="w-full h-full object-cover">
-                                        </button>
-                                        <button id="skill-0" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="强力攻击: 造成2倍普通伤害，消耗20能量，需要1级">
-                                            <img src="Images/power-attack-button.png" alt="强力攻击" class="w-full h-full object-cover">
-                                        </button>
-                                        <button id="skill-1" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="防御姿态: 减少50%受到的敌人伤害，消耗15能量，需要10级">
-                                            <img src="Images/defense-stance-button.png" alt="防御姿态" class="w-full h-full object-cover">
-                                        </button>
-                                        <button id="skill-2" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="生命恢复: 恢复20%最大生命值，消耗25能量，需要20级">
-                                            <img src="Images/heal-button.png" alt="生命恢复" class="w-full h-full object-cover">
-                                        </button>
-                                        <button id="skill-3" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="幸运一击: 有70%几率造成3倍伤害，消耗30能量，需要30级">
-                                            <img src="Images/lucky-strike-button.png" alt="幸运一击" class="w-full h-full object-cover">
-                                        </button>
-                                    </div>
                                     <!-- 确定攻击按钮 -->
                                     <button id="attack-confirm-btn" class="btn-primary bg-primary hover:bg-primary/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="确定攻击，进入战斗模式">
                                         <i class="fa fa-play text-white"></i>
@@ -542,7 +512,7 @@
                             </div>
                             
                             <!-- 3D探索场景 -->
-                            <div id="battle-3d-container" class="bg-dark/50 border border-glass rounded-lg p-3 mb-4 hover:shadow-lg hover:shadow-danger/20 transition-all" style="height: 500px; width: 100%; position: relative;">
+                            <div id="map-3d-container" class="bg-dark/50 border border-glass rounded-lg p-3 mb-4 hover:shadow-lg hover:shadow-danger/20 transition-all" style="height: 500px; width: 100%; position: relative;">
                                 <!-- 3D场景将由JavaScript动态生成 -->
                                 <div style="color: white; position: absolute; top: 10px; left: 10px; z-index: 10;">3D探索场景</div>
                             </div>
@@ -872,7 +842,192 @@
         </audio>
     <audio id="battle-end-sound" preload="auto" volume="1" loop="false">
         <source src="https://assets.mixkit.co/active_storage/sfx/2560/2560-preview.mp3" type="audio/mpeg">
-     </audio>
+      </audio>
+    <audio id="craft-success-sound" preload="auto" volume="1" loop="false">
+        <source src="https://assets.mixkit.co/active_storage/sfx/2004/2004-preview.mp3" type="audio/mpeg">
+      </audio>
+    <audio id="craft-fail-sound" preload="auto" volume="1" loop="false">
+        <source src="https://assets.mixkit.co/active_storage/sfx/2567/2567-preview.mp3" type="audio/mpeg">
+      </audio>
+
+    <!-- 背包模态框 -->
+    <div id="inventory-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
+        <div class="bg-gray-900 rounded-lg p-4 max-w-6xl w-full max-h-[80vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-white">背包</h2>
+                <button id="close-inventory" class="text-white hover:text-gray-300">
+                    <i class="fa fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="flex flex-col md:flex-row gap-4">
+                <!-- 左侧：背包物品 -->
+                <div class="flex-1">
+                    <!-- Tab切换按钮 -->
+                    <div class="flex border-b border-dark/50 mb-4">
+                        <button id="tab-equipment" class="px-4 py-2 text-sm font-medium text-accent border-b-2 border-accent">装备</button>
+                        <button id="tab-consumables" class="px-4 py-2 text-sm font-medium text-light/60 hover:text-light">消耗品</button>
+                    </div>
+                    
+                    <!-- 装备物品区域 -->
+                    <div id="inventory-equipment" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-1 mb-4">
+                        <!-- 装备将通过 JavaScript 动态添加 -->
+                    </div>
+                    
+                    <!-- 消耗品物品区域 -->
+                    <div id="inventory-consumables" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-1 mb-4 hidden">
+                        <!-- 消耗品将通过 JavaScript 动态添加 -->
+                    </div>
+                    
+                    <div id="item-details" class="bg-dark/50 rounded p-4 hidden">
+                        <h3 class="font-bold text-white mb-2" id="selected-item-name">物品名称</h3>
+                        <div class="text-sm text-light/70 mb-4" id="selected-item-info">物品信息</div>
+                        <div class="flex space-x-2" id="item-actions">
+                            <button id="use-equip-item" class="bg-primary hover:bg-primary/80 text-white px-4 py-2 rounded text-sm transition-colors flex items-center">
+                                <i class="fa fa-check mr-2"></i> 使用/装备
+                            </button>
+                            <button id="disassemble-item" class="bg-secondary hover:bg-secondary/80 text-white px-4 py-2 rounded text-sm transition-colors flex items-center">
+                                <i class="fa fa-cogs mr-2"></i> 分解
+                            </button>
+                            <button id="drop-item" class="bg-danger hover:bg-danger/80 text-white px-4 py-2 rounded text-sm transition-colors flex items-center">
+                                <i class="fa fa-trash mr-2"></i> 丢弃
+                            </button>
+                            <button id="cancel-item" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm transition-colors flex items-center">
+                                <i class="fa fa-times mr-2"></i> 取消
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 右侧：合成装备 -->
+                <div class="w-full md:w-1/3">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold text-white">合成装备</h3>
+                        <button id="auto-craft" class="bg-secondary hover:bg-secondary/80 text-white px-4 py-1 rounded text-sm transition-colors flex items-center">
+                            <i class="fa fa-magic mr-2"></i> 一键合成
+                        </button>
+                    </div>
+                    
+                    <!-- 合成界面 -->
+                    <div class="relative w-64 h-64 mx-auto mb-6">
+                        <!-- 连接线 -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <!-- 上方连接线 -->
+                            <div class="w-0.5 h-16 bg-accent/50 absolute left-1/2 top-0"></div>
+                            <!-- 左侧连接线 -->
+                            <div class="w-16 h-0.5 bg-accent/50 absolute left-0 top-1/2"></div>
+                            <!-- 右侧连接线 -->
+                            <div class="w-16 h-0.5 bg-accent/50 absolute right-0 top-1/2"></div>
+                            <!-- 大圆圈 -->
+                            <div class="w-48 h-48 border-2 border-accent/30 rounded-full absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2"></div>
+                        </div>
+                        
+                        <!-- 周围三个圆圈 -->
+                        <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full border-2 border-accent/50 flex items-center justify-center bg-dark/50 hover:bg-dark/70 transition-colors cursor-pointer" craft-data-slot="1">
+                            <div class="text-xs text-light/60">拖放装备</div>
+                        </div>
+                        <div class="absolute top-1/2 left-0 transform -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full border-2 border-accent/50 flex items-center justify-center bg-dark/50 hover:bg-dark/70 transition-colors cursor-pointer" craft-data-slot="2">
+                            <div class="text-xs text-light/60">拖放装备</div>
+                        </div>
+                        <div class="absolute top-1/2 right-0 transform translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full border-2 border-accent/50 flex items-center justify-center bg-dark/50 hover:bg-dark/70 transition-colors cursor-pointer" craft-data-slot="3">
+                            <div class="text-xs text-light/60">拖放装备</div>
+                        </div>
+                        
+                        <!-- 中间圆圈 -->
+                        <div id="craft-result-slot" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-24 rounded-full border-2 border-accent/50 flex items-center justify-center bg-dark/50">
+                            <div class="text-xs text-light/60">合成结果</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 成功率显示 -->
+                    <div class="text-center mb-6">
+                        <p class="text-light/80">合成成功率: <span id="craft-success-rate" class="text-success font-bold">0%</span></p>
+                    </div>
+                    
+                    <!-- 操作按钮 -->
+                    <div class="flex justify-center space-x-4">
+                        <button id="clear-craft" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded text-sm transition-colors flex items-center">
+                            <i class="fa fa-refresh mr-2"></i> 清空
+                        </button>
+                        <button id="confirm-craft" class="bg-primary hover:bg-primary/80 text-white px-6 py-2 rounded text-sm transition-colors flex items-center">
+                            <i class="fa fa-check mr-2"></i> 合成
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+    
+    <!-- 分解提示框 -->
+    <div id="disassemble-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-60 hidden">
+        <div class="bg-gray-900 rounded-lg p-6 max-w-md w-full">
+            <h3 class="text-xl font-bold text-white mb-4">分解装备</h3>
+            <div class="text-light/80 mb-4" id="disassemble-modal-info">
+                <!-- 分解信息将通过 JavaScript 动态添加 -->
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button id="cancel-disassemble" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm transition-colors flex items-center">
+                    <i class="fa fa-times mr-2"></i> 取消
+                </button>
+                <button id="confirm-disassemble" class="bg-danger hover:bg-danger/80 text-white px-4 py-2 rounded text-sm transition-colors flex items-center">
+                    <i class="fa fa-trash mr-2"></i> 确认分解
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 右键菜单 -->
+    <div id="context-menu" class="fixed z-[9999] bg-gray-900 border border-dark/50 rounded shadow-lg hidden w-48">
+        <div class="py-1">
+            <div id="context-use" class="px-4 py-2 text-sm text-white hover:bg-gray-700 cursor-pointer flex items-center">
+                <i class="fa fa-check mr-2"></i> 使用/装备
+            </div>
+            <div id="context-disassemble" class="px-4 py-2 text-sm text-white hover:bg-gray-700 cursor-pointer flex items-center">
+                <i class="fa fa-cogs mr-2"></i> 分解
+            </div>
+            <div id="context-drop" class="px-4 py-2 text-sm text-white hover:bg-gray-700 cursor-pointer flex items-center">
+                <i class="fa fa-trash mr-2"></i> 丢弃
+            </div>
+        </div>
+    </div>
+    
+
+
+    <!-- 3D战斗模态窗口 -->
+    <div id="battle-modal" class="fixed inset-0 bg-black flex items-center justify-center z-50 hidden">
+        <div class="bg-gray-900 rounded-lg p-4 w-11/12 h-5/6 flex flex-col border border-red-500/50 shadow-lg shadow-red-500/50">
+            <!-- 战斗模态头部 -->
+            <div class="flex justify-between items-center pb-3 border-b border-red-500/30">
+                <h2 class="text-2xl font-bold text-white"><i class="fa fa-shield mr-2 text-red-500"></i>3D战斗场景</h2>
+                <button id="close-battle-modal" class="text-gray-400 hover:text-white transition-colors">
+                    <i class="fa fa-times text-2xl"></i>
+                </button>
+            </div>
+            <!-- 战斗容器 -->
+            <div id="battle-modal-3d-container" class="flex-1 relative mt-3 bg-black/50 rounded-lg overflow-hidden">
+                <!-- 3D场景将在这里渲染 -->
+            </div>
+            <!-- 战斗模式下的攻击技能 -->
+            <div class="flex space-x-2" id="attack-skills">
+                <button id="attack-btn" class="btn-primary bg-primary hover:bg-primary/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="对敌人进行普通攻击，不消耗能量">
+                    <img src="Images/attack-button.png" alt="普通攻击" class="w-full h-full object-cover">
+                </button>
+                <button id="skill-0" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="强力攻击: 造成2倍普通伤害，消耗20能量，需要1级">
+                    <img src="Images/power-attack-button.png" alt="强力攻击" class="w-full h-full object-cover">
+                </button>
+                <button id="skill-1" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="防御姿态: 减少50%受到的敌人伤害，消耗15能量，需要10级">
+                    <img src="Images/defense-stance-button.png" alt="防御姿态" class="w-full h-full object-cover">
+                </button>
+                <button id="skill-2" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="生命恢复: 恢复20%最大生命值，消耗25能量，需要20级">
+                    <img src="Images/heal-button.png" alt="生命恢复" class="w-full h-full object-cover">
+                </button>
+                <button id="skill-3" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="幸运一击: 有70%几率造成3倍伤害，消耗30能量，需要30级">
+                    <img src="Images/lucky-strike-button.png" alt="幸运一击" class="w-full h-full object-cover">
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- 游戏脚本 -->
     <script src="game.js"></script>
