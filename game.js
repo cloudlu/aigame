@@ -1593,20 +1593,8 @@ class EndlessWinterGame {
         enemyMesh.position.x = enemyInfo.position.x;
         enemyMesh.position.z = enemyInfo.position.z;
         // 让敌人站在地面上：地面在y=-1.5
-        // 根据不同几何体类型计算中心高度
-        if (enemyTypeName === '冰霜巨人') {
-            // 冰霜巨人：height=0.3，中心在height/2=0.15
-            enemyMesh.position.y = -1.5 + 0.15;
-        } else if (enemyTypeName.includes('洞穴蝙蝠') || enemyTypeName.includes('蜘蛛精')) {
-            // 小球体：diameter=0.24，中心在0.12
-            enemyMesh.position.y = -1.5 + 0.12;
-        } else if (enemyTypeName.includes('花妖') || enemyTypeName.includes('狐仙') || enemyTypeName.includes('鹿灵') || enemyTypeName.includes('风魔')) {
-            // 中球体：diameter=0.3，中心在0.15
-            enemyMesh.position.y = -1.5 + 0.15;
-        } else {
-            // 默认：立方体size=0.2（中心在0.1）或球体diameter=0.4（中心在0.2）
-            enemyMesh.position.y = -1.5 + 0.1;
-        }
+        // 所有敌人现在都是1.5单位高度，中心在0.75
+        enemyMesh.position.y = -1.5 + 0.75;
 
         return enemyMesh;
     }
