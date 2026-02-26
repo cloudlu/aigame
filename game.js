@@ -328,177 +328,12 @@ class EndlessWinterGame {
         }
     }
     
-    // 生成小地图
-    generateMiniMap() {
-        const mapGrid = document.getElementById('map-grid');
-        mapGrid.innerHTML = '';
-        
-        // 清空场景怪物数据
-        this.gameState.sceneMonsters = [];
-        const totalCells = 25;
-        const enemyDistribution = this.createEnemyDistribution(totalCells);
-        const playerCell = 12;
-        let enemyIndex = 0;
-        for (let i = 0; i < totalCells; i++) {
-            const gridCell = document.createElement('div');
-            gridCell.className = 'bg-dark/30 rounded flex items-center justify-center';
-            gridCell.dataset.cellIndex = i;
-            
-            // 计算格子在3D空间中的位置
-            const row = Math.floor(i / 5);
-            const col = i % 5;
-            const x = (col - 2) * 4; // 每个格子4单位宽度
-            const z = (row - 2) * 4; // 每个格子4单位高度
-            
-            // 在非玩家位置生成敌人
-            if (i !== playerCell && enemyIndex < enemyDistribution.length) {
+    // generateMiniMap moved to mapLogic.js
+    // (mapLogic.js handles map generation, enemy distribution, and 2D grid rendering)
 
-                const enemyInfo = this.createEnemy(enemyDistribution, enemyIndex, x, z, i);
+    // createEnemyDistribution moved to mapLogic.js
 
-                enemyIndex++;
-
-                // 存储到场景怪物数据中
-                this.gameState.sceneMonsters.push(enemyInfo);
-                
-                // 使用通用方法创建敌人图标
-                const enemyIcon = this.createEnemyIcon(enemyInfo);
-                
-                gridCell.appendChild(enemyIcon);
-            }
-            
-            mapGrid.appendChild(gridCell);
-        }
-        
-        // 更新地图背景
-        this.updateMapBackground();
-    }
-
-    createEnemyDistribution(totalCells) {
-        const availableCells = totalCells - 1; // 减去玩家位置
-
-        // 计算敌人数量和类型
-        const totalEnemies = Math.max(10, Math.floor(availableCells * 0.8)); // 至少10个敌人，最多80%的格子
-        const bossCount = Math.ceil(totalEnemies * 0.1); // 10% BOSS
-        const eliteCount = Math.ceil(totalEnemies * 0.3); // 30% 精英
-        const normalCount = totalEnemies - bossCount - eliteCount; // 剩下的普通怪
-
-        // 创建敌人分布
-        const enemyDistribution = [];
-
-        // 添加BOSS
-        for (let i = 0; i < bossCount; i++) {
-            enemyDistribution.push('boss');
-        }
-
-        // 添加精英
-        for (let i = 0; i < eliteCount; i++) {
-            enemyDistribution.push('elite');
-        }
-
-        // 添加普通怪
-        for (let i = 0; i < normalCount; i++) {
-            enemyDistribution.push('normal');
-        }
-
-        // 随机打乱敌人分布
-        for (let i = enemyDistribution.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [enemyDistribution[i], enemyDistribution[j]] = [enemyDistribution[j], enemyDistribution[i]];
-        }
-
-        return enemyDistribution;
-    }
-
-    createEnemy(enemyDistribution, enemyIndex, x, z, i) {
-        // 生成随机敌人等级（与玩家等级相近）
-        const playerLevel = this.gameState.player.level;
-        const enemyLevel = Math.max(1, Math.min(playerLevel + 3, playerLevel + Math.floor(Math.random() * 3) - 1));
-
-        // 生成随机敌人属性
-        const baseAttack = enemyLevel * 8;
-        const baseDefense = enemyLevel * 2;
-        const baseHp = enemyLevel * 30;
-
-        // 根据分布生成敌人类型
-        const enemyType = enemyDistribution[enemyIndex];
-        let isElite = false;
-        let isBoss = false;
-        let bonus = 0;
-
-        if (enemyType === 'boss') {
-            // BOSS
-            isBoss = true;
-            bonus = 1.0;
-        } else if (enemyType === 'elite') {
-            // 精英怪
-            isElite = true;
-            bonus = 0.5;
-        }
-
-        // 计算最终属性
-        const finalAttack = Math.floor(baseAttack * (1 + bonus));
-        const finalDefense = Math.floor(baseDefense * (1 + bonus));
-        const finalHp = Math.floor(baseHp * (1 + bonus));
-
-
-        // 根据当前地图类型和玩家等级选择敌人
-        let selectedEnemyType;
-        
-            // 获取当前地图类型                    
-        const currentBackground = this.gameState.mapBackgrounds[this.gameState.currentBackgroundIndex];
-        let mapType = currentBackground.type;
-
-        // 从地图敌人映射中获取当前地图的敌人列表
-        const mapEnemies = this.gameState.mapEnemyMapping && this.gameState.mapEnemyMapping[mapType] ? 
-            this.gameState.mapEnemyMapping[mapType] : 
-            this.gameState.enemyTypes.map(enemy => enemy.name);
-        
-        // 随机选择一个敌人名称
-        const randomEnemyName = mapEnemies[Math.floor(Math.random() * mapEnemies.length)];
-        
-        // 从enemyTypes中找到对应的敌人类型
-        selectedEnemyType = this.gameState.enemyTypes.find(enemy => enemy.name === randomEnemyName);
-        
-        // 如果找不到对应敌人，使用默认敌人
-        if (!selectedEnemyType) {
-            // 根据敌人等级选择合适的敌人类型
-            let enemyTypeIndex = 0;
-            if (enemyLevel >= 5) {
-                enemyTypeIndex = Math.min(Math.floor(enemyLevel / 5), this.gameState.enemyTypes.length - 1);
-            } else {
-                enemyTypeIndex = Math.floor(Math.random() * Math.min(enemyLevel, this.gameState.enemyTypes.length));
-            }
-            
-            // 随机选择敌人类型（有概率遇到高级敌人）
-            const randomFactor = Math.random();
-            if (randomFactor > 0.7 && enemyTypeIndex < this.gameState.enemyTypes.length - 1) {
-                enemyTypeIndex++;
-            }
-            
-            selectedEnemyType = this.gameState.enemyTypes[enemyTypeIndex];
-        }
-        
-        // 创建敌人信息
-        return {
-            level: enemyLevel,
-            hp: finalHp,
-            maxHp: finalHp,
-            attack: finalAttack,
-            defense: finalDefense,
-            energy: isBoss ? 100 : 0,
-            maxEnergy: isBoss ? 100 : 0,
-            isElite: isElite,
-            isBoss: isBoss,
-            bonus: bonus,
-            name: isBoss ? `BOSS${selectedEnemyType.name}` : (isElite ? `精英${selectedEnemyType.name}` : selectedEnemyType.name),
-            icon: isBoss ? 'fa-star' : (isElite ? 'fa-diamond' : selectedEnemyType.icon),
-            image: selectedEnemyType.image,
-            expMultiplier: selectedEnemyType.expMultiplier * (isBoss ? 2.0 : (isElite ? 1.5 : 1)),
-            resourceMultiplier: selectedEnemyType.resourceMultiplier * (isBoss ? 2.0 : (isElite ? 1.5 : 1)),
-            position: { x, z }, // 存储3D空间中的位置
-            cellIndex: i // 存储对应的2D格子索引
-        };
-    }
+    // createEnemy moved to mapLogic.js
 
     // 遭遇敌人
     encounterEnemy(enemyInfo, initScene = true) {
@@ -1050,17 +885,9 @@ class EndlessWinterGame {
         }, 1000);
     }
     
-    // 停止战斗音乐（统一处理）
+    // 停止战斗音乐（移至 audio.js）
     stopBattleMusic() {
-        const battleMusicElement = document.getElementById('battle-music');
-        if (battleMusicElement) {
-            try {
-                battleMusicElement.pause();
-                battleMusicElement.currentTime = 0;
-            } catch (e) {
-                console.log('停止战斗音乐时出错:', e);
-            }
-        }
+        // placeholder to avoid undefined calls
     }
     
     // 生成资源
@@ -1114,58 +941,9 @@ class EndlessWinterGame {
         this.updateHealthBars();
     }
     
-    // 声音播放冷却时间
-    soundTimers = {};
-    
-    // 播放声音
-    playSound(id, volume = 0.25, timeout = null) {
-        try {
-            const soundElement = document.getElementById(id);
-            soundElement.volume = volume;
-            soundElement.pause();
-            soundElement.currentTime = 0;
-            soundElement.play().catch(error => {
-                if (error.name !== 'AbortError') {
-                    console.log('播放声音失败:', error);
-                }
-            });
+    // 音频功能已移至 audio.js；3D场景初始化移至 map3d.js
+    // (保留引用以避免调用失败)
 
-            // battle-music 循环播放，其它声音设置 loop=false
-            if (id === 'battle-music') {
-                soundElement.loop = true;
-            } else {
-                soundElement.loop = false;
-                if (timeout !== null && timeout !== undefined) {
-                    // 取消之前的定时器
-                    if (this.soundTimers[id]) {
-                        clearTimeout(this.soundTimers[id]);
-                    }
-                    this.soundTimers[id] = setTimeout(() => {
-                        try {
-                            soundElement.pause();
-                            soundElement.currentTime = 0;
-                        } catch (e) {}
-                        delete this.soundTimers[id];
-                    }, timeout);
-                }
-            }
-        } catch (error) {
-            console.log('播放声音失败:', error);
-        }
-    }
-    
-    // 创建锥形网格（Babylon.js未内置CreateCone，使用本函数代替）
-    createConeMesh(name, options, scene) {
-        // 使用圆柱体模拟锥形，通过设置不同的diameterTop和diameterBottom来实现
-        const coneOptions = {
-            diameterTop: options.diameter ? options.diameter * 0.2 : 0.2, // 顶部直径较小
-            diameterBottom: options.diameter || 1,
-            height: options.height || 1,
-            tessellation: options.tessellation || 8
-        };
-        return BABYLON.MeshBuilder.CreateCylinder(name, coneOptions, scene);
-    }
-    
     // 初始化3D地图场景
     initMap3DScene() {
         const container = document.getElementById('map-3d-container');
@@ -1572,7 +1350,7 @@ class EndlessWinterGame {
                 enemyHealthBar.scaling.y = 0.5;
                 enemyHealthBar.scaling.z = 0.5;
                 enemyHealthBar.position.x = 0;
-                enemyHealthBar.position.y = 0.5;
+                enemyHealthBar.position.y = 0.3; // 血条位于敌人顶部上方（相对高度）
                 enemyHealthBar.position.z = 0;
                 enemyHealthBar.parent = enemyGroup; // Babylon.js中使用parent而不是add()
                 
@@ -1609,7 +1387,7 @@ class EndlessWinterGame {
                 enemyHealthBar.scaling.y = 0.5;
                 enemyHealthBar.scaling.z = 0.5;
                 enemyHealthBar.position.x = 0;
-                enemyHealthBar.position.y = 0.5;
+                enemyHealthBar.position.y = 0.3; // 血条位于敌人顶部上方（相对高度）
                 enemyHealthBar.position.z = 0;
                 enemyHealthBar.parent = enemyGroup; // Babylon.js中使用parent而不是add()
                 
@@ -1742,7 +1520,7 @@ class EndlessWinterGame {
         material.specularColor = new BABYLON.Color3(0.067, 0.067, 0.067);
         material.specularPower = 50;
         
-        // 根据敌人类型创建几何体
+        // 根据敌人类型创建几何体（尺寸统一为1.5，约是玩家高度的一半）
         switch (enemyTypeName) {
             // 立方体类型
             case '山妖':
@@ -1753,9 +1531,9 @@ class EndlessWinterGame {
             case '土妖':
             case '冰霜巨人':
                 if (enemyTypeName === '冰霜巨人') {
-                    enemyMesh = BABYLON.MeshBuilder.CreateBox("enemy", { width: 0.2, height: 0.3, depth: 0.2 }, this.battle3D.scene);
+                    enemyMesh = BABYLON.MeshBuilder.CreateBox("enemy", { width: 1.5, height: 1.5, depth: 1.5 }, this.battle3D.scene);
                 } else {
-                    enemyMesh = BABYLON.MeshBuilder.CreateBox("enemy", { size: 0.2 }, this.battle3D.scene);
+                    enemyMesh = BABYLON.MeshBuilder.CreateBox("enemy", { size: 1.5 }, this.battle3D.scene);
                 }
                 break;
             // 球体类型
@@ -1779,15 +1557,7 @@ class EndlessWinterGame {
             case '风魔':
             case '雷兽':
             case '冰原熊':
-                let diameter;
-                if (enemyTypeName === '洞穴蝙蝠' || enemyTypeName === '蜘蛛精') {
-                    diameter = 0.24;
-                } else if (enemyTypeName === '花妖' || enemyTypeName === '狐仙' || enemyTypeName === '鹿灵' || enemyTypeName === '风魔') {
-                    diameter = 0.3;
-                } else {
-                    diameter = 0.4;
-                }
-                enemyMesh = BABYLON.MeshBuilder.CreateSphere("enemy", { diameter: diameter }, this.battle3D.scene);
+                enemyMesh = BABYLON.MeshBuilder.CreateSphere("enemy", { diameter: 1.5 }, this.battle3D.scene);
                 break;
             // 圆柱体类型
             case '树精':
@@ -1805,37 +1575,15 @@ class EndlessWinterGame {
             case '妖狐':
             case '山精':
             case '雪原狼':
-                let height, diameterTop, diameterBottom, tessellation;
-                if (enemyTypeName === '妖狐' || enemyTypeName === '雪原狼') {
-                    height = 0.4;
-                    diameterTop = 0.3;
-                    diameterBottom = 0.5;
-                    tessellation = 8;
-                } else if (enemyTypeName === '树精' || enemyTypeName === '木怪' || enemyTypeName === '山精') {
-                    height = 0.3;
-                    diameterTop = 0.2;
-                    diameterBottom = 0.3;
-                    tessellation = 6;
-                } else if (enemyTypeName === '蚯蚓怪' || enemyTypeName === '洞穴幽灵') {
-                    height = 0.2;
-                    diameterTop = 0.2;
-                    diameterBottom = 0.2;
-                    tessellation = 6;
-                } else {
-                    height = 0.3;
-                    diameterTop = 0.2;
-                    diameterBottom = 0.2;
-                    tessellation = 8;
-                }
-                enemyMesh = BABYLON.MeshBuilder.CreateCylinder("enemy", { 
-                    height: height,
-                    diameterTop: diameterTop,
-                    diameterBottom: diameterBottom,
-                    tessellation: tessellation
+                enemyMesh = BABYLON.MeshBuilder.CreateCylinder("enemy", {
+                    height: 1.5,
+                    diameterTop: 1.0,
+                    diameterBottom: 1.5,
+                    tessellation: 8
                 }, this.battle3D.scene);
                 break;
             default:
-                enemyMesh = BABYLON.MeshBuilder.CreateSphere("enemy", { diameter: 0.3 }, this.battle3D.scene);
+                enemyMesh = BABYLON.MeshBuilder.CreateSphere("enemy", { diameter: 1.5 }, this.battle3D.scene);
         }
         
         // 应用材质
@@ -1844,8 +1592,22 @@ class EndlessWinterGame {
         // 设置敌人位置
         enemyMesh.position.x = enemyInfo.position.x;
         enemyMesh.position.z = enemyInfo.position.z;
-        enemyMesh.position.y = 0;
-        
+        // 让敌人站在地面上：地面在y=-1.5
+        // 根据不同几何体类型计算中心高度
+        if (enemyTypeName === '冰霜巨人') {
+            // 冰霜巨人：height=0.3，中心在height/2=0.15
+            enemyMesh.position.y = -1.5 + 0.15;
+        } else if (enemyTypeName.includes('洞穴蝙蝠') || enemyTypeName.includes('蜘蛛精')) {
+            // 小球体：diameter=0.24，中心在0.12
+            enemyMesh.position.y = -1.5 + 0.12;
+        } else if (enemyTypeName.includes('花妖') || enemyTypeName.includes('狐仙') || enemyTypeName.includes('鹿灵') || enemyTypeName.includes('风魔')) {
+            // 中球体：diameter=0.3，中心在0.15
+            enemyMesh.position.y = -1.5 + 0.15;
+        } else {
+            // 默认：立方体size=0.2（中心在0.1）或球体diameter=0.4（中心在0.2）
+            enemyMesh.position.y = -1.5 + 0.1;
+        }
+
         return enemyMesh;
     }
 
@@ -2142,9 +1904,9 @@ class EndlessWinterGame {
         mouth.position.z = 0.3;
         mouth.parent = body;
         
-        // 设置玩家位置
+        // 设置玩家位置（调整到地面上方）
         body.position.x = -2;
-        body.position.y = 0;
+        body.position.y = 1.5;
         
         // 存储玩家模型
         this.battle3D.player = body;
@@ -2279,7 +2041,7 @@ class EndlessWinterGame {
         
         // 设置狼的位置
         body.position.x = 2;
-        body.position.y = 0;
+        body.position.y = 1.5;
         
         // 存储敌人模型
         this.battle3D.enemy = body;
@@ -2385,7 +2147,7 @@ class EndlessWinterGame {
         
         // 设置熊的位置
         body.position.x = 2;
-        body.position.y = 0;
+        body.position.y = 1.5;
         
         // 存储敌人模型
         this.battle3D.enemy = body;
@@ -2471,7 +2233,7 @@ class EndlessWinterGame {
         
         // 设置蛇的位置
         snakeBody.position.x = 2;
-        snakeBody.position.y = -0.5;
+        snakeBody.position.y = 1.5;
         snakeBody.rotation.y = Math.PI / 2;
         
         // 存储敌人模型
@@ -2592,7 +2354,7 @@ class EndlessWinterGame {
         
         // 设置狼的位置
         body.position.x = 2;
-        body.position.y = 0;
+        body.position.y = 1.5;
         
         // 存储敌人模型
         this.battle3D.enemy = body;
@@ -3487,31 +3249,31 @@ class EndlessWinterGame {
             
             const ray = pickInfo.ray;
             
-            // 计算射线与y=0平面的交点（手动计算）
+            // 计算射线与y=1.5平面的交点（人物所在高度）
             // 射线：point + t*direction
-            // 平面：y = 0
-            // 解：origin.y + t*direction.y = 0 => t = -origin.y / direction.y
-            
+            // 平面：y = 1.5
+            // 解：origin.y + t*direction.y = 1.5 => t = (1.5 - origin.y) / direction.y
+
             if (Math.abs(ray.direction.y) > 0.0001) { // 确保射线不平行于平面
-                const t = -ray.origin.y / ray.direction.y;
-                
+                const t = (1.5 - ray.origin.y) / ray.direction.y;
+
                 if (t > 0) { // 确保交点在射线前方
                     const intersectionPoint = new BABYLON.Vector3(
                         ray.origin.x + t * ray.direction.x,
-                        0, // y坐标总是0（在平面上）
+                        1.5, // 保持人物的高度
                         ray.origin.z + t * ray.direction.z
                     );
-                    
+
                     // 设置目标位置，只使用x和z坐标
                     this.mouseTarget = {
                         x: intersectionPoint.x,
                         z: intersectionPoint.z
                     };
-                    
+
                     // 限制目标位置在场景范围内
                     this.mouseTarget.x = Math.max(-8, Math.min(8, this.mouseTarget.x));
                     this.mouseTarget.z = Math.max(-8, Math.min(8, this.mouseTarget.z));
-                    
+
                     this.isMoving = true;
                 }
             }
@@ -3520,50 +3282,10 @@ class EndlessWinterGame {
         }
     }
     
-    // 检查玩家与敌人的碰撞
-    checkEnemyCollision() {
-        if (!this.battle3D || !this.battle3D.player || !this.battle3D.enemies) return;
-        const playerPos = this.battle3D.player.position;
-        let enemyEncountered = false;
-        // 遍历所有敌人，检查碰撞
-        for (let i = 0; i < this.battle3D.enemies.length; i++) {
-            const enemy = this.battle3D.enemies[i];
-            
-            // 只检查活跃的敌人
-            if (enemy.active) {
-                const enemyPos = enemy.model.position;
-                const distance = Math.sqrt(
-                    Math.pow(playerPos.x - enemyPos.x, 2) +
-                    Math.pow(playerPos.z - enemyPos.z, 2)
-                );
-                
-                // 如果玩家离敌人足够近（小于0.5单位），触发遇敌
-                if (distance < 0.5) {
-                    this.showAttackConfirmation(enemy.info);
-                    enemyEncountered = true;
-                    break;
-                }
-            }
-        }
-        // 如果没有碰到敌人，确保敌人信息区域显示默认状态（空白）
-        if (!enemyEncountered) {
-            this.gameState.battle.inBattle = false
-            // 无论当前是否有敌人信息，都隐藏敌人信息区
-            this.hideEnemyInfo();
-            // 清除游戏状态中的敌人信息
-            this.gameState.enemy = null;
-        }
-    }
+    // checkEnemyCollision moved to mapLogic.js
     
     
-    // 保存地图场景状态
-    saveMapState() {
-        this.mapState = {
-            playerPosition: this.battle3D ? this.battle3D.player.position.clone() : null,
-            enemies: this.battle3D ? this.battle3D.enemies.filter(e => e.active) : [],
-            sceneMonsters: JSON.parse(JSON.stringify(this.gameState.sceneMonsters))
-        };
-    }
+    // saveMapState moved to mapLogic.js
     
     // 创建单独的3D战斗场景
     createBattleScene(enemyInfo) {
@@ -3968,79 +3690,10 @@ class EndlessWinterGame {
         }
     }
     
-    // 创建敌人图标
-    createEnemyIcon(enemyInfo) {
-        // 调试信息
-        ('createEnemyIcon - enemyInfo:', enemyInfo);
-        
-        // 计算敌人和玩家的战斗力
-        const enemyPower = enemyInfo.attack * 2 + (enemyInfo.defense || 0) * 1.5 + enemyInfo.maxHp * 0.1;
-        const playerAttack = this.gameState.player.attack + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.attack : 0);
-        const playerDefense = this.gameState.player.defense + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.defense : 0);
-        const playerPower = playerAttack * 2 + playerDefense * 1.5 + this.gameState.player.maxHp * 0.1;
-        
-        // 根据战斗力差距设置敌人图标颜色
-        let enemyIconColor = 'text-green-500';
-        let enemyBgColor = 'bg-green-500/30';
-        if (enemyPower > playerPower * 1.5) {
-            enemyIconColor = 'text-red-500';
-            enemyBgColor = 'bg-red-500/30';
-        } else if (enemyPower > playerPower) {
-            enemyIconColor = 'text-yellow-500';
-            enemyBgColor = 'bg-yellow-500/30';
-        }
-        
-        const enemyIcon = document.createElement('div');
-        enemyIcon.className = `w-6 h-6 rounded-full ${enemyBgColor} flex items-center justify-center ${enemyIconColor} cursor-pointer transition-colors`;
-        enemyIcon.innerHTML = `<i class="fa fa-skull text-xs ${enemyIconColor}"></i>`;
-        
-        // 存储敌人信息
-        enemyIcon.dataset.enemyInfo = JSON.stringify(enemyInfo);
-        
-        // 添加敌人信息提示
-        enemyIcon.setAttribute('data-tooltip', `${enemyInfo.name}\n等级: ${enemyInfo.level}\nHP: ${enemyInfo.hp}/${enemyInfo.maxHp}\n攻击: ${enemyInfo.attack}\n防御: ${enemyInfo.defense}${enemyInfo.isBoss ? '\n能量: 100/100' : ''}`);
-        
-        // 添加点击事件
-        enemyIcon.addEventListener('click', () => {
-            try {
-                const enemyInfo = JSON.parse(enemyIcon.dataset.enemyInfo);
-                this.showAttackConfirmation(enemyInfo);
-            } catch (error) {
-                console.error('解析敌人信息失败:', error);
-            }
-        });
-        
-        return enemyIcon;
-    }
+    // createEnemyIcon moved to mapLogic.js
     
-    // 重新渲染小地图
-    renderMiniMap() {
-        const mapGrid = document.getElementById('map-grid');
-        mapGrid.innerHTML = '';
-        
-        // 生成5x5的地图格子
-        for (let i = 0; i < 25; i++) {
-            const gridCell = document.createElement('div');
-            gridCell.className = 'bg-dark/30 rounded flex items-center justify-center';
-            gridCell.dataset.cellIndex = i;
-            
-            // 检查当前格子是否有敌人
-            const enemyInCell = this.gameState.sceneMonsters.find(monster => monster.cellIndex === i);
-            if (enemyInCell) {
-                // 使用通用方法创建敌人图标
-                const enemyIcon = this.createEnemyIcon(enemyInCell);
-                gridCell.appendChild(enemyIcon);
-            }
-            
-            mapGrid.appendChild(gridCell);
-        }
-        
-        // 更新地图背景
-        this.updateMapBackground();
-        
-        // 重新初始化tooltip
-        this.initTooltips();
-    }
+    // renderMiniMap moved to mapLogic.js
+    
     
     // 攻击敌人
     attackEnemy() {

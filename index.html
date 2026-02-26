@@ -121,6 +121,13 @@
             align-items: center;
             justify-content: center;
         }
+        /* 属性数值样式，确保对齐 */
+        .attribute-value {
+            min-height: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
         /* 悬停提示样式 */
         [data-tooltip] {
             position: relative;
@@ -288,23 +295,23 @@
                     <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
                         <div class="bg-dark/30 rounded p-2 text-center hover:bg-dark/40 transition-colors shadow-md">
                             <p class="text-xs text-light/60">攻击力</p>
-                            <p class="text-lg font-bold text-white" id="attack" data-tooltip="攻击力: 影响普通攻击和特殊技的伤害">10</p>
+                            <p class="text-lg font-bold text-white attribute-value" id="attack" data-tooltip="攻击力: 影响普通攻击和特殊技的伤害">10</p>
                         </div>
                         <div class="bg-dark/30 rounded p-2 text-center hover:bg-dark/40 transition-colors shadow-md">
                             <p class="text-xs text-light/60">防御力</p>
-                            <p class="text-lg font-bold text-white" id="defense" data-tooltip="防御力: 减少受到的敌人伤害">5</p>
+                            <p class="text-lg font-bold text-white attribute-value" id="defense" data-tooltip="防御力: 减少受到的敌人伤害">5</p>
                         </div>
                         <div class="bg-dark/30 rounded p-2 text-center hover:bg-dark/40 transition-colors shadow-md">
                             <p class="text-xs text-light/60">生命值</p>
-                            <p class="text-lg font-bold text-white" id="hp" data-tooltip="生命值恢复: +0/秒">100</p>
+                            <p class="text-lg font-bold text-white attribute-value" id="hp" data-tooltip="生命值恢复: +0/秒">100</p>
                         </div>
                         <div class="bg-dark/30 rounded p-2 text-center hover:bg-dark/40 transition-colors shadow-md">
                             <p class="text-xs text-light/60">幸运值</p>
-                            <p class="text-lg font-bold text-white" id="luck" data-tooltip="幸运值: 提高装备掉落概率和暴击率">2</p>
+                            <p class="text-lg font-bold text-white attribute-value" id="luck" data-tooltip="幸运值: 提高装备掉落概率和暴击率">2</p>
                         </div>
                         <div class="bg-dark/30 rounded p-2 text-center hover:bg-dark/40 transition-colors shadow-md">
-                            <p class="text-xs text-light/60">能量</p>
-                            <p class="text-lg font-bold text-white" id="energy" data-tooltip="能量恢复: +2/秒">100</p>
+                            <p class="text-xs text-light/60">能量值</p>
+                            <p class="text-lg font-bold text-white attribute-value" id="energy" data-tooltip="能量恢复: +2/秒">100</p>
                         </div>
                     </div>
                     
@@ -1029,7 +1036,10 @@
         </div>
     </div>
 
-    <!-- 游戏脚本 -->
+    <!-- 游戏脚本: 核心及模块 -->
     <script src="game.js"></script>
+    <script src="audio.js"></script>
+    <script src="map3d.js"></script>
+    <script src="mapLogic.js"></script>
 </body>
 </html>
