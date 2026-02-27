@@ -677,6 +677,85 @@ const gameMetadata = {
         ]
     },
     
+    // 境界系统配置
+    realmConfig: [
+        {
+            name: "炼气",
+            stages: [
+                { stage: 1, name: "前期", levelCap: 30, bonus: { attack: 1, defense: 1, hp: 10, luck: 0.1 } },
+                { stage: 2, name: "前期", levelCap: 30, bonus: { attack: 2, defense: 2, hp: 20, luck: 0.2 } },
+                { stage: 3, name: "前期", levelCap: 30, bonus: { attack: 3, defense: 3, hp: 30, luck: 0.3 } },
+                { stage: 4, name: "中期", levelCap: 30, bonus: { attack: 5, defense: 5, hp: 50, luck: 0.5 } },
+                { stage: 5, name: "中期", levelCap: 30, bonus: { attack: 7, defense: 7, hp: 70, luck: 0.7 } },
+                { stage: 6, name: "中期", levelCap: 30, bonus: { attack: 9, defense: 9, hp: 90, luck: 0.9 } },
+                { stage: 7, name: "后期", levelCap: 30, bonus: { attack: 12, defense: 12, hp: 120, luck: 1.2 } },
+                { stage: 8, name: "后期", levelCap: 30, bonus: { attack: 15, defense: 15, hp: 150, luck: 1.5 } },
+                { stage: 9, name: "后期", levelCap: 30, bonus: { attack: 18, defense: 18, hp: 180, luck: 1.8 } },
+                { stage: 10, name: "大圆满", levelCap: 30, bonus: { attack: 25, defense: 25, hp: 250, luck: 2.5 } }
+            ]
+        },
+        {
+            name: "筑基",
+            stages: [
+                { stage: 1, name: "前期", levelCap: 30, bonus: { attack: 30, defense: 30, hp: 300, luck: 3 } },
+                { stage: 2, name: "前期", levelCap: 30, bonus: { attack: 35, defense: 35, hp: 350, luck: 3.5 } },
+                { stage: 3, name: "前期", levelCap: 30, bonus: { attack: 40, defense: 40, hp: 400, luck: 4 } },
+                { stage: 4, name: "中期", levelCap: 30, bonus: { attack: 50, defense: 50, hp: 500, luck: 5 } },
+                { stage: 5, name: "中期", levelCap: 30, bonus: { attack: 60, defense: 60, hp: 600, luck: 6 } },
+                { stage: 6, name: "中期", levelCap: 30, bonus: { attack: 70, defense: 70, hp: 700, luck: 7 } },
+                { stage: 7, name: "后期", levelCap: 30, bonus: { attack: 85, defense: 85, hp: 850, luck: 8.5 } },
+                { stage: 8, name: "后期", levelCap: 30, bonus: { attack: 100, defense: 100, hp: 1000, luck: 10 } },
+                { stage: 9, name: "后期", levelCap: 30, bonus: { attack: 115, defense: 115, hp: 1150, luck: 11.5 } },
+                { stage: 10, name: "大圆满", levelCap: 30, bonus: { attack: 150, defense: 150, hp: 1500, luck: 15 } }
+            ]
+        },
+        {
+            name: "金丹",
+            stages: [
+                { stage: 1, name: "前期", levelCap: 30, bonus: { attack: 180, defense: 180, hp: 1800, luck: 18 } },
+                { stage: 2, name: "前期", levelCap: 30, bonus: { attack: 200, defense: 200, hp: 2000, luck: 20 } },
+                { stage: 3, name: "前期", levelCap: 30, bonus: { attack: 220, defense: 220, hp: 2200, luck: 22 } },
+                { stage: 4, name: "中期", levelCap: 30, bonus: { attack: 250, defense: 250, hp: 2500, luck: 25 } },
+                { stage: 5, name: "中期", levelCap: 30, bonus: { attack: 280, defense: 280, hp: 2800, luck: 28 } },
+                { stage: 6, name: "中期", levelCap: 30, bonus: { attack: 310, defense: 310, hp: 3100, luck: 31 } },
+                { stage: 7, name: "后期", levelCap: 30, bonus: { attack: 350, defense: 350, hp: 3500, luck: 35 } },
+                { stage: 8, name: "后期", levelCap: 30, bonus: { attack: 390, defense: 390, hp: 3900, luck: 39 } },
+                { stage: 9, name: "后期", levelCap: 30, bonus: { attack: 430, defense: 430, hp: 4300, luck: 43 } },
+                { stage: 10, name: "大圆满", levelCap: 30, bonus: { attack: 500, defense: 500, hp: 5000, luck: 50 } }
+            ]
+        },
+        {
+            name: "元婴",
+            stages: [
+                { stage: 1, name: "前期", levelCap: 30, bonus: { attack: 550, defense: 550, hp: 5500, luck: 55 } },
+                { stage: 2, name: "前期", levelCap: 30, bonus: { attack: 600, defense: 600, hp: 6000, luck: 60 } },
+                { stage: 3, name: "前期", levelCap: 30, bonus: { attack: 650, defense: 650, hp: 6500, luck: 65 } },
+                { stage: 4, name: "中期", levelCap: 30, bonus: { attack: 720, defense: 720, hp: 7200, luck: 72 } },
+                { stage: 5, name: "中期", levelCap: 30, bonus: { attack: 790, defense: 790, hp: 7900, luck: 79 } },
+                { stage: 6, name: "中期", levelCap: 30, bonus: { attack: 860, defense: 860, hp: 8600, luck: 86 } },
+                { stage: 7, name: "后期", levelCap: 30, bonus: { attack: 950, defense: 950, hp: 9500, luck: 95 } },
+                { stage: 8, name: "后期", levelCap: 30, bonus: { attack: 1040, defense: 1040, hp: 10400, luck: 104 } },
+                { stage: 9, name: "后期", levelCap: 30, bonus: { attack: 1130, defense: 1130, hp: 11300, luck: 113 } },
+                { stage: 10, name: "大圆满", levelCap: 30, bonus: { attack: 1250, defense: 1250, hp: 12500, luck: 125 } }
+            ]
+        },
+        {
+            name: "化神",
+            stages: [
+                { stage: 1, name: "前期", levelCap: 30, bonus: { attack: 1350, defense: 1350, hp: 13500, luck: 135 } },
+                { stage: 2, name: "前期", levelCap: 30, bonus: { attack: 1450, defense: 1450, hp: 14500, luck: 145 } },
+                { stage: 3, name: "前期", levelCap: 30, bonus: { attack: 1550, defense: 1550, hp: 15500, luck: 155 } },
+                { stage: 4, name: "中期", levelCap: 30, bonus: { attack: 1700, defense: 1700, hp: 17000, luck: 170 } },
+                { stage: 5, name: "中期", levelCap: 30, bonus: { attack: 1850, defense: 1850, hp: 18500, luck: 185 } },
+                { stage: 6, name: "中期", levelCap: 30, bonus: { attack: 2000, defense: 2000, hp: 20000, luck: 200 } },
+                { stage: 7, name: "后期", levelCap: 30, bonus: { attack: 2200, defense: 2200, hp: 22000, luck: 220 } },
+                { stage: 8, name: "后期", levelCap: 30, bonus: { attack: 2400, defense: 2400, hp: 24000, luck: 240 } },
+                { stage: 9, name: "后期", levelCap: 30, bonus: { attack: 2600, defense: 2600, hp: 26000, luck: 260 } },
+                { stage: 10, name: "大圆满", levelCap: 30, bonus: { attack: 3000, defense: 3000, hp: 30000, luck: 300 } }
+            ]
+        }
+    ],
+
     // 地图背景
     mapBackgrounds: [
         {

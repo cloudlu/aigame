@@ -590,17 +590,8 @@ class EndlessWinterGame {
                     }
                     equipmentElement.textContent = displayName;
                     // 根据装备稀有度设置颜色
-                    if (item.colorClass) {
-                        equipmentElement.className = `text-sm ${item.colorClass}`;
-                    } else {
-                        // 兼容旧装备
-                        const rarityInfo = this.gameState.equipmentRarities.find(r => r.name === item.rarity);
-                        if (rarityInfo) {
-                            equipmentElement.className = `text-sm ${rarityInfo.color}`;
-                        } else {
-                            equipmentElement.className = 'text-sm';
-                        }
-                    }
+                    const colorClass = this.getEquipmentColorClass(item);
+                    equipmentElement.className = `text-sm ${colorClass}`;
                     // 设置装备属性的tooltip
                     const statsDescription = this.getStatsDescription(item.stats);
                     const tooltipText = `${item.name}\n等级: ${item.level}\n品质: ${item.rarityDisplayName || '白色'}\n精炼: +${item.refineLevel || 0}\n属性: ${statsDescription}`;
@@ -1849,7 +1840,7 @@ class EndlessWinterGame {
         const rightArm = BABYLON.MeshBuilder.CreateCylinder("rightArm", { diameter: 0.3, height: 0.6, tessellation: 8 }, this.battle3D.scene);
         rightArm.material = bodyMaterial;
         rightArm.position.x = 0.6;
-        rightArm.position.y = CONSTANTS.ENEMY.HEALTH_BAR.RELATIVE_Y;
+        rightArm.position.y = CONSTANTS.PLAYER.ARM.POSITION_Y;
         rightArm.rotation.z = -Math.PI / 4;
         rightArm.parent = body;
         
@@ -1894,7 +1885,11 @@ class EndlessWinterGame {
         
         // 设置玩家位置（调整到地面上方）
         body.position.x = CONSTANTS.PLAYER.BODY_POSITION_X;
-        body.position.y = CONSTANTS.PLAYER.BODY_POSITION_Y;
+        // 将身体下移，使脚更接近地面
+        // 身体高度0.8，半径0.4
+        // 期望脚底在地面(y=-1.5)上方一点，比如0.5单位
+        // 身体中心应该在 -1.5 + 0.5 + 0.4 = 0.4
+        body.position.y = 0.4;
         
         // 存储玩家模型
         this.battle3D.player = body;
@@ -2135,7 +2130,11 @@ class EndlessWinterGame {
         
         // 设置熊的位置
         body.position.x = 2;
-        body.position.y = CONSTANTS.PLAYER.BODY_POSITION_Y;
+        // 将身体下移，使脚更接近地面
+        // 身体高度1.5，半径0.75
+        // 期望脚底在地面(y=-1.5)上方一点
+        // 身体中心应该在 -1.5 + 0.5 + 0.75 = 0.25
+        body.position.y = 0.25;
         
         // 存储敌人模型
         this.battle3D.enemy = body;
@@ -2221,7 +2220,11 @@ class EndlessWinterGame {
         
         // 设置蛇的位置
         snakeBody.position.x = 2;
-        snakeBody.position.y = 1.5;
+        // 将身体下移，使头部更接近地面
+        // 蛇身体高度1.5，半径0.2
+        // 期望蛇头在地面(y=-1.5)上方一点
+        // 身体中心应该在 -1.5 + 0.5 + 0.4 = 0.4 (考虑到蛇头突出)
+        snakeBody.position.y = 0.4;
         snakeBody.rotation.y = Math.PI / 2;
         
         // 存储敌人模型
@@ -2342,7 +2345,11 @@ class EndlessWinterGame {
         
         // 设置狼的位置
         body.position.x = 2;
-        body.position.y = 1.5;
+        // 将身体下移，使脚更接近地面
+        // 身体高度约1.2，半径0.6
+        // 期望脚底在地面(y=-1.5)上方一点
+        // 身体中心应该在 -1.5 + 0.5 + 0.6 = -0.4
+        body.position.y = -0.4;
         
         // 存储敌人模型
         this.battle3D.enemy = body;
@@ -2362,29 +2369,44 @@ class EndlessWinterGame {
         if (this.battle3D.player && !this.battle3D.isAttacking && !this.battle3D.playerDefeated) {
             // 检查是否处于战斗场景（通过检查是否有enemy模型）
             const isBattleScene = !!this.battle3D.enemy;
-            
+
             // 只有在非战斗场景中才允许鼠标移动
             if (!isBattleScene && this.isMoving && this.mouseTarget) {
                 // 计算玩家到目标位置的方向和距离
                 const dx = this.mouseTarget.x - this.battle3D.player.position.x;
                 const dz = this.mouseTarget.z - this.battle3D.player.position.z;
                 const distance = Math.sqrt(dx * dx + dz * dz);
-                
+
                 // 如果距离大于阈值，继续移动
                 if (distance > 0.1) {
                     // 计算移动方向
                     const moveSpeed = 0.05;
                     const moveX = (dx / distance) * moveSpeed;
                     const moveZ = (dz / distance) * moveSpeed;
-                    
+
                     // 移动玩家
                     this.battle3D.player.position.x += moveX;
                     this.battle3D.player.position.z += moveZ;
-                    
+
                     // 限制人物移动范围，防止走出场景
                     this.battle3D.player.position.x = Math.max(-8, Math.min(8, this.battle3D.player.position.x));
                     this.battle3D.player.position.z = Math.max(-8, Math.min(8, this.battle3D.player.position.z));
-                    
+
+                    // 检查是否接近目标
+                    const newDistance = Math.sqrt(
+                        Math.pow(this.mouseTarget.x - this.battle3D.player.position.x, 2) +
+                        Math.pow(this.mouseTarget.z - this.battle3D.player.position.z, 2)
+                    );
+                    console.log('移动进度:', {
+                        distanceToTarget: newDistance.toFixed(3),
+                        target: this.mouseTarget,
+                        currentPosition: {
+                            x: this.battle3D.player.position.x,
+                            y: this.battle3D.player.position.y,
+                            z: this.battle3D.player.position.z
+                        }
+                    });
+
                     // 检查玩家与预生成敌人的碰撞
                     this.checkEnemyCollision();
                 } else {
@@ -2392,10 +2414,14 @@ class EndlessWinterGame {
                     this.isMoving = false;
                     this.mouseTarget = null;
                 }
-            } else {
-                // 战斗场景中玩家轻微呼吸动画
-                this.battle3D.player.position.y = Math.sin(Date.now() * 0.001) * 0.05;
             }
+        } else {
+            // 打印不满足条件的原因
+            console.log('animateBattle3D条件不满足:', {
+                player: !!this.battle3D.player,
+                isAttacking: this.battle3D.isAttacking,
+                playerDefeated: this.battle3D.playerDefeated
+            });
         }
         
         if (this.battle3D.enemy && !this.battle3D.isAttacking && !this.battle3D.enemyDefeated) {
@@ -3215,35 +3241,57 @@ class EndlessWinterGame {
     }
     
     // 处理鼠标点击事件，实现鼠标引导人物移动
-    handleMouseClick(event, container) {
-        if (!this.battle3D || !this.battle3D.player || !this.battle3D.camera || !this.battle3D.scene) return;
-        
+    handleMouseClick() {
+        if (!this.battle3D || !this.battle3D.player || !this.battle3D.camera || !this.battle3D.scene) {
+            console.warn('handleMouseClick: 缺少必要对象', {
+                battle3D: !!this.battle3D,
+                player: !!this.battle3D?.player,
+                camera: !!this.battle3D?.camera,
+                scene: !!this.battle3D?.scene
+            });
+            return;
+        }
+
         try {
-            // 获取容器中鼠标的相对位置
-            const rect = container.getBoundingClientRect();
-            const x = event.clientX - rect.left;
-            const y = event.clientY - rect.top;
-            
+            // 直接使用 Babylon.js 提供的 scene.pointerX/Y
+            // scene.pointerX/Y 已经是 canvas 内的坐标（0 到 canvas.width）
+
+            console.log('handleMouseClick:', { pointerX: this.battle3D.scene.pointerX, pointerY: this.battle3D.scene.pointerY });
+
             // 使用Babylon.js的picking方法获取射线
-            const pickInfo = this.battle3D.scene.pick(x, y);
-            if (!pickInfo || !pickInfo.ray) return;
-            
+            const pickInfo = this.battle3D.scene.pick(this.battle3D.scene.pointerX, this.battle3D.scene.pointerY);
+            if (!pickInfo || !pickInfo.ray) {
+                console.warn('handleMouseClick: 无法获取pickInfo或ray');
+                return;
+            }
+
             const ray = pickInfo.ray;
-            
-            // 计算射线与y=1.5平面的交点（人物所在高度）
+
+            console.log('射线信息:', {
+                rayOrigin: { x: ray.origin.x, y: ray.origin.y, z: ray.origin.z },
+                rayDirection: { x: ray.direction.x, y: ray.direction.y, z: ray.direction.z },
+                playerPosition: { x: this.battle3D.player.position.x, y: this.battle3D.player.position.y, z: this.battle3D.player.position.z }
+            });
+
+            // 计算射线与人物高度平面的交点
+            // 使用玩家的实际身体位置作为交点高度
             // 射线：point + t*direction
-            // 平面：y = 1.5
-            // 解：origin.y + t*direction.y = 1.5 => t = (1.5 - origin.y) / direction.y
+            // 平面：y = player.position.y
+            // 解：origin.y + t*direction.y = player.position.y => t = (player.position.y - ray.origin.y) / ray.direction.y
 
             if (Math.abs(ray.direction.y) > 0.0001) { // 确保射线不平行于平面
-                const t = (1.5 - ray.origin.y) / ray.direction.y;
+                const t = (this.battle3D.player.position.y - ray.origin.y) / ray.direction.y;
+
+                console.log('计算出的 t 值:', t);
 
                 if (t > 0) { // 确保交点在射线前方
                     const intersectionPoint = new BABYLON.Vector3(
                         ray.origin.x + t * ray.direction.x,
-                        1.5, // 保持人物的高度
+                        this.battle3D.player.position.y, // 使用玩家的实际身体位置
                         ray.origin.z + t * ray.direction.z
                     );
+
+                    console.log('交点坐标:', intersectionPoint);
 
                     // 设置目标位置，只使用x和z坐标
                     this.mouseTarget = {
@@ -3255,8 +3303,14 @@ class EndlessWinterGame {
                     this.mouseTarget.x = Math.max(-8, Math.min(8, this.mouseTarget.x));
                     this.mouseTarget.z = Math.max(-8, Math.min(8, this.mouseTarget.z));
 
+                    console.log('设置移动目标:', this.mouseTarget, 'isMoving:', true);
+
                     this.isMoving = true;
+                } else {
+                    console.warn('t 值不大于 0，交点在射线后方');
                 }
+            } else {
+                console.warn('射线方向在 Y 轴接近 0，无法计算交点');
             }
         } catch (error) {
             console.error('处理鼠标点击时出错:', error);
@@ -4642,13 +4696,10 @@ class EndlessWinterGame {
             const timestamp = new Date().getTime();
             if (this.gameState.user.loggedIn && this.gameState.user.gender) {
                 if (this.gameState.user.gender === '男') {
-                    characterBodyElement.src = `Images/male-character.png?${timestamp}`;
+                    characterBodyElement.src = `Images/male-character-5.png?${timestamp}`;
                 } else if (this.gameState.user.gender === '女') {
-                    characterBodyElement.src = `Images/female-character.png?${timestamp}`;
+                    characterBodyElement.src = `Images/female-character-1.png?${timestamp}`;
                 }
-            } else {
-                // 未登录时使用默认形象
-                characterBodyElement.src = `Images/default-character.png?${timestamp}`;
             }
         }
     }
@@ -4672,15 +4723,6 @@ class EndlessWinterGame {
             'pants': 'character-pants'
         };
         
-        // 装备品质颜色映射
-        const qualityColors = {
-            '白色': 'quality-white',
-            '蓝色': 'quality-blue',
-            '紫色': 'quality-purple',
-            '金色': 'quality-gold',
-            '传说': 'quality-red'
-        };
-        
         // 遍历所有装备槽位
         for (const slot in equipmentSlots) {
             const elementId = equipmentSlots[slot];
@@ -4693,27 +4735,71 @@ class EndlessWinterGame {
                     // 显示装备
                     element.style.opacity = '1';
                     
-                    // 设置悬停提示
-                    const statsDescription = this.getStatsDescription(item.stats);
-                    const tooltipText = `${item.name}\n等级: ${item.level}\n品质: ${item.rarityDisplayName || '白色'}\n精炼: +${item.refineLevel || 0}\n属性: ${statsDescription}`;
-                    element.setAttribute('data-tooltip', tooltipText);
-                    
                     // 根据装备品质设置颜色
-                    if (item.rarityDisplayName && qualityColors[item.rarityDisplayName]) {
-                        element.className = element.className.replace(/quality-\w+/g, '');
-                        element.classList.add(qualityColors[item.rarityDisplayName]);
-                    } else if (item.colorClass) {
-                        // 兼容旧装备
-                        element.className = element.className.replace(/quality-\w+/g, '');
-                        element.classList.add(item.colorClass);
-                    } else {
-                        // 兼容旧装备
-                        const rarityInfo = this.gameState.equipmentRarities.find(r => r.name === item.rarity);
-                        if (rarityInfo && rarityInfo.color) {
-                            element.className = element.className.replace(/quality-\w+/g, '');
-                            element.classList.add(rarityInfo.color);
+                    const colorClass = this.getEquipmentColorClass(item);
+                    element.className = element.className.replace(/quality-\w+/g, '');
+                    element.classList.add(colorClass);
+                    
+                    // 更新装备提示窗口
+                    const container = element.parentElement;
+                    const tooltip = container.querySelector('.equipment-tooltip');
+                    if (tooltip) {
+                        // 填充装备信息
+                        const nameElement = tooltip.querySelector('.equipment-name');
+                        const levelElement = tooltip.querySelector('.equipment-level');
+                        const qualityElement = tooltip.querySelector('.equipment-quality');
+                        const refineElement = tooltip.querySelector('.equipment-refine');
+                        const statsElement = tooltip.querySelector('.equipment-stats');
+                        const imageElement = tooltip.querySelector('.equipment-image');
+                        
+                        if (nameElement) {
+                            nameElement.textContent = item.name;
+                            // 根据装备品质设置装备名称颜色
+                            nameElement.className = `font-bold ${colorClass}`;
+                        }
+                        if (levelElement) {
+                            levelElement.textContent = item.level;
+                        }
+                        if (qualityElement) {
+                            qualityElement.textContent = item.rarityDisplayName || '白色';
+                            // 根据装备品质设置品质文本颜色
+                            qualityElement.className = `equipment-quality ${colorClass}`;
+                        }
+                        if (refineElement) {
+                            refineElement.textContent = `+${item.refineLevel || 0}`;
+                        }
+                        if (statsElement) {
+                            const statsDescription = this.getStatsDescription(item.stats);
+                            statsElement.textContent = statsDescription;
+                        }
+                        if (imageElement) {
+                            // 设置装备图片
+                            const equipmentImage = element.src;
+                            imageElement.src = equipmentImage;
+                            imageElement.alt = item.name;
+                            imageElement.style.display = 'block';
+                        }
+                        // 显示图片容器
+                        const imageContainer = tooltip.querySelector('.w-32');
+                        if (imageContainer) {
+                            imageContainer.style.display = 'flex';
                         }
                     }
+                    
+                    // 绑定鼠标悬停事件
+                    container.addEventListener('mouseenter', () => {
+                        const tooltip = container.querySelector('.equipment-tooltip');
+                        if (tooltip && item) {
+                            tooltip.classList.remove('hidden');
+                        }
+                    });
+                    
+                    container.addEventListener('mouseleave', () => {
+                        const tooltip = container.querySelector('.equipment-tooltip');
+                        if (tooltip) {
+                            tooltip.classList.add('hidden');
+                        }
+                    });
                 } else {
                     // 隐藏装备
                     element.style.opacity = '0';
@@ -4721,6 +4807,13 @@ class EndlessWinterGame {
                     element.removeAttribute('data-tooltip');
                     // 清除颜色类
                     element.className = element.className.replace(/quality-\w+/g, '');
+                    // 移除鼠标悬停事件
+                    const container = element.parentElement;
+                    const tooltip = container.querySelector('.equipment-tooltip');
+                    if (tooltip) {
+                        // 确保弹窗保持隐藏
+                        tooltip.classList.add('hidden');
+                    }
                 }
             }
         }
@@ -4738,6 +4831,29 @@ class EndlessWinterGame {
         };
         
         return colorMap[colorClass] || 'rgba(96, 165, 250, 0.5)';
+    }
+    
+    // 获取装备的颜色类
+    getEquipmentColorClass(item) {
+        if (item.colorClass) {
+            return item.colorClass;
+        }
+        
+        // 如果没有colorClass，则根据rarity属性判断
+        const rarity = item.rarityDisplayName || item.rarity;
+        if (rarity === '传奇' || rarity === 'legendary') {
+            return 'quality-red';
+        } else if (rarity === '金色' || rarity === 'gold') {
+            return 'quality-gold';
+        } else if (rarity === '紫色' || rarity === 'purple') {
+            return 'quality-purple';
+        } else if (rarity === '蓝色' || rarity === 'blue') {
+            return 'quality-blue';
+        } else if (rarity === '白色' || rarity === 'white') {
+            return 'quality-white';
+        }
+        
+        return 'quality-white';
     }
     
     // 刷新敌人
@@ -5260,17 +5376,8 @@ class EndlessWinterGame {
             const refineWeaponNameElement = document.getElementById('refine-weapon-name');
             refineWeaponNameElement.textContent = item.name;
             // 设置装备颜色
-            if (item.colorClass) {
-                refineWeaponNameElement.className = `text-sm font-medium ${item.colorClass}`;
-            } else {
-                // 兼容旧装备
-                const rarityInfo = this.gameState.equipmentRarities.find(r => r.name === item.rarity);
-                if (rarityInfo) {
-                    refineWeaponNameElement.className = `text-sm font-medium ${rarityInfo.color}`;
-                } else {
-                    refineWeaponNameElement.className = 'text-sm font-medium text-white';
-                }
-            }
+            const colorClass = this.getEquipmentColorClass(item);
+            refineWeaponNameElement.className = `text-sm font-medium ${colorClass}`;
             
             // 更新精炼等级
             document.getElementById('refine-weapon-level').textContent = `+${item.refineLevel}`;
@@ -5311,17 +5418,8 @@ class EndlessWinterGame {
             const disassembleWeaponNameElement = document.getElementById('disassemble-weapon-name');
             disassembleWeaponNameElement.textContent = item.name;
             // 设置装备颜色
-            if (item.colorClass) {
-                disassembleWeaponNameElement.className = `text-sm font-medium ${item.colorClass}`;
-            } else {
-                // 兼容旧装备
-                const rarityInfo = this.gameState.equipmentRarities.find(r => r.name === item.rarity);
-                if (rarityInfo) {
-                    disassembleWeaponNameElement.className = `text-sm font-medium ${rarityInfo.color}`;
-                } else {
-                    disassembleWeaponNameElement.className = 'text-sm font-medium text-white';
-                }
-            }
+            const colorClass = this.getEquipmentColorClass(item);
+            disassembleWeaponNameElement.className = `text-sm font-medium ${colorClass}`;
             
             // 更新精炼等级
             document.getElementById('disassemble-weapon-level').textContent = `+${item.refineLevel}`;
@@ -7465,20 +7563,7 @@ class EndlessWinterGame {
         }
         
         // 物品品质颜色
-        let rarityColor = item.colorClass || 'text-white';
-        // 如果没有colorClass，则根据rarity属性判断
-        if (!item.colorClass) {
-            const rarity = item.rarityDisplayName || item.rarity;
-            if (rarity === '传奇' || rarity === 'legendary') {
-                rarityColor = 'text-yellow-500';
-            } else if (rarity === '金色' || rarity === 'gold') {
-                rarityColor = 'text-yellow-400';
-            } else if (rarity === '紫色' || rarity === 'purple') {
-                rarityColor = 'text-purple-400';
-            } else if (rarity === '蓝色' || rarity === 'blue') {
-                rarityColor = 'text-blue-400';
-            }
-        }
+        const rarityColor = this.getEquipmentColorClass(item);
         
         itemElement.innerHTML = `
             <div class="text-xs ${rarityColor} mb-0.5">

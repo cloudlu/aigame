@@ -198,6 +198,26 @@
         /* 装备提示框 */
         .equipment-tooltip {
             transition: all 0.2s ease;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(96, 165, 250, 0.3);
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
+        }
+        
+        .equipment-tooltip:hover {
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .equipment-tooltip h4 {
+            margin-bottom: 4px;
+            font-size: 14px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+        
+        .equipment-tooltip p {
+            margin: 2px 0;
+            line-height: 1.2;
         }
         
         .equipment-slot-container:hover .equipment-tooltip {
@@ -329,37 +349,127 @@
                         <div class="flex justify-center">
                             <div class="relative w-96 h-96 flex items-center justify-center">
                                 <!-- 左侧装备正方形 -->
-                                <div class="absolute left-0 top-0 w-10 h-10 rounded bg-dark/50 border-2 border-accent/50 flex items-center justify-center equipment-slot-container" data-slot="helmet">
+                                <div class="absolute left-0 top-0 w-10 h-10 rounded bg-dark/50 border-2 border-accent/50 flex items-center justify-center equipment-slot-container">
                                     <!-- 头盔 -->
-                                    <img id="character-helmet" src="Images/helmet.png" alt="头盔" class="w-8 h-8 object-contain opacity-0 transition-opacity equipment-slot">
+                                    <img id="character-helmet" src="Images/helmet.png" alt="头盔" class="w-8 h-8 object-contain opacity-0 transition-opacity equipment-slot" data-slot="helmet">
+                                    <!-- 装备提示窗口 -->
+                                    <div class="equipment-tooltip hidden absolute left-full ml-2 bg-dark/90 border border-accent/50 rounded p-3 w-64 z-50 shadow-lg">
+                                        <div class="flex items-center mb-3">
+                                            <div class="w-32 h-50 bg-dark/50 rounded flex items-center justify-center mr-3">
+                                                <img class="equipment-image w-full h-full object-cover" src="" alt="装备图片">
+                                            </div>
+                                            <div class="flex-1">
+                                                <h4 class="font-bold text-white equipment-name"></h4>
+                                                <p class="text-xs text-light/70">等级: <span class="equipment-level"></span></p>
+                                                <p class="text-xs text-light/70">品质: <span class="equipment-quality"></span></p>
+                                                <p class="text-xs text-light/70">精炼: <span class="equipment-refine"></span></p>
+                                                <p class="text-xs text-light/70">属性: <span class="equipment-stats"></span></p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="absolute left-0 w-10 h-10 rounded bg-dark/50 border-2 border-accent/50 flex items-center justify-center equipment-slot-container" data-slot="armor">
+                                <div class="absolute left-0 w-10 h-10 rounded bg-dark/50 border-2 border-accent/50 flex items-center justify-center equipment-slot-container">
                                     <!-- 护甲 -->
-                                    <img id="character-armor" src="Images/armor-chestplate.png" alt="护甲" class="w-8 h-8 object-contain opacity-0 transition-opacity equipment-slot">
+                                    <img id="character-armor" src="Images/armor-chestplate.png" alt="护甲" class="w-8 h-8 object-contain opacity-0 transition-opacity equipment-slot" data-slot="armor">
+                                    <!-- 装备提示窗口 -->
+                                    <div class="equipment-tooltip hidden absolute left-full ml-2 bg-dark/90 border border-accent/50 rounded p-3 w-64 z-50 shadow-lg">
+                                        <div class="flex items-center mb-3">
+                                            <div class="w-32 h-50 bg-dark/50 rounded flex items-center justify-center mr-3">
+                                                <img class="equipment-image w-full h-full object-cover" src="" alt="装备图片">
+                                            </div>
+                                            <div class="flex-1">
+                                                <h4 class="font-bold text-white equipment-name"></h4>
+                                                <p class="text-xs text-light/70">等级: <span class="equipment-level"></span></p>
+                                                <p class="text-xs text-light/70">品质: <span class="equipment-quality"></span></p>
+                                                <p class="text-xs text-light/70">精炼: <span class="equipment-refine"></span></p>
+                                                <p class="text-xs text-light/70">属性: <span class="equipment-stats"></span></p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="absolute left-0 bottom-0 w-10 h-10 rounded bg-dark/50 border-2 border-accent/50 flex items-center justify-center equipment-slot-container" data-slot="weapon">
+                                <div class="absolute left-0 bottom-0 w-10 h-10 rounded bg-dark/50 border-2 border-accent/50 flex items-center justify-center equipment-slot-container">
                                     <!-- 武器 -->
-                                    <img id="character-weapon" src="Images/weapon-sword.png" alt="武器" class="w-8 h-8 object-contain opacity-0 transition-opacity equipment-slot">
+                                    <img id="character-weapon" src="Images/weapon-sword.png" alt="武器" class="w-8 h-8 object-contain opacity-0 transition-opacity equipment-slot" data-slot="weapon">
+                                    <!-- 装备提示窗口 -->
+                                    <div class="equipment-tooltip hidden absolute left-full ml-2 bg-dark/90 border border-accent/50 rounded p-3 w-64 z-50 shadow-lg">
+                                        <div class="flex items-center mb-3">
+                                             <div class="w-32 h-50 bg-dark/50 rounded flex items-center justify-center mr-3">
+                                                <img class="equipment-image w-full h-full object-cover" src="" alt="装备图片">
+                                            </div>
+                                            <div class="flex-1">
+                                                <h4 class="font-bold text-white equipment-name"></h4>
+                                                <p class="text-xs text-light/70">等级: <span class="equipment-level"></span></p>
+                                                <p class="text-xs text-light/70">品质: <span class="equipment-quality"></span></p>
+                                                <p class="text-xs text-light/70">精炼: <span class="equipment-refine"></span></p>
+                                                <p class="text-xs text-light/70">属性: <span class="equipment-stats"></span></p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                                 
                                 <!-- 人物图形 -->
-                                <div class="w-56 h-full flex items-center justify-center" align-items: center>
+                                <div class="w-64 h-full flex items-center justify-center">
                                     <!-- 人物身体 -->
-                                    <img id="character-body" src="Images/default-character.png" alt="人物身体" class="w-full h-full object-contain">
+                                    <img id="character-body" src="Images/default-character.png" alt="人物身体" class="w-full h-full object-cover">
                                 </div>
                                 
                                 <!-- 右侧装备正方形 -->
-                                <div class="absolute right-0 top-0 w-10 h-10 rounded bg-dark/50 border-2 border-accent/50 flex items-center justify-center equipment-slot-container" data-slot="accessory">
+                                <div class="absolute right-0 top-0 w-10 h-10 rounded bg-dark/50 border-2 border-accent/50 flex items-center justify-center equipment-slot-container">
                                     <!-- 饰品 -->
-                                    <img id="character-accessory" src="Images/accessory-necklace.png" alt="饰品" class="w-8 h-8 object-contain opacity-0 transition-opacity equipment-slot">
+                                    <img id="character-accessory" src="Images/accessory-necklace.png" alt="饰品" class="w-8 h-8 object-contain opacity-0 transition-opacity equipment-slot" data-slot="accessory">
+                                    <!-- 装备提示窗口 -->
+                                    <div class="equipment-tooltip hidden absolute right-full mr-2 bg-dark/90 border border-accent/50 rounded p-3 w-64 z-50 shadow-lg">
+                                        <div class="flex items-center mb-3">
+                                             <div class="w-32 h-50 bg-dark/50 rounded flex items-center justify-center mr-3">
+                                                <img class="equipment-image w-full h-full object-cover" src="" alt="装备图片">
+                                            </div>
+                                            <div class="flex-1">
+                                                <h4 class="font-bold text-white equipment-name"></h4>
+                                                <p class="text-xs text-light/70">等级: <span class="equipment-level"></span></p>
+                                                <p class="text-xs text-light/70">品质: <span class="equipment-quality"></span></p>
+                                                <p class="text-xs text-light/70">精炼: <span class="equipment-refine"></span></p>
+                                                <p class="text-xs text-light/70">属性: <span class="equipment-stats"></span></p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="absolute right-0 w-10 h-10 rounded bg-dark/50 border-2 border-accent/50 flex items-center justify-center equipment-slot-container" data-slot="pants">
+                                <div class="absolute right-0 w-10 h-10 rounded bg-dark/50 border-2 border-accent/50 flex items-center justify-center equipment-slot-container">
                                     <!-- 裤子 -->
-                                    <img id="character-pants" src="" alt="裤子" class="w-8 h-8 object-contain opacity-0 transition-opacity equipment-slot">
+                                    <img id="character-pants" src="" alt="裤子" class="w-8 h-8 object-contain opacity-0 transition-opacity equipment-slot" data-slot="pants">
+                                    <!-- 装备提示窗口 -->
+                                    <div class="equipment-tooltip hidden absolute right-full mr-2 bg-dark/90 border border-accent/50 rounded p-3 w-64 z-50 shadow-lg">
+                                        <div class="flex items-center mb-3">
+                                             <div class="w-32 h-50 bg-dark/50 rounded flex items-center justify-center mr-3">
+                                                <img class="equipment-image w-full h-full object-cover" src="" alt="装备图片">
+                                            </div>
+                                            <div class="flex-1">
+                                                <h4 class="font-bold text-white equipment-name"></h4>
+                                                <p class="text-xs text-light/70">等级: <span class="equipment-level"></span></p>
+                                                <p class="text-xs text-light/70">品质: <span class="equipment-quality"></span></p>
+                                                <p class="text-xs text-light/70">精炼: <span class="equipment-refine"></span></p>
+                                                <p class="text-xs text-light/70">属性: <span class="equipment-stats"></span></p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="absolute right-0 bottom-0 w-10 h-10 rounded bg-dark/50 border-2 border-accent/50 flex items-center justify-center equipment-slot-container" data-slot="boots">
+                                <div class="absolute right-0 bottom-0 w-10 h-10 rounded bg-dark/50 border-2 border-accent/50 flex items-center justify-center equipment-slot-container">
                                     <!-- 靴子 -->
-                                    <img id="character-boots" src="Images/boots.png" alt="靴子" class="w-8 h-8 object-contain opacity-0 transition-opacity equipment-slot">
+                                    <img id="character-boots" src="Images/boots.png" alt="靴子" class="w-8 h-8 object-contain opacity-0 transition-opacity equipment-slot" data-slot="boots">
+                                    <!-- 装备提示窗口 -->
+                                    <div class="equipment-tooltip hidden absolute right-full mr-2 bg-dark/90 border border-accent/50 rounded p-3 w-64 z-50 shadow-lg">
+                                        <div class="flex items-center mb-3">
+                                             <div class="w-32 h-50 bg-dark/50 rounded flex items-center justify-center mr-3">
+                                                <img class="equipment-image w-full h-full object-cover" src="" alt="装备图片">
+                                            </div>
+                                            <div class="flex-1">
+                                                <h4 class="font-bold text-white equipment-name"></h4>
+                                                <p class="text-xs text-light/70">等级: <span class="equipment-level"></span></p>
+                                                <p class="text-xs text-light/70">品质: <span class="equipment-quality"></span></p>
+                                                <p class="text-xs text-light/70">精炼: <span class="equipment-refine"></span></p>
+                                                <p class="text-xs text-light/70">属性: <span class="equipment-stats"></span></p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

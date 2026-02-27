@@ -160,15 +160,12 @@ https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Cute%20cartoon%2
         if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERDOWN) {
             const pickResult = scene.pick(scene.pointerX, scene.pointerY);
 
-            if (pickResult.hit && pickResult.pickedMesh) {
-                console.log('点击了:', pickResult.pickedMesh.name);
+            if (pickResult.hit) {
+                console.log('点击了:', pickResult.pickedMesh ? pickResult.pickedMesh.name : '地面');
+                console.log('点击坐标:', { x: scene.pointerX, y: scene.pointerY });
 
-                // 调用handleMouseClick处理鼠标点击，实现人物移动
-                // 直接使用 canvas，因为它是作为引擎的第一个参数创建的
-                this.handleMouseClick(
-                    { clientX: scene.pointerX, clientY: scene.pointerY },
-                    canvas.parentElement
-                );
+                // handleMouseClick 会直接使用 scene.pointerX 和 scene.pointerY
+                this.handleMouseClick();
             }
         }
     });
