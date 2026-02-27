@@ -72,7 +72,7 @@ EndlessWinterGame.prototype.initMap3DScene = function() {
 
     if (isBattle) {
         scene.clearColor = new BABYLON.Color4(0.05, 0.05, 0.05, 1);
-    } else {
+https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Cute%20cartoon%20pants%20armor%20for%20a%20fuzzy%20white%20character%2C%20blue%20gemstones%2C%20golden%20accents%2C%20snow%20flakes%2C%20chibi%20style%2C%203D%20render%2C%20clean%20background&image_size=square    } else {
         // 探险场景背景设置
         if (this.gameState.mapBackgrounds.length > 0 && this.gameState.currentBackgroundIndex !== undefined) {
             const currentBackground = this.gameState.mapBackgrounds[this.gameState.currentBackgroundIndex];

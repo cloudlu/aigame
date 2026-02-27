@@ -171,6 +171,38 @@
             opacity: 1;
             visibility: visible;
         }
+        
+        /* 装备品质颜色 */
+        .quality-white {
+            color: #ffffff;
+        }
+        .quality-blue {
+            color: #60a5fa;
+        }
+        .quality-purple {
+            color: #a78bfa;
+        }
+        .quality-gold {
+            color: #fbbf24;
+        }
+        .quality-red {
+            color: #f87171;
+        }
+        
+        /* 装备槽容器 */
+        .equipment-slot-container {
+            position: relative;
+            cursor: pointer;
+        }
+        
+        /* 装备提示框 */
+        .equipment-tooltip {
+            transition: all 0.2s ease;
+        }
+        
+        .equipment-slot-container:hover .equipment-tooltip {
+            display: block !important;
+        }
     </style>
 </head>
 <body class="font-game text-light">
@@ -184,34 +216,14 @@
                 <span class="text-sm text-light/90">
                     <i class="fa fa-user mr-1 text-accent"></i> <span id="current-user-nav">Guest</span>
                 </span>
-                <button id="login-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="登录已有账号">
-                    <i class="fa fa-sign-in text-accent"></i>
-                </button>
-                <button id="register-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="注册新账号">
-                    <i class="fa fa-user-plus text-accent"></i>
-                </button>
-                <button id="logout-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden hidden" data-tooltip="退出当前账号">
+                <button id="logout-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="退出当前账号">
                     <i class="fa fa-sign-out text-accent"></i>
-                </button>
-                <button id="save-game" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="保存游戏进度">
-                    <i class="fa fa-save text-accent"></i>
-                </button>
-                <button id="load-game" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="重置游戏进度">
-                    <i class="fa fa-refresh text-accent"></i>
                 </button>
                 <div class="relative">
                     <button id="settings-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="游戏设置选项">
                         <i class="fa fa-cog text-accent"></i>
                     </button>
                     <div id="settings-dropdown" class="hidden absolute top-full right-0 mt-1 bg-dark/90 border border-glass rounded-lg p-2 min-w-[250px] z-50">
-                        <button id="export-game" class="w-full text-left px-3 py-2 text-sm hover:bg-primary/20 rounded flex items-center">
-                            <i class="fa fa-download mr-2"></i> 导出存档
-                        </button>
-                        <input type="file" id="import-game" class="hidden" accept=".json">
-                        <label for="import-game" class="w-full text-left px-3 py-2 text-sm hover:bg-primary/20 rounded flex items-center cursor-pointer">
-                            <i class="fa fa-upload mr-2"></i> 导入存档
-                        </label>
-                        
                         <!-- 自动战斗设置 -->
                         <div class="w-full text-left px-3 py-2 text-sm rounded">
                             <div class="font-medium text-white mb-2 flex items-center">
@@ -252,11 +264,7 @@
                                     <label for="auto-collect-crystal" class="text-sm text-light/90">水晶</label>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <button id="reset-game" class="w-full text-left px-3 py-2 text-sm hover:bg-danger/20 rounded flex items-center">
-                            <i class="fa fa-refresh mr-2"></i> 重置游戏
-                        </button>
+                        </div> 
                         <button id="delete-account-btn" class="w-full text-left px-3 py-2 text-sm hover:bg-danger/20 rounded flex items-center">
                             <i class="fa fa-trash mr-2"></i> 注销账号
                         </button>
@@ -316,51 +324,42 @@
                     </div>
                     
                     <!-- 装备栏 -->
-                    <div>
-                        <h3 class="font-bold text-sm mb-2 text-light/90">装备栏</h3>
-                        <div class="grid grid-cols-5 gap-2">
-                            <div class="equipment-slot bg-dark/30 rounded p-2 text-center hover:bg-dark/40 transition-colors cursor-pointer border border-dark/50" data-slot="weapon">
-                                <p class="text-xs text-light/60">武器</p>
-                                <p id="equipment-weapon" class="text-sm">无</p>
-                            </div>
-                            <div class="equipment-slot bg-dark/30 rounded p-2 text-center hover:bg-dark/40 transition-colors cursor-pointer border border-dark/50" data-slot="armor">
-                                <p class="text-xs text-light/60">护甲</p>
-                                <p id="equipment-armor" class="text-sm">无</p>
-                            </div>
-                            <div class="equipment-slot bg-dark/30 rounded p-2 text-center hover:bg-dark/40 transition-colors cursor-pointer border border-dark/50" data-slot="helmet">
-                                <p class="text-xs text-light/60">头盔</p>
-                                <p id="equipment-helmet" class="text-sm">无</p>
-                            </div>
-                            <div class="equipment-slot bg-dark/30 rounded p-2 text-center hover:bg-dark/40 transition-colors cursor-pointer border border-dark/50" data-slot="boots">
-                                <p class="text-xs text-light/60">靴子</p>
-                                <p id="equipment-boots" class="text-sm">无</p>
-                            </div>
-                            <div class="equipment-slot bg-dark/30 rounded p-2 text-center hover:bg-dark/40 transition-colors cursor-pointer border border-dark/50" data-slot="accessory">
-                                <p class="text-xs text-light/60">饰品</p>
-                                <p id="equipment-accessory" class="text-sm">无</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- 人物形象 -->
                     <div class="mt-6 mb-6">
                         <h3 class="font-bold text-sm mb-3 text-light/90">装备预览</h3>
                         <div class="flex justify-center">
-                            <div class="relative w-64 h-64">
+                            <div class="relative w-96 h-96 flex items-center justify-center">
+                                <!-- 左侧装备正方形 -->
+                                <div class="absolute left-0 top-0 w-10 h-10 rounded bg-dark/50 border-2 border-accent/50 flex items-center justify-center equipment-slot-container" data-slot="helmet">
+                                    <!-- 头盔 -->
+                                    <img id="character-helmet" src="Images/helmet.png" alt="头盔" class="w-8 h-8 object-contain opacity-0 transition-opacity equipment-slot">
+                                </div>
+                                <div class="absolute left-0 w-10 h-10 rounded bg-dark/50 border-2 border-accent/50 flex items-center justify-center equipment-slot-container" data-slot="armor">
+                                    <!-- 护甲 -->
+                                    <img id="character-armor" src="Images/armor-chestplate.png" alt="护甲" class="w-8 h-8 object-contain opacity-0 transition-opacity equipment-slot">
+                                </div>
+                                <div class="absolute left-0 bottom-0 w-10 h-10 rounded bg-dark/50 border-2 border-accent/50 flex items-center justify-center equipment-slot-container" data-slot="weapon">
+                                    <!-- 武器 -->
+                                    <img id="character-weapon" src="Images/weapon-sword.png" alt="武器" class="w-8 h-8 object-contain opacity-0 transition-opacity equipment-slot">
+                                </div>
+                                
                                 <!-- 人物图形 -->
-                                <div class="w-full h-full flex items-center justify-center">
+                                <div class="w-56 h-full flex items-center justify-center" align-items: center>
                                     <!-- 人物身体 -->
                                     <img id="character-body" src="Images/default-character.png" alt="人物身体" class="w-full h-full object-contain">
-                                    <!-- 武器 -->
-                                    <img id="character-weapon" src="Images/weapon-sword.png" alt="武器" class="absolute top-2/3 left-12 w-12 h-12 object-contain transform -translate-y-1/2 -rotate-30 opacity-0 transition-opacity">
-                                    <!-- 护甲 -->
-                                    <img id="character-armor" src="Images/armor-chestplate.png" alt="护甲" class="absolute top-1/2 left-1/2 w-16 h-16 object-contain transform -translate-x-1/2 -translate-y-1/2 opacity-0 transition-opacity">
-                                    <!-- 头盔 -->
-                                    <img id="character-helmet" src="Images/helmet.png" alt="头盔" class="absolute top-10 left-1/2 w-8 h-8 object-contain transform -translate-x-1/2 opacity-0 transition-opacity">
-                                    <!-- 靴子 -->
-                                    <img id="character-boots" src="Images/boots.png" alt="靴子" class="absolute bottom-10 left-1/2 w-8 h-8 object-contain transform -translate-x-1/2 opacity-0 transition-opacity">
+                                </div>
+                                
+                                <!-- 右侧装备正方形 -->
+                                <div class="absolute right-0 top-0 w-10 h-10 rounded bg-dark/50 border-2 border-accent/50 flex items-center justify-center equipment-slot-container" data-slot="accessory">
                                     <!-- 饰品 -->
-                                    <img id="character-accessory" src="Images/accessory-necklace.png" alt="饰品" class="absolute top-1/2 left-1/2 w-6 h-6 object-contain transform -translate-x-1/2 -translate-y-1/2 opacity-0 transition-opacity">
+                                    <img id="character-accessory" src="Images/accessory-necklace.png" alt="饰品" class="w-8 h-8 object-contain opacity-0 transition-opacity equipment-slot">
+                                </div>
+                                <div class="absolute right-0 w-10 h-10 rounded bg-dark/50 border-2 border-accent/50 flex items-center justify-center equipment-slot-container" data-slot="pants">
+                                    <!-- 裤子 -->
+                                    <img id="character-pants" src="" alt="裤子" class="w-8 h-8 object-contain opacity-0 transition-opacity equipment-slot">
+                                </div>
+                                <div class="absolute right-0 bottom-0 w-10 h-10 rounded bg-dark/50 border-2 border-accent/50 flex items-center justify-center equipment-slot-container" data-slot="boots">
+                                    <!-- 靴子 -->
+                                    <img id="character-boots" src="Images/boots.png" alt="靴子" class="w-8 h-8 object-contain opacity-0 transition-opacity equipment-slot">
                                 </div>
                             </div>
                         </div>
@@ -1037,6 +1036,7 @@
     </div>
 
     <!-- 游戏脚本: 核心及模块 -->
+    <script src="config.js"></script>
     <script src="game.js"></script>
     <script src="audio.js"></script>
     <script src="map3d.js"></script>

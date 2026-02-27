@@ -824,22 +824,6 @@ class EndlessWinterGame {
             survivorName.textContent = this.gameState.user.username;
         }
         
-        // 更新用户按钮状态
-        const loginBtn = document.getElementById('login-btn');
-        const registerBtn = document.getElementById('register-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-        if (loginBtn && registerBtn && logoutBtn) {
-            if (this.gameState.user.loggedIn) {
-                loginBtn.classList.add('hidden');
-                registerBtn.classList.add('hidden');
-                logoutBtn.classList.remove('hidden');
-            } else {
-                loginBtn.classList.remove('hidden');
-                registerBtn.classList.remove('hidden');
-                logoutBtn.classList.add('hidden');
-            }
-        }
-        
         // 更新技能按钮状态
         if (this.gameState.player && this.gameState.player.skills) {
             for (let i = 0; i < this.gameState.player.skills.length; i++) {
@@ -1095,13 +1079,17 @@ class EndlessWinterGame {
         }
         
         // 添加地面
-        const ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 20, height: 20 }, scene);
+        const ground = BABYLON.MeshBuilder.CreateGround("ground", {
+            width: CONSTANTS.SCENE.GROUND.WIDTH,
+            height: CONSTANTS.SCENE.GROUND.HEIGHT,
+            subdivisions: CONSTANTS.SCENE.GROUND.SUBDIVISIONS
+        }, scene);
         const groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
-        groundMaterial.diffuseColor = isBattle ? new BABYLON.Color3(0.75, 0.85, 0.95) : new BABYLON.Color3(0.941, 0.973, 1);
-        groundMaterial.specularColor = isBattle ? new BABYLON.Color3(0.5, 0.6, 0.7) : new BABYLON.Color3(1, 1, 1);
-        groundMaterial.shininess = isBattle ? 30 : 50;
+        groundMaterial.diffuseColor = isBattle ? new BABYLON.Color3(0.75, 0.85, 0.95) : CONSTANTS.SCENE.GROUND.COLOR;
+        groundMaterial.specularColor = isBattle ? new BABYLON.Color3(0.5, 0.6, 0.7) : CONSTANTS.SCENE.GROUND.SPECULAR;
+        groundMaterial.shininess = isBattle ? 30 : CONSTANTS.SCENE.GROUND.SPECULAR_POWER;
         ground.material = groundMaterial;
-        ground.position.y = -1.5;
+        ground.position.y = CONSTANTS.SCENE.GROUND.Y;
         
         // 战斗场景添加火山陆地边缘和特效
         if (isBattle) {
@@ -1345,12 +1333,12 @@ class EndlessWinterGame {
                 // 在Babylon.js中，创建mesh时会自动添加到scene，不需要额外调用add()
                 
                 // 创建敌人血条
-                const enemyHealthBar = this.createHealthBar(0xff0000); // 红色血条
-                enemyHealthBar.scaling.x = 0.5;
-                enemyHealthBar.scaling.y = 0.5;
-                enemyHealthBar.scaling.z = 0.5;
+                const enemyHealthBar = this.createHealthBar(CONSTANTS.ENEMY.HEALTH_BAR.COLOR); // 红色血条
+                enemyHealthBar.scaling.x = CONSTANTS.ENEMY.HEALTH_BAR.SCALING;
+                enemyHealthBar.scaling.y = CONSTANTS.ENEMY.HEALTH_BAR.SCALING;
+                enemyHealthBar.scaling.z = CONSTANTS.ENEMY.HEALTH_BAR.SCALING;
                 enemyHealthBar.position.x = 0;
-                enemyHealthBar.position.y = 0.3; // 血条位于敌人顶部上方（相对高度）
+                enemyHealthBar.position.y = CONSTANTS.ENEMY.HEALTH_BAR.RELATIVE_Y; // 血条位于敌人顶部上方（相对高度）
                 enemyHealthBar.position.z = 0;
                 enemyHealthBar.parent = enemyGroup; // Babylon.js中使用parent而不是add()
                 
@@ -1382,12 +1370,12 @@ class EndlessWinterGame {
                 // 在Babylon.js中，创建mesh时会自动添加到scene，不需要额外调用add()
                 
                 // 创建敌人血条
-                const enemyHealthBar = this.createHealthBar(0xff0000); // 红色血条
-                enemyHealthBar.scaling.x = 0.5;
-                enemyHealthBar.scaling.y = 0.5;
-                enemyHealthBar.scaling.z = 0.5;
+                const enemyHealthBar = this.createHealthBar(CONSTANTS.ENEMY.HEALTH_BAR.COLOR); // 红色血条
+                enemyHealthBar.scaling.x = CONSTANTS.ENEMY.HEALTH_BAR.SCALING;
+                enemyHealthBar.scaling.y = CONSTANTS.ENEMY.HEALTH_BAR.SCALING;
+                enemyHealthBar.scaling.z = CONSTANTS.ENEMY.HEALTH_BAR.SCALING;
                 enemyHealthBar.position.x = 0;
-                enemyHealthBar.position.y = 0.3; // 血条位于敌人顶部上方（相对高度）
+                enemyHealthBar.position.y = CONSTANTS.ENEMY.HEALTH_BAR.RELATIVE_Y; // 血条位于敌人顶部上方（相对高度）
                 enemyHealthBar.position.z = 0;
                 enemyHealthBar.parent = enemyGroup; // Babylon.js中使用parent而不是add()
                 
@@ -1531,9 +1519,15 @@ class EndlessWinterGame {
             case '土妖':
             case '冰霜巨人':
                 if (enemyTypeName === '冰霜巨人') {
-                    enemyMesh = BABYLON.MeshBuilder.CreateBox("enemy", { width: 1.5, height: 1.5, depth: 1.5 }, this.battle3D.scene);
+                    enemyMesh = BABYLON.MeshBuilder.CreateBox("enemy", {
+                        width: CONSTANTS.ENEMY.BOX.WIDTH,
+                        height: CONSTANTS.ENEMY.BOX.HEIGHT,
+                        depth: CONSTANTS.ENEMY.BOX.DEPTH
+                    }, this.battle3D.scene);
                 } else {
-                    enemyMesh = BABYLON.MeshBuilder.CreateBox("enemy", { size: 1.5 }, this.battle3D.scene);
+                    enemyMesh = BABYLON.MeshBuilder.CreateBox("enemy", {
+                        size: CONSTANTS.ENEMY.BOX.SIZE
+                    }, this.battle3D.scene);
                 }
                 break;
             // 球体类型
@@ -1557,7 +1551,10 @@ class EndlessWinterGame {
             case '风魔':
             case '雷兽':
             case '冰原熊':
-                enemyMesh = BABYLON.MeshBuilder.CreateSphere("enemy", { diameter: 1.5 }, this.battle3D.scene);
+                enemyMesh = BABYLON.MeshBuilder.CreateSphere("enemy", {
+                    diameter: CONSTANTS.ENEMY.SPHERE.DIAMETER,
+                    tessellation: CONSTANTS.ENEMY.SPHERE.TESSELLATION
+                }, this.battle3D.scene);
                 break;
             // 圆柱体类型
             case '树精':
@@ -1576,14 +1573,17 @@ class EndlessWinterGame {
             case '山精':
             case '雪原狼':
                 enemyMesh = BABYLON.MeshBuilder.CreateCylinder("enemy", {
-                    height: 1.5,
-                    diameterTop: 1.0,
-                    diameterBottom: 1.5,
-                    tessellation: 8
+                    height: CONSTANTS.ENEMY.CYLINDER.HEIGHT,
+                    diameterTop: CONSTANTS.ENEMY.CYLINDER.DIAMETER_TOP,
+                    diameterBottom: CONSTANTS.ENEMY.CYLINDER.DIAMETER_BOTTOM,
+                    tessellation: CONSTANTS.ENEMY.CYLINDER.TESSELLATION
                 }, this.battle3D.scene);
                 break;
             default:
-                enemyMesh = BABYLON.MeshBuilder.CreateSphere("enemy", { diameter: 1.5 }, this.battle3D.scene);
+                enemyMesh = BABYLON.MeshBuilder.CreateSphere("enemy", {
+                    diameter: CONSTANTS.ENEMY.SPHERE.DIAMETER,
+                    tessellation: CONSTANTS.ENEMY.SPHERE.TESSELLATION
+                }, this.battle3D.scene);
         }
         
         // 应用材质
@@ -1594,7 +1594,7 @@ class EndlessWinterGame {
         enemyMesh.position.z = enemyInfo.position.z;
         // 让敌人站在地面上：地面在y=-1.5
         // 所有敌人现在都是1.5单位高度，中心在0.75
-        enemyMesh.position.y = -1.5 + 0.75;
+        enemyMesh.position.y = CONSTANTS.SCENE.GROUND.Y + (CONSTANTS.ENEMY.SIZE / 2);
 
         return enemyMesh;
     }
@@ -1602,19 +1602,19 @@ class EndlessWinterGame {
     // 创建血条
     createHealthBars() {
         // 创建玩家血条
-        const playerHealthBar = this.createHealthBar(0xff0000); // 红色血条
+        const playerHealthBar = this.createHealthBar(CONSTANTS.NUMBERS.PLAYER.BASE_HP_COLOR); // 红色血条
         playerHealthBar.position.x = 0;
-        playerHealthBar.position.y = 2;
+        playerHealthBar.position.y = CONSTANTS.PLAYER.HEALTH_BAR.ABSOLUTE_Y;
         playerHealthBar.position.z = 0;
         if (this.battle3D.player) {
             playerHealthBar.parent = this.battle3D.player;
         }
         this.battle3D.playerHealthBar = playerHealthBar;
-        
+
         // 创建玩家能量条
-        const playerEnergyBar = this.createHealthBar(0x0000ff); // 蓝色能量条
+        const playerEnergyBar = this.createHealthBar(CONSTANTS.NUMBERS.PLAYER.BASE_ENERGY_COLOR); // 蓝色能量条
         playerEnergyBar.position.x = 0;
-        playerEnergyBar.position.y = 1.8;
+        playerEnergyBar.position.y = CONSTANTS.PLAYER.ENERGY_BAR.ABSOLUTE_Y;
         playerEnergyBar.position.z = 0;
         if (this.battle3D.player) {
             playerEnergyBar.parent = this.battle3D.player;
@@ -1622,9 +1622,9 @@ class EndlessWinterGame {
         this.battle3D.playerEnergyBar = playerEnergyBar;
         
         // 创建敌人血条
-        const enemyHealthBar = this.createHealthBar(0xff0000); // 红色血条
+        const enemyHealthBar = this.createHealthBar(CONSTANTS.ENEMY.HEALTH_BAR.COLOR); // 红色血条
         enemyHealthBar.position.x = 0;
-        enemyHealthBar.position.y = 2;
+        enemyHealthBar.position.y = CONSTANTS.ENEMY.HEALTH_BAR.ABSOLUTE_Y;
         enemyHealthBar.position.z = 0;
         if (this.battle3D.enemy) {
             enemyHealthBar.parent = this.battle3D.enemy;
@@ -1635,7 +1635,7 @@ class EndlessWinterGame {
         if (this.gameState.enemy.isBoss) {
             const enemyEnergyBar = this.createHealthBar(0x0000ff); // 蓝色能量条
             enemyEnergyBar.position.x = 0;
-            enemyEnergyBar.position.y = 1.8;
+            enemyEnergyBar.position.y = CONSTANTS.ENEMY.HEALTH_BAR.ABSOLUTE_Y;
             enemyEnergyBar.position.z = 0;
             if (this.battle3D.enemy) {
                 enemyEnergyBar.parent = this.battle3D.enemy;
@@ -1746,7 +1746,7 @@ class EndlessWinterGame {
             const snowPile = BABYLON.MeshBuilder.CreateSphere("snowPile", { diameter: size * 2, segments: 8 }, this.battle3D.scene);
             snowPile.material = snowMaterial;
             snowPile.position.x = x;
-            snowPile.position.y = -1.5 + size / 2;
+            snowPile.position.y = CONSTANTS.SCENE.GROUND.Y + size / 2;
             snowPile.position.z = z;
         }
     }
@@ -1825,7 +1825,7 @@ class EndlessWinterGame {
         headMaterial.specularColor = new BABYLON.Color3(0.067, 0.067, 0.067);
         headMaterial.specularPower = 100;
         head.material = headMaterial;
-        head.position.y = 0.9;
+        head.position.y = CONSTANTS.PLAYER.HEAD.POSITION_Y;
         head.parent = body;
         
         // 创建头发
@@ -1835,21 +1835,21 @@ class EndlessWinterGame {
         hairMaterial.specularColor = new BABYLON.Color3(0.067, 0.067, 0.067);
         hairMaterial.specularPower = 100;
         hair.material = hairMaterial;
-        hair.position.y = 1.1;
+        hair.position.y = CONSTANTS.PLAYER.HAIR.POSITION_Y;
         hair.parent = body;
         
         // 创建手臂
         const leftArm = BABYLON.MeshBuilder.CreateCylinder("leftArm", { diameter: 0.3, height: 0.6, tessellation: 8 }, this.battle3D.scene);
         leftArm.material = bodyMaterial;
         leftArm.position.x = -0.6;
-        leftArm.position.y = 0.3;
+        leftArm.position.y = CONSTANTS.PLAYER.ARM.POSITION_Y;
         leftArm.rotation.z = Math.PI / 4;
         leftArm.parent = body;
         
         const rightArm = BABYLON.MeshBuilder.CreateCylinder("rightArm", { diameter: 0.3, height: 0.6, tessellation: 8 }, this.battle3D.scene);
         rightArm.material = bodyMaterial;
         rightArm.position.x = 0.6;
-        rightArm.position.y = 0.3;
+        rightArm.position.y = CONSTANTS.ENEMY.HEALTH_BAR.RELATIVE_Y;
         rightArm.rotation.z = -Math.PI / 4;
         rightArm.parent = body;
         
@@ -1857,13 +1857,13 @@ class EndlessWinterGame {
         const leftLeg = BABYLON.MeshBuilder.CreateCylinder("leftLeg", { diameter: 0.4, height: 0.8, tessellation: 8 }, this.battle3D.scene);
         leftLeg.material = hairMaterial;
         leftLeg.position.x = -0.2;
-        leftLeg.position.y = -0.8;
+        leftLeg.position.y = CONSTANTS.PLAYER.LEG.POSITION_Y;
         leftLeg.parent = body;
         
         const rightLeg = BABYLON.MeshBuilder.CreateCylinder("rightLeg", { diameter: 0.4, height: 0.8, tessellation: 8 }, this.battle3D.scene);
         rightLeg.material = hairMaterial;
         rightLeg.position.x = 0.2;
-        rightLeg.position.y = -0.8;
+        rightLeg.position.y = CONSTANTS.PLAYER.LEG.POSITION_Y;
         rightLeg.parent = body;
         
         // 创建眼睛
@@ -1873,14 +1873,14 @@ class EndlessWinterGame {
         const leftEye = BABYLON.MeshBuilder.CreateSphere("leftEye", { diameter: 0.1 }, this.battle3D.scene);
         leftEye.material = eyeMaterial;
         leftEye.position.x = -0.1;
-        leftEye.position.y = 0.95;
+        leftEye.position.y = CONSTANTS.PLAYER.EYE.POSITION_Y;
         leftEye.position.z = 0.3;
         leftEye.parent = body;
         
         const rightEye = BABYLON.MeshBuilder.CreateSphere("rightEye", { diameter: 0.1 }, this.battle3D.scene);
         rightEye.material = eyeMaterial;
         rightEye.position.x = 0.1;
-        rightEye.position.y = 0.95;
+        rightEye.position.y = CONSTANTS.PLAYER.EYE.POSITION_Y;
         rightEye.position.z = 0.3;
         rightEye.parent = body;
         
@@ -1888,13 +1888,13 @@ class EndlessWinterGame {
         const mouth = BABYLON.MeshBuilder.CreateCylinder("mouth", { diameter: 0.1, height: 0.02, tessellation: 8 }, this.battle3D.scene);
         mouth.material = eyeMaterial;
         mouth.position.x = 0;
-        mouth.position.y = 0.75;
+        mouth.position.y = CONSTANTS.PLAYER.MOUTH.POSITION_Y;
         mouth.position.z = 0.3;
         mouth.parent = body;
         
         // 设置玩家位置（调整到地面上方）
-        body.position.x = -2;
-        body.position.y = 1.5;
+        body.position.x = CONSTANTS.PLAYER.BODY_POSITION_X;
+        body.position.y = CONSTANTS.PLAYER.BODY_POSITION_Y;
         
         // 存储玩家模型
         this.battle3D.player = body;
@@ -1932,7 +1932,7 @@ class EndlessWinterGame {
         // 创建头部
         const head = BABYLON.MeshBuilder.CreateCylinder("head", { diameterTop: 0.6, diameterBottom: 0.8, height: 0.5, tessellation: 8 }, this.battle3D.scene);
         head.material = bodyMaterial;
-        head.position.y = 0.7;
+        head.position.y = CONSTANTS.ENEMY.WOLF.HEAD.POSITION_Y;
         head.rotation.x = Math.PI / 2;
         head.parent = body;
         
@@ -1945,7 +1945,7 @@ class EndlessWinterGame {
         const leftEar = this.createConeMesh("leftEar", { diameter: 0.3, height: 0.3 }, this.battle3D.scene);
         leftEar.material = earMaterial;
         leftEar.position.x = -0.2;
-        leftEar.position.y = 1.0;
+        leftEar.position.y = CONSTANTS.ENEMY.WOLF.EAR.POSITION_Y;
         leftEar.position.z = 0.3;
         leftEar.rotation.x = Math.PI / 4;
         leftEar.rotation.z = -Math.PI / 4;
@@ -1954,7 +1954,7 @@ class EndlessWinterGame {
         const rightEar = this.createConeMesh("rightEar", { diameter: 0.3, height: 0.3 }, this.battle3D.scene);
         rightEar.material = earMaterial;
         rightEar.position.x = 0.2;
-        rightEar.position.y = 1.0;
+        rightEar.position.y = CONSTANTS.ENEMY.SNAKE.EAR.POSITION_Y;
         rightEar.position.z = 0.3;
         rightEar.rotation.x = Math.PI / 4;
         rightEar.rotation.z = Math.PI / 4;
@@ -1963,7 +1963,7 @@ class EndlessWinterGame {
         // 创建尾巴
         const tail = this.createConeMesh("tail", { diameter: 0.2, height: 0.6 }, this.battle3D.scene);
         tail.material = earMaterial;
-        tail.position.y = -0.6;
+        tail.position.y = CONSTANTS.ENEMY.WOLF.LEG.POSITION_Y;
         tail.position.z = 0.3;
         tail.rotation.x = -Math.PI / 4;
         tail.parent = body;
@@ -1975,14 +1975,14 @@ class EndlessWinterGame {
         const frontLeftLeg = BABYLON.MeshBuilder.CreateCylinder("frontLeftLeg", { diameter: 0.3, height: 0.6, tessellation: 8 }, this.battle3D.scene);
         frontLeftLeg.material = legMaterial;
         frontLeftLeg.position.x = -0.3;
-        frontLeftLeg.position.y = -0.6;
+        frontLeftLeg.position.y = CONSTANTS.ENEMY.SNAKE.LEG.POSITION_Y;
         frontLeftLeg.position.z = 0.4;
         frontLeftLeg.parent = body;
         
         const frontRightLeg = BABYLON.MeshBuilder.CreateCylinder("frontRightLeg", { diameter: 0.3, height: 0.6, tessellation: 8 }, this.battle3D.scene);
         frontRightLeg.material = legMaterial;
         frontRightLeg.position.x = 0.3;
-        frontRightLeg.position.y = -0.6;
+        frontRightLeg.position.y = CONSTANTS.ENEMY.WOLF.LEG.POSITION_Y;
         frontRightLeg.position.z = 0.4;
         frontRightLeg.parent = body;
         
@@ -1990,7 +1990,7 @@ class EndlessWinterGame {
         const backLeftLeg = BABYLON.MeshBuilder.CreateCylinder("backLeftLeg", { diameter: 0.3, height: 0.6, tessellation: 8 }, this.battle3D.scene);
         backLeftLeg.material = legMaterial;
         backLeftLeg.position.x = -0.3;
-        backLeftLeg.position.y = -0.6;
+        backLeftLeg.position.y = CONSTANTS.ENEMY.SNAKE.LEG.POSITION_Y;
         backLeftLeg.position.z = -0.4;
         backLeftLeg.parent = body;
         
@@ -2008,28 +2008,28 @@ class EndlessWinterGame {
         const leftEye = BABYLON.MeshBuilder.CreateSphere("leftEye", { diameter: 0.1 }, this.battle3D.scene);
         leftEye.material = eyeMaterial;
         leftEye.position.x = -0.1;
-        leftEye.position.y = 1.0;
+        leftEye.position.y = CONSTANTS.ENEMY.SNAKE.EYE.POSITION_Y;
         leftEye.position.z = 0.5;
         leftEye.parent = body;
         
         const rightEye = BABYLON.MeshBuilder.CreateSphere("rightEye", { diameter: 0.1 }, this.battle3D.scene);
         rightEye.material = eyeMaterial;
         rightEye.position.x = 0.1;
-        rightEye.position.y = 1.0;
+        rightEye.position.y = CONSTANTS.ENEMY.SNAKE.NOSE.POSITION_Y;
         rightEye.position.z = 0.5;
         rightEye.parent = body;
         
         // 创建鼻子
         const nose = this.createConeMesh("nose", { diameter: 0.2, height: 0.1 }, this.battle3D.scene);
         nose.material = eyeMaterial;
-        nose.position.y = 1.0;
+        nose.position.y = CONSTANTS.ENEMY.WOLF.EAR.POSITION_Y;
         nose.position.z = 0.7;
         nose.rotation.x = Math.PI;
         nose.parent = body;
         
         // 设置狼的位置
         body.position.x = 2;
-        body.position.y = 1.5;
+        body.position.y = CONSTANTS.PLAYER.BODY_POSITION_Y;
         
         // 存储敌人模型
         this.battle3D.enemy = body;
@@ -2064,7 +2064,7 @@ class EndlessWinterGame {
         const leftEar = this.createConeMesh("leftEar", { diameter: 0.4, height: 0.3 }, this.battle3D.scene);
         leftEar.material = earMaterial;
         leftEar.position.x = -0.3;
-        leftEar.position.y = 1.6;
+        leftEar.position.y = CONSTANTS.ENEMY.BEAR.EAR.POSITION_Y;
         leftEar.position.z = 0.2;
         leftEar.rotation.x = Math.PI / 4;
         leftEar.rotation.z = -Math.PI / 4;
@@ -2073,7 +2073,7 @@ class EndlessWinterGame {
         const rightEar = this.createConeMesh("rightEar", { diameter: 0.4, height: 0.3 }, this.battle3D.scene);
         rightEar.material = earMaterial;
         rightEar.position.x = 0.3;
-        rightEar.position.y = 1.6;
+        rightEar.position.y = CONSTANTS.ENEMY.BEAR.EAR.POSITION_Y;
         rightEar.position.z = 0.2;
         rightEar.rotation.x = Math.PI / 4;
         rightEar.rotation.z = Math.PI / 4;
@@ -2083,14 +2083,14 @@ class EndlessWinterGame {
         const leftArm = BABYLON.MeshBuilder.CreateCylinder("leftArm", { diameter: 0.4, height: 0.8, tessellation: 8 }, this.battle3D.scene);
         leftArm.material = bodyMaterial;
         leftArm.position.x = -0.7;
-        leftArm.position.y = 0.5;
+        leftArm.position.y = CONSTANTS.ENEMY.BEAR.ARM.POSITION_Y;
         leftArm.rotation.z = Math.PI / 4;
         leftArm.parent = body;
         
         const rightArm = BABYLON.MeshBuilder.CreateCylinder("rightArm", { diameter: 0.4, height: 0.8, tessellation: 8 }, this.battle3D.scene);
         rightArm.material = bodyMaterial;
         rightArm.position.x = 0.7;
-        rightArm.position.y = 0.5;
+        rightArm.position.y = CONSTANTS.ENEMY.BEAR.ARM.POSITION_Y;
         rightArm.rotation.z = -Math.PI / 4;
         rightArm.parent = body;
         
@@ -2114,28 +2114,28 @@ class EndlessWinterGame {
         const leftEye = BABYLON.MeshBuilder.CreateSphere("leftEye", { diameter: 0.16 }, this.battle3D.scene);
         leftEye.material = eyeMaterial;
         leftEye.position.x = -0.15;
-        leftEye.position.y = 1.3;
+        leftEye.position.y = CONSTANTS.ENEMY.BEAR.EYE.POSITION_Y;
         leftEye.position.z = 0.4;
         leftEye.parent = body;
         
         const rightEye = BABYLON.MeshBuilder.CreateSphere("rightEye", { diameter: 0.16 }, this.battle3D.scene);
         rightEye.material = eyeMaterial;
         rightEye.position.x = 0.15;
-        rightEye.position.y = 1.3;
+        rightEye.position.y = CONSTANTS.ENEMY.BEAR.EYE.POSITION_Y;
         rightEye.position.z = 0.4;
         rightEye.parent = body;
         
         // 创建鼻子
         const nose = this.createConeMesh("nose", { diameter: 0.3, height: 0.2, tessellation: 8 }, this.battle3D.scene);
         nose.material = earMaterial;
-        nose.position.y = 1.1;
+        nose.position.y = CONSTANTS.ENEMY.BEAR.NOSE.POSITION_Y;
         nose.position.z = 0.45;
         nose.rotation.x = Math.PI;
         nose.parent = body;
         
         // 设置熊的位置
         body.position.x = 2;
-        body.position.y = 1.5;
+        body.position.y = CONSTANTS.PLAYER.BODY_POSITION_Y;
         
         // 存储敌人模型
         this.battle3D.enemy = body;
@@ -2245,7 +2245,7 @@ class EndlessWinterGame {
         // 创建头部
         const head = BABYLON.MeshBuilder.CreateCylinder("head", { diameterTop: 0.6, diameterBottom: 0.8, height: 0.5, tessellation: 8 }, this.battle3D.scene);
         head.material = bodyMaterial;
-        head.position.y = 0.7;
+        head.position.y = CONSTANTS.ENEMY.BEAR.HEAD.POSITION_Y;
         head.rotation.x = Math.PI / 2;
         head.parent = body;
         
@@ -2258,7 +2258,7 @@ class EndlessWinterGame {
         const leftEar = this.createConeMesh("leftEar", { diameter: 0.3, height: 0.3 }, this.battle3D.scene);
         leftEar.material = earMaterial;
         leftEar.position.x = -0.2;
-        leftEar.position.y = 1.0;
+        leftEar.position.y = CONSTANTS.ENEMY.SNAKE.EAR.POSITION_Y;
         leftEar.position.z = 0.3;
         leftEar.rotation.x = Math.PI / 4;
         leftEar.rotation.z = -Math.PI / 4;
@@ -2267,7 +2267,7 @@ class EndlessWinterGame {
         const rightEar = this.createConeMesh("rightEar", { diameter: 0.3, height: 0.3 }, this.battle3D.scene);
         rightEar.material = earMaterial;
         rightEar.position.x = 0.2;
-        rightEar.position.y = 1.0;
+        rightEar.position.y = CONSTANTS.ENEMY.SNAKE.EYE.POSITION_Y;
         rightEar.position.z = 0.3;
         rightEar.rotation.x = Math.PI / 4;
         rightEar.rotation.z = Math.PI / 4;
@@ -2321,7 +2321,7 @@ class EndlessWinterGame {
         const leftEye = BABYLON.MeshBuilder.CreateSphere("leftEye", { diameter: 0.1 }, this.battle3D.scene);
         leftEye.material = eyeMaterial;
         leftEye.position.x = -0.1;
-        leftEye.position.y = 1.0;
+        leftEye.position.y = CONSTANTS.ENEMY.SNAKE.NOSE.POSITION_Y;
         leftEye.position.z = 0.5;
         leftEye.parent = body;
         
@@ -2525,7 +2525,7 @@ class EndlessWinterGame {
         
         // 旋转和定位
         defenseCircle.rotation.x = Math.PI / 2;
-        defenseCircle.position.y = 0.1;
+        defenseCircle.position.y = CONSTANTS.ENEMY.DEFENSE_CIRCLE_Y;
         
         // 添加到玩家
         defenseCircle.parent = player;
@@ -2959,13 +2959,6 @@ class EndlessWinterGame {
 
         
         // 用户相关按钮
-        bindEvent('#login-btn', 'click', () => {
-            this.showLoginForm();
-        });
-        
-        bindEvent('#register-btn', 'click', () => {
-            this.showRegisterForm();
-        });
         
         bindEvent('#logout-btn', 'click', () => {
             this.logout();
@@ -4669,84 +4662,65 @@ class EndlessWinterGame {
         
         const equipment = this.gameState.player.equipment;
         
-        // 获取人物身体元素
-        const characterBodyElement = document.getElementById('character-body');
-        if (characterBodyElement) {
-            // 获取人物身体元素的位置和尺寸
-            const bodyRect = characterBodyElement.getBoundingClientRect();
-            const containerRect = characterBodyElement.parentElement.getBoundingClientRect();
+        // 装备槽位映射
+        const equipmentSlots = {
+            'weapon': 'character-weapon',
+            'armor': 'character-armor',
+            'helmet': 'character-helmet',
+            'boots': 'character-boots',
+            'accessory': 'character-accessory',
+            'pants': 'character-pants'
+        };
+        
+        // 装备品质颜色映射
+        const qualityColors = {
+            '白色': 'quality-white',
+            '蓝色': 'quality-blue',
+            '紫色': 'quality-purple',
+            '金色': 'quality-gold',
+            '传说': 'quality-red'
+        };
+        
+        // 遍历所有装备槽位
+        for (const slot in equipmentSlots) {
+            const elementId = equipmentSlots[slot];
+            const element = document.getElementById(elementId);
             
-            // 计算相对位置（相对于容器）
-            const relativeX = 0;
-            const relativeY = 0;
-            
-            // 武器
-            const weaponElement = document.getElementById('character-weapon');
-            if (weaponElement) {
-                if (equipment.weapon) {
-                    weaponElement.style.opacity = '1';
-                    // 动态设置武器位置
-                    weaponElement.style.top = '60%';
-                    weaponElement.style.left = '15%';
-                    weaponElement.style.transform = 'translateY(-50%) rotate(-30deg)';
+            if (element) {
+                const item = equipment[slot];
+                
+                if (item) {
+                    // 显示装备
+                    element.style.opacity = '1';
+                    
+                    // 设置悬停提示
+                    const statsDescription = this.getStatsDescription(item.stats);
+                    const tooltipText = `${item.name}\n等级: ${item.level}\n品质: ${item.rarityDisplayName || '白色'}\n精炼: +${item.refineLevel || 0}\n属性: ${statsDescription}`;
+                    element.setAttribute('data-tooltip', tooltipText);
+                    
+                    // 根据装备品质设置颜色
+                    if (item.rarityDisplayName && qualityColors[item.rarityDisplayName]) {
+                        element.className = element.className.replace(/quality-\w+/g, '');
+                        element.classList.add(qualityColors[item.rarityDisplayName]);
+                    } else if (item.colorClass) {
+                        // 兼容旧装备
+                        element.className = element.className.replace(/quality-\w+/g, '');
+                        element.classList.add(item.colorClass);
+                    } else {
+                        // 兼容旧装备
+                        const rarityInfo = this.gameState.equipmentRarities.find(r => r.name === item.rarity);
+                        if (rarityInfo && rarityInfo.color) {
+                            element.className = element.className.replace(/quality-\w+/g, '');
+                            element.classList.add(rarityInfo.color);
+                        }
+                    }
                 } else {
-                    weaponElement.style.opacity = '0';
-                }
-            }
-            
-            // 护甲
-            const armorElement = document.getElementById('character-armor');
-            if (armorElement) {
-                if (equipment.armor) {
-                    armorElement.style.opacity = '1';
-                    // 动态设置护甲位置
-                    armorElement.style.top = '60%';
-                    armorElement.style.left = '50%';
-                    armorElement.style.transform = 'translate(-50%, -50%)';
-                } else {
-                    armorElement.style.opacity = '0';
-                }
-            }
-            
-            // 头盔
-            const helmetElement = document.getElementById('character-helmet');
-            if (helmetElement) {
-                if (equipment.helmet) {
-                    helmetElement.style.opacity = '1';
-                    // 动态设置头盔位置
-                    helmetElement.style.top = '15%';
-                    helmetElement.style.left = '50%';
-                    helmetElement.style.transform = 'translateX(-50%)';
-                } else {
-                    helmetElement.style.opacity = '0';
-                }
-            }
-            
-            // 靴子
-            const bootsElement = document.getElementById('character-boots');
-            if (bootsElement) {
-                if (equipment.boots) {
-                    bootsElement.style.opacity = '1';
-                    // 动态设置靴子位置
-                    bootsElement.style.bottom = '5%';
-                    bootsElement.style.left = '50%';
-                    bootsElement.style.transform = 'translateX(-50%)';
-                } else {
-                    bootsElement.style.opacity = '0';
-                }
-            }
-            
-            // 饰品
-            const accessoryElement = document.getElementById('character-accessory');
-            if (accessoryElement) {
-                if (equipment.accessory) {
-                    accessoryElement.style.opacity = '1';
-                    // 动态设置饰品位置
-                    accessoryElement.style.top = '45%';
-                    accessoryElement.style.left = '50%';
-                    accessoryElement.style.transform = 'translate(-50%, -50%)';
-                } else {
-                    accessoryElement.style.opacity = '0';
+                    // 隐藏装备
+                    element.style.opacity = '0';
+                    // 清除悬停提示
+                    element.removeAttribute('data-tooltip');
+                    // 清除颜色类
+                    element.className = element.className.replace(/quality-\w+/g, '');
                 }
             }
         }
