@@ -8,6 +8,10 @@ EndlessWinterGame.prototype.soundTimers = {};
 EndlessWinterGame.prototype.playSound = function(id, volume = 0.25, timeout = null) {
     try {
         const soundElement = document.getElementById(id);
+        if (!soundElement) {
+            console.log('未找到声音元素:', id);
+            return;
+        }
         soundElement.volume = volume;
         soundElement.pause();
         soundElement.currentTime = 0;

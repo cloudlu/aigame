@@ -1,95 +1,20 @@
 // 游戏核心数据结构和状态管理
 class EndlessWinterGame {
     constructor() {
-        // 游戏状态
+        // 游戏状态 - 只初始化基本结构
         this.gameState = {
             // 用户信息
-            user: {
-                loggedIn: false,
-                username: "",
-                userId: ""
-            },
-            // 玩家属性
-            player: {
-                level: 1,
-                exp: 0,
-                maxExp: 100,
-                attack: 10,
-                defense: 5,
-                hp: 100,
-                maxHp: 100,
-                luck: 2,
-                energy: 100,
-                maxEnergy: 100,
-                // 装备栏
-                equipment: {
-                    weapon: null,    // 武器
-                    armor: null,     //  armor
-                    helmet: null,    // 头盔
-                    boots: null,     // 靴子
-                    accessory: null  // 饰品
-                },
-                // 装备效果
-                equipmentEffects: {
-                    attack: 0,
-                    defense: 0,
-                    hp: 0,
-                    luck: 0
-                },
-                // 背包
-                inventory: [],
-                // 特殊技
-                skills: []
-            },
-            // 装备品质定义
-            equipmentRarities: [],
-            // 装备模板
-            equipmentTemplates: [],
-            // 装备掉落概率
-            dropRates: {},
-            // 资源系统
-            resources: {
-                wood: 0,
-                woodRate: 1,
-                iron: 0,
-                ironRate: 0.5,
-                crystal: 0,
-                crystalRate: 0.2
-            },
-            // 敌人类型
-            enemyTypes: [],
-            // 默认当前敌人为空
-            enemy: [],
-            // 游戏设置
-            settings: {
-                autoPlay: false,
-                autoBattle: false,
-                afkTime: 0,
-                collectedResources: 0,
-                // 自动打怪设置
-                autoBattleSettings: {
-                    enabled: false,
-                    targetColors: ['green', 'yellow', 'red'] // 默认攻击所有颜色的怪物
-                },
-                // 自动收集资源设置
-                autoCollectSettings: {
-                    enabled: false,
-                    resourceTypes: ['wood', 'iron', 'crystal'] // 默认收集所有类型的资源
-                }
-            },
-            // 地图背景
-            mapBackgrounds: [],
-            currentBackgroundIndex: 0,
-            // 场景怪物数据
-            sceneMonsters: [],
+            user: [],
+            // 玩家属性 - 留空，由登录获取或创建新用户时初始化
+            player: {},
+            // 资源系统 - 留空，由登录获取或创建新用户时初始化
+            resources: {},
+            // 游戏设置 - 留空，由登录获取或创建新用户时从metadata初始化
+            settings: {},
             // 战斗状态
             battle: {
                 inBattle: false,
                 battleLog: []
-            },
-            // 商店系统
-            shop: {
-                items: []
             }
         };
         
@@ -117,45 +42,45 @@ class EndlessWinterGame {
         
         // 检查保存的登录状态（异步）
         this.loadUserFromSession();
+    }
+    
+    // 登录成功后初始化游戏
+    initAfterLogin() {
+        // 登录和加载完成后继续初始化
+        this.preloadImages();
         
-        // 只有在用户登录成功后才继续初始化
-        if (this.gameState.user.loggedIn) {
-            // 先获取元数据，然后再初始化其他内容
-            this.fetchGameMetadata().then(() => {
-                // 登录和加载完成后继续初始化
-                this.preloadImages();
-                
-                // 加载纹理（提前加载，确保3D场景初始化时纹理已准备好）
-                this.loadTextures();
-                
-                // 只有在没有保存的场景怪物数据时才生成新的
-                this.generateMiniMap();
-                
-                // 确保所有装备都有refineLevel属性
-                for (const slot in this.gameState.player.equipment) {
-                    const item = this.gameState.player.equipment[slot];
-                    if (item && item.refineLevel === undefined) {
-                        item.refineLevel = 0;
-                    }
-                }
-                
-                // 隐藏敌人信息区
-                this.hideEnemyInfo();
-                
-                // 初始化3D战斗场景
-                this.initMap3DScene();
-                
-                // 更新 UI 和绑定事件
-                this.updateMapBackgroundUI(); // 设置初始地图背景
-                this.updateCharacterBodyImage();
-                this.updateUI();
-                this.updateAdminControls(); // 根据用户角色更新管理控制按钮
-                this.bindEvents();
-                
-                // 开始资源生成
-                this.startResourceGeneration();
-            });
+        // 加载纹理（提前加载，确保3D场景初始化时纹理已准备好）
+        this.loadTextures();
+        
+        // 确保所有装备都有refineLevel属性
+        for (const slot in this.gameState.player.equipment) {
+            const item = this.gameState.player.equipment[slot];
+            if (item && item.refineLevel === undefined) {
+                item.refineLevel = 0;
+            }
         }
+        
+        // 延迟执行需要map.js的方法
+        setTimeout(() => {
+            // 只有在没有保存的场景怪物数据时才生成新的
+            if (typeof this.generateMiniMap === 'function') {
+                this.generateMiniMap();
+            }
+            
+            // 初始化3D战斗场景
+            if (typeof this.initMap3DScene === 'function') {
+                this.initMap3DScene();
+            }
+            
+            // 更新 UI 和绑定事件
+            this.updateMapBackgroundUI(); // 设置初始地图背景
+            this.updateCharacterBodyImage();
+            this.updateUI();
+            this.updateAdminControls(); // 根据用户角色更新管理控制按钮
+            this.bindEvents();
+            // 开始资源生成
+            this.startResourceGeneration();
+        }, 100);
     }
     
     // 从服务器获取游戏元数据
@@ -211,24 +136,16 @@ class EndlessWinterGame {
                 this.gameState.mapEnemyMapping = metadata.mapEnemyMapping;
             }
             if (metadata.player) {
-                // 保存player元数据供后续使用
                 this.playerMetadata = metadata.player;
-                // 如果是新游戏，使用初始属性
-                if (this.gameState.player.level === 1 && this.gameState.player.exp === 0) {
-                    if (metadata.player.initialStats) {
-                        Object.assign(this.gameState.player, metadata.player.initialStats);
-                    }
-                }
             }
             if (metadata.resources && metadata.resources.types) {
                 // 保存资源元数据供后续使用
                 this.resourceMetadata = metadata.resources;
-                // 初始化资源速率
-                metadata.resources.types.forEach(resource => {
-                    if (this.gameState.resources[resource.name]) {
-                        this.gameState.resources[`${resource.name}Rate`] = resource.baseRate;
-                    }
-                });
+            }
+            
+            // 加载境界系统配置
+            if (metadata.realmConfig) {
+                this.realmConfig = metadata.realmConfig;
             }
             
             this.addBattleLog('从服务器加载游戏数据成功！');
@@ -265,7 +182,7 @@ class EndlessWinterGame {
         
         const accessoryImage = new Image();
         accessoryImage.src = 'Images/accessory-necklace.png';
-        
+
         this.addBattleLog('图片预加载中...');
     }
     
@@ -278,7 +195,7 @@ class EndlessWinterGame {
     // 更新地图背景
     updateMapBackground() {
         // 根据玩家等级计算当前背景索引（每10级更换一次背景）
-        const playerLevel = this.gameState.player.level;
+        const playerLevel = this.calculateTotalLevel();
         const newBackgroundIndex = Math.min(9, Math.floor((playerLevel - 1) / 10));
         
         // 如果背景索引变化，更新背景
@@ -328,88 +245,6 @@ class EndlessWinterGame {
         }
     }
     
-    // generateMiniMap moved to mapLogic.js
-    // (mapLogic.js handles map generation, enemy distribution, and 2D grid rendering)
-
-    // createEnemyDistribution moved to mapLogic.js
-
-    // createEnemy moved to mapLogic.js
-
-    // 遭遇敌人
-    encounterEnemy(enemyInfo, initScene = true) {
-        if (enemyInfo) {
-            // 保存当前地图场景状态，包括玩家位置
-            this.saveMapState();
-            
-            // 使用传入的敌人信息
-            this.gameState.enemy = enemyInfo;
-            
-            // 从场景怪物数据中移除该敌人
-            if (this.gameState.sceneMonsters) {
-                const index = this.gameState.sceneMonsters.findIndex(monster => 
-                    monster.cellIndex === enemyInfo.cellIndex
-                );
-                if (index > -1) {
-                    this.gameState.sceneMonsters.splice(index, 1);
-                }
-            }
-            
-            // 从3D场景中移除对应的敌人模型
-            if (this.battle3D && this.battle3D.enemies) {
-                for (let i = this.battle3D.enemies.length - 1; i >= 0; i--) {
-                    const enemy = this.battle3D.enemies[i];
-                    if (enemy.info.name === enemyInfo.name && 
-                        enemy.info.level === enemyInfo.level &&
-                        enemy.info.position.x === enemyInfo.position.x &&
-                        enemy.info.position.z === enemyInfo.position.z) {
-                        // 从场景中移除敌人模型
-                        try {
-                            if (this.battle3D.scene && enemy.model) {
-                                this.battle3D.scene.remove(enemy.model);
-                            }
-                        } catch (e) {
-
-                        }
-                        // 从敌人列表中移除
-                        this.battle3D.enemies.splice(i, 1);
-                        break;
-                    }
-                }
-            }
-        } else {
-            // 刷新敌人
-            this.refreshEnemy();
-        }
-        this.addBattleLog('遭遇了敌人！准备战斗！');
-        this.updateUI();
-        
-        // 刷新3D战斗场景（如果需要）
-        if (initScene) {
-            // 保存当前UI布局
-            this.saveUILayout();
-            
-            // 设置战斗状态
-            this.gameState.battle.inBattle = true;
-            
-            // 切换到战斗UI布局
-            this.switchToBattleUILayout();
-            
-            // 隐藏攻击确认按钮，显示技能按钮
-            const attackConfirmBtn = document.getElementById('attack-confirm-btn');
-            const attackSkills = document.getElementById('attack-skills');
-            if (attackConfirmBtn) {
-                attackConfirmBtn.classList.add('hidden');
-            }
-            if (attackSkills) {
-                attackSkills.classList.remove('hidden');
-            }
-            
-            // 创建完整的战斗场景
-            this.createBattleScene(this.gameState.enemy);
-            
-        }
-    }
-    
     // 检查保存的登录状态
     loadUserFromSession() {
         try {
@@ -433,16 +268,11 @@ class EndlessWinterGame {
                     // 加载游戏状态
                     this.loadGame();
                     
-                    
-                    // 如果没有保存的游戏状态，初始化新的游戏状态
-                    if (!this.gameState.player || !this.gameState.player.inventory) {
-                        this.initNewGameState(userInfo.username, userInfo.gender);
-                    }
-                    
                     // 显示登录成功消息
                     this.addBattleLog(`登录成功！欢迎回来，${userInfo.username}！`);
                     
-                    // 不需要在这里更新 UI 和生成地图，因为 initGame 方法会处理这些
+                    // 登录成功后初始化游戏
+                    this.initAfterLogin();
                 } catch (parseError) {
                     console.error('解析用户信息失败:', parseError);
                     // 解析失败，重定向到登录页面
@@ -473,12 +303,12 @@ class EndlessWinterGame {
         }
         if (!this.gameState.resources) {
             this.gameState.resources = {
-                wood: 0,
-                woodRate: 1,
-                iron: 0,
-                ironRate: 0.5,
-                crystal: 0,
-                crystalRate: 0.2
+                spiritWood: 0,
+                spiritWoodRate: 1,
+                blackIron: 0,
+                blackIronRate: 0.5,
+                spiritCrystal: 0,
+                spiritCrystalRate: 0.2
             };
         }
         if (!this.gameState.player) {
@@ -498,44 +328,59 @@ class EndlessWinterGame {
             const energyRegenRate = this.playerMetadata?.regenRates?.energy || 2;
             energyElement.setAttribute('data-tooltip', `能量恢复: +${energyRegenRate}/秒`);
         }
-        const woodElement = document.getElementById('wood');
-        if (woodElement) {
-            woodElement.textContent = Math.floor(this.gameState.resources.wood || 0);
+        const spiritWoodElement = document.getElementById('spiritWood');
+        if (spiritWoodElement) {
+            spiritWoodElement.textContent = Math.floor(this.gameState.resources.spiritWood || 0);
         }
-        const woodRateElement = document.getElementById('wood-rate');
-        if (woodRateElement) {
-            woodRateElement.textContent = `+${this.gameState.resources.woodRate || 0}/秒`;
+        const spiritWoodRateElement = document.getElementById('spiritWood-rate');
+        if (spiritWoodRateElement) {
+            spiritWoodRateElement.textContent = `+${this.gameState.resources.spiritWoodRate || 0}/秒`;
         }
-        const ironElement = document.getElementById('iron');
-        if (ironElement) {
-            ironElement.textContent = Math.floor(this.gameState.resources.iron || 0);
+        const blackIronElement = document.getElementById('blackIron');
+        if (blackIronElement) {
+            blackIronElement.textContent = Math.floor(this.gameState.resources.blackIron || 0);
         }
-        const ironRateElement = document.getElementById('iron-rate');
-        if (ironRateElement) {
-            ironRateElement.textContent = `+${this.gameState.resources.ironRate || 0}/秒`;
+        const blackIronRateElement = document.getElementById('blackIron-rate');
+        if (blackIronRateElement) {
+            blackIronRateElement.textContent = `+${this.gameState.resources.blackIronRate || 0}/秒`;
         }
-        const crystalElement = document.getElementById('crystal');
-        if (crystalElement) {
-            crystalElement.textContent = Math.floor(this.gameState.resources.crystal || 0);
+        const spiritCrystalElement = document.getElementById('spiritCrystal');
+        if (spiritCrystalElement) {
+            spiritCrystalElement.textContent = Math.floor(this.gameState.resources.spiritCrystal || 0);
         }
-        const crystalRateElement = document.getElementById('crystal-rate');
-        if (crystalRateElement) {
-            crystalRateElement.textContent = `+${this.gameState.resources.crystalRate || 0}/秒`;
+        const spiritCrystalRateElement = document.getElementById('spiritCrystal-rate');
+        if (spiritCrystalRateElement) {
+            spiritCrystalRateElement.textContent = `+${this.gameState.resources.spiritCrystalRate || 0}/秒`;
         }
         
         // 计算装备效果
         this.calculateEquipmentEffects();
         
-        // 计算最终属性（基础属性 + 装备效果）
-        const finalAttack = this.gameState.player.attack + this.gameState.player.equipmentEffects.attack;
-        const finalDefense = this.gameState.player.defense + this.gameState.player.equipmentEffects.defense;
-        const finalHp = this.gameState.player.hp + this.gameState.player.equipmentEffects.hp;
-        const finalLuck = this.gameState.player.luck + this.gameState.player.equipmentEffects.luck;
+        // 计算境界加成
+        let realmBonus = { attack: 0, defense: 0, hp: 0, luck: 0 };
+        if (this.realmConfig) {
+            realmBonus = this.calculateRealmBonus();
+        }
+        
+        // 计算最终属性（基础属性 + 装备效果 + 境界加成）
+        const finalAttack = this.gameState.player.attack + this.gameState.player.equipmentEffects.attack + realmBonus.attack;
+        const finalDefense = this.gameState.player.defense + this.gameState.player.equipmentEffects.defense + realmBonus.defense;
+        const finalHp = this.gameState.player.hp + this.gameState.player.equipmentEffects.hp + realmBonus.hp;
+        const finalLuck = this.gameState.player.luck + this.gameState.player.equipmentEffects.luck + realmBonus.luck;
+        const finalSpeed = this.gameState.player.speed + (this.gameState.player.equipmentEffects.speed || 0) + (realmBonus.speed || 0);
         
         // 更新玩家属性显示
             const levelElement = document.getElementById('level');
             if (levelElement) {
-                levelElement.textContent = this.gameState.player.level;
+                if (this.realmConfig) {
+                    const realm = this.gameState.player.realm;
+                    const realmName = this.realmConfig[realm.currentRealm].name;
+                    const stageConfig = this.realmConfig[realm.currentRealm].stages[realm.currentStage - 1];
+                    const stageName = stageConfig.name;
+                    levelElement.textContent = `${realmName} ${stageName} ${realm.currentStage}阶 ${realm.currentLevel}级`;
+                } else {
+                    levelElement.textContent = this.calculateTotalLevel();
+                }
             }
             const expElement = document.getElementById('exp');
             if (expElement) {
@@ -544,6 +389,38 @@ class EndlessWinterGame {
             const maxExpElement = document.getElementById('max-exp');
             if (maxExpElement) {
                 maxExpElement.textContent = this.gameState.player.maxExp;
+            }
+            // 更新经验条
+            const expBarElement = document.getElementById('exp-bar');
+            if (expBarElement) {
+                const expPercentage = (this.gameState.player.exp / this.gameState.player.maxExp) * 100;
+                expBarElement.style.width = `${Math.min(expPercentage, 100)}%`;
+            }
+            // 更新突破石显示
+            const breakthroughStonesElement = document.getElementById('breakthrough-stones');
+            if (breakthroughStonesElement) {
+                breakthroughStonesElement.textContent = `突破石: ${this.gameState.resources.breakthroughStones || 0}`;
+            }
+            // 更新突破按钮状态
+            const breakthroughBtnElement = document.getElementById('breakthrough-btn');
+            if (breakthroughBtnElement && this.realmConfig) {
+                const realm = this.gameState.player.realm;
+                const currentStageConfig = this.realmConfig[realm.currentRealm].stages[realm.currentStage - 1];
+                const requiredStones = currentStageConfig.breakthroughStones;
+                const hasEnoughLevel = realm.currentLevel >= currentStageConfig.levelCap;
+                const hasEnoughStones = (this.gameState.resources.breakthroughStones || 0) >= requiredStones;
+                
+                if (hasEnoughLevel && hasEnoughStones) {
+                    breakthroughBtnElement.disabled = false;
+                    breakthroughBtnElement.setAttribute('data-tooltip', `突破到下一级需要${requiredStones}个突破石`);
+                } else {
+                    breakthroughBtnElement.disabled = true;
+                    if (!hasEnoughLevel) {
+                        breakthroughBtnElement.setAttribute('data-tooltip', `需要达到${currentStageConfig.levelCap}级才能突破`);
+                    } else {
+                        breakthroughBtnElement.setAttribute('data-tooltip', `需要${requiredStones}个突破石才能突破`);
+                    }
+                }
             }
             const attackElement = document.getElementById('attack');
             if (attackElement) {
@@ -576,6 +453,10 @@ class EndlessWinterGame {
             if (luckElement) {
                 luckElement.textContent = finalLuck;
             }
+            const speedElement = document.getElementById('speed');
+            if (speedElement) {
+                speedElement.textContent = Math.floor(finalSpeed);
+            }
         
         // 更新装备栏显示
         for (const slot in this.gameState.player.equipment) {
@@ -594,7 +475,8 @@ class EndlessWinterGame {
                     equipmentElement.className = `text-sm ${colorClass}`;
                     // 设置装备属性的tooltip
                     const statsDescription = this.getStatsDescription(item.stats);
-                    const tooltipText = `${item.name}\n等级: ${item.level}\n品质: ${item.rarityDisplayName || '白色'}\n精炼: +${item.refineLevel || 0}\n属性: ${statsDescription}`;
+                    const levelDisplay = item.realmName ? item.realmName : item.level;
+                    const tooltipText = `${item.name}\n等级: ${levelDisplay}\n品质: ${item.rarityDisplayName || '白色'}\n精炼: +${item.refineLevel || 0}\n属性: ${statsDescription}`;
                     equipmentElement.setAttribute('data-tooltip', tooltipText);
                 } else {
                     equipmentElement.textContent = '无';
@@ -607,190 +489,8 @@ class EndlessWinterGame {
         // 重新初始化tooltip
         this.initTooltips();
         
-        // 更新敌人显示
-        const enemyNameElement = document.getElementById('enemy-name');
-        if (enemyNameElement) {
-            enemyNameElement.textContent = this.gameState.enemy?.name || '';
-        }
-        const enemyLevelElement = document.getElementById('enemy-level');
-        if (enemyLevelElement) {
-            enemyLevelElement.textContent = this.gameState.enemy?.level || '';
-        }
-        const enemyHpElement = document.getElementById('enemy-hp');
-        if (enemyHpElement) {
-            enemyHpElement.textContent = this.gameState.enemy?.hp || '';
-        }
-        const enemyMaxHpElement = document.getElementById('enemy-max-hp');
-        if (enemyMaxHpElement) {
-            enemyMaxHpElement.textContent = this.gameState.enemy?.maxHp || '';
-        }
-        const enemyAttackElement = document.getElementById('enemy-attack');
-        if (enemyAttackElement) {
-            enemyAttackElement.textContent = this.gameState.enemy?.attack || '';
-        }
-        
-        // 更新敌人图标
-        const enemyIconElement = document.querySelector('#enemy-icon i');
-        if (enemyIconElement) {
-            if (this.gameState.enemy?.name) {
-                // 计算敌人和玩家的战斗力
-                const enemyPower = (this.gameState.enemy.attack || 0) * 2 + (this.gameState.enemy.defense || 0) * 1.5 + (this.gameState.enemy.maxHp || 0) * 0.1;
-                const playerAttack = this.gameState.player.attack + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.attack : 0);
-                const playerDefense = this.gameState.player.defense + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.defense : 0);
-                const playerHp = this.gameState.player.maxHp + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.hp : 0);
-                const playerPower = playerAttack * 2 + playerDefense * 1.5 + playerHp * 0.1;
-                
-                // 根据战斗力对比确定敌人颜色
-                let enemyColorClass = 'text-danger'; // 默认红色
-                if (this.gameState.enemy.isBoss) {
-                    enemyColorClass = 'text-purple-500'; // BOSS显示紫色
-                } else if (this.gameState.enemy.isElite) {
-                    enemyColorClass = 'text-yellow-500'; // 精英怪显示黄色
-                } else {
-                    const powerRatio = enemyPower / playerPower;
-                    if (powerRatio < 0.7) {
-                        enemyColorClass = 'text-green-500'; // 比玩家弱显示绿色
-                    } else if (powerRatio < 1.3) {
-                        enemyColorClass = 'text-yellow-500'; // 和玩家差不多显示黄色
-                    } else {
-                        enemyColorClass = 'text-red-500'; // 比玩家厉害显示红色
-                    }
-                }
-                enemyIconElement.className = `fa ${this.gameState.enemy.icon} text-xl ${enemyColorClass}`;
-            } else {
-                // 没有敌人时显示问号图标
-                enemyIconElement.className = 'fa fa-question text-xl text-gray-500';
-            }
-        }
-        
         // 更新人物装备显示
         this.updateCharacterEquipmentDisplay();
-        
-        // 更新精英标识
-        const eliteBadge = document.getElementById('enemy-elite-badge');
-        const enemyInfo = document.getElementById('enemy-info');
-        if (eliteBadge && enemyInfo) {
-            if (this.gameState.enemy?.name) {
-                if (this.gameState.enemy.isElite) {
-                    eliteBadge.classList.remove('hidden');
-                    // 为精英怪添加特殊样式
-                    enemyInfo.classList.add('border-yellow-500');
-                    enemyInfo.classList.add('bg-yellow-900/20');
-                } else if (this.gameState.enemy.isBoss) {
-                    eliteBadge.classList.remove('hidden');
-                    eliteBadge.textContent = 'BOSS';
-                    eliteBadge.className = 'ml-2 text-xs bg-purple-500 text-white px-1.5 py-0.5 rounded font-bold';
-                    // 为BOSS添加特殊样式
-                    enemyInfo.classList.add('border-purple-500');
-                    enemyInfo.classList.add('bg-purple-900/20');
-                } else {
-                    eliteBadge.classList.add('hidden');
-                    // 移除精英怪和BOSS特殊样式
-                    enemyInfo.classList.remove('border-yellow-500');
-                    enemyInfo.classList.remove('bg-yellow-900/20');
-                    enemyInfo.classList.remove('border-purple-500');
-                    enemyInfo.classList.remove('bg-purple-900/20');
-                }
-            } else {
-                eliteBadge.classList.add('hidden');
-                // 移除精英怪和BOSS特殊样式
-                enemyInfo.classList.remove('border-yellow-500');
-                enemyInfo.classList.remove('bg-yellow-900/20');
-                enemyInfo.classList.remove('border-purple-500');
-                enemyInfo.classList.remove('bg-purple-900/20');
-            }
-        }
-        
-        // 更新敌人装备掉率信息
-        const enemyDropRatesElement = document.getElementById('enemy-drop-rates');
-        if (enemyDropRatesElement) {
-            if (this.gameState.enemy?.name) {
-                // 基础掉率
-                let dropRates = {
-                    white: 0.4,
-                    blue: 0.3,
-                    purple: 0.15,
-                    gold: 0.1,
-                    legendary: 0.05
-                };
-                
-                // 根据怪物类型调整掉率
-                if (this.gameState.enemy.isBoss) {
-                    // BOSS掉率调整
-                    dropRates = {
-                        white: 0.2,
-                        blue: 0.3,
-                        purple: 0.25,
-                        gold: 0.2,
-                        legendary: 0.05
-                    };
-                } else if (this.gameState.enemy.isElite) {
-                    // 精英怪掉率调整
-                    dropRates = {
-                        white: 0.3,
-                        blue: 0.35,
-                        purple: 0.2,
-                        gold: 0.1,
-                        legendary: 0.05
-                    };
-                }
-                
-                // 考虑幸运值影响（每点幸运值提高0.5%的高品质装备掉率）
-                const luck = this.gameState.player.luck || 0;
-                const luckBonus = luck * 0.005;
-                
-                // 调整掉率，提高高品质装备的概率
-                const adjustedRates = {
-                    white: Math.max(0, dropRates.white - luckBonus * 2),
-                    blue: Math.max(0, dropRates.blue - luckBonus),
-                    purple: Math.max(0, dropRates.purple + luckBonus * 0.5),
-                    gold: Math.max(0, dropRates.gold + luckBonus * 1),
-                    legendary: Math.max(0, dropRates.legendary + luckBonus * 1.5)
-                };
-                
-                // 归一化概率
-                const totalProbability = Object.values(adjustedRates).reduce((sum, rate) => sum + rate, 0);
-                const normalizedRates = {};
-                for (const [rarity, rate] of Object.entries(adjustedRates)) {
-                    normalizedRates[rarity] = rate / totalProbability;
-                }
-                
-                // 生成掉率显示元素
-                enemyDropRatesElement.innerHTML = '';
-                
-                // 品质颜色映射
-                const rarityColors = {
-                    white: 'bg-white/10',
-                    blue: 'bg-blue-500/20',
-                    purple: 'bg-purple-500/20',
-                    gold: 'bg-yellow-500/20',
-                    legendary: 'bg-red-500/20'
-                };
-                
-                // 品质名称映射
-                const rarityNames = {
-                    white: '白色',
-                    blue: '蓝色',
-                    purple: '紫色',
-                    gold: '金色',
-                    legendary: '传说'
-                };
-                
-                // 添加掉率信息
-                for (const [rarity, rate] of Object.entries(normalizedRates)) {
-                    const ratePercent = Math.round(rate * 100);
-                    if (ratePercent > 0) {
-                        const rateElement = document.createElement('span');
-                        rateElement.className = `text-xs ${rarityColors[rarity]} px-1.5 py-0.5 rounded`;
-                        rateElement.textContent = `${rarityNames[rarity]}: ${ratePercent}%`;
-                        enemyDropRatesElement.appendChild(rateElement);
-                    }
-                }
-            } else {
-                // 没有敌人时清空掉率信息
-                enemyDropRatesElement.innerHTML = '';
-            }
-        }
         
         // 更新挂机时间显示
         const afkTimeElement = document.getElementById('afk-time');
@@ -815,34 +515,9 @@ class EndlessWinterGame {
             survivorName.textContent = this.gameState.user.username;
         }
         
-        // 更新技能按钮状态
-        if (this.gameState.player && this.gameState.player.skills) {
-            for (let i = 0; i < this.gameState.player.skills.length; i++) {
-                const skill = this.gameState.player.skills[i];
-                const skillButton = document.getElementById(`skill-${i}`);
-                if (skillButton) {
-                    if (this.gameState.player.level >= skill.levelRequired) {
-                        // 等级满足，显示并启用技能按钮
-                        skillButton.style.display = 'flex';
-                        skillButton.disabled = false;
-                        skillButton.classList.remove('bg-dark/50', 'cursor-not-allowed');
-                        skillButton.classList.add('bg-accent', 'hover:bg-accent/80');
-                    } else {
-                        // 等级不足，隐藏技能按钮
-                        skillButton.style.display = 'none';
-                    }
-                }
-            }
-        }
-        
         // 更新精炼信息
         this.updateRefineInfo(this.selectedRefineSlot);
         
-        // 只有在没有敌人信息时才隐藏敌人信息区
-        // 这样2D敌人点击后信息会保持显示
-        if (!this.gameState.battle.inBattle && !this.gameState.enemy) {
-            this.hideEnemyInfo();
-        }
     }
     
     // 格式化时间
@@ -867,14 +542,19 @@ class EndlessWinterGame {
     
     // 生成资源
     generateResources() {
-        // 生成木材
-        this.gameState.resources.wood += this.gameState.resources.woodRate;
+        // 获取资源速率，添加默认值
+        const spiritWoodRate = this.gameState.resources.spiritWoodRate || 1;
+        const blackIronRate = this.gameState.resources.blackIronRate || 0.5;
+        const spiritCrystalRate = this.gameState.resources.spiritCrystalRate || 0.2;
         
-        // 生成铁矿
-        this.gameState.resources.iron += this.gameState.resources.ironRate;
+        // 生成灵木
+        this.gameState.resources.spiritWood += spiritWoodRate;
         
-        // 生成水晶
-        this.gameState.resources.crystal += this.gameState.resources.crystalRate;
+        // 生成玄铁
+        this.gameState.resources.blackIron += blackIronRate;
+        
+        // 生成灵晶
+        this.gameState.resources.spiritCrystal += spiritCrystalRate;
         
         // 生命自动恢复
         if (this.gameState.player.hp < this.gameState.player.maxHp) {
@@ -913,1994 +593,12 @@ class EndlessWinterGame {
         this.updateUI();
         
         // 更新血条显示
-        this.updateHealthBars();
+        if (typeof this.updateHealthBars === 'function') {
+            this.updateHealthBars();
+        }
     }
-    
-    // 音频功能已移至 audio.js；3D场景初始化移至 map3d.js
-    // (保留引用以避免调用失败)
-
-    // 初始化3D地图场景
-    initMap3DScene() {
-        const container = document.getElementById('map-3d-container');
-        if (!container) return;
-        
-        // 清除旧的3D场景
-        if (this.battle3D && this.battle3D.engine) {
-            // 停止并清理旧引擎
-            try {
-                this.battle3D.engine.dispose();
-            } catch (e) {
-                console.log('清理旧引擎时出错:', e);
-            }
-        }
-
-        // 无论是否存在 battle3D，都先清空容器，避免出现重复 canvas
-        while (container.firstChild) {
-            container.removeChild(container.firstChild);
-        }
-
-        // 重置引用，这样后续逻辑会重新设置它
-        this.battle3D = null;
-        
-        // 保存当前战斗状态
-        const isBattle = this.gameState.battle.inBattle;
-        
-        // 如果不是战斗状态，重置敌人信息，确保敌人信息区域显示为默认状态
-        if (!isBattle) {
-            // 重置敌人信息
-            this.gameState.enemy = {
-                name: "",
-                level: "",
-                hp: "",
-                maxHp: "",
-                attack: "",
-                defense: "",
-                energy: 0,
-                maxEnergy: 0,
-                isElite: false,
-                isBoss: false,
-                bonus: 0,
-                icon: "fa-question",
-                image: "",
-                expMultiplier: 1,
-                resourceMultiplier: 1
-            };
-            // 更新UI，确保敌人信息区域显示为默认状态
-            this.updateUI();
-        }
-        
-        // 创建canvas元素用于Babylon.js渲染
-        const canvas = document.createElement('canvas');
-        canvas.style.width = '100%';
-        canvas.style.height = '100%';
-        canvas.style.display = 'block';
-        
-        // 设置canvas的实际宽高属性（WebGL必需）
-        const containerRect = container.getBoundingClientRect();
-        canvas.width = Math.max(containerRect.width || 1024, 1);
-        canvas.height = Math.max(containerRect.height || 500, 1);
-        
-        container.appendChild(canvas);
-        
-        // 创建引擎，传递canvas而不是div
-        const engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
-        
-        // 创建场景
-        const scene = new BABYLON.Scene(engine);
-        
-        // 设置背景颜色和雾效
-        if (isBattle) {
-            // 战斗场景背景设置 - 深灰色背景，便于显示各种颜色的特效
-            scene.clearColor = new BABYLON.Color4(0.05, 0.05, 0.05, 1); // 深灰色背景
-            // 战斗场景不使用雾效，以便更好地显示火山效果
-        } else {
-            // 探险场景背景设置
-            if (this.gameState.mapBackgrounds.length > 0 && this.gameState.currentBackgroundIndex !== undefined) {
-                const currentBackground = this.gameState.mapBackgrounds[this.gameState.currentBackgroundIndex];
-                if (currentBackground) {
-                    // 辅助函数：转换色值为hex字符串
-                    const toHexColor = (color) => {
-                        if (typeof color === 'number') {
-                            return '#' + color.toString(16).padStart(6, '0');
-                        }
-                        return color;
-                    };
-                    
-                    // 设置天空颜色
-                    scene.clearColor = new BABYLON.Color4.FromHexString(toHexColor(currentBackground.skyColor), 1);
-                    
-                    // 设置雾效
-                    scene.fogMode = BABYLON.Scene.FOGMODE_LINEAR;
-                    scene.fogColor = new BABYLON.Color3.FromHexString(toHexColor(currentBackground.fogColor));
-                    scene.fogStart = currentBackground.fogNear;
-                    scene.fogEnd = currentBackground.fogFar;
-                } else {
-                    // 默认设置
-                    scene.clearColor = new BABYLON.Color4(0.537, 0.808, 0.922, 1); // 默认天空的蓝色
-                    scene.fogMode = BABYLON.Scene.FOGMODE_LINEAR;
-                    scene.fogColor = new BABYLON.Color3(0.537, 0.808, 0.922);
-                    scene.fogStart = 10;
-                    scene.fogEnd = 50;
-                }
-            } else {
-                // 默认设置
-                scene.clearColor = new BABYLON.Color4(0.537, 0.808, 0.922, 1); // 默认天空的蓝色
-                scene.fogMode = BABYLON.Scene.FOGMODE_LINEAR;
-                scene.fogColor = new BABYLON.Color3(0.537, 0.808, 0.922);
-                scene.fogStart = 10;
-                scene.fogEnd = 50;
-            }
-        }
-        
-        // 创建相机
-        const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, isBattle ? 6 : 10, BABYLON.Vector3.Zero(), scene);
-        camera.attachControl(container, true);
-        
-        // 设置相机位置
-        if (isBattle) {
-            // 战斗场景相机位置
-            camera.setPosition(new BABYLON.Vector3(0, 2, 6));
-        } else {
-            // 探险场景相机位置
-            camera.setPosition(new BABYLON.Vector3(0, 3, 10));
-        }
-        
-        // 添加灯光
-        if (isBattle) {
-            // 战斗场景灯光 - 火山氛围
-            const ambientLight = new BABYLON.HemisphericLight("ambientLight", new BABYLON.Vector3(0, 1, 0), scene);
-            ambientLight.intensity = 1;
-            ambientLight.diffuse = new BABYLON.Color3(0.25, 0.125, 0.125);
-            
-            const directionalLight = new BABYLON.DirectionalLight("directionalLight", new BABYLON.Vector3(5, 5, 3), scene);
-            directionalLight.intensity = 1.5;
-            directionalLight.diffuse = new BABYLON.Color3(1, 0.667, 0.4);
-            
-            // 添加火山特效光源
-            const pointLight = new BABYLON.PointLight("pointLight", new BABYLON.Vector3(0, 2, 0), scene);
-            pointLight.intensity = 1.5;
-            pointLight.diffuse = new BABYLON.Color3(1, 0.25, 0);
-        } else {
-            // 探险场景灯光
-            const ambientLight = new BABYLON.HemisphericLight("ambientLight", new BABYLON.Vector3(0, 1, 0), scene);
-            ambientLight.intensity = 1;
-            
-            const directionalLight = new BABYLON.DirectionalLight("directionalLight", new BABYLON.Vector3(2, 2, 2), scene);
-            directionalLight.intensity = 1;
-        }
-        
-        // 添加地面
-        const ground = BABYLON.MeshBuilder.CreateGround("ground", {
-            width: CONSTANTS.SCENE.GROUND.WIDTH,
-            height: CONSTANTS.SCENE.GROUND.HEIGHT,
-            subdivisions: CONSTANTS.SCENE.GROUND.SUBDIVISIONS
-        }, scene);
-        const groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
-        groundMaterial.diffuseColor = isBattle ? new BABYLON.Color3(0.75, 0.85, 0.95) : CONSTANTS.SCENE.GROUND.COLOR;
-        groundMaterial.specularColor = isBattle ? new BABYLON.Color3(0.5, 0.6, 0.7) : CONSTANTS.SCENE.GROUND.SPECULAR;
-        groundMaterial.shininess = isBattle ? 30 : CONSTANTS.SCENE.GROUND.SPECULAR_POWER;
-        ground.material = groundMaterial;
-        ground.position.y = CONSTANTS.SCENE.GROUND.Y;
-        
-        // 战斗场景添加火山陆地边缘和特效
-        if (isBattle) {
-            // 添加火山陆地边缘
-            const edge = BABYLON.MeshBuilder.CreateTorus("edge", { diameter: 14, thickness: 0.5, tessellation: 32 }, scene);
-            edge.rotation.x = Math.PI / 2;
-            edge.position.y = -0.99;
-            const edgeMaterial = new BABYLON.StandardMaterial("edgeMaterial", scene);
-            edgeMaterial.diffuseColor = new BABYLON.Color3(0.6, 0.2, 0.2);
-            edgeMaterial.specularColor = new BABYLON.Color3(1, 1, 1);
-            edgeMaterial.shininess = 100;
-            edge.material = edgeMaterial;
-        }
-        
-        // 存储场景信息
-        this.battle3D = {
-            engine: engine,
-            scene: scene,
-            camera: camera,
-            player: null,
-            enemy: null,
-            playerHealthBar: null,
-            enemyHealthBar: null,
-            playerEnergyBar: null,
-            enemyEnergyBar: null,
-            snowSystem: null,
-            isAttacking: false,
-            playerDefeated: false,
-            enemyDefeated: false,
-            // 战斗特效
-            battleEffects: [],
-            fireEffects: [],
-            // 预生成的敌人列表
-            enemies: []
-        };
-        
-        // 创建玩家模型
-        this.createPlayerModel();
-        
-        if (isBattle) {
-            // 创建当前敌人模型
-            this.createEnemyModel();
-        } else {
-            // 添加树
-            this.createTrees();
-            // 预生成多个敌人
-            this.createPreGeneratedEnemies();
-            // 添加雪花粒子系统
-            this.createSnowSystem();
-        }
-        
-        // 创建血条
-        this.createHealthBars();
-        
-        // 开始渲染循环
-        engine.runRenderLoop(() => {
-            this.animateBattle3D();
-            scene.render();
-        });
-
-        // 响应窗口大小变化
-        window.addEventListener('resize', () => {
-            if (this.battle3D && this.battle3D.engine) {
-                this.battle3D.engine.resize();
-            }
-        });
-    }
-    
-    // 创建喷火效果
-    createFireEffects() {
-        if (!this.battle3D || !this.battle3D.scene) return;
-        
-        this.battle3D.fireEffects = [];
-        
-        // 创建多个喷火点
-        const firePositions = [
-            { x: -3, z: -3 },
-            { x: 3, z: -3 },
-            { x: -3, z: 3 },
-            { x: 3, z: 3 }
-        ];
-        
-        firePositions.forEach(pos => {
-            // 创建火焰粒子系统
-            const fireSystem = new BABYLON.ParticleSystem("fireSystem", 50, this.battle3D.scene);
-            
-            // 设置粒子纹理（使用默认纹理）
-            fireSystem.particleTexture = new BABYLON.Texture("https://www.babylonjs-playground.com/textures/flare.png", this.battle3D.scene);
-            
-            // 设置粒子发射位置
-            fireSystem.emitter = new BABYLON.Vector3(pos.x, 0, pos.z);
-            fireSystem.minEmitBox = new BABYLON.Vector3(-1, 0, -1);
-            fireSystem.maxEmitBox = new BABYLON.Vector3(1, 0, 1);
-            
-            // 设置粒子颜色
-            fireSystem.color1 = new BABYLON.Color4(1, 0.6, 0, 0.8);
-            fireSystem.color2 = new BABYLON.Color4(1, 0.2, 0, 0.8);
-            fireSystem.colorDead = new BABYLON.Color4(0, 0, 0, 0);
-            
-            // 设置粒子大小
-            fireSystem.minSize = 0.1;
-            fireSystem.maxSize = 0.3;
-            
-            // 设置粒子生命周期
-            fireSystem.minLifeTime = 0.5;
-            fireSystem.maxLifeTime = 1.5;
-            
-            // 设置粒子速度
-            fireSystem.minSpeed = 1;
-            fireSystem.maxSpeed = 3;
-            
-            // 设置粒子方向
-            fireSystem.direction1 = new BABYLON.Vector3(-0.5, 1, -0.5);
-            fireSystem.direction2 = new BABYLON.Vector3(0.5, 2, 0.5);
-            
-            // 设置粒子旋转
-            fireSystem.minRotation = 0;
-            fireSystem.maxRotation = Math.PI * 2;
-            
-            // 设置发射率
-            fireSystem.emitRate = 50;
-            
-            // 启动粒子系统
-            fireSystem.start();
-            
-            // 存储火焰系统和基础位置
-            this.battle3D.fireEffects.push({
-                system: fireSystem,
-                basePosition: [pos.x, 0, pos.z]
-            });
-        });
-    }
-    
-    // 创建火山烟雾效果
-    createVolcanoSmoke() {
-        if (!this.battle3D || !this.battle3D.scene) return;
-        
-        this.battle3D.battleEffects = [];
-        
-        // 创建烟雾粒子系统
-        const smokeSystem = new BABYLON.ParticleSystem("smokeSystem", 100, this.battle3D.scene);
-        
-        // 设置粒子纹理（使用默认纹理）
-        smokeSystem.particleTexture = new BABYLON.Texture("https://www.babylonjs-playground.com/textures/flare.png", this.battle3D.scene);
-        
-        // 设置粒子发射位置
-        smokeSystem.emitter = new BABYLON.Vector3(0, 0, 0);
-        smokeSystem.minEmitBox = new BABYLON.Vector3(-7.5, 0, -7.5);
-        smokeSystem.maxEmitBox = new BABYLON.Vector3(7.5, 0, 7.5);
-        
-        // 设置粒子颜色
-        smokeSystem.color1 = new BABYLON.Color4(0.6, 0.6, 0.6, 0.3);
-        smokeSystem.color2 = new BABYLON.Color4(0.8, 0.8, 0.8, 0.3);
-        smokeSystem.colorDead = new BABYLON.Color4(0, 0, 0, 0);
-        
-        // 设置粒子大小
-        smokeSystem.minSize = 0.3;
-        smokeSystem.maxSize = 0.8;
-        
-        // 设置粒子生命周期
-        smokeSystem.minLifeTime = 2;
-        smokeSystem.maxLifeTime = 4;
-        
-        // 设置粒子速度
-        smokeSystem.minSpeed = 0.5;
-        smokeSystem.maxSpeed = 1.5;
-        
-        // 设置粒子方向
-        smokeSystem.direction1 = new BABYLON.Vector3(-0.5, 1, -0.5);
-        smokeSystem.direction2 = new BABYLON.Vector3(0.5, 2, 0.5);
-        
-        // 设置发射率
-        smokeSystem.emitRate = 25;
-        
-        // 启动粒子系统
-        smokeSystem.start();
-        
-        this.battle3D.battleEffects.push(smokeSystem);
-    }
-    
-    // 淡入战斗场景
     
 
-    
-    // 创建雪花粒子系统
-    createSnowSystem() {
-        if (!this.battle3D || !this.battle3D.scene) return;
-        
-        // 创建雪花粒子系统
-        const snowSystem = new BABYLON.ParticleSystem("snowSystem", 200, this.battle3D.scene);
-        
-        // 设置粒子纹理（使用默认纹理）
-        snowSystem.particleTexture = new BABYLON.Texture("https://www.babylonjs-playground.com/textures/flare.png", this.battle3D.scene);
-        
-        // 设置粒子发射位置
-        snowSystem.emitter = new BABYLON.Vector3(0, 5, 0);
-        snowSystem.minEmitBox = new BABYLON.Vector3(-5, 0, -5);
-        snowSystem.maxEmitBox = new BABYLON.Vector3(5, 0, 5);
-        
-        // 设置粒子颜色
-        snowSystem.color1 = new BABYLON.Color4(1, 1, 1, 0.8);
-        snowSystem.color2 = new BABYLON.Color4(0.9, 0.9, 1, 0.8);
-        snowSystem.colorDead = new BABYLON.Color4(0, 0, 0, 0);
-        
-        // 设置粒子大小
-        snowSystem.minSize = 0.03;
-        snowSystem.maxSize = 0.07;
-        
-        // 设置粒子生命周期
-        snowSystem.minLifeTime = 5;
-        snowSystem.maxLifeTime = 10;
-        
-        // 设置粒子速度
-        snowSystem.minSpeed = 0.5;
-        snowSystem.maxSpeed = 1;
-        
-        // 设置粒子方向
-        snowSystem.direction1 = new BABYLON.Vector3(-0.5, -1, -0.5);
-        snowSystem.direction2 = new BABYLON.Vector3(0.5, -1, 0.5);
-        
-        // 设置发射率
-        snowSystem.emitRate = 20;
-        
-        // 启动粒子系统
-        snowSystem.start();
-        
-        this.battle3D.snowSystem = snowSystem;
-    }
-    
-    // 预生成多个敌人
-    createPreGeneratedEnemies() {
-        // 清空敌人列表
-        this.battle3D.enemies = [];
-        
-        // 使用场景怪物数据生成敌人
-        if (this.gameState.sceneMonsters && this.gameState.sceneMonsters.length > 0) {
-            // 遍历场景怪物数据
-            for (const enemyInfo of this.gameState.sceneMonsters) {
-                // 创建简单的敌人模型（不使用复杂的模型创建函数，避免冲突）
-                const enemyGroup = this.createEnemyGroup(enemyInfo);
-                // 在Babylon.js中，创建mesh时会自动添加到scene，不需要额外调用add()
-                
-                // 创建敌人血条
-                const enemyHealthBar = this.createHealthBar(CONSTANTS.ENEMY.HEALTH_BAR.COLOR); // 红色血条
-                enemyHealthBar.scaling.x = CONSTANTS.ENEMY.HEALTH_BAR.SCALING;
-                enemyHealthBar.scaling.y = CONSTANTS.ENEMY.HEALTH_BAR.SCALING;
-                enemyHealthBar.scaling.z = CONSTANTS.ENEMY.HEALTH_BAR.SCALING;
-                enemyHealthBar.position.x = 0;
-                enemyHealthBar.position.y = CONSTANTS.ENEMY.HEALTH_BAR.RELATIVE_Y; // 血条位于敌人顶部上方（相对高度）
-                enemyHealthBar.position.z = 0;
-                enemyHealthBar.parent = enemyGroup; // Babylon.js中使用parent而不是add()
-                
-                // 存储敌人信息
-                this.battle3D.enemies.push({
-                    model: enemyGroup,
-                    info: enemyInfo,
-                    active: true,
-                    healthBar: enemyHealthBar
-                });
-            }
-        } else {
-            // 如果没有场景怪物数据，生成默认敌人
-            const enemyDistribution = this.createEnemyDistribution(25);
-            let enemyIndex = 0;
-            for (let i = 0; i < 3; i++) {
-                // 随机位置，确保在场景范围内且不与玩家重叠
-                let x, z;
-                do {
-                    x = (Math.random() - 0.5) * 16;
-                    z = (Math.random() - 0.5) * 16;
-                } while (Math.sqrt(x * x + z * z) < 1); // 确保敌人离玩家初始位置至少1单位
-  
-                // 创建敌人信息
-                const enemyInfo = this.createEnemy(enemyDistribution, enemyIndex, x, z, Math.floor(Math.random() * 25)); // 随机分配一个2D格子索引
-                // 创建简单的敌人模型
-                const enemyGroup = this.createEnemyGroup(enemyInfo);
-                enemyIndex++;
-                // 在Babylon.js中，创建mesh时会自动添加到scene，不需要额外调用add()
-                
-                // 创建敌人血条
-                const enemyHealthBar = this.createHealthBar(CONSTANTS.ENEMY.HEALTH_BAR.COLOR); // 红色血条
-                enemyHealthBar.scaling.x = CONSTANTS.ENEMY.HEALTH_BAR.SCALING;
-                enemyHealthBar.scaling.y = CONSTANTS.ENEMY.HEALTH_BAR.SCALING;
-                enemyHealthBar.scaling.z = CONSTANTS.ENEMY.HEALTH_BAR.SCALING;
-                enemyHealthBar.position.x = 0;
-                enemyHealthBar.position.y = CONSTANTS.ENEMY.HEALTH_BAR.RELATIVE_Y; // 血条位于敌人顶部上方（相对高度）
-                enemyHealthBar.position.z = 0;
-                enemyHealthBar.parent = enemyGroup; // Babylon.js中使用parent而不是add()
-                
-                // 存储敌人信息
-                this.battle3D.enemies.push({
-                    model: enemyGroup,
-                    info: enemyInfo,
-                    active: true,
-                    healthBar: enemyHealthBar
-                });
-            }
-        }
-    }
-
-    createEnemyGroup(enemyInfo) {
-        if (!this.battle3D || !this.battle3D.scene) return;
-        
-        // 从敌人名称中提取敌人类型（移除BOSS和精英前缀）
-        // 确保名称为字符串
-        let enemyTypeName = String(enemyInfo.name || '');
-        if (enemyTypeName.startsWith('BOSS')) {
-            enemyTypeName = enemyTypeName.substring(4); // 移除'BOSS'前缀
-        } else if (enemyTypeName.startsWith('精英')) {
-            enemyTypeName = enemyTypeName.substring(2); // 移除'精英'前缀
-        }
-
-        // 根据敌人类型设置不同的颜色和几何体
-        let enemyMesh;
-        let color;
-        
-        // 确定颜色
-        if (enemyInfo.isBoss) {
-            color = new BABYLON.Color3(1, 0, 1); // 紫色
-        } else if (enemyInfo.isElite) {
-            color = new BABYLON.Color3(1, 1, 0); // 黄色
-        } else {
-            // 根据敌人类型设置颜色
-            switch (enemyTypeName) {
-                // 山地敌人
-                case '山妖':
-                case '岩怪':
-                case '石精':
-                case '山魈':
-                case '龟妖':
-                case '沙漠巨蜥':
-                case '土妖':
-                case '雪原狼':
-                    color = new BABYLON.Color3(0.545, 0.271, 0.075); // 棕色
-                    break;
-                case '神雕':
-                    color = new BABYLON.Color3(0.753, 0.753, 0.753); // 银色
-                    break;
-                // 森林敌人
-                case '树精':
-                case '木怪':
-                case '山精':
-                    color = new BABYLON.Color3(0.133, 0.545, 0.133); // 绿色
-                    break;
-                case '花妖':
-                case '狐仙':
-                case '鹿灵':
-                case '妖狐':
-                    color = new BABYLON.Color3(1, 0.412, 0.71); // 粉色
-                    break;
-                // 湖泊敌人
-                case '水怪':
-                case '蛟蛇':
-                case '鱼精':
-                case '水仙':
-                    color = new BABYLON.Color3(0.255, 0.412, 0.882); // 蓝色
-                    break;
-                // 沙漠敌人
-                case '沙妖':
-                case '蝎精':
-                case '蛇怪':
-                case '沙虫':
-                    color = new BABYLON.Color3(0.824, 0.412, 0.118); // 沙色
-                    break;
-                // 洞穴敌人
-                case '洞穴蝙蝠':
-                case '蜘蛛精':
-                    color = new BABYLON.Color3(0.184, 0.306, 0.306); // 深灰色
-                    break;
-                case '蚯蚓怪':
-                case '洞穴幽灵':
-                    color = new BABYLON.Color3(0.467, 0.533, 0.596); // 灰色
-                    break;
-                // 仙境敌人
-                case '仙鹤':
-                case '凤凰':
-                case '火凤凰':
-                    color = new BABYLON.Color3(1, 0.843, 0); // 金色
-                    break;
-                case '麒麟':
-                    color = new BABYLON.Color3(1, 0.271, 0); // 橙色
-                    break;
-                // 火山敌人
-                case '火灵':
-                case '熔岩巨兽':
-                    color = new BABYLON.Color3(1, 0.271, 0); // 橙色
-                    break;
-                // 海滩敌人
-                case '海妖':
-                case '海怪':
-                case '鲛人':
-                case '龙王':
-                    color = new BABYLON.Color3(0.118, 0.565, 1); // 海蓝色
-                    break;
-                // 传统敌人
-                case '风魔':
-                    color = new BABYLON.Color3(0.529, 0.808, 0.922); // 天蓝色
-                    break;
-                case '雷兽':
-                    color = new BABYLON.Color3(0.576, 0.439, 0.859); // 紫色
-                    break;
-                case '冰原熊':
-                    color = new BABYLON.Color3(0.412, 0.412, 0.412); // 灰色
-                    break;
-                case '冰霜巨人':
-                    color = new BABYLON.Color3(0.275, 0.506, 0.706); // 钢蓝色
-                    break;
-                default:
-                    color = new BABYLON.Color3(0.439, 0.502, 0.565); // 默认灰色
-            }
-        }
-        
-        // 创建材质
-        const material = new BABYLON.StandardMaterial("enemyMaterial", this.battle3D.scene);
-        material.diffuseColor = color;
-        material.specularColor = new BABYLON.Color3(0.067, 0.067, 0.067);
-        material.specularPower = 50;
-        
-        // 根据敌人类型创建几何体（尺寸统一为1.5，约是玩家高度的一半）
-        switch (enemyTypeName) {
-            // 立方体类型
-            case '山妖':
-            case '岩怪':
-            case '石精':
-            case '山魈':
-            case '麒麟':
-            case '土妖':
-            case '冰霜巨人':
-                if (enemyTypeName === '冰霜巨人') {
-                    enemyMesh = BABYLON.MeshBuilder.CreateBox("enemy", {
-                        width: CONSTANTS.ENEMY.BOX.WIDTH,
-                        height: CONSTANTS.ENEMY.BOX.HEIGHT,
-                        depth: CONSTANTS.ENEMY.BOX.DEPTH
-                    }, this.battle3D.scene);
-                } else {
-                    enemyMesh = BABYLON.MeshBuilder.CreateBox("enemy", {
-                        size: CONSTANTS.ENEMY.BOX.SIZE
-                    }, this.battle3D.scene);
-                }
-                break;
-            // 球体类型
-            case '神雕':
-            case '花妖':
-            case '狐仙':
-            case '鹿灵':
-            case '龟妖':
-            case '沙漠巨蜥':
-            case '洞穴蝙蝠':
-            case '蜘蛛精':
-            case '仙鹤':
-            case '凤凰':
-            case '火凤凰':
-            case '火灵':
-            case '熔岩巨兽':
-            case '海妖':
-            case '海怪':
-            case '鲛人':
-            case '龙王':
-            case '风魔':
-            case '雷兽':
-            case '冰原熊':
-                enemyMesh = BABYLON.MeshBuilder.CreateSphere("enemy", {
-                    diameter: CONSTANTS.ENEMY.SPHERE.DIAMETER,
-                    tessellation: CONSTANTS.ENEMY.SPHERE.TESSELLATION
-                }, this.battle3D.scene);
-                break;
-            // 圆柱体类型
-            case '树精':
-            case '木怪':
-            case '水怪':
-            case '蛟蛇':
-            case '鱼精':
-            case '水仙':
-            case '沙妖':
-            case '蝎精':
-            case '蛇怪':
-            case '沙虫':
-            case '蚯蚓怪':
-            case '洞穴幽灵':
-            case '妖狐':
-            case '山精':
-            case '雪原狼':
-                enemyMesh = BABYLON.MeshBuilder.CreateCylinder("enemy", {
-                    height: CONSTANTS.ENEMY.CYLINDER.HEIGHT,
-                    diameterTop: CONSTANTS.ENEMY.CYLINDER.DIAMETER_TOP,
-                    diameterBottom: CONSTANTS.ENEMY.CYLINDER.DIAMETER_BOTTOM,
-                    tessellation: CONSTANTS.ENEMY.CYLINDER.TESSELLATION
-                }, this.battle3D.scene);
-                break;
-            default:
-                enemyMesh = BABYLON.MeshBuilder.CreateSphere("enemy", {
-                    diameter: CONSTANTS.ENEMY.SPHERE.DIAMETER,
-                    tessellation: CONSTANTS.ENEMY.SPHERE.TESSELLATION
-                }, this.battle3D.scene);
-        }
-        
-        // 应用材质
-        enemyMesh.material = material;
-
-        // 设置敌人位置
-        enemyMesh.position.x = enemyInfo.position.x;
-        enemyMesh.position.z = enemyInfo.position.z;
-        // 让敌人站在地面上：地面在y=-1.5
-        // 所有敌人现在都是1.5单位高度，中心在0.75
-        enemyMesh.position.y = CONSTANTS.SCENE.GROUND.Y + (CONSTANTS.ENEMY.SIZE / 2);
-
-        return enemyMesh;
-    }
-
-    // 创建血条
-    createHealthBars() {
-        // 创建玩家血条
-        const playerHealthBar = this.createHealthBar(CONSTANTS.NUMBERS.PLAYER.BASE_HP_COLOR); // 红色血条
-        playerHealthBar.position.x = 0;
-        playerHealthBar.position.y = CONSTANTS.PLAYER.HEALTH_BAR.ABSOLUTE_Y;
-        playerHealthBar.position.z = 0;
-        if (this.battle3D.player) {
-            playerHealthBar.parent = this.battle3D.player;
-        }
-        this.battle3D.playerHealthBar = playerHealthBar;
-
-        // 创建玩家能量条
-        const playerEnergyBar = this.createHealthBar(CONSTANTS.NUMBERS.PLAYER.BASE_ENERGY_COLOR); // 蓝色能量条
-        playerEnergyBar.position.x = 0;
-        playerEnergyBar.position.y = CONSTANTS.PLAYER.ENERGY_BAR.ABSOLUTE_Y;
-        playerEnergyBar.position.z = 0;
-        if (this.battle3D.player) {
-            playerEnergyBar.parent = this.battle3D.player;
-        }
-        this.battle3D.playerEnergyBar = playerEnergyBar;
-        
-        // 创建敌人血条
-        const enemyHealthBar = this.createHealthBar(CONSTANTS.ENEMY.HEALTH_BAR.COLOR); // 红色血条
-        enemyHealthBar.position.x = 0;
-        enemyHealthBar.position.y = CONSTANTS.ENEMY.HEALTH_BAR.ABSOLUTE_Y;
-        enemyHealthBar.position.z = 0;
-        if (this.battle3D.enemy) {
-            enemyHealthBar.parent = this.battle3D.enemy;
-        }
-        this.battle3D.enemyHealthBar = enemyHealthBar;
-        
-        // 创建敌人能量条（如果是BOSS）
-        if (this.gameState.enemy.isBoss) {
-            const enemyEnergyBar = this.createHealthBar(0x0000ff); // 蓝色能量条
-            enemyEnergyBar.position.x = 0;
-            enemyEnergyBar.position.y = CONSTANTS.ENEMY.HEALTH_BAR.ABSOLUTE_Y;
-            enemyEnergyBar.position.z = 0;
-            if (this.battle3D.enemy) {
-                enemyEnergyBar.parent = this.battle3D.enemy;
-            }
-            this.battle3D.enemyEnergyBar = enemyEnergyBar;
-        }
-        
-        // 初始更新血条
-        this.updateHealthBars();
-    }
-    
-    // 创建单个血条
-    createHealthBar(color = 0xff0000) {
-        if (!this.battle3D || !this.battle3D.scene) return;
-        
-        // 创建血条背景
-        const background = BABYLON.MeshBuilder.CreatePlane("healthBarBackground", { width: 2.0, height: 0.3 }, this.battle3D.scene);
-        const backgroundMaterial = new BABYLON.StandardMaterial("healthBarBackgroundMaterial", this.battle3D.scene);
-        backgroundMaterial.diffuseColor = new BABYLON.Color3(0.2, 0.2, 0.2);
-        backgroundMaterial.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
-        background.material = backgroundMaterial;
-        // 始终面向相机并显著层级
-        background.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
-        background.renderingGroupId = 2;
-        
-        // 创建血条填充
-        const fill = BABYLON.MeshBuilder.CreatePlane("healthBarFill", { width: 1.9, height: 0.2 }, this.battle3D.scene);
-        const fillMaterial = new BABYLON.StandardMaterial("healthBarFillMaterial", this.battle3D.scene);
-        // 转换数值颜色为hex字符串，添加#前缀
-        const hexColor = '#' + color.toString(16).padStart(6, '0');
-        fillMaterial.diffuseColor = new BABYLON.Color3.FromHexString(hexColor);
-        fillMaterial.emissiveColor = new BABYLON.Color3.FromHexString(hexColor);
-        fill.material = fillMaterial;
-        fill.position.z = 0.01;
-        fill.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
-        fill.renderingGroupId = 2;
-        
-        // 设置填充为背景的子对象
-        fill.parent = background;
-        
-        // 存储填充部分用于后续更新
-        background.fill = fill;
-        
-        return background;
-    }
-    
-    // 更新血条显示
-    updateHealthBars() {
-        if (!this.battle3D) return;
-        
-        // 更新玩家血条（从左边开始减少）
-        if (this.battle3D.playerHealthBar && this.battle3D.playerHealthBar.fill) {
-            const playerHealthPercent = Math.max(0, this.gameState.player.hp / this.gameState.player.maxHp);
-            this.battle3D.playerHealthBar.fill.scaling.x = playerHealthPercent;
-            // 从左边开始减少：位置向右移动，使左边对齐保持不变
-            this.battle3D.playerHealthBar.fill.position.x = (1 - playerHealthPercent) * 0.95;
-        }
-        
-        // 更新玩家能量条（从左边开始减少）
-        if (this.battle3D.playerEnergyBar && this.battle3D.playerEnergyBar.fill) {
-            const playerEnergyPercent = Math.max(0, this.gameState.player.energy / this.gameState.player.maxEnergy);
-            this.battle3D.playerEnergyBar.fill.scaling.x = playerEnergyPercent;
-            // 从左边开始减少：位置向右移动，使左边对齐保持不变
-            this.battle3D.playerEnergyBar.fill.position.x = (1 - playerEnergyPercent) * 0.95;
-        }
-        
-        if(this.gameState.enemy && this.gameState.enemy.name) {
-            // 更新敌人血条（从左边开始减少）
-            if (this.battle3D.enemyHealthBar && this.battle3D.enemyHealthBar.fill) {
-                const enemyHealthPercent = Math.max(0, this.gameState.enemy.hp / this.gameState.enemy.maxHp);
-                this.battle3D.enemyHealthBar.fill.scaling.x = enemyHealthPercent;
-                // 从左边开始减少：位置向右移动，使左边对齐保持不变
-                this.battle3D.enemyHealthBar.fill.position.x = (1 - enemyHealthPercent) * 0.95;
-            }
-            
-            // 更新敌人能量条（如果是BOSS）
-            if (this.battle3D.enemyEnergyBar && this.battle3D.enemyEnergyBar.fill && this.gameState.enemy.isBoss) {
-                const enemyEnergyPercent = Math.max(0, this.gameState.enemy.energy / this.gameState.enemy.maxEnergy);
-                this.battle3D.enemyEnergyBar.fill.scaling.x = enemyEnergyPercent;
-                // 从左边开始减少：位置向右移动，与血条保持一致
-                this.battle3D.enemyEnergyBar.fill.position.x = (1 - enemyEnergyPercent) * 0.95;
-            }
-        }
-    }
-    
-    // 创建雪包
-    createSnowPiles() {
-        if (!this.battle3D || !this.battle3D.scene) return;
-        
-        const snowMaterial = new BABYLON.StandardMaterial("snowMaterial", this.battle3D.scene);
-        snowMaterial.diffuseColor = new BABYLON.Color3(1, 1, 1);
-        snowMaterial.specularColor = new BABYLON.Color3(1, 1, 1);
-        snowMaterial.specularPower = 30;
-        
-        // 创建多个雪包，放在远处
-        for (let i = 0; i < 5; i++) {
-            // 随机位置，确保在远处
-            let x, z;
-            do {
-                x = (Math.random() - 0.5) * 12;
-                z = (Math.random() - 0.5) * 12;
-            } while (Math.abs(x) < 3 && Math.abs(z) < 3); // 确保离中心较远
-            
-            // 随机大小
-            const size = 0.3 + Math.random() * 0.5;
-            
-            // 创建雪包几何体（使用球体）
-            const snowPile = BABYLON.MeshBuilder.CreateSphere("snowPile", { diameter: size * 2, segments: 8 }, this.battle3D.scene);
-            snowPile.material = snowMaterial;
-            snowPile.position.x = x;
-            snowPile.position.y = CONSTANTS.SCENE.GROUND.Y + size / 2;
-            snowPile.position.z = z;
-        }
-    }
-    
-    // 创建树
-    createTrees() {
-        if (!this.battle3D || !this.battle3D.scene) return;
-        
-        // 树干材质
-        const trunkMaterial = new BABYLON.StandardMaterial("trunkMaterial", this.battle3D.scene);
-        trunkMaterial.diffuseColor = new BABYLON.Color3(0.545, 0.271, 0.075);
-        trunkMaterial.specularColor = new BABYLON.Color3(0.067, 0.067, 0.067);
-        trunkMaterial.specularPower = 10;
-        
-        // 树叶材质
-        const leavesMaterial = new BABYLON.StandardMaterial("leavesMaterial", this.battle3D.scene);
-        leavesMaterial.diffuseColor = new BABYLON.Color3(0.133, 0.545, 0.133);
-        leavesMaterial.specularColor = new BABYLON.Color3(0.067, 0.067, 0.067);
-        leavesMaterial.specularPower = 20;
-        
-        // 创建几棵树，放在远处
-        for (let i = 0; i < 3; i++) {
-            // 随机位置，确保在远处
-            let x, z;
-            do {
-                x = (Math.random() - 0.5) * 12;
-                z = (Math.random() - 0.5) * 12;
-            } while (Math.abs(x) < 3 && Math.abs(z) < 3); // 确保离中心较远
-            
-            // 随机大小
-            const trunkHeight = 1 + Math.random() * 0.5;
-            const trunkRadius = 0.15 + Math.random() * 0.05;
-            const leavesSize = 0.8 + Math.random() * 0.3;
-            
-            // 创建树干
-            const trunk = BABYLON.MeshBuilder.CreateCylinder("trunk", { 
-                diameter: trunkRadius * 2, 
-                height: trunkHeight, 
-                tessellation: 8 
-            }, this.battle3D.scene);
-            trunk.material = trunkMaterial;
-            trunk.position.set(x, -1.5 + trunkHeight / 2, z);
-            
-            // 创建树叶
-            const leaves = BABYLON.MeshBuilder.CreateSphere("leaves", { 
-                diameter: leavesSize * 2, 
-                segments: 8 
-            }, this.battle3D.scene);
-            leaves.material = leavesMaterial;
-            leaves.position.set(x, -1.5 + trunkHeight + leavesSize / 2, z);
-        }
-    }
-    
-    // 创建玩家3D模型
-    createPlayerModel() {
-        // 直接使用默认的人类卡通模型
-        this.createDefaultPlayerModel();
-    }
-    
-    // 创建默认玩家模型（当外部模型加载失败时使用）
-    createDefaultPlayerModel() {
-        if (!this.battle3D || !this.battle3D.scene) return;
-        
-        // 创建玩家身体
-        const body = BABYLON.MeshBuilder.CreateCylinder("body", { diameterTop: 0.8, diameterBottom: 1, height: 0.8, tessellation: 8 }, this.battle3D.scene);
-        const bodyMaterial = new BABYLON.StandardMaterial("bodyMaterial", this.battle3D.scene);
-        bodyMaterial.diffuseColor = new BABYLON.Color3(0.235, 0.51, 0.98);
-        bodyMaterial.specularColor = new BABYLON.Color3(0.067, 0.067, 0.067);
-        bodyMaterial.specularPower = 100;
-        body.material = bodyMaterial;
-        
-        // 创建头部
-        const head = BABYLON.MeshBuilder.CreateSphere("head", { diameter: 0.6 }, this.battle3D.scene);
-        const headMaterial = new BABYLON.StandardMaterial("headMaterial", this.battle3D.scene);
-        headMaterial.diffuseColor = new BABYLON.Color3(1, 0.843, 0.71);
-        headMaterial.specularColor = new BABYLON.Color3(0.067, 0.067, 0.067);
-        headMaterial.specularPower = 100;
-        head.material = headMaterial;
-        head.position.y = CONSTANTS.PLAYER.HEAD.POSITION_Y;
-        head.parent = body;
-        
-        // 创建头发
-        const hair = BABYLON.MeshBuilder.CreateCylinder("hair", { diameterTop: 0.64, diameterBottom: 0.7, height: 0.2, tessellation: 8 }, this.battle3D.scene);
-        const hairMaterial = new BABYLON.StandardMaterial("hairMaterial", this.battle3D.scene);
-        hairMaterial.diffuseColor = new BABYLON.Color3(0.376, 0.647, 0.98);
-        hairMaterial.specularColor = new BABYLON.Color3(0.067, 0.067, 0.067);
-        hairMaterial.specularPower = 100;
-        hair.material = hairMaterial;
-        hair.position.y = CONSTANTS.PLAYER.HAIR.POSITION_Y;
-        hair.parent = body;
-        
-        // 创建手臂
-        const leftArm = BABYLON.MeshBuilder.CreateCylinder("leftArm", { diameter: 0.3, height: 0.6, tessellation: 8 }, this.battle3D.scene);
-        leftArm.material = bodyMaterial;
-        leftArm.position.x = -0.6;
-        leftArm.position.y = CONSTANTS.PLAYER.ARM.POSITION_Y;
-        leftArm.rotation.z = Math.PI / 4;
-        leftArm.parent = body;
-        
-        const rightArm = BABYLON.MeshBuilder.CreateCylinder("rightArm", { diameter: 0.3, height: 0.6, tessellation: 8 }, this.battle3D.scene);
-        rightArm.material = bodyMaterial;
-        rightArm.position.x = 0.6;
-        rightArm.position.y = CONSTANTS.PLAYER.ARM.POSITION_Y;
-        rightArm.rotation.z = -Math.PI / 4;
-        rightArm.parent = body;
-        
-        // 创建腿部
-        const leftLeg = BABYLON.MeshBuilder.CreateCylinder("leftLeg", { diameter: 0.4, height: 0.8, tessellation: 8 }, this.battle3D.scene);
-        leftLeg.material = hairMaterial;
-        leftLeg.position.x = -0.2;
-        leftLeg.position.y = CONSTANTS.PLAYER.LEG.POSITION_Y;
-        leftLeg.parent = body;
-        
-        const rightLeg = BABYLON.MeshBuilder.CreateCylinder("rightLeg", { diameter: 0.4, height: 0.8, tessellation: 8 }, this.battle3D.scene);
-        rightLeg.material = hairMaterial;
-        rightLeg.position.x = 0.2;
-        rightLeg.position.y = CONSTANTS.PLAYER.LEG.POSITION_Y;
-        rightLeg.parent = body;
-        
-        // 创建眼睛
-        const eyeMaterial = new BABYLON.StandardMaterial("eyeMaterial", this.battle3D.scene);
-        eyeMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
-        
-        const leftEye = BABYLON.MeshBuilder.CreateSphere("leftEye", { diameter: 0.1 }, this.battle3D.scene);
-        leftEye.material = eyeMaterial;
-        leftEye.position.x = -0.1;
-        leftEye.position.y = CONSTANTS.PLAYER.EYE.POSITION_Y;
-        leftEye.position.z = 0.3;
-        leftEye.parent = body;
-        
-        const rightEye = BABYLON.MeshBuilder.CreateSphere("rightEye", { diameter: 0.1 }, this.battle3D.scene);
-        rightEye.material = eyeMaterial;
-        rightEye.position.x = 0.1;
-        rightEye.position.y = CONSTANTS.PLAYER.EYE.POSITION_Y;
-        rightEye.position.z = 0.3;
-        rightEye.parent = body;
-        
-        // 创建嘴巴
-        const mouth = BABYLON.MeshBuilder.CreateCylinder("mouth", { diameter: 0.1, height: 0.02, tessellation: 8 }, this.battle3D.scene);
-        mouth.material = eyeMaterial;
-        mouth.position.x = 0;
-        mouth.position.y = CONSTANTS.PLAYER.MOUTH.POSITION_Y;
-        mouth.position.z = 0.3;
-        mouth.parent = body;
-        
-        // 设置玩家位置（调整到地面上方）
-        body.position.x = CONSTANTS.PLAYER.BODY_POSITION_X;
-        // 将身体下移，使脚更接近地面
-        // 身体高度0.8，半径0.4
-        // 期望脚底在地面(y=-1.5)上方一点，比如0.5单位
-        // 身体中心应该在 -1.5 + 0.5 + 0.4 = 0.4
-        body.position.y = 0.4;
-        
-        // 存储玩家模型
-        this.battle3D.player = body;
-    }
-    
-    // 创建敌人3D模型
-    createEnemyModel() {
-        // 根据敌人名称创建对应的卡通形象
-        const enemyName = this.gameState.enemy.name;
-        
-        if (enemyName.includes('狼')) {
-            this.createWolfModel();
-        } else if (enemyName.includes('熊')) {
-            this.createBearModel();
-        } else if (enemyName.includes('蛇')) {
-            this.createSnakeModel();
-        } else {
-            // 如果没有对应的模型，使用默认模型
-            this.createDefaultEnemyModel();
-        }
-    }
-    
-    // 创建狼模型
-    createWolfModel() {
-        if (!this.battle3D || !this.battle3D.scene) return;
-        
-        // 创建狼身体
-        const body = BABYLON.MeshBuilder.CreateCylinder("body", { diameterTop: 0.8, diameterBottom: 1.2, height: 1.2, tessellation: 8 }, this.battle3D.scene);
-        const bodyMaterial = new BABYLON.StandardMaterial("bodyMaterial", this.battle3D.scene);
-        bodyMaterial.diffuseColor = new BABYLON.Color3(0.545, 0.271, 0.075);
-        bodyMaterial.specularColor = new BABYLON.Color3(0.067, 0.067, 0.067);
-        bodyMaterial.specularPower = 50;
-        body.material = bodyMaterial;
-        
-        // 创建头部
-        const head = BABYLON.MeshBuilder.CreateCylinder("head", { diameterTop: 0.6, diameterBottom: 0.8, height: 0.5, tessellation: 8 }, this.battle3D.scene);
-        head.material = bodyMaterial;
-        head.position.y = CONSTANTS.ENEMY.WOLF.HEAD.POSITION_Y;
-        head.rotation.x = Math.PI / 2;
-        head.parent = body;
-        
-        // 创建耳朵
-        const earMaterial = new BABYLON.StandardMaterial("earMaterial", this.battle3D.scene);
-        earMaterial.diffuseColor = new BABYLON.Color3(0.824, 0.706, 0.545);
-        earMaterial.specularColor = new BABYLON.Color3(0.067, 0.067, 0.067);
-        earMaterial.specularPower = 50;
-        
-        const leftEar = this.createConeMesh("leftEar", { diameter: 0.3, height: 0.3 }, this.battle3D.scene);
-        leftEar.material = earMaterial;
-        leftEar.position.x = -0.2;
-        leftEar.position.y = CONSTANTS.ENEMY.WOLF.EAR.POSITION_Y;
-        leftEar.position.z = 0.3;
-        leftEar.rotation.x = Math.PI / 4;
-        leftEar.rotation.z = -Math.PI / 4;
-        leftEar.parent = body;
-        
-        const rightEar = this.createConeMesh("rightEar", { diameter: 0.3, height: 0.3 }, this.battle3D.scene);
-        rightEar.material = earMaterial;
-        rightEar.position.x = 0.2;
-        rightEar.position.y = CONSTANTS.ENEMY.SNAKE.EAR.POSITION_Y;
-        rightEar.position.z = 0.3;
-        rightEar.rotation.x = Math.PI / 4;
-        rightEar.rotation.z = Math.PI / 4;
-        rightEar.parent = body;
-        
-        // 创建尾巴
-        const tail = this.createConeMesh("tail", { diameter: 0.2, height: 0.6 }, this.battle3D.scene);
-        tail.material = earMaterial;
-        tail.position.y = CONSTANTS.ENEMY.WOLF.LEG.POSITION_Y;
-        tail.position.z = 0.3;
-        tail.rotation.x = -Math.PI / 4;
-        tail.parent = body;
-        
-        // 创建腿部
-        const legMaterial = bodyMaterial;
-        
-        // 前腿
-        const frontLeftLeg = BABYLON.MeshBuilder.CreateCylinder("frontLeftLeg", { diameter: 0.3, height: 0.6, tessellation: 8 }, this.battle3D.scene);
-        frontLeftLeg.material = legMaterial;
-        frontLeftLeg.position.x = -0.3;
-        frontLeftLeg.position.y = CONSTANTS.ENEMY.SNAKE.LEG.POSITION_Y;
-        frontLeftLeg.position.z = 0.4;
-        frontLeftLeg.parent = body;
-        
-        const frontRightLeg = BABYLON.MeshBuilder.CreateCylinder("frontRightLeg", { diameter: 0.3, height: 0.6, tessellation: 8 }, this.battle3D.scene);
-        frontRightLeg.material = legMaterial;
-        frontRightLeg.position.x = 0.3;
-        frontRightLeg.position.y = CONSTANTS.ENEMY.WOLF.LEG.POSITION_Y;
-        frontRightLeg.position.z = 0.4;
-        frontRightLeg.parent = body;
-        
-        // 后腿
-        const backLeftLeg = BABYLON.MeshBuilder.CreateCylinder("backLeftLeg", { diameter: 0.3, height: 0.6, tessellation: 8 }, this.battle3D.scene);
-        backLeftLeg.material = legMaterial;
-        backLeftLeg.position.x = -0.3;
-        backLeftLeg.position.y = CONSTANTS.ENEMY.SNAKE.LEG.POSITION_Y;
-        backLeftLeg.position.z = -0.4;
-        backLeftLeg.parent = body;
-        
-        const backRightLeg = BABYLON.MeshBuilder.CreateCylinder("backRightLeg", { diameter: 0.3, height: 0.6, tessellation: 8 }, this.battle3D.scene);
-        backRightLeg.material = legMaterial;
-        backRightLeg.position.x = 0.3;
-        backRightLeg.position.y = -0.6;
-        backRightLeg.position.z = -0.4;
-        backRightLeg.parent = body;
-        
-        // 创建眼睛
-        const eyeMaterial = new BABYLON.StandardMaterial("eyeMaterial", this.battle3D.scene);
-        eyeMaterial.diffuseColor = new BABYLON.Color3(1, 1, 1);
-        
-        const leftEye = BABYLON.MeshBuilder.CreateSphere("leftEye", { diameter: 0.1 }, this.battle3D.scene);
-        leftEye.material = eyeMaterial;
-        leftEye.position.x = -0.1;
-        leftEye.position.y = CONSTANTS.ENEMY.SNAKE.EYE.POSITION_Y;
-        leftEye.position.z = 0.5;
-        leftEye.parent = body;
-        
-        const rightEye = BABYLON.MeshBuilder.CreateSphere("rightEye", { diameter: 0.1 }, this.battle3D.scene);
-        rightEye.material = eyeMaterial;
-        rightEye.position.x = 0.1;
-        rightEye.position.y = CONSTANTS.ENEMY.SNAKE.NOSE.POSITION_Y;
-        rightEye.position.z = 0.5;
-        rightEye.parent = body;
-        
-        // 创建鼻子
-        const nose = this.createConeMesh("nose", { diameter: 0.2, height: 0.1 }, this.battle3D.scene);
-        nose.material = eyeMaterial;
-        nose.position.y = CONSTANTS.ENEMY.WOLF.EAR.POSITION_Y;
-        nose.position.z = 0.7;
-        nose.rotation.x = Math.PI;
-        nose.parent = body;
-        
-        // 设置狼的位置
-        body.position.x = 2;
-        body.position.y = CONSTANTS.PLAYER.BODY_POSITION_Y;
-        
-        // 存储敌人模型
-        this.battle3D.enemy = body;
-        
-        return body;
-    }
-    
-    // 创建熊模型
-    createBearModel() {
-        if (!this.battle3D || !this.battle3D.scene) return;
-        
-        // 创建熊身体
-        const body = BABYLON.MeshBuilder.CreateCylinder("body", { diameterTop: 1.2, diameterBottom: 1.6, height: 1.5, tessellation: 8 }, this.battle3D.scene);
-        const bodyMaterial = new BABYLON.StandardMaterial("bodyMaterial", this.battle3D.scene);
-        bodyMaterial.diffuseColor = new BABYLON.Color3(0.545, 0.271, 0.075); // 棕色
-        bodyMaterial.specularColor = new BABYLON.Color3(0.067, 0.067, 0.067);
-        bodyMaterial.specularPower = 50;
-        body.material = bodyMaterial;
-        
-        // 创建头部
-        const head = BABYLON.MeshBuilder.CreateSphere("head", { diameter: 0.8 }, this.battle3D.scene);
-        head.material = bodyMaterial;
-        head.position.y = 1.2;
-        head.parent = body;
-        
-        // 创建耳朵
-        const earMaterial = new BABYLON.StandardMaterial("earMaterial", this.battle3D.scene);
-        earMaterial.diffuseColor = new BABYLON.Color3(0.824, 0.706, 0.545); // 浅棕色
-        earMaterial.specularColor = new BABYLON.Color3(0.067, 0.067, 0.067);
-        earMaterial.specularPower = 50;
-        
-        const leftEar = this.createConeMesh("leftEar", { diameter: 0.4, height: 0.3 }, this.battle3D.scene);
-        leftEar.material = earMaterial;
-        leftEar.position.x = -0.3;
-        leftEar.position.y = CONSTANTS.ENEMY.BEAR.EAR.POSITION_Y;
-        leftEar.position.z = 0.2;
-        leftEar.rotation.x = Math.PI / 4;
-        leftEar.rotation.z = -Math.PI / 4;
-        leftEar.parent = body;
-        
-        const rightEar = this.createConeMesh("rightEar", { diameter: 0.4, height: 0.3 }, this.battle3D.scene);
-        rightEar.material = earMaterial;
-        rightEar.position.x = 0.3;
-        rightEar.position.y = CONSTANTS.ENEMY.BEAR.EAR.POSITION_Y;
-        rightEar.position.z = 0.2;
-        rightEar.rotation.x = Math.PI / 4;
-        rightEar.rotation.z = Math.PI / 4;
-        rightEar.parent = body;
-        
-        // 创建手臂
-        const leftArm = BABYLON.MeshBuilder.CreateCylinder("leftArm", { diameter: 0.4, height: 0.8, tessellation: 8 }, this.battle3D.scene);
-        leftArm.material = bodyMaterial;
-        leftArm.position.x = -0.7;
-        leftArm.position.y = CONSTANTS.ENEMY.BEAR.ARM.POSITION_Y;
-        leftArm.rotation.z = Math.PI / 4;
-        leftArm.parent = body;
-        
-        const rightArm = BABYLON.MeshBuilder.CreateCylinder("rightArm", { diameter: 0.4, height: 0.8, tessellation: 8 }, this.battle3D.scene);
-        rightArm.material = bodyMaterial;
-        rightArm.position.x = 0.7;
-        rightArm.position.y = CONSTANTS.ENEMY.BEAR.ARM.POSITION_Y;
-        rightArm.rotation.z = -Math.PI / 4;
-        rightArm.parent = body;
-        
-        // 创建腿部
-        const leftLeg = BABYLON.MeshBuilder.CreateCylinder("leftLeg", { diameter: 0.6, height: 0.8, tessellation: 8 }, this.battle3D.scene);
-        leftLeg.material = bodyMaterial;
-        leftLeg.position.x = -0.3;
-        leftLeg.position.y = -1.1;
-        leftLeg.parent = body;
-        
-        const rightLeg = BABYLON.MeshBuilder.CreateCylinder("rightLeg", { diameter: 0.6, height: 0.8, tessellation: 8 }, this.battle3D.scene);
-        rightLeg.material = bodyMaterial;
-        rightLeg.position.x = 0.3;
-        rightLeg.position.y = -1.1;
-        rightLeg.parent = body;
-        
-        // 创建眼睛
-        const eyeMaterial = new BABYLON.StandardMaterial("eyeMaterial", this.battle3D.scene);
-        eyeMaterial.diffuseColor = new BABYLON.Color3(1, 1, 1); // 白色
-        
-        const leftEye = BABYLON.MeshBuilder.CreateSphere("leftEye", { diameter: 0.16 }, this.battle3D.scene);
-        leftEye.material = eyeMaterial;
-        leftEye.position.x = -0.15;
-        leftEye.position.y = CONSTANTS.ENEMY.BEAR.EYE.POSITION_Y;
-        leftEye.position.z = 0.4;
-        leftEye.parent = body;
-        
-        const rightEye = BABYLON.MeshBuilder.CreateSphere("rightEye", { diameter: 0.16 }, this.battle3D.scene);
-        rightEye.material = eyeMaterial;
-        rightEye.position.x = 0.15;
-        rightEye.position.y = CONSTANTS.ENEMY.BEAR.EYE.POSITION_Y;
-        rightEye.position.z = 0.4;
-        rightEye.parent = body;
-        
-        // 创建鼻子
-        const nose = this.createConeMesh("nose", { diameter: 0.3, height: 0.2, tessellation: 8 }, this.battle3D.scene);
-        nose.material = earMaterial;
-        nose.position.y = CONSTANTS.ENEMY.BEAR.NOSE.POSITION_Y;
-        nose.position.z = 0.45;
-        nose.rotation.x = Math.PI;
-        nose.parent = body;
-        
-        // 设置熊的位置
-        body.position.x = 2;
-        // 将身体下移，使脚更接近地面
-        // 身体高度1.5，半径0.75
-        // 期望脚底在地面(y=-1.5)上方一点
-        // 身体中心应该在 -1.5 + 0.5 + 0.75 = 0.25
-        body.position.y = 0.25;
-        
-        // 存储敌人模型
-        this.battle3D.enemy = body;
-        
-        return body;
-    }
-    
-    // 创建蛇模型
-    createSnakeModel() {
-        if (!this.battle3D || !this.battle3D.scene) return;
-        
-        // 创建蛇身体组
-        const snakeBody = BABYLON.MeshBuilder.CreateBox("snakeBody", { size: 0.1 }, this.battle3D.scene);
-        const bodyMaterial = new BABYLON.StandardMaterial("bodyMaterial", this.battle3D.scene);
-        bodyMaterial.diffuseColor = new BABYLON.Color3(0, 0.392, 0); // 绿色
-        bodyMaterial.specularColor = new BABYLON.Color3(0.067, 0.067, 0.067);
-        bodyMaterial.specularPower = 50;
-        snakeBody.material = bodyMaterial;
-        
-        // 身体（使用多个圆柱体连接）
-        for (let i = 0; i < 5; i++) {
-            const segment = BABYLON.MeshBuilder.CreateCylinder(`segment${i}`, { 
-                diameterTop: 0.6 - i * 0.1, 
-                diameterBottom: 0.6 - (i + 1) * 0.1, 
-                height: 0.4, 
-                tessellation: 8 
-            }, this.battle3D.scene);
-            segment.material = bodyMaterial;
-            segment.position.x = i * 0.3;
-            segment.position.y = Math.sin(i * 0.5) * 0.2;
-            segment.rotation.z = Math.sin(i * 0.5) * 0.3;
-            segment.parent = snakeBody;
-        }
-        
-        // 头部
-        const head = BABYLON.MeshBuilder.CreateCylinder("head", { 
-            diameterTop: 0.6, 
-            diameterBottom: 0.8, 
-            height: 0.5, 
-            tessellation: 8 
-        }, this.battle3D.scene);
-        head.material = bodyMaterial;
-        head.position.x = 1.5;
-        head.position.y = Math.sin(4 * 0.5) * 0.2;
-        head.rotation.z = Math.sin(4 * 0.5) * 0.3;
-        head.parent = snakeBody;
-        
-        // 眼睛
-        const eyeMaterial = new BABYLON.StandardMaterial("eyeMaterial", this.battle3D.scene);
-        eyeMaterial.diffuseColor = new BABYLON.Color3(1, 1, 1); // 白色
-        
-        const leftEye = BABYLON.MeshBuilder.CreateSphere("leftEye", { diameter: 0.16 }, this.battle3D.scene);
-        leftEye.material = eyeMaterial;
-        leftEye.position.x = 1.7;
-        leftEye.position.y = Math.sin(4 * 0.5) * 0.2 + 0.15;
-        leftEye.position.z = 0.2;
-        leftEye.rotation.z = Math.sin(4 * 0.5) * 0.3;
-        leftEye.parent = snakeBody;
-        
-        const rightEye = BABYLON.MeshBuilder.CreateSphere("rightEye", { diameter: 0.16 }, this.battle3D.scene);
-        rightEye.material = eyeMaterial;
-        rightEye.position.x = 1.7;
-        rightEye.position.y = Math.sin(4 * 0.5) * 0.2 - 0.15;
-        rightEye.position.z = 0.2;
-        rightEye.rotation.z = Math.sin(4 * 0.5) * 0.3;
-        rightEye.parent = snakeBody;
-        
-        // 舌头
-        const tongueMaterial = new BABYLON.StandardMaterial("tongueMaterial", this.battle3D.scene);
-        tongueMaterial.diffuseColor = new BABYLON.Color3(1, 0, 0); // 红色
-        
-        const tongue = this.createConeMesh("tongue", { 
-            diameter: 0.1, 
-            height: 0.2, 
-            tessellation: 8 
-        }, this.battle3D.scene);
-        tongue.material = tongueMaterial;
-        tongue.position.x = 1.9;
-        tongue.position.y = Math.sin(4 * 0.5) * 0.2;
-        tongue.position.z = 0.2;
-        tongue.rotation.z = Math.sin(4 * 0.5) * 0.3 + Math.PI;
-        tongue.parent = snakeBody;
-        
-        // 设置蛇的位置
-        snakeBody.position.x = 2;
-        // 将身体下移，使头部更接近地面
-        // 蛇身体高度1.5，半径0.2
-        // 期望蛇头在地面(y=-1.5)上方一点
-        // 身体中心应该在 -1.5 + 0.5 + 0.4 = 0.4 (考虑到蛇头突出)
-        snakeBody.position.y = 0.4;
-        snakeBody.rotation.y = Math.PI / 2;
-        
-        // 存储敌人模型
-        this.battle3D.enemy = snakeBody;
-        
-        return snakeBody;
-    }
-    
-    // 创建默认敌人模型（当外部模型加载失败时使用）
-    createDefaultEnemyModel() {
-        if (!this.battle3D || !this.battle3D.scene) return;
-        
-        // 创建狼身体
-        const body = BABYLON.MeshBuilder.CreateCylinder("body", { diameterTop: 0.8, diameterBottom: 1.2, height: 1.2, tessellation: 8 }, this.battle3D.scene);
-        const bodyMaterial = new BABYLON.StandardMaterial("bodyMaterial", this.battle3D.scene);
-        bodyMaterial.diffuseColor = new BABYLON.Color3(0.545, 0.271, 0.075); // 棕色
-        bodyMaterial.specularColor = new BABYLON.Color3(0.067, 0.067, 0.067);
-        bodyMaterial.specularPower = 50;
-        body.material = bodyMaterial;
-        
-        // 创建头部
-        const head = BABYLON.MeshBuilder.CreateCylinder("head", { diameterTop: 0.6, diameterBottom: 0.8, height: 0.5, tessellation: 8 }, this.battle3D.scene);
-        head.material = bodyMaterial;
-        head.position.y = CONSTANTS.ENEMY.BEAR.HEAD.POSITION_Y;
-        head.rotation.x = Math.PI / 2;
-        head.parent = body;
-        
-        // 创建耳朵
-        const earMaterial = new BABYLON.StandardMaterial("earMaterial", this.battle3D.scene);
-        earMaterial.diffuseColor = new BABYLON.Color3(0.824, 0.706, 0.545); // 浅棕色
-        earMaterial.specularColor = new BABYLON.Color3(0.067, 0.067, 0.067);
-        earMaterial.specularPower = 50;
-        
-        const leftEar = this.createConeMesh("leftEar", { diameter: 0.3, height: 0.3 }, this.battle3D.scene);
-        leftEar.material = earMaterial;
-        leftEar.position.x = -0.2;
-        leftEar.position.y = CONSTANTS.ENEMY.SNAKE.EAR.POSITION_Y;
-        leftEar.position.z = 0.3;
-        leftEar.rotation.x = Math.PI / 4;
-        leftEar.rotation.z = -Math.PI / 4;
-        leftEar.parent = body;
-        
-        const rightEar = this.createConeMesh("rightEar", { diameter: 0.3, height: 0.3 }, this.battle3D.scene);
-        rightEar.material = earMaterial;
-        rightEar.position.x = 0.2;
-        rightEar.position.y = CONSTANTS.ENEMY.SNAKE.EYE.POSITION_Y;
-        rightEar.position.z = 0.3;
-        rightEar.rotation.x = Math.PI / 4;
-        rightEar.rotation.z = Math.PI / 4;
-        rightEar.parent = body;
-        
-        // 创建尾巴
-        const tail = this.createConeMesh("tail", { diameter: 0.2, height: 0.6 }, this.battle3D.scene);
-        tail.material = earMaterial;
-        tail.position.y = -0.6;
-        tail.position.z = 0.3;
-        tail.rotation.x = -Math.PI / 4;
-        tail.parent = body;
-        
-        // 创建腿部
-        const legMaterial = bodyMaterial;
-        
-        // 前腿
-        const frontLeftLeg = BABYLON.MeshBuilder.CreateCylinder("frontLeftLeg", { diameter: 0.3, height: 0.6, tessellation: 8 }, this.battle3D.scene);
-        frontLeftLeg.material = legMaterial;
-        frontLeftLeg.position.x = -0.3;
-        frontLeftLeg.position.y = -0.6;
-        frontLeftLeg.position.z = 0.4;
-        frontLeftLeg.parent = body;
-        
-        const frontRightLeg = BABYLON.MeshBuilder.CreateCylinder("frontRightLeg", { diameter: 0.3, height: 0.6, tessellation: 8 }, this.battle3D.scene);
-        frontRightLeg.material = legMaterial;
-        frontRightLeg.position.x = 0.3;
-        frontRightLeg.position.y = -0.6;
-        frontRightLeg.position.z = 0.4;
-        frontRightLeg.parent = body;
-        
-        // 后腿
-        const backLeftLeg = BABYLON.MeshBuilder.CreateCylinder("backLeftLeg", { diameter: 0.3, height: 0.6, tessellation: 8 }, this.battle3D.scene);
-        backLeftLeg.material = legMaterial;
-        backLeftLeg.position.x = -0.3;
-        backLeftLeg.position.y = -0.6;
-        backLeftLeg.position.z = -0.4;
-        backLeftLeg.parent = body;
-        
-        const backRightLeg = BABYLON.MeshBuilder.CreateCylinder("backRightLeg", { diameter: 0.3, height: 0.6, tessellation: 8 }, this.battle3D.scene);
-        backRightLeg.material = legMaterial;
-        backRightLeg.position.x = 0.3;
-        backRightLeg.position.y = -0.6;
-        backRightLeg.position.z = -0.4;
-        backRightLeg.parent = body;
-        
-        // 创建眼睛
-        const eyeMaterial = new BABYLON.StandardMaterial("eyeMaterial", this.battle3D.scene);
-        eyeMaterial.diffuseColor = new BABYLON.Color3(1, 1, 1); // 白色
-        
-        const leftEye = BABYLON.MeshBuilder.CreateSphere("leftEye", { diameter: 0.1 }, this.battle3D.scene);
-        leftEye.material = eyeMaterial;
-        leftEye.position.x = -0.1;
-        leftEye.position.y = CONSTANTS.ENEMY.SNAKE.NOSE.POSITION_Y;
-        leftEye.position.z = 0.5;
-        leftEye.parent = body;
-        
-        const rightEye = BABYLON.MeshBuilder.CreateSphere("rightEye", { diameter: 0.1 }, this.battle3D.scene);
-        rightEye.material = eyeMaterial;
-        rightEye.position.x = 0.1;
-        rightEye.position.y = 1.0;
-        rightEye.position.z = 0.5;
-        rightEye.parent = body;
-        
-        // 创建鼻子
-        const nose = this.createConeMesh("nose", { diameter: 0.2, height: 0.1 }, this.battle3D.scene);
-        nose.material = eyeMaterial;
-        nose.position.y = 1.0;
-        nose.position.z = 0.7;
-        nose.rotation.x = Math.PI;
-        nose.parent = body;
-        
-        // 设置狼的位置
-        body.position.x = 2;
-        // 将身体下移，使脚更接近地面
-        // 身体高度约1.2，半径0.6
-        // 期望脚底在地面(y=-1.5)上方一点
-        // 身体中心应该在 -1.5 + 0.5 + 0.6 = -0.4
-        body.position.y = -0.4;
-        
-        // 存储敌人模型
-        this.battle3D.enemy = body;
-        
-        return body;
-    }
-    
-    // 3D战斗场景动画循环
-    animateBattle3D() {
-        // 在Babylon.js中，动画循环由引擎自动处理
-        // 这里只需要处理玩家和敌人的动画逻辑
-        if (!this.battle3D || !this.battle3D.scene || !this.battle3D.camera) {
-            return;
-        }
-        
-        // 玩家和敌人的默认动画
-        if (this.battle3D.player && !this.battle3D.isAttacking && !this.battle3D.playerDefeated) {
-            // 检查是否处于战斗场景（通过检查是否有enemy模型）
-            const isBattleScene = !!this.battle3D.enemy;
-
-            // 只有在非战斗场景中才允许鼠标移动
-            if (!isBattleScene && this.isMoving && this.mouseTarget) {
-                // 计算玩家到目标位置的方向和距离
-                const dx = this.mouseTarget.x - this.battle3D.player.position.x;
-                const dz = this.mouseTarget.z - this.battle3D.player.position.z;
-                const distance = Math.sqrt(dx * dx + dz * dz);
-
-                // 如果距离大于阈值，继续移动
-                if (distance > 0.1) {
-                    // 计算移动方向
-                    const moveSpeed = 0.05;
-                    const moveX = (dx / distance) * moveSpeed;
-                    const moveZ = (dz / distance) * moveSpeed;
-
-                    // 移动玩家
-                    this.battle3D.player.position.x += moveX;
-                    this.battle3D.player.position.z += moveZ;
-
-                    // 限制人物移动范围，防止走出场景
-                    this.battle3D.player.position.x = Math.max(-8, Math.min(8, this.battle3D.player.position.x));
-                    this.battle3D.player.position.z = Math.max(-8, Math.min(8, this.battle3D.player.position.z));
-
-                    // 检查是否接近目标
-                    const newDistance = Math.sqrt(
-                        Math.pow(this.mouseTarget.x - this.battle3D.player.position.x, 2) +
-                        Math.pow(this.mouseTarget.z - this.battle3D.player.position.z, 2)
-                    );
-                    console.log('移动进度:', {
-                        distanceToTarget: newDistance.toFixed(3),
-                        target: this.mouseTarget,
-                        currentPosition: {
-                            x: this.battle3D.player.position.x,
-                            y: this.battle3D.player.position.y,
-                            z: this.battle3D.player.position.z
-                        }
-                    });
-
-                    // 检查玩家与预生成敌人的碰撞
-                    this.checkEnemyCollision();
-                } else {
-                    // 到达目标位置
-                    this.isMoving = false;
-                    this.mouseTarget = null;
-                }
-            }
-        } else {
-            // 打印不满足条件的原因
-            console.log('animateBattle3D条件不满足:', {
-                player: !!this.battle3D.player,
-                isAttacking: this.battle3D.isAttacking,
-                playerDefeated: this.battle3D.playerDefeated
-            });
-        }
-        
-        if (this.battle3D.enemy && !this.battle3D.isAttacking && !this.battle3D.enemyDefeated) {
-            // 战斗场景中敌人轻微晃动
-            this.battle3D.enemy.position.y = Math.sin(Date.now() * 0.0015) * 0.05;
-            this.battle3D.enemy.rotation.z = Math.sin(Date.now() * 0.001) * 0.02;
-        }
-        
-        // 确保相机看向场景中心
-        if (this.battle3D.camera) {
-            this.battle3D.camera.setTarget(new BABYLON.Vector3(0, 0, 0));
-        }
-    }
-    
-    // 播放攻击动画
-    playAttackAnimation() {
-        if (!this.battle3D || !this.battle3D.player || !this.battle3D.enemy) return;
-        
-        // 标记正在攻击
-        this.battle3D.isAttacking = true;
-        
-        // 玩家攻击动画
-        const player = this.battle3D.player;
-        // ensure position exists before cloning
-        if (!player.position || typeof player.position.clone !== 'function') {
-            console.warn('playAttackAnimation: player position 无效', player);
-            return;
-        }
-        const originalPosition = player.position.clone();
-        
-        // 攻击动画：玩家向敌人移动
-        let attackProgress = 0;
-        const attackSpeed = 0.1;
-        
-        const attackAnimation = () => {
-            attackProgress += attackSpeed;
-            
-            if (attackProgress <= 0.5) {
-                // 向前移动
-                const targetX = originalPosition.x + (this.battle3D.enemy.position.x - originalPosition.x) * (attackProgress * 2);
-                player.position.x = targetX;
-            } else if (attackProgress <= 1) {
-                // 向后移动
-                const targetX = originalPosition.x + (this.battle3D.enemy.position.x - originalPosition.x) * ((1 - attackProgress) * 2);
-                player.position.x = targetX;
-            } else {
-                // 动画结束
-                player.position.copyFrom(originalPosition);
-                this.battle3D.isAttacking = false;
-                return;
-            }
-            
-            requestAnimationFrame(attackAnimation);
-        };
-        
-        attackAnimation();
-        
-        // 敌人被攻击反馈
-        setTimeout(() => {
-            this.playEnemyHitAnimation();
-        }, 200);
-    }
-    
-    // 播放防御动画
-    playDefenseAnimation() {
-        if (!this.battle3D || !this.battle3D.player) return;
-        
-        // 简单的防御动画：角色模型稍微后退并缩小
-        const player = this.battle3D.player;
-        
-        // 防御动画依赖 position 和 scale
-        if (!player.position || typeof player.position.clone !== 'function' ||
-            !player.scale || typeof player.scale.clone !== 'function') {
-            console.warn('playDefenseAnimation: player position/scale 不可用', player);
-            return;
-        }
-        
-        // 保存初始状态
-        const initialPosition = player.position.clone();
-        const initialScale = player.scale.clone();
-        
-        // 动画持续时间
-        const duration = 500; // 500毫秒
-        const startTime = Date.now();
-        
-        // 动画函数
-        const animate = () => {
-            const elapsed = Date.now() - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            
-            // 计算新位置和缩放
-            const newX = initialPosition.x - Math.sin(progress * Math.PI) * 0.3;
-            const newScale = initialScale.x * (1 - Math.sin(progress * Math.PI) * 0.1);
-            
-            player.position.x = newX;
-            player.scale.set(newScale, newScale, newScale);
-            
-            if (progress < 1) {
-                requestAnimationFrame(animate);
-            } else {
-                // 动画结束，恢复初始状态
-                player.position.x = initialPosition.x;
-                player.scale.set(initialScale.x, initialScale.y, initialScale.z);
-            }
-        };
-        
-        // 开始动画
-        animate();
-    }
-    
-    // 创建防御特效
-    createDefenseEffect() {
-        if (!this.battle3D || !this.battle3D.player || !this.battle3D.scene) return;
-        
-        const player = this.battle3D.player;
-        
-        // 移除旧的防御特效（如果存在）
-        this.removeDefenseEffect();
-        
-        // 创建防御圆圈
-        const defenseCircle = BABYLON.MeshBuilder.CreateDisc("defenseCircle", { radius: 1.2, tessellation: 32 }, this.battle3D.scene);
-        const circleMaterial = new BABYLON.StandardMaterial("circleMaterial", this.battle3D.scene);
-        circleMaterial.diffuseColor = new BABYLON.Color3(0, 1, 1); // 青色
-        circleMaterial.alpha = 0.7;
-        circleMaterial.backFaceCulling = false;
-        defenseCircle.material = circleMaterial;
-        
-        // 旋转和定位
-        defenseCircle.rotation.x = Math.PI / 2;
-        defenseCircle.position.y = CONSTANTS.ENEMY.DEFENSE_CIRCLE_Y;
-        
-        // 添加到玩家
-        defenseCircle.parent = player;
-        
-        // 持续的扫动动画（不会自动消失）
-        const startTime = Date.now();
-        
-        const animate = () => {
-            if (!this.gameState.player.defenseActive) {
-                // 防御状态已清除，停止动画
-                return;
-            }
-            
-            const elapsed = Date.now() - startTime;
-            const progress = (elapsed / 1000) % 1; // 循环动画
-            
-            // 缩放和透明度变化
-            const scale = 1 + Math.sin(progress * Math.PI * 2) * 0.2;
-            const opacity = 0.5 + Math.sin(progress * Math.PI * 2) * 0.2; // 0.3-0.7之间变化
-            
-            defenseCircle.scaling.set(scale, scale, scale);
-            defenseCircle.material.alpha = opacity;
-            
-            requestAnimationFrame(animate);
-        };
-        
-        // 存储防御特效的引用
-        this.gameState.player.defenseEffects = {
-            circle: defenseCircle,
-            material: circleMaterial,
-            animationId: null
-        };
-        
-        animate();
-    }
-
-    // 移除防御特效
-    removeDefenseEffect() {
-        if (!this.gameState.player.defenseEffects) return;
-        
-        const effects = this.gameState.player.defenseEffects;
-        
-        // 移除防御圆圈网格
-        if (effects.circle && effects.circle.dispose) {
-            effects.circle.dispose();
-        }
-        
-        // 移除材质
-        if (effects.material && effects.material.dispose) {
-            effects.material.dispose();
-        }
-        
-        // 清除引用
-        this.gameState.player.defenseEffects = null;
-    }
-    
-    // 创建攻击特效
-    createAttackEffect(skillIndex) {
-        if (!this.battle3D || !this.battle3D.player || !this.battle3D.scene) return;
-        
-        const player = this.battle3D.player;
-        
-        // 优先使用显式的 enemy，如果没有则从 enemies 列表中回退查找一个活动的敌人模型
-        let enemy = this.battle3D.enemy;
-        if (!enemy && Array.isArray(this.battle3D.enemies) && this.battle3D.enemies.length > 0) {
-            const active = this.battle3D.enemies.find(e => e && e.active && e.model);
-            enemy = active ? active.model : (this.battle3D.enemies[0] && this.battle3D.enemies[0].model);
-        }
-        
-        // 根据技能索引创建不同的特效颜色
-        let color;
-        if (skillIndex === -1) {
-            // 普通攻击
-            color = new BABYLON.Color3(0, 1, 0); // 绿色
-        } else {
-            switch (skillIndex) {
-                case 0: // 强力攻击
-                    color = new BABYLON.Color3(1, 0, 0); // 红色
-                    break;
-                case 1: // 防御姿态
-                    color = new BABYLON.Color3(0, 0, 1); // 蓝色
-                    break;
-                case 2: // 生命恢复
-                    color = new BABYLON.Color3(0, 1, 0); // 绿色
-                    break;
-                case 3: // 幸运一击
-                    color = new BABYLON.Color3(1, 1, 0); // 黄色
-                    break;
-                default:
-                    color = new BABYLON.Color3(0, 1, 1); // 青色
-            }
-        }
-        
-        // 创建粒子系统
-        const particleSystem = new BABYLON.ParticleSystem("attackParticles", 100, this.battle3D.scene);
-        
-        // 设置粒子纹理（使用默认纹理）
-        particleSystem.particleTexture = new BABYLON.Texture("https://www.babylonjs-playground.com/textures/flare.png", this.battle3D.scene);
-        
-        // 设置粒子发射位置（稍微抬高），如果 player.position 不可用则使用场景中心
-        let emitterPos = new BABYLON.Vector3(0, 1, 0);
-        if (player.position && typeof player.position.clone === 'function') {
-            emitterPos = player.position.clone().add(new BABYLON.Vector3(0, 1, 0));
-        }
-        particleSystem.emitter = emitterPos;
-        
-        // 设置粒子颜色
-        particleSystem.color1 = new BABYLON.Color4(color.r, color.g, color.b, 0.8);
-        particleSystem.color2 = new BABYLON.Color4(color.r, color.g, color.b, 0.8);
-        particleSystem.colorDead = new BABYLON.Color4(0, 0, 0, 0);
-        
-        // 设置粒子大小
-        particleSystem.minSize = 0.08;
-        particleSystem.maxSize = 0.15;
-        
-        // 设置粒子生命周期
-        particleSystem.minLifeTime = 0.6;
-        particleSystem.maxLifeTime = 0.8;
-        
-        // 设置粒子速度
-        particleSystem.minSpeed = 5;
-        particleSystem.maxSpeed = 10;
-        
-        // 设置粒子方向（朝向敌人），如果没有 enemy 则朝向 +Z
-        if (enemy && enemy.position && player.position) {
-            const dir = enemy.position.subtract(player.position).normalize();
-            particleSystem.direction1 = dir.scale(5);
-            particleSystem.direction2 = dir.scale(10);
-        } else {
-            particleSystem.direction1 = new BABYLON.Vector3(0, 0, 1).scale(5);
-            particleSystem.direction2 = new BABYLON.Vector3(0, 0, 1).scale(10);
-        }
-        
-        // 设置发射率（更高的发射率使特效更明显）
-        particleSystem.emitRate = 150;
-        
-        // 启动粒子系统
-        particleSystem.start();
-        
-        // 800毫秒后停止并清理粒子系统
-        setTimeout(() => {
-            try { particleSystem.stop(); } catch (e) {}
-            setTimeout(() => {
-                try { particleSystem.dispose(); } catch (e) {}
-            }, 1000);
-        }, 800);
-    }
-    
-    // 显示伤害数字
-    showDamage(target, damage, color) {
-        if (!this.battle3D || !this.battle3D.scene || !this.battle3D.camera) return;
-        
-        // 创建伤害文本
-        const canvas = document.createElement('canvas');
-        canvas.width = 384; // 增大3倍
-        canvas.height = 192; // 增大3倍
-        const context = canvas.getContext('2d');
-        
-        // 设置文本样式
-        context.font = 'bold 72px Arial'; // 增大3倍
-        context.fillStyle = color;
-        context.textAlign = 'center';
-        context.textBaseline = 'middle';
-        
-        // 绘制文本
-        const text = damage > 0 ? `-${damage}` : `+${Math.abs(damage)}`;
-        context.fillText(text, canvas.width / 2, canvas.height / 2);
-        
-        // 创建纹理（从canvas生成动态纹理）
-        const dynamicTexture = new BABYLON.DynamicTexture("damageTexture", {width: canvas.width, height: canvas.height}, this.battle3D.scene, false);
-        const dtCtx = dynamicTexture.getContext();
-        dtCtx.drawImage(canvas, 0, 0);
-        dynamicTexture.update();
-        const texture = dynamicTexture;
-        
-        // 创建平面
-        const damageText = BABYLON.MeshBuilder.CreatePlane("damageText", { width: 3, height: 1.5 }, this.battle3D.scene);
-        const material = new BABYLON.StandardMaterial("damageMaterial", this.battle3D.scene);
-        material.diffuseTexture = texture;
-        material.diffuseTexture.hasAlpha = true;
-        material.backFaceCulling = false;
-        material.alpha = 1;
-        damageText.material = material;
-        
-        // 设置位置
-        if (target === this.gameState.player && this.battle3D.player) {
-            damageText.position.copyFrom(this.battle3D.player.position);
-            damageText.position.y += 3; // 稍微提高位置，避免与角色重叠
-        } else if (target === this.gameState.enemy && this.battle3D.enemy) {
-            damageText.position.copyFrom(this.battle3D.enemy.position);
-            damageText.position.y += 3; // 稍微提高位置，避免与敌人重叠
-        } else {
-            return;
-        }
-        
-        // 确保文本始终面向相机（在Babylon.js中使用billboardMode）
-        damageText.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
-        
-        // 动画效果
-        const duration = 1000; // 1秒
-        const startTime = Date.now();
-        const initialPosition = damageText.position.clone();
-        
-        const animate = () => {
-            const elapsed = Date.now() - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            
-            // 向上移动
-            damageText.position.y = initialPosition.y + progress * 1.5; // 稍微增加移动距离
-            
-            // 透明度变化
-            damageText.material.alpha = 1 - progress;
-            
-            if (progress < 1) {
-                requestAnimationFrame(animate);
-            } else {
-                // 动画结束，移除文本
-                if (damageText && damageText.dispose) {
-                    damageText.dispose();
-                }
-                if (material && material.dispose) {
-                    material.dispose();
-                }
-                if (texture && texture.dispose) {
-                    texture.dispose();
-                }
-            }
-        };
-        
-        // 开始动画
-        animate();
-    }
-
-    // 显示能量变化提示
-    showEnergyChange(target, energyChange) {
-        if (!this.battle3D || !this.battle3D.scene || !this.battle3D.camera) return;
-        
-        // 创建能量变化文本
-        const canvas = document.createElement('canvas');
-        canvas.width = 384; // 增大3倍
-        canvas.height = 192; // 增大3倍
-        const context = canvas.getContext('2d');
-        
-        // 设置文本样式
-        context.font = 'bold 72px Arial'; // 增大3倍
-        context.fillStyle = '#FFD700'; // 金黄色表示能量
-        context.textAlign = 'center';
-        context.textBaseline = 'middle';
-        
-        // 绘制文本
-        const text = energyChange > 0 ? `+${energyChange}` : `-${Math.abs(energyChange)}`;
-        context.fillText(text, canvas.width / 2, canvas.height / 2);
-        
-        // 创建纹理（从canvas生成动态纹理）
-        const dynamicTexture = new BABYLON.DynamicTexture("energyTexture", {width: canvas.width, height: canvas.height}, this.battle3D.scene, false);
-        const dtCtx = dynamicTexture.getContext();
-        dtCtx.drawImage(canvas, 0, 0);
-        dynamicTexture.update();
-        const texture = dynamicTexture;
-        
-        // 创建平面
-        const energyText = BABYLON.MeshBuilder.CreatePlane("energyText", { width: 3, height: 1.5 }, this.battle3D.scene);
-        const material = new BABYLON.StandardMaterial("energyMaterial", this.battle3D.scene);
-        material.diffuseTexture = texture;
-        material.diffuseTexture.hasAlpha = true;
-        material.backFaceCulling = false;
-        material.alpha = 1;
-        energyText.material = material;
-        
-        // 设置位置
-        if (target === this.gameState.player && this.battle3D.player) {
-            energyText.position.copyFrom(this.battle3D.player.position);
-            energyText.position.y += 3; // 稍微提高位置，避免与角色重叠
-        } else if (target === this.gameState.enemy && this.battle3D.enemy) {
-            energyText.position.copyFrom(this.battle3D.enemy.position);
-            energyText.position.y += 3; // 稍微提高位置，避免与敌人重叠
-        } else {
-            return;
-        }
-        
-        // 确保文本始终面向相机（在Babylon.js中使用billboardMode）
-        energyText.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
-        
-        // 动画效果
-        const duration = 1000; // 1秒
-        const startTime = Date.now();
-        const initialPosition = energyText.position.clone();
-        
-        const animate = () => {
-            const elapsed = Date.now() - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            
-            // 向上移动
-            energyText.position.y = initialPosition.y + progress * 1.5;
-            
-            // 透明度变化
-            energyText.material.alpha = 1 - progress;
-            
-            if (progress < 1) {
-                requestAnimationFrame(animate);
-            } else {
-                // 动画结束，移除文本
-                if (energyText && energyText.dispose) {
-                    energyText.dispose();
-                }
-                if (material && material.dispose) {
-                    material.dispose();
-                }
-                if (texture && texture.dispose) {
-                    texture.dispose();
-                }
-            }
-        };
-        
-        // 开始动画
-        animate();
-    }
-    
-    // 播放敌人被攻击动画
-    playEnemyHitAnimation() {
-        if (!this.battle3D || !this.battle3D.enemy) return;
-        
-        const enemy = this.battle3D.enemy;
-        
-        // 敌人震动效果
-        let shakeProgress = 0;
-        const shakeSpeed = 0.1;
-        const originalPosition = enemy.position.clone();
-        
-        const shakeAnimation = () => {
-            shakeProgress += shakeSpeed;
-            
-            if (shakeProgress <= 1) {
-                // 震动效果
-                const shakeAmount = (1 - shakeProgress) * 0.1;
-                enemy.position.x = originalPosition.x + (Math.random() - 0.5) * shakeAmount;
-                enemy.position.y = originalPosition.y + (Math.random() - 0.5) * shakeAmount;
-            } else {
-                // 动画结束
-                enemy.position.copyFrom(originalPosition);
-                return;
-            }
-            
-            requestAnimationFrame(shakeAnimation);
-        };
-        
-        shakeAnimation();
-    }
-    
     // 绑定事件
     bindEvents() {
         
@@ -2951,13 +649,13 @@ class EndlessWinterGame {
         });
         
         // 自动收集资源类型设置
-        bindEvent('#auto-collect-wood', 'change', () => {
+        bindEvent('#auto-collect-spiritWood', 'change', () => {
             this.updateAutoCollectResourceTypes();
         });
-        bindEvent('#auto-collect-iron', 'change', () => {
+        bindEvent('#auto-collect-blackIron', 'change', () => {
             this.updateAutoCollectResourceTypes();
         });
-        bindEvent('#auto-collect-crystal', 'change', () => {
+        bindEvent('#auto-collect-spiritCrystal', 'change', () => {
             this.updateAutoCollectResourceTypes();
         });
         
@@ -2967,22 +665,17 @@ class EndlessWinterGame {
         });
         
         // 资源收集按钮
-        bindEvent('#collect-wood', 'click', () => {
-            this.collectResource('wood');
+        bindEvent('#collect-spiritWood', 'click', () => {
+            this.collectResource('spiritWood');
         });
         
-        bindEvent('#collect-iron', 'click', () => {
-            this.collectResource('iron');
+        bindEvent('#collect-blackIron', 'click', () => {
+            this.collectResource('blackIron');
         });
         
-        bindEvent('#collect-crystal', 'click', () => {
-            this.collectResource('crystal');
+        bindEvent('#collect-spiritCrystal', 'click', () => {
+            this.collectResource('spiritCrystal');
         });
-        
-        // 游戏设置按钮
-
-        
-
         
         // 用户相关按钮
         
@@ -3002,6 +695,11 @@ class EndlessWinterGame {
         // 背包按钮
         bindEvent('#open-inventory-btn', 'click', () => {
             this.showInventory();
+        });
+        
+        // 突破按钮
+        bindEvent('#breakthrough-btn', 'click', () => {
+            this.attemptBreakthrough();
         });
         
         // 为装备槽位添加点击事件
@@ -3110,6 +808,7 @@ class EndlessWinterGame {
         
         // 设置按钮下拉菜单
         bindEvent('#settings-btn', 'click', () => {
+            console.log('点击设置按钮');
             const dropdown = document.getElementById('settings-dropdown');
             if (dropdown) {
                 dropdown.classList.toggle('hidden');
@@ -3142,13 +841,6 @@ class EndlessWinterGame {
             this.updateUI();
         });
         
-        // 攻击确认按钮
-        bindEvent('#attack-confirm-btn', 'click', () => {
-            if (this.gameState.enemy) {
-                this.encounterEnemy(this.gameState.enemy);
-            }
-        });
-        
         // 初始化所有按钮的tooltip
         this.initTooltips();
         
@@ -3178,356 +870,31 @@ class EndlessWinterGame {
         
     }
     
-    // 处理键盘按键事件
-    handleKeyPress(e) {
-        // 处理攻击和技能快捷键
-        switch (e.key) {
-            case 'h':
-            case 'H':
-                // 普通攻击
-                this.attackEnemy();
-                return; // 避免继续处理移动逻辑
-            case 'j':
-            case 'J':
-                // 第一个技能
-                this.useSkill(0);
-                return; // 避免继续处理移动逻辑
-            case 'k':
-            case 'K':
-                // 第二个技能
-                this.useSkill(1);
-                return; // 避免继续处理移动逻辑
-            case 'l':
-            case 'L':
-                // 第三个技能
-                this.useSkill(2);
-                return; // 避免继续处理移动逻辑
-            case ';':
-                // 最后一个技能
-                this.useSkill(3);
-                return; // 避免继续处理移动逻辑
-        }
-        
-        // 处理移动逻辑
-        if (!this.battle3D || !this.battle3D.player) return;
-        
-        const moveSpeed = 0.1;
-        
-        switch (e.key) {
-            case 'w':
-            case 'W':
-                this.battle3D.player.position.z -= moveSpeed;
-                break;
-            case 's':
-            case 'S':
-                this.battle3D.player.position.z += moveSpeed;
-                break;
-            case 'a':
-            case 'A':
-                this.battle3D.player.position.x += moveSpeed;
-                break;
-            case 'd':
-            case 'D':
-                this.battle3D.player.position.x -= moveSpeed;
-                break;
-        }
-        
-        // 限制人物移动范围，防止走出场景
-        this.battle3D.player.position.x = Math.max(-8, Math.min(8, this.battle3D.player.position.x));
-        this.battle3D.player.position.z = Math.max(-8, Math.min(8, this.battle3D.player.position.z));
-        
-        // 检查玩家与预生成敌人的碰撞
-        this.checkEnemyCollision();
-    }
-    
-    // 处理鼠标点击事件，实现鼠标引导人物移动
-    handleMouseClick() {
-        if (!this.battle3D || !this.battle3D.player || !this.battle3D.camera || !this.battle3D.scene) {
-            console.warn('handleMouseClick: 缺少必要对象', {
-                battle3D: !!this.battle3D,
-                player: !!this.battle3D?.player,
-                camera: !!this.battle3D?.camera,
-                scene: !!this.battle3D?.scene
-            });
-            return;
-        }
 
-        try {
-            // 直接使用 Babylon.js 提供的 scene.pointerX/Y
-            // scene.pointerX/Y 已经是 canvas 内的坐标（0 到 canvas.width）
 
-            console.log('handleMouseClick:', { pointerX: this.battle3D.scene.pointerX, pointerY: this.battle3D.scene.pointerY });
 
-            // 使用Babylon.js的picking方法获取射线
-            const pickInfo = this.battle3D.scene.pick(this.battle3D.scene.pointerX, this.battle3D.scene.pointerY);
-            if (!pickInfo || !pickInfo.ray) {
-                console.warn('handleMouseClick: 无法获取pickInfo或ray');
-                return;
-            }
 
-            const ray = pickInfo.ray;
+    // 隐藏敌人血条
+    hideEnemyHealthBars() {
+        if (!this.battle3D || !this.battle3D.enemies) return;
 
-            console.log('射线信息:', {
-                rayOrigin: { x: ray.origin.x, y: ray.origin.y, z: ray.origin.z },
-                rayDirection: { x: ray.direction.x, y: ray.direction.y, z: ray.direction.z },
-                playerPosition: { x: this.battle3D.player.position.x, y: this.battle3D.player.position.y, z: this.battle3D.player.position.z }
-            });
-
-            // 计算射线与人物高度平面的交点
-            // 使用玩家的实际身体位置作为交点高度
-            // 射线：point + t*direction
-            // 平面：y = player.position.y
-            // 解：origin.y + t*direction.y = player.position.y => t = (player.position.y - ray.origin.y) / ray.direction.y
-
-            if (Math.abs(ray.direction.y) > 0.0001) { // 确保射线不平行于平面
-                const t = (this.battle3D.player.position.y - ray.origin.y) / ray.direction.y;
-
-                console.log('计算出的 t 值:', t);
-
-                if (t > 0) { // 确保交点在射线前方
-                    const intersectionPoint = new BABYLON.Vector3(
-                        ray.origin.x + t * ray.direction.x,
-                        this.battle3D.player.position.y, // 使用玩家的实际身体位置
-                        ray.origin.z + t * ray.direction.z
-                    );
-
-                    console.log('交点坐标:', intersectionPoint);
-
-                    // 设置目标位置，只使用x和z坐标
-                    this.mouseTarget = {
-                        x: intersectionPoint.x,
-                        z: intersectionPoint.z
-                    };
-
-                    // 限制目标位置在场景范围内
-                    this.mouseTarget.x = Math.max(-8, Math.min(8, this.mouseTarget.x));
-                    this.mouseTarget.z = Math.max(-8, Math.min(8, this.mouseTarget.z));
-
-                    console.log('设置移动目标:', this.mouseTarget, 'isMoving:', true);
-
-                    this.isMoving = true;
-                } else {
-                    console.warn('t 值不大于 0，交点在射线后方');
-                }
-            } else {
-                console.warn('射线方向在 Y 轴接近 0，无法计算交点');
-            }
-        } catch (error) {
-            console.error('处理鼠标点击时出错:', error);
-        }
-    }
-    
-    // checkEnemyCollision moved to mapLogic.js
-    
-    
-    // saveMapState moved to mapLogic.js
-    
-    // 创建单独的3D战斗场景
-    createBattleScene(enemyInfo) {
-        
-        // 播放战斗音乐
-        this.playSound('battle-music');
-        
-
-        
-        // 显示战斗模态窗口
-        const battleModal = document.getElementById('battle-modal');
-        if (battleModal) {
-            battleModal.classList.remove('hidden');
-        }
-        
-        // 清理当前场景
-        if (this.battle3D) {
-            // 停止并清理旧引擎
-            if (this.battle3D.engine) {
-                try {
-                    this.battle3D.engine.dispose();
-                } catch (e) {
-                    console.log('清理旧引擎时出错:', e);
-                }
+        // 隐藏所有预生成敌人的血条
+        for (const enemy of this.battle3D.enemies) {
+            if (enemy.active && enemy.healthBar) {
+                enemy.healthBar.isVisible = false;
             }
         }
-        
-        // 使用战斗模态中的容器而不是主页面中的容器
-        const container = document.getElementById('battle-modal-3d-container');
-        if (!container) {
-            console.error('找不到battle-modal-3d-container元素');
-            return;
+
+        // 隐藏当前战斗的敌人血条
+        if (this.battle3D.enemyHealthBar) {
+            this.battle3D.enemyHealthBar.isVisible = false;
         }
-        
-        // 清空容器
-        while (container.firstChild) {
-            container.removeChild(container.firstChild);
+
+        // 隐藏Boss的能量条
+        if (this.battle3D.enemyEnergyBar) {
+            this.battle3D.enemyEnergyBar.isVisible = false;
         }
-        
-        // 创建canvas元素用于Babylon.js渲染
-        const canvas = document.createElement('canvas');
-        canvas.style.width = '100%';
-        canvas.style.height = '100%';
-        canvas.style.display = 'block';
-        
-        // 设置canvas的实际宽高属性（WebGL必需）
-        const containerRect = container.getBoundingClientRect();
-        canvas.width = Math.max(containerRect.width || 1024, 1);
-        canvas.height = Math.max(containerRect.height || 600, 1);
-        
-        container.appendChild(canvas);
-        
-        // 创建引擎，传递canvas而不是div
-        const engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
-        
-        // 创建场景
-        const scene = new BABYLON.Scene(engine);
-        
-        // 设置背景颜色（深灰色背景，便于显示各种颜色的特效）
-        scene.clearColor = new BABYLON.Color4(0.05, 0.05, 0.05, 1);
-        
-        // 创建相机
-        const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 10, BABYLON.Vector3.Zero(), scene);
-        camera.attachControl(container, true);
-        
-        // 设置相机位置和目标
-        camera.setPosition(new BABYLON.Vector3(0, 4, 10));
-        camera.setTarget(new BABYLON.Vector3(0, 0, 0));
-        
-        // 添加火山氛围灯光
-        const ambientLight = new BABYLON.HemisphericLight("ambientLight", new BABYLON.Vector3(0, 1, 0), scene);
-        ambientLight.intensity = 1;
-        ambientLight.diffuse = new BABYLON.Color3(0.25, 0.125, 0.125);
-        
-        const directionalLight = new BABYLON.DirectionalLight("directionalLight", new BABYLON.Vector3(5, 5, 3), scene);
-        directionalLight.intensity = 1.5;
-        directionalLight.diffuse = new BABYLON.Color3(1, 0.667, 0.4);
-        
-        // 添加火山特效光源
-        const pointLight = new BABYLON.PointLight("pointLight", new BABYLON.Vector3(0, 2, 0), scene);
-        pointLight.intensity = 1.5;
-        pointLight.diffuse = new BABYLON.Color3(1, 0.25, 0);
-        
-        // 添加火山陆地
-        const ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 15, height: 15 }, scene);
-        const groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
-        groundMaterial.diffuseColor = new BABYLON.Color3(0.75, 0.85, 0.95); // 冷色调地面
-        groundMaterial.specularColor = new BABYLON.Color3(0.5, 0.6, 0.7);
-        groundMaterial.shininess = 30;
-        ground.material = groundMaterial;
-        ground.position.y = -1;
-        
-        // 添加火山陆地边缘
-        const edge = BABYLON.MeshBuilder.CreateTorus("edge", { diameter: 15, thickness: 0.5, tessellation: 32 }, scene);
-        edge.rotation.x = Math.PI / 2;
-        edge.position.y = -0.99;
-        const edgeMaterial = new BABYLON.StandardMaterial("edgeMaterial", scene);
-        edgeMaterial.diffuseColor = new BABYLON.Color3(0.6, 0.2, 0.2);
-        edgeMaterial.specularColor = new BABYLON.Color3(1, 1, 1);
-        edgeMaterial.shininess = 100;
-        edge.material = edgeMaterial;
-        
-        // 存储场景信息
-        this.battle3D = {
-            engine: engine,
-            scene: scene,
-            camera: camera,
-            player: null,
-            enemy: null,
-            playerHealthBar: null,
-            enemyHealthBar: null,
-            playerEnergyBar: null,
-            enemyEnergyBar: null,
-            isAttacking: false,
-            playerDefeated: false,
-            enemyDefeated: false,
-            // 战斗特效
-            battleEffects: [],
-            fireEffects: [],
-            // 将模型/UI原始父元素存储用于还原
-            _originalSkillsParent: null,
-            _originalSkillsNext: null,
-            _originalAttackConfirmParent: null,
-            _originalAttackConfirmNext: null
-        };
-        
-        // 重置鼠标移动状态，确保在战斗场景中禁用鼠标移动
-        this.mouseTarget = null;
-        this.isMoving = false;
-        
-        // 添加周围喷火效果
-        this.createFireEffects();
-        
-        // 添加火山烟雾效果
-        this.createVolcanoSmoke();
-        
-        // 创建玩家模型并随机放置在左侧（增加距离）
-        this.createPlayerModel();
-        if (this.battle3D.player) {
-            this.battle3D.player.position.x = -(4 + Math.random() * 3);
-            this.battle3D.player.position.z = (Math.random() - 0.5) * 2; // 扩大前后扰动范围
-        }
-        
-        // 创建敌人模型并随机放置在右侧（增加距离）
-        this.createEnemyModel();
-        if (this.battle3D.enemy) {
-            this.battle3D.enemy.position.x = 4 + Math.random() * 3;
-            this.battle3D.enemy.position.z = (Math.random() - 0.5) * 2;
-        }
-        
-        // 调整摄像机目标到两者中点
-        if (this.battle3D.camera && this.battle3D.player && this.battle3D.enemy) {
-            const mid = this.battle3D.player.position.add(this.battle3D.enemy.position).scale(0.5);
-            this.battle3D.camera.setTarget(mid);
-        }
-        
-        // 创建血条（模型定位后）
-        this.createHealthBars();
-        
-        // 开始渲染循环
-        engine.runRenderLoop(() => {
-            this.animateBattle3D();
-            scene.render();
-        });
-        
-        // 执行淡入效果
-        this.fadeInBattleScene();
-        
-        // 响应窗口大小变化
-        window.addEventListener('resize', () => {
-            if (this.battle3D && this.battle3D.engine) {
-                this.battle3D.engine.resize();
-            }
-        });
-    }
-    
-    // 淡入战斗场景
-    fadeInBattleScene() {
-        if (!this.battle3D) return;
-        
-        const container = document.getElementById('battle-modal-3d-container');
-        if (!container || !container.firstChild) return;
-        
-        const rendererElement = container.firstChild;
-        
-        // 确保rendererElement是一个有效的DOM元素
-        if (!rendererElement || !rendererElement.style) return;
-        
-        let opacity = 0;
-        const fadeDuration = 1000; // 淡入持续时间（毫秒）
-        const startTime = Date.now();
-        
-        const fadeIn = () => {
-            const elapsed = Date.now() - startTime;
-            opacity = Math.min(elapsed / fadeDuration, 1);
-            
-            if (rendererElement && rendererElement.style) {
-                rendererElement.style.opacity = opacity.toString();
-            }
-            
-            if (opacity < 1) {
-                requestAnimationFrame(fadeIn);
-            }
-        };
-        
-        fadeIn();
-    }
+    }    
     
     // 保存当前UI布局状态
     saveUILayout() {
@@ -3553,749 +920,6 @@ class EndlessWinterGame {
             battle3DContainer.style.height = '600px';
             battle3DContainer.style.width = '100%';
         }
-    }
-    
-    // 创建喷火效果
-    createFireEffects() {
-        if (!this.battle3D || !this.battle3D.scene) return;
-        
-        // 在四个角落创建喷火效果
-        const firePositions = [
-            [-8, 0, -8],  // 左下角
-            [8, 0, -8],   // 右下角
-            [-8, 0, 8],   // 左上角
-            [8, 0, 8]     // 右上角
-        ];
-        
-        this.battle3D.fireEffects = [];
-        
-        firePositions.forEach(position => {
-            // 创建火焰粒子系统
-            const fireSystem = new BABYLON.ParticleSystem("fireSystem", 30, this.battle3D.scene);
-            
-            // 设置粒子纹理（使用默认纹理）
-            fireSystem.particleTexture = new BABYLON.Texture("https://www.babylonjs-playground.com/textures/flare.png", this.battle3D.scene);
-            
-            // 设置粒子发射位置
-            fireSystem.emitter = new BABYLON.Vector3(position[0], position[1], position[2]);
-            fireSystem.minEmitBox = new BABYLON.Vector3(-1, 0, -1);
-            fireSystem.maxEmitBox = new BABYLON.Vector3(1, 0, 1);
-            
-            // 设置粒子颜色
-            fireSystem.color1 = new BABYLON.Color4(1, 1, 0, 0.8); // 黄色
-            fireSystem.color2 = new BABYLON.Color4(1, 0, 0, 0.8); // 红色
-            fireSystem.colorDead = new BABYLON.Color4(0, 0, 0, 0);
-            
-            // 设置粒子大小
-            fireSystem.minSize = 0.2;
-            fireSystem.maxSize = 0.4;
-            
-            // 设置粒子生命周期
-            fireSystem.minLifeTime = 1;
-            fireSystem.maxLifeTime = 2;
-            
-            // 设置粒子速度
-            fireSystem.minSpeed = 1;
-            fireSystem.maxSpeed = 3;
-            
-            // 设置粒子方向
-            fireSystem.direction1 = new BABYLON.Vector3(-0.5, 1, -0.5);
-            fireSystem.direction2 = new BABYLON.Vector3(0.5, 2, 0.5);
-            
-            // 设置粒子旋转
-            fireSystem.minRotation = 0;
-            fireSystem.maxRotation = Math.PI * 2;
-            
-            // 设置发射率
-            fireSystem.emitRate = 15;
-            
-            // 启动粒子系统
-            fireSystem.start();
-            
-            // 存储火焰系统和基础位置
-            this.battle3D.fireEffects.push({
-                system: fireSystem,
-                basePosition: position
-            });
-        });
-    }
-    
-    // 创建火山烟雾效果
-    createVolcanoSmoke() {
-        if (!this.battle3D || !this.battle3D.scene) return;
-        
-        this.battle3D.battleEffects = [];
-        
-        // 创建烟雾粒子系统
-        const smokeSystem = new BABYLON.ParticleSystem("smokeSystem", 40, this.battle3D.scene);
-        
-        // 设置粒子纹理（使用默认纹理）
-        smokeSystem.particleTexture = new BABYLON.Texture("https://www.babylonjs-playground.com/textures/flare.png", this.battle3D.scene);
-        
-        // 设置粒子发射位置
-        smokeSystem.emitter = new BABYLON.Vector3(0, 0, 0);
-        smokeSystem.minEmitBox = new BABYLON.Vector3(-7.5, 0, -7.5);
-        smokeSystem.maxEmitBox = new BABYLON.Vector3(7.5, 0, 7.5);
-        
-        // 设置粒子颜色
-        smokeSystem.color1 = new BABYLON.Color4(0.6, 0.6, 0.6, 0.4);
-        smokeSystem.color2 = new BABYLON.Color4(0.8, 0.8, 0.8, 0.4);
-        smokeSystem.colorDead = new BABYLON.Color4(0, 0, 0, 0);
-        
-        // 设置粒子大小
-        smokeSystem.minSize = 0.4;
-        smokeSystem.maxSize = 0.8;
-        
-        // 设置粒子生命周期
-        smokeSystem.minLifeTime = 2;
-        smokeSystem.maxLifeTime = 4;
-        
-        // 设置粒子速度
-        smokeSystem.minSpeed = 0.5;
-        smokeSystem.maxSpeed = 1.5;
-        
-        // 设置粒子方向
-        smokeSystem.direction1 = new BABYLON.Vector3(-0.5, 1, -0.5);
-        smokeSystem.direction2 = new BABYLON.Vector3(0.5, 2, 0.5);
-        
-        // 设置发射率
-        smokeSystem.emitRate = 10;
-        
-        // 启动粒子系统
-        smokeSystem.start();
-        
-        this.battle3D.battleEffects.push(smokeSystem);
-    }
-    
-    // 恢复地图场景
-    restoreMapScene() {
-        // 清理前一个战斗场景（如果存在）以避免额外的3D画面和引擎泄漏
-        if (this.battle3D && this.battle3D.engine) {
-            try {
-                this.battle3D.engine.dispose();
-            } catch (e) {
-                console.log('restoreMapScene 清理旧引擎失败:', e);
-            }
-        }
-        this.battle3D = null;
-        
-        // 设置战斗状态为false
-        this.gameState.battle.inBattle = false;
-        
-        // 恢复保存的敌人分布
-        if (this.mapState && this.mapState.sceneMonsters) {
-            
-            // 检查当前敌人是否被击败
-            const enemyDefeated = this.gameState.enemy && this.gameState.enemy.hp <= 0;
-            
-            if (enemyDefeated) {
-                // 如果敌人被击败，从保存的场景怪物中移除该敌人
-                const currentEnemyCellIndex = this.gameState.enemy.cellIndex;
-                if (currentEnemyCellIndex !== undefined) {
-                    this.mapState.sceneMonsters = this.mapState.sceneMonsters.filter(monster => 
-                        monster.cellIndex !== currentEnemyCellIndex
-                    );
-                }
-            }
-            
-            // 恢复场景怪物状态
-            this.gameState.sceneMonsters = JSON.parse(JSON.stringify(this.mapState.sceneMonsters));
-            
-            // 只有当所有敌人都被击败时才重新生成新的敌人分布
-            if (this.gameState.sceneMonsters.length === 0) {
-                this.generateMiniMap();
-            } else {
-                // 重新渲染小地图
-                this.renderMiniMap();
-            }
-        } else {
-            // 如果没有保存的状态，重新生成小地图
-            this.generateMiniMap();
-        }
-        
-        // 重新初始化地图场景
-        this.initMap3DScene();
-        
-        // 隐藏敌人信息区
-        this.hideEnemyInfo();
-        
-        // 恢复玩家位置
-        if (this.mapState && this.mapState.playerPosition && this.battle3D && this.battle3D.player) {
-            this.battle3D.player.position.copyFrom(this.mapState.playerPosition);
-        }
-    }
-    
-    // createEnemyIcon moved to mapLogic.js
-    
-    // renderMiniMap moved to mapLogic.js
-    
-    
-    // 攻击敌人
-    attackEnemy() {
-        // 只有在战斗模式中才能使用普通攻击
-        if (!this.gameState.battle.inBattle) {
-            this.addBattleLog('只有在战斗模式中才能使用普通攻击！');
-            return;
-        }
-        
-        // 确保战斗场景已初始化
-        if (!this.battle3D || !this.battle3D.player || !this.battle3D.enemy) {
-            this.addBattleLog('战斗场景未初始化！');
-            return;
-        }
-        
-        // 播放攻击声音
-        this.playSound('attack-sound',1, 200);
-        
-        // 播放3D攻击动画
-        this.playAttackAnimation();
-        
-        // 计算装备效果
-        this.calculateEquipmentEffects();
-        
-        // 计算最终属性（基础属性 + 装备效果）
-        const finalAttack = this.gameState.player.attack + this.gameState.player.equipmentEffects.attack;
-        const finalDefense = this.gameState.player.defense + this.gameState.player.equipmentEffects.defense;
-        
-        // 计算伤害
-        const playerDamage = Math.max(1, finalAttack - this.gameState.enemy.defense);
-        const enemyDamage = Math.max(1, this.gameState.enemy.attack - finalDefense);
-        
-        // 敌人受到伤害
-        this.gameState.enemy.hp -= playerDamage;
-        // 确保敌人血量不会小于0
-        if (this.gameState.enemy.hp < 0) {
-            this.gameState.enemy.hp = 0;
-        }
-        this.addBattleLog(`你对${this.gameState.enemy.name}造成了${playerDamage}点伤害！`);
-        
-        // 显示伤害数字（与技能一致，传入 gameState 中的目标和颜色字符串）
-        this.showDamage(this.gameState.enemy, playerDamage, 'red');
-
-        // 显示攻击特效（普通攻击使用绿色）
-        this.createAttackEffect(-1);
-        
-        // 普通攻击恢复能量
-        const energyRecovery = 5;
-        this.gameState.player.energy = Math.min(this.gameState.player.energy + energyRecovery, this.gameState.player.maxEnergy);
-        this.addBattleLog(`普通攻击恢复了${energyRecovery}点能量！`);
-        
-        // 显示能量恢复提示（延迟300ms，在伤害提示之后）
-        setTimeout(() => {
-            this.showEnergyChange(this.gameState.player, energyRecovery);
-        }, 300);
-        
-        // 检查敌人是否死亡
-        if (this.gameState.enemy.hp <= 0) {
-            this.enemyDefeated();
-        } else {
-            // 敌人反击
-            let finalEnemyDamage = enemyDamage;
-            
-            // 检查防御状态（防御技能效果持续）
-            if (this.gameState.player.defenseActive) {
-                finalEnemyDamage = Math.max(1, Math.floor(finalEnemyDamage * 0.5));
-                if (this.gameState.enemy.isBoss && this.gameState.enemy.energy >= 50) {
-                    // BOSS技能释放逻辑
-                    const skillDamage = Math.floor(enemyDamage * 1.5);
-                    finalEnemyDamage = Math.max(1, Math.floor((enemyDamage + skillDamage) * 0.5));
-                    
-                    // 消耗能量
-                    this.gameState.enemy.energy -= 50;
-                    
-                    // 添加技能释放日志（带防御减免）
-                    this.addBattleLog(`${this.gameState.enemy.name}释放了技能，对你造成了${finalEnemyDamage}点伤害！（防御减免50%）`);
-                } else {
-                    // 普通攻击（带防御减免）
-                    this.addBattleLog(`${this.gameState.enemy.name}对你造成了${finalEnemyDamage}点伤害！（防御减免50%）`);
-                }
-                // 清除防御状态和特效
-                this.gameState.player.defenseActive = false;
-                this.removeDefenseEffect();
-            } else {
-                // BOSS技能释放逻辑
-                if (this.gameState.enemy.isBoss && this.gameState.enemy.energy >= 50) {
-                    // BOSS释放技能，造成额外伤害
-                    const skillDamage = Math.floor(enemyDamage * 1.5);
-                    finalEnemyDamage = enemyDamage + skillDamage;
-                    
-                    // 消耗能量
-                    this.gameState.enemy.energy -= 50;
-                    
-                    // 添加技能释放日志
-                    this.addBattleLog(`${this.gameState.enemy.name}释放了技能，对你造成了${finalEnemyDamage}点伤害！`);
-                } else {
-                    // 普通攻击
-                    this.addBattleLog(`${this.gameState.enemy.name}对你造成了${finalEnemyDamage}点伤害！`);
-                }
-            }
-            
-            // 玩家受到伤害
-            this.gameState.player.hp -= finalEnemyDamage;
-            // 确保玩家血量不会小于0
-            if (this.gameState.player.hp < 0) {
-                this.gameState.player.hp = 0;
-            }
-            
-            // BOSS能量恢复
-            if (this.gameState.enemy.isBoss) {
-                this.gameState.enemy.energy = Math.min(this.gameState.enemy.energy + 20, this.gameState.enemy.maxEnergy);
-            }
-            
-            // 检查玩家是否死亡
-            if (this.gameState.player.hp <= 0) {
-                this.playerDefeated();
-            }
-
-            // 显示玩家受到的伤害数字（与技能显示一致）
-            this.showDamage(this.gameState.player, finalEnemyDamage, 'red');
-        }
-        
-        // 更新UI
-        this.updateUI();
-        
-        // 更新血条显示
-        this.updateHealthBars();
-    }
-    
-    // 显示攻击确认窗口（修改为更新敌人信息区）
-    showAttackConfirmation(enemyInfo) {
-        // 更新游戏状态中的敌人信息
-        this.gameState.enemy = enemyInfo;
-        // 设置战斗状态
-        this.gameState.battle.inBattle = true;
-        
-        // 直接更新敌人信息区域的UI元素
-        const enemyNameElement = document.getElementById('enemy-name');
-        if (enemyNameElement) {
-            enemyNameElement.textContent = enemyInfo.name || '';
-        }
-        const enemyLevelElement = document.getElementById('enemy-level');
-        if (enemyLevelElement) {
-            enemyLevelElement.textContent = enemyInfo.level || '';
-        }
-        const enemyHpElement = document.getElementById('enemy-hp');
-        if (enemyHpElement) {
-            enemyHpElement.textContent = enemyInfo.hp || '';
-        }
-        const enemyMaxHpElement = document.getElementById('enemy-max-hp');
-        if (enemyMaxHpElement) {
-            enemyMaxHpElement.textContent = enemyInfo.maxHp || '';
-        }
-        const enemyAttackElement = document.getElementById('enemy-attack');
-        if (enemyAttackElement) {
-            enemyAttackElement.textContent = enemyInfo.attack || '';
-        }
-        
-        // 更新敌人图标
-        const enemyIconElement = document.querySelector('#enemy-icon i');
-        if (enemyIconElement) {
-            // 计算敌人和玩家的战斗力
-            const enemyPower = enemyInfo.attack * 2 + (enemyInfo.defense || 0) * 1.5 + enemyInfo.maxHp * 0.1;
-            const playerAttack = this.gameState.player.attack + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.attack : 0);
-            const playerDefense = this.gameState.player.defense + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.defense : 0);
-            const playerHp = this.gameState.player.maxHp + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.hp : 0);
-            const playerPower = playerAttack * 2 + playerDefense * 1.5 + playerHp * 0.1;
-            
-            // 根据战斗力对比确定敌人颜色
-            let enemyColorClass = 'text-danger'; // 默认红色
-            if (enemyInfo.isBoss) {
-                enemyColorClass = 'text-purple-500'; // BOSS显示紫色
-            } else if (enemyInfo.isElite) {
-                enemyColorClass = 'text-yellow-500'; // 精英怪显示黄色
-            } else {
-                const powerRatio = enemyPower / playerPower;
-                if (powerRatio < 0.7) {
-                    enemyColorClass = 'text-green-500'; // 比玩家弱显示绿色
-                } else if (powerRatio < 1.3) {
-                    enemyColorClass = 'text-yellow-500'; // 和玩家差不多显示黄色
-                } else {
-                    enemyColorClass = 'text-red-500'; // 比玩家厉害显示红色
-                }
-            }
-            enemyIconElement.className = `fa ${enemyInfo.icon || 'fa-skull'} text-xl ${enemyColorClass}`;
-        }
-        
-        // 更新精英标识
-        const eliteBadge = document.getElementById('enemy-elite-badge');
-        const enemyInfoElement = document.getElementById('enemy-info');
-        if (eliteBadge && enemyInfoElement) {
-            if (enemyInfo.isElite) {
-                eliteBadge.classList.remove('hidden');
-                eliteBadge.textContent = '精英';
-                eliteBadge.className = 'ml-2 text-xs bg-yellow-500 text-black px-1.5 py-0.5 rounded font-bold';
-                // 为精英怪添加特殊样式
-                enemyInfoElement.classList.add('border-yellow-500');
-                enemyInfoElement.classList.add('bg-yellow-900/20');
-                enemyInfoElement.classList.remove('border-purple-500');
-                enemyInfoElement.classList.remove('bg-purple-900/20');
-            } else if (enemyInfo.isBoss) {
-                eliteBadge.classList.remove('hidden');
-                eliteBadge.textContent = 'BOSS';
-                eliteBadge.className = 'ml-2 text-xs bg-purple-500 text-white px-1.5 py-0.5 rounded font-bold';
-                // 为BOSS添加特殊样式
-                enemyInfoElement.classList.add('border-purple-500');
-                enemyInfoElement.classList.add('bg-purple-900/20');
-                enemyInfoElement.classList.remove('border-yellow-500');
-                enemyInfoElement.classList.remove('bg-yellow-900/20');
-            } else {
-                eliteBadge.classList.add('hidden');
-                // 移除精英怪和BOSS特殊样式
-                enemyInfoElement.classList.remove('border-yellow-500');
-                enemyInfoElement.classList.remove('bg-yellow-900/20');
-                enemyInfoElement.classList.remove('border-purple-500');
-                enemyInfoElement.classList.remove('bg-purple-900/20');
-            }
-        }
-        
-        // 更新敌人装备掉率信息
-        const enemyDropRatesElement = document.getElementById('enemy-drop-rates');
-        if (enemyDropRatesElement) {
-            // 基础掉率
-            let dropRates = {
-                white: 0.4,
-                blue: 0.3,
-                purple: 0.15,
-                gold: 0.1,
-                legendary: 0.05
-            };
-            
-            // 根据怪物类型调整掉率
-            if (enemyInfo.isBoss) {
-                // BOSS掉率调整
-                dropRates = {
-                    white: 0.2,
-                    blue: 0.3,
-                    purple: 0.25,
-                    gold: 0.2,
-                    legendary: 0.05
-                };
-            } else if (enemyInfo.isElite) {
-                // 精英怪掉率调整
-                dropRates = {
-                    white: 0.3,
-                    blue: 0.35,
-                    purple: 0.2,
-                    gold: 0.1,
-                    legendary: 0.05
-                };
-            }
-            
-            // 考虑幸运值影响（每点幸运值提高0.5%的高品质装备掉率）
-            const luck = this.gameState.player.luck || 0;
-            const luckBonus = luck * 0.005;
-            
-            // 调整掉率，提高高品质装备的概率
-            const adjustedRates = {
-                white: Math.max(0, dropRates.white - luckBonus * 2),
-                blue: Math.max(0, dropRates.blue - luckBonus),
-                purple: Math.max(0, dropRates.purple + luckBonus * 0.5),
-                gold: Math.max(0, dropRates.gold + luckBonus * 1),
-                legendary: Math.max(0, dropRates.legendary + luckBonus * 1.5)
-            };
-            
-            // 归一化概率
-            const totalProbability = Object.values(adjustedRates).reduce((sum, rate) => sum + rate, 0);
-            const normalizedRates = {};
-            for (const [rarity, rate] of Object.entries(adjustedRates)) {
-                normalizedRates[rarity] = rate / totalProbability;
-            }
-            
-            // 生成掉率显示元素
-            enemyDropRatesElement.innerHTML = '';
-            
-            // 品质颜色映射
-            const rarityColors = {
-                white: 'bg-white/10',
-                blue: 'bg-blue-500/20',
-                purple: 'bg-purple-500/20',
-                gold: 'bg-yellow-500/20',
-                legendary: 'bg-red-500/20'
-            };
-            
-            // 品质名称映射
-            const rarityNames = {
-                white: '白色',
-                blue: '蓝色',
-                purple: '紫色',
-                gold: '金色',
-                legendary: '传说'
-            };
-            
-            // 添加掉率信息
-            for (const [rarity, rate] of Object.entries(normalizedRates)) {
-                const ratePercent = Math.round(rate * 100);
-                if (ratePercent > 0) {
-                    const rateElement = document.createElement('span');
-                    rateElement.className = `text-xs ${rarityColors[rarity]} px-1.5 py-0.5 rounded`;
-                    rateElement.textContent = `${rarityNames[rarity]}: ${ratePercent}%`;
-                    enemyDropRatesElement.appendChild(rateElement);
-                }
-            }
-        }
-        
-        // 显示攻击确认按钮，隐藏技能按钮
-        const attackConfirmBtn = document.getElementById('attack-confirm-btn');
-        const attackSkills = document.getElementById('attack-skills');
-        if (attackConfirmBtn) {
-            // 强制移除hidden类，确保按钮显示
-            attackConfirmBtn.classList.remove('hidden');
-        }
-        if (attackSkills) {
-            attackSkills.classList.add('hidden');
-        }
-    }
-    
-    // 显示敌人操作按钮
-    showEnemyActionButtons() {
-        // 检查是否已有按钮容器
-        let buttonContainer = document.getElementById('enemy-action-buttons');
-        if (!buttonContainer) {
-            // 创建按钮容器
-            buttonContainer = document.createElement('div');
-            buttonContainer.id = 'enemy-action-buttons';
-            buttonContainer.className = 'mt-3 pt-3 border-t border-dark/50 flex justify-between';
-            
-            // 创建攻击按钮
-            const attackButton = document.createElement('button');
-            attackButton.id = 'enemy-attack-btn';
-            attackButton.className = 'flex-1 bg-accent hover:bg-accent/80 text-white py-2 px-4 rounded transition-colors';
-            attackButton.textContent = '攻击';
-            attackButton.addEventListener('click', () => {
-                // 遭遇敌人
-                this.encounterEnemy(this.gameState.enemy);
-            });
-            
-            // 创建取消按钮
-            const cancelButton = document.createElement('button');
-            cancelButton.id = 'enemy-cancel-btn';
-            cancelButton.className = 'flex-1 bg-dark/50 hover:bg-dark/70 text-white py-2 px-4 rounded border border-dark/70 transition-colors';
-            cancelButton.textContent = '取消';
-            cancelButton.addEventListener('click', () => {
-                // 隐藏敌人信息区
-                this.hideEnemyInfo();
-            });
-            
-            // 添加按钮到容器
-            buttonContainer.appendChild(cancelButton);
-            buttonContainer.appendChild(attackButton);
-            
-            // 添加到敌人信息区
-            const enemyInfoElement = document.getElementById('enemy-info');
-            if (enemyInfoElement) {
-                enemyInfoElement.appendChild(buttonContainer);
-            }
-        } else {
-            // 显示已有的按钮容器
-            buttonContainer.classList.remove('hidden');
-        }
-    }
-    
-    // 清空敌人信息区
-    hideEnemyInfo() {
-        // 清空敌人信息
-        const enemyNameElement = document.getElementById('enemy-name');
-        if (enemyNameElement) {
-            enemyNameElement.textContent = '';
-        }
-        const enemyLevelElement = document.getElementById('enemy-level');
-        if (enemyLevelElement) {
-            enemyLevelElement.textContent = '';
-        }
-        const enemyHpElement = document.getElementById('enemy-hp');
-        if (enemyHpElement) {
-            enemyHpElement.textContent = '';
-        }
-        const enemyMaxHpElement = document.getElementById('enemy-max-hp');
-        if (enemyMaxHpElement) {
-            enemyMaxHpElement.textContent = '';
-        }
-        const enemyAttackElement = document.getElementById('enemy-attack');
-        if (enemyAttackElement) {
-            enemyAttackElement.textContent = '';
-        }
-        
-        // 清空敌人图标
-        const enemyIconElement = document.querySelector('#enemy-icon i');
-        if (enemyIconElement) {
-            enemyIconElement.className = 'fa fa-question text-xl text-gray-500';
-        }
-        
-        // 隐藏精英标识
-        const eliteBadge = document.getElementById('enemy-elite-badge');
-        if (eliteBadge) {
-            eliteBadge.classList.add('hidden');
-        }
-        
-        // 清空掉率信息
-        const enemyDropRatesElement = document.getElementById('enemy-drop-rates');
-        if (enemyDropRatesElement) {
-            enemyDropRatesElement.innerHTML = '';
-        }
-        
-        // 隐藏攻击确认按钮和技能按钮
-        const attackConfirmBtn = document.getElementById('attack-confirm-btn');
-        const attackSkills = document.getElementById('attack-skills');
-        if (attackConfirmBtn) {
-            attackConfirmBtn.classList.add('hidden');
-        }
-        if (attackSkills) {
-            attackSkills.classList.add('hidden');
-        }
-        
-        // 隐藏敌人操作按钮
-        const buttonContainer = document.getElementById('enemy-action-buttons');
-        if (buttonContainer) {
-            buttonContainer.classList.add('hidden');
-        }
-    }
-
-    // 关闭战斗模态窗口
-    closeBattleModal() {
-        const battleModal = document.getElementById('battle-modal');
-        if (battleModal) {
-            battleModal.classList.add('hidden');
-        }
-        
-        // 停止战斗音乐
-        this.stopBattleMusic();
-        
-        // 清理3D场景
-        if (this.battle3D && this.battle3D.engine) {
-            try {
-                this.battle3D.engine.dispose();
-            } catch (e) {
-                console.log('清理战斗场景引擎时出错:', e);
-            }
-        }
-        
-        // 清理容器
-        const container = document.getElementById('battle-modal-3d-container');
-        if (container) {
-            while (container.firstChild) {
-                container.removeChild(container.firstChild);
-            }
-        }
-        
-        // 不在此处重新初始化地图，让调用者决定何时恢复地图
-        if (this.gameState.battle) {
-            this.gameState.battle.inBattle = false;
-        }
-        
-        this.battle3D = null;
-
-        this.restoreMapScene();
-    }
-    
-    // 敌人被击败
-    enemyDefeated() {
-        // 显示敌人倒地的画面
-        this.showEnemyDefeatedAnimation();
-        
-        // 设置敌人被击败状态
-        if (this.battle3D) {
-            this.battle3D.enemyDefeated = true;
-        }
-        
-        // 播放胜利声音
-        this.playSound('victory-sound', 1, 1000);
-        
-        // 获得经验（根据敌人类型和精英状态）
-        const expMultiplier = this.gameState.enemy.expMultiplier || 1;
-        const expGained = Math.floor(this.gameState.enemy.level * 20 * expMultiplier);
-        this.gameState.player.exp += expGained;
-        
-        // 精英怪额外提示
-        if (this.gameState.enemy.isElite) {
-            this.addBattleLog(`你击败了${this.gameState.enemy.name}！`);
-            this.addBattleLog(`精英敌人奖励翻倍！获得了${expGained}点经验！`);
-        } else {
-            this.addBattleLog(`你击败了${this.gameState.enemy.name}，获得了${expGained}点经验！`);
-        }
-        
-        // 获得资源（根据敌人类型和精英状态）
-        const resourceMultiplier = this.gameState.enemy.resourceMultiplier || 1;
-        const woodGained = Math.floor((this.gameState.enemy.level * 5 + Math.random() * 5) * resourceMultiplier);
-        const ironGained = Math.floor((this.gameState.enemy.level * 2 + Math.random() * 3) * resourceMultiplier);
-        const crystalGained = Math.floor((this.gameState.enemy.level * 1 + Math.random() * 2) * resourceMultiplier);
-        
-        this.gameState.resources.wood += woodGained;
-        this.gameState.resources.iron += ironGained;
-        this.gameState.resources.crystal += crystalGained;
-        
-        this.addBattleLog(`获得了${woodGained}木材，${ironGained}铁矿，${crystalGained}水晶！`);
-        
-        // 杀死敌人恢复能量
-        const killEnergyRecovery = 15;
-        this.gameState.player.energy = Math.min(this.gameState.player.energy + killEnergyRecovery, this.gameState.player.maxEnergy);
-        this.addBattleLog(`杀死敌人恢复了${killEnergyRecovery}点能量！`);
-        
-        // 装备掉落
-        const droppedEquipment = this.generateEquipmentDrop();
-        if (droppedEquipment) {
-            // 检查并自动穿戴更好的装备
-            const equipped = this.checkAndEquipBetterGear(droppedEquipment);
-            if (!equipped) {
-                // 将装备添加到背包
-                this.gameState.player.inventory.push(droppedEquipment);
-                this.addBattleLog(`获得了${droppedEquipment.rarityDisplayName} ${droppedEquipment.name}，已放入背包！`);
-            } else {
-                this.addBattleLog(`获得了${droppedEquipment.rarityDisplayName} ${droppedEquipment.name}，属性更好，已自动装备！`);
-            }
-        } else {
-            // 添加掉落失败的日志，方便调试
-            this.addBattleLog(`敌人没有掉落装备。`);
-        }
-        
-        // 检查是否升级
-        this.checkLevelUp();
-        
-        // 不刷新敌人，保持当前敌人状态
-        
-        // 更新UI
-        this.updateUI();
-        
-        // 更新血条显示
-        this.updateHealthBars();
-        
-        // 战斗结束，延迟后关闭战斗模态窗口并返回主界面
-        setTimeout(() => {
-            this.closeBattleModal();
-        }, 3000);
-    }
-    
-    // 显示敌人被击败的动画（倒地效果）
-    showEnemyDefeatedAnimation() {
-        if (!this.battle3D || !this.battle3D.enemy) return;
-        
-        const enemy = this.battle3D.enemy;
-        
-        // 敌人倒地动画
-        let animationProgress = 0;
-        const animationDuration = 1000; // 动画持续时间（毫秒）
-        const startTime = Date.now();
-        const originalPosition = enemy.position.clone();
-        const originalRotation = enemy.rotation.clone();
-        
-        const defeatAnimation = () => {
-            const elapsed = Date.now() - startTime;
-            animationProgress = Math.min(elapsed / animationDuration, 1);
-            
-            // 敌人逐渐倒下
-            const fallProgress = animationProgress;
-            
-            // 位置：逐渐降低
-            enemy.position.y = originalPosition.y - fallProgress * 1.5;
-            
-            // 旋转：逐渐向前倒下
-            enemy.rotation.z = originalRotation.z + fallProgress * Math.PI / 2;
-            
-            if (animationProgress < 1) {
-                requestAnimationFrame(defeatAnimation);
-            }
-        };
-        
-        defeatAnimation();
     }
     
     // 显示玩家被击败的动画（倒地效果）
@@ -4332,159 +956,6 @@ class EndlessWinterGame {
         defeatAnimation();
     }
     
-    // 使用特殊技
-    useSkill(skillIndex) {
-        // 只有在战斗模式中才能使用技能
-        if (!this.gameState.battle.inBattle) {
-            this.addBattleLog('只有在战斗模式中才能使用技能！');
-            return;
-        }
-        
-        const skill = this.gameState.player.skills[skillIndex];
-        if (!skill) {
-            this.addBattleLog('无效的技能！');
-            return;
-        }
-        
-        // 检查等级是否满足需求
-        if (this.gameState.player.level < skill.levelRequired) {
-            this.addBattleLog(`等级不足，需要${skill.levelRequired}级才能使用${skill.name}！`);
-            return;
-        }
-        
-        // 检查能量是否足够
-        if (this.gameState.player.energy < skill.energyCost) {
-            this.addBattleLog(`能量不足，需要${skill.energyCost}点能量！`);
-            return;
-        }
-        
-        // 播放技能释放声音（根据技能索引播放不同的声音）
-        this.playSound(`skill-${skillIndex}-sound`, 1, 200);
-        
-        // 根据技能类型播放不同的动画和特效
-        if (skill.defenseBonus) {
-            // 防御技能
-            this.playDefenseAnimation();
-            this.createDefenseEffect();
-        } else {
-            // 攻击技能
-            this.playAttackAnimation();
-            this.createAttackEffect(skillIndex);
-        }
-        
-        // 延迟执行技能效果，让动画有时间播放
-        setTimeout(() => {
-            // 消耗能量
-            this.gameState.player.energy -= skill.energyCost;
-            
-            // 显示能量消耗提示（延迟300ms，在伤害提示之后）
-            setTimeout(() => {
-                this.showEnergyChange(this.gameState.player, -skill.energyCost);
-            }, 300);
-            
-            // 计算装备效果
-            this.calculateEquipmentEffects();
-            
-            // 计算最终属性（基础属性 + 装备效果）
-            const finalAttack = this.gameState.player.attack + this.gameState.player.equipmentEffects.attack;
-            const finalDefense = this.gameState.player.defense + this.gameState.player.equipmentEffects.defense;
-            
-            // 根据技能类型执行不同效果
-            if (skill.damageMultiplier) {
-                // 强力攻击
-                const playerDamage = Math.max(1, Math.floor(finalAttack * skill.damageMultiplier) - this.gameState.enemy.defense);
-                this.gameState.enemy.hp -= playerDamage;
-                // 确保敌人血量不会小于0
-                if (this.gameState.enemy.hp < 0) {
-                    this.gameState.enemy.hp = 0;
-                }
-                this.addBattleLog(`你使用了${skill.name}，对${this.gameState.enemy.name}造成了${playerDamage}点伤害！`);
-                
-                // 显示敌人伤害
-                this.showDamage(this.gameState.enemy, playerDamage, 'red');
-                
-                // 检查敌人是否死亡
-                if (this.gameState.enemy.hp <= 0) {
-                    this.enemyDefeated();
-                    return;
-                }
-            } else if (skill.defenseBonus) {
-                // 防御姿态 - 设置防御状态标记为下一回合生效
-                this.gameState.player.defenseActive = true;
-                this.addBattleLog(`你使用了${skill.name}，防御力在下一回合内提高50%！`);
-            } else if (skill.healPercentage) {
-                // 生命恢复
-                const healAmount = Math.floor(this.gameState.player.maxHp * skill.healPercentage);
-                this.gameState.player.hp = Math.min(this.gameState.player.hp + healAmount, this.gameState.player.maxHp);
-                this.addBattleLog(`你使用了${skill.name}，恢复了${healAmount}点生命值！`);
-                
-                // 显示恢复效果
-                this.showDamage(this.gameState.player, healAmount, 'green');
-            } else if (skill.criticalMultiplier) {
-                // 幸运一击
-                let playerDamage;
-                if (Math.random() < skill.criticalChance) {
-                    // 暴击成功
-                    playerDamage = Math.max(1, Math.floor(finalAttack * skill.criticalMultiplier) - this.gameState.enemy.defense);
-                    this.addBattleLog(`你使用了${skill.name}，触发了暴击！对${this.gameState.enemy.name}造成了${playerDamage}点伤害！`);
-                } else {
-                    // 暴击失败
-                    playerDamage = Math.max(1, finalAttack - this.gameState.enemy.defense);
-                    this.addBattleLog(`你使用了${skill.name}，但没有触发暴击，对${this.gameState.enemy.name}造成了${playerDamage}点伤害！`);
-                }
-                this.gameState.enemy.hp -= playerDamage;
-                // 确保敌人血量不会小于0
-                if (this.gameState.enemy.hp < 0) {
-                    this.gameState.enemy.hp = 0;
-                }
-                
-                // 显示敌人伤害
-                this.showDamage(this.gameState.enemy, playerDamage, 'red');
-                
-                // 检查敌人是否死亡
-                if (this.gameState.enemy.hp <= 0) {
-                    this.enemyDefeated();
-                    return;
-                }
-            }
-            
-            // 敌人反击（除了防御姿态和生命恢复）
-            if (!skill.defenseBonus && !skill.healPercentage) {
-                // 检查是否有防御状态活跃
-                let enemyDamage = Math.max(1, this.gameState.enemy.attack - finalDefense);
-                if (this.gameState.player.defenseActive) {
-                    // 防御状态减少50%伤害
-                    enemyDamage = Math.max(1, Math.floor(enemyDamage * 0.5));
-                    this.addBattleLog(`${this.gameState.enemy.name}对你造成了${enemyDamage}点伤害（防御态中，伤害已减半）！`);
-                    // 防御效果用完，清除标记和特效
-                    this.gameState.player.defenseActive = false;
-                    this.removeDefenseEffect();
-                } else {
-                    this.addBattleLog(`${this.gameState.enemy.name}对你造成了${enemyDamage}点伤害！`);
-                }
-                this.gameState.player.hp -= enemyDamage;
-                // 确保玩家血量不会小于0
-                if (this.gameState.player.hp < 0) {
-                    this.gameState.player.hp = 0;
-                }
-                
-                // 显示玩家伤害
-                this.showDamage(this.gameState.player, enemyDamage, 'red');
-            }
-            
-            // 检查玩家是否死亡
-            if (this.gameState.player.hp <= 0) {
-                this.playerDefeated();
-            }
-            
-            // 更新UI
-            this.updateUI();
-            
-            // 更新血条显示
-            this.updateHealthBars();
-        }, 500); // 延迟500毫秒，让动画有时间播放
-    }
-    
     // 生成装备掉落
     generateEquipmentDrop() {
         // 计算掉落概率（普通、精英、BOSS怪物不同掉落概率）
@@ -4506,16 +977,51 @@ class EndlessWinterGame {
         const templateIndex = Math.floor(Math.random() * this.gameState.equipmentTemplates.length);
         const template = this.gameState.equipmentTemplates[templateIndex];
         
-        // 根据敌人等级确定装备等级（每10级怪物掉同一等级装备）
-        const equipmentLevel = Math.max(1, Math.floor((this.gameState.enemy.level - 1) / 10) + 1);
+        // 根据人物境界确定装备等级
+        const realm = this.gameState.player.realm;
+        const equipmentLevel = realm.currentRealm + 1; // 境界从0开始，装备等级从1开始
+        const realmName = this.realmConfig[realm.currentRealm].name; // 获取境界名称
         
-        // 随机确定装备品质（考虑怪物类型和幸运值）
-        const rarity = this.getRandomRarity();
+        // 根据人物阶段确定装备品质范围
+        let phaseRarities = [];
+        if (realm.currentStage <= 3) {
+            // 前期
+            phaseRarities = ['white', 'green'];
+        } else if (realm.currentStage <= 6) {
+            // 中期
+            phaseRarities = ['blue', 'cyan'];
+        } else if (realm.currentStage <= 9) {
+            // 后期
+            phaseRarities = ['purple', 'pink'];
+        } else {
+            // 大圆满
+            phaseRarities = ['gold', 'legendary'];
+        }
+        
+        // 从对应阶段的品质中随机选择
+        const rarity = phaseRarities[Math.floor(Math.random() * phaseRarities.length)];
         const rarityInfo = this.gameState.equipmentRarities.find(r => r.name === rarity);
         
         // 计算装备属性（基础属性 * 等级 * 品质倍数）
         const stats = {};
-        for (const stat in template.baseStats) {
+        
+        // 获取该品质的属性数量
+        const statCount = rarityInfo.statCount || 3;
+        
+        // 获取所有基础属性的键
+        const statKeys = Object.keys(template.baseStats);
+        
+        // 随机选择指定数量的属性
+        const selectedStats = [];
+        const tempKeys = [...statKeys];
+        
+        for (let i = 0; i < statCount && tempKeys.length > 0; i++) {
+            const randomIndex = Math.floor(Math.random() * tempKeys.length);
+            selectedStats.push(tempKeys.splice(randomIndex, 1)[0]);
+        }
+        
+        // 为选中的属性计算值
+        for (const stat of selectedStats) {
             stats[stat] = Math.floor(template.baseStats[stat] * equipmentLevel * rarityInfo.multiplier);
         }
         
@@ -4532,6 +1038,7 @@ class EndlessWinterGame {
             name: name,
             type: template.type,
             level: equipmentLevel,
+            realmName: realmName,
             refineLevel: 0,
             stats: stats,
             description: `${rarityInfo.displayName}品质的${template.type}`,
@@ -4546,31 +1053,40 @@ class EndlessWinterGame {
     getRandomRarity() {
         // 基础掉率
         let dropRates = {
-            white: 0.4,
-            blue: 0.3,
-            purple: 0.15,
-            gold: 0.1,
-            legendary: 0.05
+            white: 0.3,
+            green: 0.25,
+            blue: 0.2,
+            cyan: 0.1,
+            purple: 0.08,
+            pink: 0.04,
+            gold: 0.02,
+            legendary: 0.01
         };
         
         // 根据怪物类型调整掉率
         if (this.gameState.enemy.isBoss) {
             // BOSS掉率调整
             dropRates = {
-                white: 0.2,
-                blue: 0.3,
-                purple: 0.25,
-                gold: 0.2,
+                white: 0.1,
+                green: 0.15,
+                blue: 0.2,
+                cyan: 0.15,
+                purple: 0.15,
+                pink: 0.1,
+                gold: 0.1,
                 legendary: 0.05
             };
         } else if (this.gameState.enemy.isElite) {
             // 精英怪掉率调整
             dropRates = {
-                white: 0.3,
-                blue: 0.35,
-                purple: 0.2,
-                gold: 0.1,
-                legendary: 0.05
+                white: 0.2,
+                green: 0.2,
+                blue: 0.2,
+                cyan: 0.15,
+                purple: 0.1,
+                pink: 0.08,
+                gold: 0.05,
+                legendary: 0.02
             };
         }
         
@@ -4580,11 +1096,14 @@ class EndlessWinterGame {
         
         // 调整掉率，提高高品质装备的概率
         const adjustedRates = {
-            white: Math.max(0, dropRates.white - luckBonus * 2),
+            white: Math.max(0, dropRates.white - luckBonus * 3),
+            green: Math.max(0, dropRates.green - luckBonus * 2),
             blue: Math.max(0, dropRates.blue - luckBonus),
+            cyan: Math.max(0, dropRates.cyan),
             purple: Math.max(0, dropRates.purple + luckBonus * 0.5),
-            gold: Math.max(0, dropRates.gold + luckBonus * 1),
-            legendary: Math.max(0, dropRates.legendary + luckBonus * 1.5)
+            pink: Math.max(0, dropRates.pink + luckBonus * 1),
+            gold: Math.max(0, dropRates.gold + luckBonus * 1.5),
+            legendary: Math.max(0, dropRates.legendary + luckBonus * 2)
         };
         
         // 归一化概率
@@ -4634,7 +1153,9 @@ class EndlessWinterGame {
         this.updateUI();
         
         // 更新血条显示
-        this.updateHealthBars();
+        if (typeof this.updateHealthBars === 'function') {
+            this.updateHealthBars();
+        }
         
         // 战斗结束，延迟后关闭战斗模态窗口并返回主界面
         setTimeout(() => {
@@ -4646,37 +1167,47 @@ class EndlessWinterGame {
     checkLevelUp() {
    
         if (this.gameState.player.exp >= this.gameState.player.maxExp) {
-
-            // 升级
-            this.gameState.player.level++;
-            this.gameState.player.exp -= this.gameState.player.maxExp;
-            this.gameState.player.maxExp = Math.floor(this.gameState.player.maxExp * 1.5);
+            const realm = this.gameState.player.realm;
+            const currentRealmConfig = this.realmConfig[realm.currentRealm];
+            const currentStageConfig = currentRealmConfig.stages[realm.currentStage - 1];
             
-            // 提升属性
-            this.gameState.player.attack += 3;
-            this.gameState.player.defense += 2;
-            this.gameState.player.maxHp += 20;
-            this.gameState.player.hp = this.gameState.player.maxHp;
-            this.gameState.player.luck += 1;
-            
-            // 提升能量上限
-            this.gameState.player.maxEnergy += 10;
-            this.gameState.player.energy = this.gameState.player.maxEnergy; // 升级时充满能量
-            
-            // 提升资源产出率
-            this.gameState.resources.woodRate += 0.2;
-            this.gameState.resources.ironRate += 0.1;
-            this.gameState.resources.crystalRate += 0.05;
-            
-            // 播放升级声音
-            this.playSound('levelup-sound', 1, 2000);
-            
-            this.addBattleLog(`恭喜你升级到${this.gameState.player.level}级！能量上限提升了10点！`);
-            
-            // 触发升级动画
-            this.triggerLevelUpAnimation();
-            
-            console.log('升级逻辑执行完成');
+            // 检查是否达到当前阶段的等级上限
+            if (realm.currentLevel < currentStageConfig.levelCap) {
+                // 升级
+                realm.currentLevel++;
+                this.gameState.player.exp -= this.gameState.player.maxExp;
+                this.gameState.player.maxExp = Math.floor(this.gameState.player.maxExp * 1.5);
+                
+                // 提升属性
+                this.gameState.player.attack += 3;
+                this.gameState.player.defense += 2;
+                this.gameState.player.maxHp += 20;
+                this.gameState.player.hp = this.gameState.player.maxHp;
+                this.gameState.player.luck += 1;
+                
+                // 提升能量上限
+                this.gameState.player.maxEnergy += 10;
+                this.gameState.player.energy = this.gameState.player.maxEnergy; // 升级时充满能量
+                
+                // 提升资源产出率
+                this.gameState.resources.spiritWoodRate += 0.2;
+                this.gameState.resources.blackIronRate += 0.1;
+                this.gameState.resources.spiritCrystalRate += 0.05;
+                
+                // 播放升级声音
+                this.playSound('levelup-sound', 1, 2000);
+                
+                this.addBattleLog(`恭喜你升级到${realm.currentLevel}级！能量上限提升了10点！`);
+                
+                // 触发升级动画
+                this.triggerLevelUpAnimation();
+                
+                console.log('升级逻辑执行完成');
+            } else {
+                // 达到当前阶段等级上限，提示突破
+                this.addBattleLog(`已达到${currentStageConfig.name}等级上限，需要突破到下一阶段！`);
+                this.gameState.player.exp = this.gameState.player.maxExp; // 保持经验值不变
+            }
         }
     }
     
@@ -4696,9 +1227,9 @@ class EndlessWinterGame {
             const timestamp = new Date().getTime();
             if (this.gameState.user.loggedIn && this.gameState.user.gender) {
                 if (this.gameState.user.gender === '男') {
-                    characterBodyElement.src = `Images/male-character-5.png?${timestamp}`;
+                    characterBodyElement.src = `Images/male-character-${this.gameState.player.realm.currentRealm + 1}.png?${timestamp}`;
                 } else if (this.gameState.user.gender === '女') {
-                    characterBodyElement.src = `Images/female-character-1.png?${timestamp}`;
+                    characterBodyElement.src = `Images/female-character-${this.gameState.player.realm.currentRealm + 1}.png?${timestamp}`;
                 }
             }
         }
@@ -4758,7 +1289,7 @@ class EndlessWinterGame {
                             nameElement.className = `font-bold ${colorClass}`;
                         }
                         if (levelElement) {
-                            levelElement.textContent = item.level;
+                            levelElement.textContent = item.realmName ? item.realmName : item.level;
                         }
                         if (qualityElement) {
                             qualityElement.textContent = item.rarityDisplayName || '白色';
@@ -4785,7 +1316,6 @@ class EndlessWinterGame {
                             imageContainer.style.display = 'flex';
                         }
                     }
-                    
                     // 绑定鼠标悬停事件
                     container.addEventListener('mouseenter', () => {
                         const tooltip = container.querySelector('.equipment-tooltip');
@@ -4803,8 +1333,6 @@ class EndlessWinterGame {
                 } else {
                     // 隐藏装备
                     element.style.opacity = '0';
-                    // 清除悬停提示
-                    element.removeAttribute('data-tooltip');
                     // 清除颜色类
                     element.className = element.className.replace(/quality-\w+/g, '');
                     // 移除鼠标悬停事件
@@ -4819,6 +1347,56 @@ class EndlessWinterGame {
         }
     }
     
+    // 计算境界加成
+    calculateRealmBonus() {
+        const realm = this.gameState.player.realm;
+        const currentRealmConfig = this.realmConfig[realm.currentRealm];
+        const currentStageConfig = currentRealmConfig.stages[realm.currentStage - 1];
+        
+        // 基础加成（当前阶段）
+        const baseBonus = currentStageConfig.bonus;
+        
+        // 累计加成（前面所有阶段）
+        let totalBonus = { attack: 0, defense: 0, hp: 0, luck: 0 };
+        
+        // 计算当前境界之前所有境界的加成
+        for (let i = 0; i < realm.currentRealm; i++) {
+            const previousRealm = this.realmConfig[i];
+            const maxStage = previousRealm.stages[previousRealm.stages.length - 1];
+            totalBonus.attack += maxStage.bonus.attack;
+            totalBonus.defense += maxStage.bonus.defense;
+            totalBonus.hp += maxStage.bonus.hp;
+            totalBonus.luck += maxStage.bonus.luck;
+        }
+        
+        // 计算当前境界之前所有阶段的加成
+        for (let i = 0; i < realm.currentStage - 1; i++) {
+            const previousStage = currentRealmConfig.stages[i];
+            totalBonus.attack += previousStage.bonus.attack;
+            totalBonus.defense += previousStage.bonus.defense;
+            totalBonus.hp += previousStage.bonus.hp;
+            totalBonus.luck += previousStage.bonus.luck;
+        }
+        
+        // 添加当前阶段的加成
+        totalBonus.attack += baseBonus.attack;
+        totalBonus.defense += baseBonus.defense;
+        totalBonus.hp += baseBonus.hp;
+        totalBonus.luck += baseBonus.luck;
+        
+        return totalBonus;
+    }
+    
+    // 计算总等级（基于境界、阶段和当前等级）
+    calculateTotalLevel() {
+        const realm = this.gameState.player.realm;
+        // 每个境界有10个阶段，每个阶段最多30级
+        const realmLevel = realm.currentRealm * 10 * 30;
+        const stageLevel = (realm.currentStage - 1) * 30;
+        const currentLevel = realm.currentLevel;
+        return realmLevel + stageLevel + currentLevel;
+    }
+
     // 从颜色类名获取颜色值
     getColorFromClass(colorClass) {
         // 定义颜色映射
@@ -4829,8 +1407,62 @@ class EndlessWinterGame {
             'text-yellow-400': 'rgba(250, 204, 21, 0.7)',
             'text-orange-400': 'rgba(251, 146, 60, 0.7)'
         };
-        
         return colorMap[colorClass] || 'rgba(96, 165, 250, 0.5)';
+    }
+
+    // 获取突破所需突破石数量
+    getRequiredBreakthroughStones(realmIndex, stage) {
+        // 从realmConfig中获取突破石数量
+        const realmConfig = this.realmConfig[realmIndex];
+        const stageConfig = realmConfig.stages[stage - 1];
+        return stageConfig.breakthroughStones;
+    }
+
+    // 尝试突破
+    attemptBreakthrough() {
+        const realm = this.gameState.player.realm;
+        const currentRealmConfig = this.realmConfig[realm.currentRealm];
+        const currentStageConfig = currentRealmConfig.stages[realm.currentStage - 1];
+        
+        // 检查等级是否达到上限
+        if (realm.currentLevel < currentStageConfig.levelCap) {
+            this.addBattleLog('等级未达到当前阶段上限，无法突破！');
+            return false;
+        }
+        
+        // 检查突破石是否足够
+        const requiredStones = this.getRequiredBreakthroughStones(realm.currentRealm, realm.currentStage);
+        if (this.gameState.resources.breakthroughStones < requiredStones) {
+            this.addBattleLog('突破石不足，无法突破！');
+            return false;
+        }
+        
+        // 执行突破
+        this.gameState.resources.breakthroughStones -= requiredStones;
+        
+        // 更新境界/阶段/等级
+        if (realm.currentStage < 10) {
+            // 同一境界内突破
+            realm.currentStage++;
+            realm.currentLevel = 1;
+        } else {
+            // 突破到下一个大境界
+            if (realm.currentRealm < this.realmConfig.length - 1) {
+                realm.currentRealm++;
+                realm.currentStage = 1;
+                realm.currentLevel = 1;
+            } else {
+                // 已达到最高境界
+                this.addBattleLog('已达到最高境界，无法继续突破！');
+                return false;
+            }
+        }
+        
+        // 发放突破奖励
+        this.addBattleLog('突破成功！');
+        this.updateCharacterBodyImage();
+        this.updateUI();
+        return true;
     }
     
     // 获取装备的颜色类
@@ -4859,8 +1491,9 @@ class EndlessWinterGame {
     // 刷新敌人
     refreshEnemy() {
         // 敌人等级与玩家等级差距不超过3级
-        const minLevel = Math.max(1, this.gameState.player.level - 3);
-        const maxLevel = this.gameState.player.level + 3;
+        const playerLevel = this.calculateTotalLevel();
+        const minLevel = Math.max(1, playerLevel - 3);
+        const maxLevel = playerLevel + 3;
         const enemyLevel = Math.floor(Math.random() * (maxLevel - minLevel + 1)) + minLevel;
         
         // 获取当前地图类型
@@ -4906,11 +1539,20 @@ class EndlessWinterGame {
         const isElite = Math.random() < 0.15;
         const eliteBonus = isElite ? 1.5 : 1;
         
-        // 计算敌人属性
-        const hp = Math.floor(enemyType.baseHp * enemyLevel * eliteBonus);
-        const attack = Math.floor(enemyType.baseAttack * enemyLevel * eliteBonus);
-        const defense = Math.floor(enemyType.baseDefense * enemyLevel * eliteBonus);
+        // 计算敌人属性，确保所有属性都有值
+        const baseHp = enemyType.baseHp || 30;
+        const baseAttack = enemyType.baseAttack || 8;
+        const baseDefense = enemyType.baseDefense || 2;
+        const baseSpeed = enemyType.baseSpeed || 5;
+        const expMultiplier = enemyType.expMultiplier || 1;
+        const resourceMultiplier = enemyType.resourceMultiplier || 1;
         
+        const hp = Math.floor(baseHp * enemyLevel * eliteBonus);
+        const attack = Math.floor(baseAttack * enemyLevel * eliteBonus);
+        const defense = Math.floor(baseDefense * enemyLevel * eliteBonus);
+        const speed = Math.floor(baseSpeed * enemyLevel * eliteBonus);
+        
+        // 创建完整的敌人对象，确保所有必要属性都有值
         this.gameState.enemy = {
             name: isElite ? `精英${enemyType.name}` : enemyType.name,
             level: enemyLevel,
@@ -4918,12 +1560,16 @@ class EndlessWinterGame {
             maxHp: hp,
             attack: attack,
             defense: defense,
+            speed: speed,
             isElite: isElite,
             eliteBonus: eliteBonus,
-            icon: enemyType.icon,
-            image: enemyType.image,
-            expMultiplier: enemyType.expMultiplier * eliteBonus,
-            resourceMultiplier: enemyType.resourceMultiplier * eliteBonus
+            icon: enemyType.icon || 'fa-skull',
+            image: enemyType.image || '',
+            expMultiplier: expMultiplier * eliteBonus,
+            resourceMultiplier: resourceMultiplier * eliteBonus,
+            // 添加额外的默认属性，确保完整
+            accuracy: 90,
+            dodge: 10
         };
     }
     
@@ -4977,14 +1623,14 @@ class EndlessWinterGame {
     // 更新自动收集资源类型
     updateAutoCollectResourceTypes() {
         const resourceTypes = [];
-        if (document.getElementById('auto-collect-wood').checked) {
-            resourceTypes.push('wood');
+        if (document.getElementById('auto-collect-spiritWood').checked) {
+            resourceTypes.push('spiritWood');
         }
-        if (document.getElementById('auto-collect-iron').checked) {
-            resourceTypes.push('iron');
+        if (document.getElementById('auto-collect-blackIron').checked) {
+            resourceTypes.push('blackIron');
         }
-        if (document.getElementById('auto-collect-crystal').checked) {
-            resourceTypes.push('crystal');
+        if (document.getElementById('auto-collect-spiritCrystal').checked) {
+            resourceTypes.push('spiritCrystal');
         }
         this.gameState.settings.autoCollectSettings.resourceTypes = resourceTypes;
     }
@@ -5178,23 +1824,27 @@ class EndlessWinterGame {
             
             // 收集资源
             let amount = 0;
+            const spiritWoodRate = this.gameState.resources.spiritWoodRate || 1;
+            const blackIronRate = this.gameState.resources.blackIronRate || 0.5;
+            const spiritCrystalRate = this.gameState.resources.spiritCrystalRate || 0.2;
+            
             switch (type) {
-                case 'wood':
-                    amount = Math.floor(this.gameState.resources.woodRate * 10 + Math.random() * 5);
-                    this.gameState.resources.wood += amount;
+                case 'spiritWood':
+                    amount = Math.floor(spiritWoodRate * 10 + Math.random() * 5);
+                    this.gameState.resources.spiritWood += amount;
                     break;
-                case 'iron':
-                    amount = Math.floor(this.gameState.resources.ironRate * 10 + Math.random() * 3);
-                    this.gameState.resources.iron += amount;
+                case 'blackIron':
+                    amount = Math.floor(blackIronRate * 10 + Math.random() * 3);
+                    this.gameState.resources.blackIron += amount;
                     break;
-                case 'crystal':
-                    amount = Math.floor(this.gameState.resources.crystalRate * 10 + Math.random() * 2);
-                    this.gameState.resources.crystal += amount;
+                case 'spiritCrystal':
+                    amount = Math.floor(spiritCrystalRate * 10 + Math.random() * 2);
+                    this.gameState.resources.spiritCrystal += amount;
                     break;
             }
             
             this.gameState.settings.collectedResources += amount;
-            this.addBattleLog(`收集了${amount}${type === 'wood' ? '木材' : type === 'iron' ? '铁矿' : '水晶'}！`);
+            this.addBattleLog(`收集了${amount}${type === 'spiritWood' ? '灵木' : type === 'blackIron' ? '玄铁' : '灵晶'}！`);
             
             // 更新UI
             this.updateUI();
@@ -5215,6 +1865,17 @@ class EndlessWinterGame {
     
     // 添加战斗日志
     addBattleLog(message) {
+        // 确保battle对象存在
+        if (!this.gameState.battle) {
+            this.gameState.battle = {
+                inBattle: false,
+                battleLog: []
+            };
+        }
+        // 确保battleLog数组存在
+        if (!this.gameState.battle.battleLog) {
+            this.gameState.battle.battleLog = [];
+        }
         this.gameState.battle.battleLog.push(message);
         // 限制日志长度
         if (this.gameState.battle.battleLog.length > 10) {
@@ -5247,35 +1908,58 @@ class EndlessWinterGame {
     // 加载游戏
     loadGame() {
         try {
-            const userId = this.gameState.user.loggedIn ? this.gameState.user.userId : 'guest';
-            
-            // 保存用户信息
+               // 保存用户信息
             const userInfo = { ...this.gameState.user };
             
             // 只从服务器加载
             if (this.gameState.user.loggedIn) {
                 (async () => {
-                    const serverGameState = await this.loadFromServer(userId);
+                    const serverGameState = await this.loadFromServer();
                     if (serverGameState) {
-                        // 保留用户信息，只更新游戏的其他部分
-                        const { user, ...gameData } = serverGameState;
-                        this.gameState = { ...gameData, user: userInfo };
-                        this.addBattleLog('从服务器加载游戏成功！');
+                        if (serverGameState.success && serverGameState.gameState) {
+                            this.addBattleLog('从服务器加载游戏成功！');
+                            // 保留用户信息，只更新游戏的其他部分
+                            const { user, ...gameData } = serverGameState.gameState;                            
+                            // 补充缺失的资源属性
+                            if (gameData.resources) {
+                                gameData.resources.spiritWood = gameData.resources.spiritWood || 0;
+                                gameData.resources.spiritWoodRate = gameData.resources.spiritWoodRate || 1;
+                                gameData.resources.blackIron = gameData.resources.blackIron || 0;
+                                gameData.resources.blackIronRate = gameData.resources.blackIronRate || 0.5;
+                                gameData.resources.spiritCrystal = gameData.resources.spiritCrystal || 0;
+                                gameData.resources.spiritCrystalRate = gameData.resources.spiritCrystalRate || 0.2;
+                                gameData.resources.breakthroughStones = gameData.resources.breakthroughStones || 0;
+                            }
                         
-                        await this.fetchGameMetadata();
-                        // 检查临时状态是否过期
-                        this.checkTemporaryStats();
-                        // 重新生成场景怪物
-                        this.generateMiniMap();
-                        // 更新UI
-                        this.updateUI();
+                            this.gameState = { ...gameData, user: userInfo };
                         
+                            await this.fetchGameMetadata();
+                            // 检查临时状态是否过期
+                            this.checkTemporaryStats();                        
+                        } else {
+                            // 如果token无效，重定向到登录页面
+                            if (serverGameState.error === 'Invalid token' || serverGameState.error === 'No token provided') {
+                                console.warn('Token无效，正在退出登录...');
+                                this.logout();
+                                return null;
+                            }
+                            // 如果是保存文件未找到错误，返回一个标记对象
+                            if (serverGameState.error === 'Save file not found') {
+                                this.addBattleLog('没有找到保存的游戏，初始化新游戏！');
+                                // 先获取游戏元数据
+                                await this.fetchGameMetadata();
+                                // 然后初始化新的游戏状态
+                                this.initNewGameState();
+                            }   
+                        }
                     } else {
-                        this.addBattleLog('没有找到保存的游戏！');
+                        console.error('服务器端加载失败:', serverGameState.error);
+                        this.logout();
                     }
                 })();
             } else {
                 this.addBattleLog('访客模式无法加载游戏！');
+                return null;
             }
         } catch (error) {
             this.addBattleLog('游戏加载失败！');
@@ -5286,17 +1970,17 @@ class EndlessWinterGame {
     // 计算武器精炼所需材料
     calculateRefineCost(refineLevel) {
         // 基础材料需求
-        const baseWood = 50;
-        const baseIron = 30;
-        const baseCrystal = 10;
+        const baseSpiritWood = 50;
+        const baseBlackIron = 30;
+        const baseSpiritCrystal = 10;
         
         // 每级精炼增加的材料倍数
         const multiplier = Math.pow(1.5, refineLevel);
         
         return {
-            wood: Math.floor(baseWood * multiplier),
-            iron: Math.floor(baseIron * multiplier),
-            crystal: Math.floor(baseCrystal * multiplier)
+            spiritWood: Math.floor(baseSpiritWood * multiplier),
+            blackIron: Math.floor(baseBlackIron * multiplier),
+            spiritCrystal: Math.floor(baseSpiritCrystal * multiplier)
         };
     }
     
@@ -5324,17 +2008,17 @@ class EndlessWinterGame {
         const cost = this.calculateRefineCost(item.refineLevel);
         
         // 检查材料是否足够
-        if (this.gameState.resources.wood < cost.wood ||
-            this.gameState.resources.iron < cost.iron ||
-            this.gameState.resources.crystal < cost.crystal) {
+        if (this.gameState.resources.spiritWood < cost.spiritWood ||
+            this.gameState.resources.blackIron < cost.blackIron ||
+            this.gameState.resources.spiritCrystal < cost.spiritCrystal) {
             this.addBattleLog('材料不足，无法精炼装备！');
             return;
         }
         
         // 消耗材料
-        this.gameState.resources.wood -= cost.wood;
-        this.gameState.resources.iron -= cost.iron;
-        this.gameState.resources.crystal -= cost.crystal;
+        this.gameState.resources.spiritWood -= cost.spiritWood;
+        this.gameState.resources.blackIron -= cost.blackIron;
+        this.gameState.resources.spiritCrystal -= cost.spiritCrystal;
         
         // 提升精炼等级
         item.refineLevel = nextLevel;
@@ -5346,11 +2030,13 @@ class EndlessWinterGame {
         this.updateUI();
         
         // 更新血条显示
-        this.updateHealthBars();
+        if (typeof this.updateHealthBars === 'function') {
+            this.updateHealthBars();
+        }
         
         // 添加日志
         this.addBattleLog(`${slot === 'weapon' ? '武器' : slot === 'armor' ? '护甲' : slot === 'helmet' ? '头盔' : slot === 'boots' ? '靴子' : '饰品'}精炼成功！当前精炼等级：+${item.refineLevel}`);
-        this.addBattleLog(`消耗了 ${cost.wood} 木材，${cost.iron} 铁矿，${cost.crystal} 水晶`);
+        this.addBattleLog(`消耗了 ${cost.spiritWood} 灵木，${cost.blackIron} 玄铁，${cost.spiritCrystal} 灵晶`);
     }
     
     // 精炼武器（保留向后兼容）
@@ -5386,7 +2072,7 @@ class EndlessWinterGame {
             if (item.refineLevel < 10) {
                 const cost = this.calculateRefineCost(item.refineLevel);
                 document.getElementById('refine-requirements').textContent = 
-                    `木材: ${cost.wood}, 铁矿: ${cost.iron}, 水晶: ${cost.crystal}`;
+                    `灵木: ${cost.spiritWood}, 玄铁: ${cost.blackIron}, 灵晶: ${cost.spiritCrystal}`;
             } else {
                 document.getElementById('refine-requirements').textContent = '已达到最大等级';
             }
@@ -5427,7 +2113,7 @@ class EndlessWinterGame {
             // 计算分解返还材料
             const returns = this.calculateDisassembleReturns(item);
             document.getElementById('disassemble-returns').textContent = 
-                `木材: ${returns.wood}, 铁矿: ${returns.iron}, 水晶: ${returns.crystal}`;
+                `灵木: ${returns.spiritWood}, 玄铁: ${returns.blackIron}, 灵晶: ${returns.spiritCrystal}`;
         } else {
             // 隐藏分解信息
             disassembleInfo.classList.add('hidden');
@@ -5440,88 +2126,88 @@ class EndlessWinterGame {
         const refineLevel = item.refineLevel || 0;
         
         // 计算精炼材料返还（只返还50%的精炼材料，保持游戏经济平衡）
-        let refineWood = 0;
-        let refineIron = 0;
-        let refineCrystal = 0;
+        let refineSpiritWood = 0;
+        let refineBlackIron = 0;
+        let refineSpiritCrystal = 0;
         
         // 计算从0级到当前精炼等级的所有材料消耗
         for (let i = 0; i < refineLevel; i++) {
             const cost = this.calculateRefineCost(i);
-            refineWood += Math.floor(cost.wood * 0.5);
-            refineIron += Math.floor(cost.iron * 0.5);
-            refineCrystal += Math.floor(cost.crystal * 0.5);
+            refineSpiritWood += Math.floor(cost.spiritWood * 0.5);
+            refineBlackIron += Math.floor(cost.blackIron * 0.5);
+            refineSpiritCrystal += Math.floor(cost.spiritCrystal * 0.5);
         }
         
         // 计算品质材料返还
-        let qualityWood = 0;
-        let qualityIron = 0;
-        let qualityCrystal = 0;
+        let qualitySpiritWood = 0;
+        let qualityBlackIron = 0;
+        let qualitySpiritCrystal = 0;
         
         // 根据装备品质确定返还材料
         if (item.rarity) {
             // 优先使用rarity属性
             switch (item.rarity) {
                 case 'white':
-                    qualityWood = 30;
-                    qualityIron = 15;
-                    qualityCrystal = 5;
+                    qualitySpiritWood = 30;
+                    qualityBlackIron = 15;
+                    qualitySpiritCrystal = 5;
                     break;
                 case 'blue':
-                    qualityWood = 50;
-                    qualityIron = 25;
-                    qualityCrystal = 10;
+                    qualitySpiritWood = 50;
+                    qualityBlackIron = 25;
+                    qualitySpiritCrystal = 10;
                     break;
                 case 'purple':
-                    qualityWood = 80;
-                    qualityIron = 40;
-                    qualityCrystal = 15;
+                    qualitySpiritWood = 80;
+                    qualityBlackIron = 40;
+                    qualitySpiritCrystal = 15;
                     break;
                 case 'gold':
-                    qualityWood = 120;
-                    qualityIron = 60;
-                    qualityCrystal = 25;
+                    qualitySpiritWood = 120;
+                    qualityBlackIron = 60;
+                    qualitySpiritCrystal = 25;
                     break;
                 case 'legendary':
-                    qualityWood = 180;
-                    qualityIron = 90;
-                    qualityCrystal = 40;
+                    qualitySpiritWood = 180;
+                    qualityBlackIron = 90;
+                    qualitySpiritCrystal = 40;
                     break;
             }
         } else if (item.colorClass) {
             // 根据颜色类名判断品质
             if (item.colorClass.includes('gray')) {
                 // 白色品质
-                qualityWood = 30;
-                qualityIron = 15;
-                qualityCrystal = 5;
+                qualitySpiritWood = 30;
+                qualityBlackIron = 15;
+                qualitySpiritCrystal = 5;
             } else if (item.colorClass.includes('blue')) {
                 // 蓝色品质
-                qualityWood = 50;
-                qualityIron = 25;
-                qualityCrystal = 10;
+                qualitySpiritWood = 50;
+                qualityBlackIron = 25;
+                qualitySpiritCrystal = 10;
             } else if (item.colorClass.includes('purple')) {
                 // 紫色品质
-                qualityWood = 80;
-                qualityIron = 40;
-                qualityCrystal = 15;
+                qualitySpiritWood = 80;
+                qualityBlackIron = 40;
+                qualitySpiritCrystal = 15;
             } else if (item.colorClass.includes('yellow')) {
                 // 黄金品质
-                qualityWood = 120;
-                qualityIron = 60;
-                qualityCrystal = 25;
+                qualitySpiritWood = 120;
+                qualityBlackIron = 60;
+                qualitySpiritCrystal = 25;
             } else if (item.colorClass.includes('orange')) {
                 // 传奇品质
-                qualityWood = 180;
-                qualityIron = 90;
-                qualityCrystal = 40;
+                qualitySpiritWood = 180;
+                qualityBlackIron = 90;
+                qualitySpiritCrystal = 40;
             }
         }
         
         // 总返还材料
         return {
-            wood: refineWood + qualityWood,
-            iron: refineIron + qualityIron,
-            crystal: refineCrystal + qualityCrystal
+            spiritWood: refineSpiritWood + qualitySpiritWood,
+            blackIron: refineBlackIron + qualityBlackIron,
+            spiritCrystal: refineSpiritCrystal + qualitySpiritCrystal
         };
     }
     
@@ -5540,9 +2226,9 @@ class EndlessWinterGame {
         const confirmMessage = `确定要分解${slot === 'weapon' ? '武器' : slot === 'armor' ? '护甲' : slot === 'helmet' ? '头盔' : slot === 'boots' ? '靴子' : '饰品'} ${item.name}吗？
 
 分解后将获得：
-木材：${returns.wood}
-铁矿：${returns.iron}
-水晶：${returns.crystal}`;
+灵木：${returns.spiritWood}
+玄铁：${returns.blackIron}
+灵晶：${returns.spiritCrystal}`;
         
         if (!confirm(confirmMessage)) {
             this.addBattleLog('分解操作已取消！');
@@ -5550,9 +2236,9 @@ class EndlessWinterGame {
         }
         
         // 获得材料
-        this.gameState.resources.wood += returns.wood;
-        this.gameState.resources.iron += returns.iron;
-        this.gameState.resources.crystal += returns.crystal;
+        this.gameState.resources.spiritWood += returns.spiritWood;
+        this.gameState.resources.blackIron += returns.blackIron;
+        this.gameState.resources.spiritCrystal += returns.spiritCrystal;
         
         // 卸下并移除装备
         this.gameState.player.equipment[slot] = null;
@@ -5564,75 +2250,59 @@ class EndlessWinterGame {
         this.updateUI();
         
         // 更新血条显示
-        this.updateHealthBars();
+        if (typeof this.updateHealthBars === 'function') {
+            this.updateHealthBars();
+        }
         
         // 添加日志
         this.addBattleLog(`成功分解${slot === 'weapon' ? '武器' : slot === 'armor' ? '护甲' : slot === 'helmet' ? '头盔' : slot === 'boots' ? '靴子' : '饰品'} ${item.name}！`);
-        this.addBattleLog(`获得了 ${returns.wood} 木材，${returns.iron} 铁矿，${returns.crystal} 水晶！`);
+        this.addBattleLog(`获得了 ${returns.spiritWood} 灵木，${returns.blackIron} 玄铁，${returns.spiritCrystal} 灵晶！`);
     }
     
     // 保存游戏状态
-    saveGameState() {
+    async saveGameState() {
         try {
             if (this.gameState.user.loggedIn) {
                 const currentUserId = this.gameState.user.userId;
                 // 只使用服务器端保存
-                this.saveToServer(currentUserId, this.gameState);
+                const token = localStorage.getItem('endlessWinterToken');
+
+                const response = await fetch('http://localhost:3002/api/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ gameState: this.gameState })
+                });
+                
+                const result = await response.json();
+                if (!result.success) {
+                    console.error('服务器端保存失败:', result.error);
+                    // 如果token无效，重定向到登录页面
+                    if (result.error === 'Invalid token' || result.error === 'No token provided') {
+                        this.logout();
+                    }
+                }
             }
         } catch (error) {
             console.error('保存游戏状态失败:', error);
         }
     }
     
-    // 保存到服务器
-    async saveToServer(userId, gameState) {
-        try {
-            const token = localStorage.getItem('endlessWinterToken');
-            
-            const response = await fetch('http://localhost:3001/api/save', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ gameState })
-            });
-            
-            const result = await response.json();
-            if (!result.success) {
-                console.error('服务器端保存失败:', result.error);
-                // 如果token无效，重定向到登录页面
-                if (result.error === 'Invalid token' || result.error === 'No token provided') {
-                    this.logout();
-                }
-            }
-        } catch (error) {
-            console.error('服务器端保存出错:', error);
-        }
-    }
-    
     // 从服务器加载
-    async loadFromServer(userId) {
+    async loadFromServer() {
         try {
             const token = localStorage.getItem('endlessWinterToken');
             
-            const response = await fetch('http://localhost:3001/api/load', {
+            const response = await fetch('http://localhost:3002/api/load', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
             });
             
-            const result = await response.json();
-            if (result.success) {
-                return result.gameState;
-            } else {
-                console.error('服务器端加载失败:', result.error);
-                // 如果token无效，重定向到登录页面
-                if (result.error === 'Invalid token' || result.error === 'No token provided') {
-                    this.logout();
-                }
-                return null;
-            }
+            return await response.json();
+            
         } catch (error) {
             console.error('服务器端加载出错:', error);
             return null;
@@ -6587,12 +3257,12 @@ class EndlessWinterGame {
                     energy: 100,
                     maxEnergy: 100,
                     energyRate: 2,
-                    wood: 0,
-                    woodRate: 1,
-                    iron: 0,
-                    ironRate: 0.5,
-                    crystal: 0,
-                    crystalRate: 0.2
+                    spiritWood: 0,
+                    spiritWoodRate: 1,
+                    blackIron: 0,
+                    blackIronRate: 0.5,
+                    spiritCrystal: 0,
+                    spiritCrystalRate: 0.2
                 },
                 // 敌人类型
                 enemyTypes: [
@@ -6771,7 +3441,7 @@ class EndlessWinterGame {
             // 调用服务器端登出API
             const token = localStorage.getItem('endlessWinterToken');
             if (token) {
-                await fetch('http://localhost:3001/api/logout', {
+                await fetch('http://localhost:3002/api/logout', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -6856,7 +3526,7 @@ class EndlessWinterGame {
                 const token = localStorage.getItem('endlessWinterToken');
                 
                 try {
-                    const response = await fetch('http://localhost:3001/api/delete-account', {
+                    const response = await fetch('http://localhost:3002/api/delete-account', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -6893,84 +3563,44 @@ class EndlessWinterGame {
     }
     
     // 初始化新的游戏状态
-    initNewGameState(username, gender) {
-        // 保存用户信息
-        const userInfo = { ...this.gameState.user };
-        
-        // 重置游戏状态
-        this.gameState = {
-            user: userInfo,
-            player: {
-                level: 1,
-                exp: 0,
-                maxExp: 100,
-                attack: 10,
-                defense: 5,
-                hp: 100,
-                maxHp: 100,
-                luck: 2,
-                equipment: {
-                    weapon: null,
-                    armor: null,
-                    helmet: null,
-                    boots: null,
-                    accessory: null
-                },
-                equipmentEffects: {
-                    attack: 0,
-                    defense: 0,
-                    hp: 0,
-                    luck: 0
-                },
-                inventory: [],
-                skills: [
-                    {
-                        name: "强力攻击",
-                        description: "造成2倍普通伤害",
-                        energyCost: 20,
-                        damageMultiplier: 2,
-                        levelRequired: 1
-                    },
-                    {
-                        name: "防御姿态",
-                        description: "减少50%受到的伤害",
-                        energyCost: 15,
-                        defenseBonus: 0.5,
-                        levelRequired: 10
-                    },
-                    {
-                        name: "生命恢复",
-                        description: "恢复20%最大生命值",
-                        energyCost: 25,
-                        healPercentage: 0.2,
-                        levelRequired: 20
-                    },
-                    {
-                        name: "幸运一击",
-                        description: "有几率造成3倍伤害",
-                        energyCost: 30,
-                        criticalMultiplier: 3,
-                        criticalChance: 0.7,
-                        levelRequired: 30
-                    }
-                ]
-            },
-            resources: {
-                wood: 0,
-                iron: 0,
-                crystal: 0
-            },
-            sceneMonsters: [],
-            battle: {
-                inBattle: false,
-                enemy: null,
-                battleLog: []
-            },
-            map: {
-                currentBackground: 'forest',
-                currentLocation: 'forest'
+    initNewGameState() {
+        // 使用metadata中的数据初始化游戏状态
+        if (this.playerMetadata) {
+            // 加载初始属性
+            if (this.playerMetadata.initialStats) {
+                Object.assign(this.gameState.player, this.playerMetadata.initialStats);
             }
-        };
+            
+            this.gameState.player.equipment = {}; // 重置装备栏
+
+            this.gameState.player.equipmentEffects = {}; // 重置装备效果
+
+            this.gameState.player.inventory = []; // 重置背包
+
+            // 加载技能
+            if (this.playerMetadata.skills) {
+                this.gameState.player.skills = this.playerMetadata.skills;
+            }
+            
+            // 使用metadata中的默认设置初始化
+            if (this.playerMetadata.defaultSettings) {
+                this.gameState.settings = JSON.parse(JSON.stringify(this.playerMetadata.defaultSettings));
+            }
+            
+            // 使用metadata中的默认战斗状态初始化
+            if (this.playerMetadata.defaultBattleState) {
+                this.gameState.battle = JSON.parse(JSON.stringify(this.playerMetadata.defaultBattleState));
+            }
+
+            // 只在新游戏时初始化资源速率
+            if (this.resourceMetadata) {
+                this.resourceMetadata.types.forEach(resource => {
+                    if (this.gameState.resources[resource.name]) {
+                        this.gameState.resources[`${resource.name}Rate`] = resource.baseRate;
+                    }
+                });
+            }
+        }
     }
     
     // 计算装备效果
@@ -6980,7 +3610,14 @@ class EndlessWinterGame {
             attack: 0,
             defense: 0,
             hp: 0,
-            luck: 0
+            luck: 0,
+            speed: 0,
+            criticalRate: 0,
+            dodgeRate: 0,
+            accuracy: 0,
+            moveSpeed: 0,
+            tenacity: 0,
+            energyRegen: 0
         };
         
         // 遍历所有装备
@@ -7011,7 +3648,7 @@ class EndlessWinterGame {
         
         // 过滤背包中可用的装备（玩家等级 >= 装备等级）
         const availableEquipment = this.gameState.player.inventory.filter(
-            item => item.level <= this.gameState.player.level
+            item => item.level <= this.calculateTotalLevel()
         );
         
         if (availableEquipment.length === 0) {
@@ -7097,7 +3734,9 @@ class EndlessWinterGame {
         this.updateUI();
         
         // 更新血条显示
-        this.updateHealthBars();
+        if (typeof this.updateHealthBars === 'function') {
+            this.updateHealthBars();
+        }
         
         // 添加日志
         if (existingItem) {
@@ -7202,14 +3841,14 @@ class EndlessWinterGame {
             return;
         }
         
-        // 检查木材是否足够
-        if (this.gameState.resources.wood < item.price) {
-            this.addBattleLog(`木材不足，无法购买 ${item.name}！`);
+        // 检查灵木是否足够
+        if (this.gameState.resources.spiritWood < item.price) {
+            this.addBattleLog(`灵木不足，无法购买 ${item.name}！`);
             return;
         }
         
-        // 扣除木材
-        this.gameState.resources.wood -= item.price;
+        // 扣除灵木
+        this.gameState.resources.spiritWood -= item.price;
         
         if (item.type === 'consumable') {
             // 药水类物品放入背包
@@ -7246,7 +3885,9 @@ class EndlessWinterGame {
         this.updateUI();
         
         // 更新血条显示
-        this.updateHealthBars();
+        if (typeof this.updateHealthBars === 'function') {
+            this.updateHealthBars();
+        }
     }
     
     // 重置临时状态
@@ -7692,18 +4333,18 @@ class EndlessWinterGame {
                     // 分解
                     const returns = this.calculateDisassembleReturns(item);
                     const itemName = item.name || '未知装备';
-                    const woodAmount = returns.wood || 0;
-                    const ironAmount = returns.iron || 0;
-                    const crystalAmount = returns.crystal || 0;
+                    const woodAmount = returns.spiritWood || 0;
+                    const ironAmount = returns.blackIron || 0;
+                    const crystalAmount = returns.spiritCrystal || 0;
                     
-                    const confirmDisassemble = confirm(`分解 ${itemName} 将会获得：\n木材: ${woodAmount}\n铁矿: ${ironAmount}\n水晶: ${crystalAmount}\n\n确定分解吗？`);
+                    const confirmDisassemble = confirm(`分解 ${itemName} 将会获得：\n灵木: ${woodAmount}\n玄铁: ${ironAmount}\n灵晶: ${crystalAmount}\n\n确定分解吗？`);
                     
                     if (confirmDisassemble) {
                         inventory.splice(index, 1);
-                        this.gameState.resources.wood += woodAmount;
-                        this.gameState.resources.iron += ironAmount;
-                        this.gameState.resources.crystal += crystalAmount;
-                        this.addBattleLog(`分解 ${itemName} 获得了 ${woodAmount} 木材, ${ironAmount} 铁矿, ${crystalAmount} 水晶！`);
+                        this.gameState.resources.spiritWood += woodAmount;
+                        this.gameState.resources.blackIron += ironAmount;
+                        this.gameState.resources.spiritCrystal += crystalAmount;
+                        this.addBattleLog(`分解 ${itemName} 获得了 ${woodAmount} 灵木, ${ironAmount} 玄铁, ${crystalAmount} 灵晶！`);
                         this.updateUI();
                         this.showInventory();
                     }
@@ -7745,6 +4386,13 @@ class EndlessWinterGame {
                 case 'defense': statName = '防御'; break;
                 case 'hp': statName = '生命'; break;
                 case 'luck': statName = '幸运'; break;
+                case 'speed': statName = '速度'; break;
+                case 'criticalRate': statName = '暴击'; break;
+                case 'dodgeRate': statName = '闪避'; break;
+                case 'accuracy': statName = '命中'; break;
+                case 'moveSpeed': statName = '移速'; break;
+                case 'tenacity': statName = '韧性'; break;
+                case 'energyRegen': statName = '回蓝'; break;
             }
             statDescriptions.push(`${statName}+${stats[stat]}`);
         }

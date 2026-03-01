@@ -9,11 +9,11 @@ import bcrypt from 'bcrypt';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
-const PORT = 3001;
+const PORT = 3002;
 
 // 启用CORS
 app.use(cors({
-    origin: 'http://localhost:3001',
+    origin: 'http://localhost:3002',
     credentials: true
 }));
 app.use(express.json());
@@ -178,14 +178,7 @@ app.post('/api/save', verifyToken, (req, res) => {
                 delete gameState[field];
             }
         });
-        
-        // 删除resources对象中的energy相关属性
-        if (gameState.resources) {
-            delete gameState.resources.energy;
-            delete gameState.resources.maxEnergy;
-            delete gameState.resources.energyRate;
-        }
-        
+                
         // 生成保存文件路径
         const saveFilePath = path.join(SAVE_DIR, `${userId}.json`);
         

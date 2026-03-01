@@ -1,0 +1,6 @@
+.claude
+.idea
+saves
+users
+*.md
+node_modules

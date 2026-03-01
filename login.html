@@ -98,7 +98,7 @@
             <!-- 游戏标题 -->
             <div class="text-center mb-8">
                 <h1 class="text-3xl font-bold text-accent text-shadow">无尽战斗</h1>
-                <p class="text-light/70 mt-2">在冰天雪地中生存，战胜敌人</p>
+                <p class="text-light/70 mt-2">在修仙世界中生存，战胜敌人</p>
             </div>
             
             <!-- 标签切换 -->
@@ -159,7 +159,7 @@
             
             <!-- 版权信息 -->
             <div class="mt-8 text-center text-light/60 text-sm">
-                <p>© 2026 无尽战斗 - 生存游戏</p>
+                <p>© 2026 无尽战斗 - 修仙游戏</p>
             </div>
         </div>
     </div>
@@ -209,7 +209,7 @@
             }
             
             try {
-                const response = await fetch('http://localhost:3001/api/login', {
+                const response = await fetch('http://localhost:3002/api/login', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -253,7 +253,7 @@
             }
             
             try {
-                const response = await fetch('http://localhost:3001/api/register', {
+                const response = await fetch('http://localhost:3002/api/register', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
