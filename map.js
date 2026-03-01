@@ -89,6 +89,11 @@ EndlessWinterGame.prototype.showEnemyInfo = function(enemyInfo) {
     // 更新精英标识
     const eliteBadge = document.getElementById('enemy-elite-badge');
     const enemyInfoElement = document.getElementById('enemy-info-panel');
+    
+    // 重置之前的样式
+    eliteBadge.textContent = '精英';
+    eliteBadge.className = 'ml-2 text-xs bg-yellow-500 text-black px-1.5 py-0.5 rounded hidden font-bold';
+    enemyInfoElement.classList.remove('border-yellow-500', 'bg-yellow-900/20', 'border-purple-500', 'bg-purple-900/20');
  
     if (this.gameState.enemy.isElite) {
         eliteBadge.classList.remove('hidden');
@@ -102,6 +107,9 @@ EndlessWinterGame.prototype.showEnemyInfo = function(enemyInfo) {
         // 为BOSS添加特殊样式
         enemyInfoElement.classList.add('border-purple-500');
         enemyInfoElement.classList.add('bg-purple-900/20');
+    } else {
+        // 普通怪隐藏精英徽章
+        eliteBadge.classList.add('hidden');
     }
 
     // 更新敌人装备掉率信息
