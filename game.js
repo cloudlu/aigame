@@ -444,10 +444,10 @@ class EndlessWinterGame {
             }
             const hpElement = document.getElementById('hp');
             if (hpElement) {
-                const maxHp = this.gameState.player.maxHp + this.gameState.player.equipmentEffects.hp;
+                const maxHp = this.gameState.player.maxHp + this.gameState.player.equipmentEffects.hp + realmBonus.hp;
                 hpElement.textContent = `${Math.floor(finalHp)}/${Math.floor(maxHp)}`;
                 // 更新生命值恢复提示（每秒钟恢复1%最大生命值）
-                hpElement.setAttribute('data-tooltip', `生命值恢复: +${Math.floor(this.gameState.player.maxHp * 0.01)}/秒`);
+                hpElement.setAttribute('data-tooltip', `生命值恢复: +${Math.floor(maxHp * 0.01)}/秒`);
             }
             const luckElement = document.getElementById('luck');
             if (luckElement) {
@@ -1002,28 +1002,8 @@ class EndlessWinterGame {
         const rarity = phaseRarities[Math.floor(Math.random() * phaseRarities.length)];
         const rarityInfo = this.gameState.equipmentRarities.find(r => r.name === rarity);
         
-        // 计算装备属性（基础属性 * 等级 * 品质倍数）
-        const stats = {};
-        
-        // 获取该品质的属性数量
-        const statCount = rarityInfo.statCount || 3;
-        
-        // 获取所有基础属性的键
-        const statKeys = Object.keys(template.baseStats);
-        
-        // 随机选择指定数量的属性
-        const selectedStats = [];
-        const tempKeys = [...statKeys];
-        
-        for (let i = 0; i < statCount && tempKeys.length > 0; i++) {
-            const randomIndex = Math.floor(Math.random() * tempKeys.length);
-            selectedStats.push(tempKeys.splice(randomIndex, 1)[0]);
-        }
-        
-        // 为选中的属性计算值
-        for (const stat of selectedStats) {
-            stats[stat] = Math.floor(template.baseStats[stat] * equipmentLevel * rarityInfo.multiplier);
-        }
+        // 使用公共函数计算装备属性
+        const stats = this.calculateEquipmentStats(template, equipmentLevel, rarityInfo);
         
         // 生成装备名称
         const prefixIndex = Math.floor(Math.min((rarityInfo ? rarityInfo.multiplier : 1) - 1, template.namePrefixes.length - 1));
@@ -1044,8 +1024,7 @@ class EndlessWinterGame {
             description: `${rarityInfo.displayName}品质的${template.type}`,
             rarity: rarity,
             rarityDisplayName: rarityInfo.displayName,
-            rarityMultiplier: rarityInfo.multiplier,
-            colorClass: rarityInfo.color
+            rarityMultiplier: rarityInfo.multiplier
         };
     }
     
@@ -1267,12 +1246,20 @@ class EndlessWinterGame {
                     element.style.opacity = '1';
                     
                     // 根据装备品质设置颜色
-                    const colorClass = this.getEquipmentColorClass(item);
+                    let colorClass = this.getEquipmentColorClass(item);
+                    
                     element.className = element.className.replace(/quality-\w+/g, '');
                     element.classList.add(colorClass);
                     
-                    // 更新装备提示窗口
+                    // 根据装备品质设置边框颜色
                     const container = element.parentElement;
+                    const rarity = item.rarity || item.rarityDisplayName;
+                    
+                    // 使用getEquipmentColor函数获取边框颜色
+                    
+                    container.style.borderColor = this.getEquipmentColor(rarity, 'color');
+                    
+                    // 更新装备提示窗口
                     const tooltip = container.querySelector('.equipment-tooltip');
                     if (tooltip) {
                         // 填充装备信息
@@ -1337,6 +1324,7 @@ class EndlessWinterGame {
                     element.className = element.className.replace(/quality-\w+/g, '');
                     // 移除鼠标悬停事件
                     const container = element.parentElement;
+                    container.style.borderColor = '#ffffff80'; // 白色半透明
                     const tooltip = container.querySelector('.equipment-tooltip');
                     if (tooltip) {
                         // 确保弹窗保持隐藏
@@ -1397,19 +1385,30 @@ class EndlessWinterGame {
         return realmLevel + stageLevel + currentLevel;
     }
 
-    // 从颜色类名获取颜色值
-    getColorFromClass(colorClass) {
-        // 定义颜色映射
-        const colorMap = {
-            'text-gray-400': 'rgba(156, 163, 175, 0.7)',
-            'text-blue-400': 'rgba(96, 165, 250, 0.7)',
-            'text-purple-400': 'rgba(168, 85, 247, 0.7)',
-            'text-yellow-400': 'rgba(250, 204, 21, 0.7)',
-            'text-orange-400': 'rgba(251, 146, 60, 0.7)'
-        };
-        return colorMap[colorClass] || 'rgba(96, 165, 250, 0.5)';
-    }
 
+
+    // 清理装备的colorClass属性
+    cleanupEquipmentColorClass() {
+        // 清理已装备的装备
+        if (this.gameState.player && this.gameState.player.equipment) {
+            for (const slot in this.gameState.player.equipment) {
+                const item = this.gameState.player.equipment[slot];
+                if (item && item.colorClass) {
+                    delete item.colorClass;
+                }
+            }
+        }
+        
+        // 清理背包中的装备
+        if (this.gameState.player && this.gameState.player.inventory) {
+            this.gameState.player.inventory.forEach(item => {
+                if (item && item.colorClass) {
+                    delete item.colorClass;
+                }
+            });
+        }
+    }
+    
     // 获取突破所需突破石数量
     getRequiredBreakthroughStones(realmIndex, stage) {
         // 从realmConfig中获取突破石数量
@@ -1465,27 +1464,71 @@ class EndlessWinterGame {
         return true;
     }
     
+    // 根据稀有度和类型获取装备颜色
+    getEquipmentColor(rarity, type = 'text') {
+        const colorMap = {
+            white: {
+                text: 'text-gray-400',
+                border: 'border-gray-400',
+                color: '#9ca3af'
+            },
+            green: {
+                text: 'text-green-400',
+                border: 'border-green-400',
+                color: '#4ade80'
+            },
+            blue: {
+                text: 'text-blue-400',
+                border: 'border-blue-400',
+                color: '#60a5fa'
+            },
+            cyan: {
+                text: 'text-cyan-400',
+                border: 'border-cyan-400',
+                color: '#22d3ee'
+            },
+            purple: {
+                text: 'text-purple-400',
+                border: 'border-purple-400',
+                color: '#a78bfa'
+            },
+            pink: {
+                text: 'text-pink-400',
+                border: 'border-pink-400',
+                color: '#f9a8d4'
+            },
+            gold: {
+                text: 'text-yellow-400',
+                border: 'border-yellow-400',
+                color: '#fbbf24'
+            },
+            legendary: {
+                text: 'text-orange-400',
+                border: 'border-orange-400',
+                color: '#f87171'
+            }
+        };
+        
+        // 处理中文稀有度名称
+        const rarityMap = {
+            '白色': 'white',
+            '绿色': 'green',
+            '蓝色': 'blue',
+            '青色': 'cyan',
+            '紫色': 'purple',
+            '粉色': 'pink',
+            '黄金': 'gold',
+            '传奇': 'legendary'
+        };
+        
+        const normalizedRarity = rarityMap[rarity] || rarity;
+        return colorMap[normalizedRarity]?.[type] || colorMap.white[type];
+    }
+    
     // 获取装备的颜色类
     getEquipmentColorClass(item) {
-        if (item.colorClass) {
-            return item.colorClass;
-        }
-        
-        // 如果没有colorClass，则根据rarity属性判断
         const rarity = item.rarityDisplayName || item.rarity;
-        if (rarity === '传奇' || rarity === 'legendary') {
-            return 'quality-red';
-        } else if (rarity === '金色' || rarity === 'gold') {
-            return 'quality-gold';
-        } else if (rarity === '紫色' || rarity === 'purple') {
-            return 'quality-purple';
-        } else if (rarity === '蓝色' || rarity === 'blue') {
-            return 'quality-blue';
-        } else if (rarity === '白色' || rarity === 'white') {
-            return 'quality-white';
-        }
-        
-        return 'quality-white';
+        return this.getEquipmentColor(rarity, 'text');
     }
     
     // 刷新敌人
@@ -1544,6 +1587,7 @@ class EndlessWinterGame {
         const baseAttack = enemyType.baseAttack || 8;
         const baseDefense = enemyType.baseDefense || 2;
         const baseSpeed = enemyType.baseSpeed || 5;
+        const baseLuck = enemyType.baseLuck || 1;
         const expMultiplier = enemyType.expMultiplier || 1;
         const resourceMultiplier = enemyType.resourceMultiplier || 1;
         
@@ -1551,6 +1595,7 @@ class EndlessWinterGame {
         const attack = Math.floor(baseAttack * enemyLevel * eliteBonus);
         const defense = Math.floor(baseDefense * enemyLevel * eliteBonus);
         const speed = Math.floor(baseSpeed * enemyLevel * eliteBonus);
+        const luck = Math.floor(baseLuck * enemyLevel * eliteBonus);
         
         // 创建完整的敌人对象，确保所有必要属性都有值
         this.gameState.enemy = {
@@ -1561,6 +1606,7 @@ class EndlessWinterGame {
             attack: attack,
             defense: defense,
             speed: speed,
+            luck: luck,
             isElite: isElite,
             eliteBonus: eliteBonus,
             icon: enemyType.icon || 'fa-skull',
@@ -1933,6 +1979,9 @@ class EndlessWinterGame {
                         
                             this.gameState = { ...gameData, user: userInfo };
                         
+                            // 清理装备的colorClass属性
+                            this.cleanupEquipmentColorClass();
+                        
                             await this.fetchGameMetadata();
                             // 检查临时状态是否过期
                             this.checkTemporaryStats();                        
@@ -2173,33 +2222,57 @@ class EndlessWinterGame {
                     qualitySpiritCrystal = 40;
                     break;
             }
-        } else if (item.colorClass) {
-            // 根据颜色类名判断品质
-            if (item.colorClass.includes('gray')) {
-                // 白色品质
-                qualitySpiritWood = 30;
-                qualityBlackIron = 15;
-                qualitySpiritCrystal = 5;
-            } else if (item.colorClass.includes('blue')) {
-                // 蓝色品质
-                qualitySpiritWood = 50;
-                qualityBlackIron = 25;
-                qualitySpiritCrystal = 10;
-            } else if (item.colorClass.includes('purple')) {
-                // 紫色品质
-                qualitySpiritWood = 80;
-                qualityBlackIron = 40;
-                qualitySpiritCrystal = 15;
-            } else if (item.colorClass.includes('yellow')) {
-                // 黄金品质
-                qualitySpiritWood = 120;
-                qualityBlackIron = 60;
-                qualitySpiritCrystal = 25;
-            } else if (item.colorClass.includes('orange')) {
-                // 传奇品质
-                qualitySpiritWood = 180;
-                qualityBlackIron = 90;
-                qualitySpiritCrystal = 40;
+        } else if (item.rarity) {
+            // 根据稀有度判断品质
+            switch(item.rarity) {
+                case 'white':
+                    // 白色品质
+                    qualitySpiritWood = 30;
+                    qualityBlackIron = 15;
+                    qualitySpiritCrystal = 5;
+                    break;
+                case 'green':
+                    // 绿色品质
+                    qualitySpiritWood = 40;
+                    qualityBlackIron = 20;
+                    qualitySpiritCrystal = 8;
+                    break;
+                case 'blue':
+                    // 蓝色品质
+                    qualitySpiritWood = 50;
+                    qualityBlackIron = 25;
+                    qualitySpiritCrystal = 10;
+                    break;
+                case 'cyan':
+                    // 青色品质
+                    qualitySpiritWood = 65;
+                    qualityBlackIron = 32;
+                    qualitySpiritCrystal = 12;
+                    break;
+                case 'purple':
+                    // 紫色品质
+                    qualitySpiritWood = 80;
+                    qualityBlackIron = 40;
+                    qualitySpiritCrystal = 15;
+                    break;
+                case 'pink':
+                    // 粉色品质
+                    qualitySpiritWood = 100;
+                    qualityBlackIron = 50;
+                    qualitySpiritCrystal = 20;
+                    break;
+                case 'gold':
+                    // 黄金品质
+                    qualitySpiritWood = 120;
+                    qualityBlackIron = 60;
+                    qualitySpiritCrystal = 25;
+                    break;
+                case 'legendary':
+                    // 传奇品质
+                    qualitySpiritWood = 180;
+                    qualityBlackIron = 90;
+                    qualitySpiritCrystal = 40;
+                    break;
             }
         }
         
@@ -2604,8 +2677,9 @@ class EndlessWinterGame {
             }
             
             // 显示合成成功动画，使用装备品质对应的颜色
+            const newEquipmentColorClass = this.getEquipmentColorClass(newEquipment);
             resultSlot.innerHTML = `
-                <div class="text-xs ${newEquipment.colorClass} text-center animate-pulse">
+                <div class="text-xs ${newEquipmentColorClass} text-center animate-pulse">
                     <i class="fa ${this.getEquipmentIcon(firstType)}"></i><br>
                     ${newEquipment.name}
                 </div>
@@ -2629,8 +2703,9 @@ class EndlessWinterGame {
             }
             
             // 显示合成失败动画，使用装备品质对应的颜色
+            const failedEquipmentColorClass = this.getEquipmentColorClass(failedEquipment);
             resultSlot.innerHTML = `
-                <div class="text-xs ${failedEquipment.colorClass} text-center animate-pulse">
+                <div class="text-xs ${failedEquipmentColorClass} text-center animate-pulse">
                     <i class="fa ${this.getEquipmentIcon(firstType)}"></i><br>
                     ${failedEquipment.name}
                 </div>
@@ -2673,9 +2748,8 @@ class EndlessWinterGame {
                 },
                 description: `${rarity}品质的${type}`,
                 rarity: rarity,
-                rarityDisplayName: rarity,
-                rarityMultiplier: 1,
-                colorClass: 'text-white'
+            rarityDisplayName: rarity,
+            rarityMultiplier: 1
             };
         }
         
@@ -2685,7 +2759,13 @@ class EndlessWinterGame {
         // 计算装备属性（基础属性 * 等级 * 品质倍数）
         const stats = {};
         for (const stat in template.baseStats) {
-            stats[stat] = Math.floor(template.baseStats[stat] * level * (rarityInfo ? rarityInfo.multiplier : 1));
+            const value = template.baseStats[stat] * level * (rarityInfo ? rarityInfo.multiplier : 1);
+            // 对于小数属性，使用Math.max确保至少为1，对于整数属性使用Math.floor
+            if (template.baseStats[stat] < 1) {
+                stats[stat] = Math.max(1, Math.floor(value));
+            } else {
+                stats[stat] = Math.floor(value);
+            }
         }
         
         // 生成装备名称
@@ -2707,7 +2787,7 @@ class EndlessWinterGame {
             rarity: rarity,
             rarityDisplayName: rarityInfo ? rarityInfo.displayName : rarity,
             rarityMultiplier: rarityInfo ? rarityInfo.multiplier : 1,
-            colorClass: rarityInfo ? rarityInfo.color : 'text-white'
+            // 不再需要colorClass属性，颜色由getEquipmentColorClass函数动态计算
         };
     }
     
@@ -3051,6 +3131,44 @@ class EndlessWinterGame {
         }
     }
     
+    // 计算装备属性的公共函数
+    calculateEquipmentStats(template, level, rarityInfo) {
+        // 计算属性（基础属性 * 等级 * 品质倍数）
+        const stats = {};
+        
+        // 获取该品质的属性数量
+        const statCount = rarityInfo.statCount || 3;
+        
+        // 获取所有基础属性的键
+        const statKeys = Object.keys(template.baseStats);
+        
+        // 随机选择指定数量的属性
+        const selectedStats = [];
+        const tempKeys = [...statKeys];
+        
+        for (let i = 0; i < statCount && tempKeys.length > 0; i++) {
+            const randomIndex = Math.floor(Math.random() * tempKeys.length);
+            selectedStats.push(tempKeys.splice(randomIndex, 1)[0]);
+        }
+        
+        // 为选中的属性计算值
+        for (const stat of selectedStats) {
+            let value = template.baseStats[stat] * level * rarityInfo.multiplier;
+            
+            // 为基础属性较低的装备类型增加额外系数
+            if (template.type === 'boots') {
+                // 靴子基础属性较低，增加额外系数
+                value *= 1.5;
+            }
+            
+            // 使用Math.max确保最低属性值
+            const minValue = level; // 最低值至少为装备等级
+            stats[stat] = Math.max(minValue, Math.floor(value));
+        }
+        
+        return stats;
+    }
+    
     // 生成合成后的装备
     generateCraftedEquipment(type, level, rarity) {
         // 获取装备模板
@@ -3062,11 +3180,8 @@ class EndlessWinterGame {
         // 使用指定的品质
         const rarityInfo = this.gameState.equipmentRarities.find(r => r.name === rarity);
         
-        // 计算属性（基础属性 * 等级 * 品质倍数）
-        const stats = {};
-        for (const stat in template.baseStats) {
-            stats[stat] = Math.floor(template.baseStats[stat] * level * rarityInfo.multiplier);
-        }
+        // 使用公共函数计算装备属性
+        const stats = this.calculateEquipmentStats(template, level, rarityInfo);
         
         // 生成装备名称
         const prefixIndex = Math.floor(Math.random() * template.namePrefixes.length);
@@ -3084,7 +3199,6 @@ class EndlessWinterGame {
             rarity: rarity,
             rarityDisplayName: rarityInfo.displayName,
             rarityMultiplier: rarityInfo.multiplier,
-            colorClass: rarityInfo.color,
             refineLevel: 0
         };
     }
@@ -3866,9 +3980,8 @@ class EndlessWinterGame {
                 stats: item.stats,
                 description: item.description,
                 rarity: 'white',
-                rarityDisplayName: '白色',
-                rarityMultiplier: 1,
-                colorClass: 'text-gray-400'
+            rarityDisplayName: '白色',
+            rarityMultiplier: 1
             };
             
             // 检查并自动穿戴更好的装备

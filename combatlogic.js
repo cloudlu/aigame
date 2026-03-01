@@ -132,8 +132,21 @@ EndlessWinterGame.prototype.useSkill = function(skillIndex) {
         this.addBattleLog('只有在战斗模式中才能使用技能！');
         return;
     }
-    // 确保有足够的能量
+    
+    // 检查技能是否允许在当前境界使用
     let skill = this.gameState.player.skills[skillIndex];
+    if (!skill) {
+        this.addBattleLog(`找不到技能：${skillIndex}`);
+        return;
+    }
+    
+    // 检查境界要求
+    if (skill.realmRequired && this.gameState.player.realm.currentRealm < skill.realmRequired) {
+        this.addBattleLog('当前境界无法使用此技能！');
+        return;
+    }
+    
+    // 确保有足够的能量
     if (!skill) {
         this.addBattleLog(`找不到技能：${skillIndex}`);
         return;
@@ -202,6 +215,11 @@ EndlessWinterGame.prototype.useSkill = function(skillIndex) {
                 this.addBattleLog(`你的${skill.name}被${this.gameState.enemy.name}闪避了！`);
                 this.showDodge(this.battle3D.enemy, '闪避！');
             }
+        } else if (skill.dodgeBonus) {
+            // 闪避技能
+            this.gameState.player.dodgeActive = true;
+            this.gameState.player.dodgeBonus = skill.dodgeBonus;
+            this.addBattleLog(`你使用了${skill.name}，提高了闪避率！`);
         }
         
         if (playerDamage > 0) {
@@ -218,14 +236,23 @@ EndlessWinterGame.prototype.useSkill = function(skillIndex) {
             return;
         }
 
-        // 敌人反击（技能攻击和生命恢复不触发反击）
-        if (!skill.defenseBonus && !skill.healPercentage) {
+        // 敌人反击（技能攻击、生命恢复和闪避不触发反击）
+        if (!skill.defenseBonus && !skill.healPercentage && !skill.dodgeBonus) {
             this.playEnemyAttackAnimation();
 
             let finalEnemyDamage = Math.max(1, this.gameState.enemy.attack - finalDefense);
 
             // 敌人攻击命中判断
-            const enemyHitChance = Math.min(95, enemyAccuracy - finalDodge);
+            let enemyHitChance = Math.min(95, enemyAccuracy - finalDodge);
+            
+            // 检查是否有闪避加成
+            if (this.gameState.player.dodgeActive && this.gameState.player.dodgeBonus) {
+                enemyHitChance -= this.gameState.player.dodgeBonus * 100;
+                enemyHitChance = Math.max(5, enemyHitChance); // 最低5%命中几率
+                this.gameState.player.dodgeActive = false;
+                this.gameState.player.dodgeBonus = 0;
+            }
+            
             const enemyHit = Math.random() * 100 < enemyHitChance;
 
             if (enemyHit) {
@@ -289,6 +316,9 @@ EndlessWinterGame.prototype.useSkill = function(skillIndex) {
     } else if (skill.healPercentage) {
         // 直接执行治疗效果
         handleSkillEffect();
+    } else if (skill.dodgeBonus) {
+        // 直接执行闪避效果
+        handleSkillEffect();
     }
 };
 
@@ -347,6 +377,36 @@ EndlessWinterGame.prototype.enemyDefeated = function() {
         }
     } else {
         this.addBattleLog(`敌人没有掉落装备。`);
+    }
+
+    // 突破石掉落（只有BOSS有几率掉落）
+    if (this.gameState.enemy.isBoss) {
+        const realm = this.gameState.player.realm;
+        let dropChance = 0;
+        
+        // 根据境界和阶段计算掉落概率
+        if (realm.currentRealm === 0) {
+            // 武者境界
+            if (realm.currentStage === 10) {
+                // 武者巅峰级别，低概率掉落
+                dropChance = 0.05; // 5%
+            } else {
+                // 武者非巅峰级别，不掉落
+                dropChance = 0;
+            }
+        } else {
+            // 炼气及以上境界，随着境界提高，掉落概率增加
+            dropChance = 0.05 + (realm.currentRealm * 0.05); // 5% + 每提高一个境界增加5%
+            dropChance = Math.min(dropChance, 0.5); // 最高50%概率
+        }
+        
+        // 检查是否掉落突破石
+        if (Math.random() < dropChance) {
+            // 掉落1-3个突破石
+            const stonesGained = Math.floor(Math.random() * 3) + 1;
+            this.gameState.resources.breakthroughStones = (this.gameState.resources.breakthroughStones || 0) + stonesGained;
+            this.addBattleLog(`获得了${stonesGained}个突破石！`);
+        }
     }
 
     // 检查升级
@@ -452,8 +512,7 @@ EndlessWinterGame.prototype.getRarityData = function(rarity) {
         description: `${rarityData.displayName}品质的${template.type}`,
         rarity: rarity,
         rarityDisplayName: rarityData.displayName,
-        rarityMultiplier: rarityData.multiplier,
-        colorClass: rarityData.color
+        rarityMultiplier: rarityData.multiplier
     };
 };
 

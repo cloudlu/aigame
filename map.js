@@ -41,6 +41,9 @@ EndlessWinterGame.prototype.showEnemyInfo = function(enemyInfo) {
     const enemyHp = document.getElementById('enemy-hp');
     const enemyMaxHp = document.getElementById('enemy-max-hp');
     const enemyAttack = document.getElementById('enemy-attack');
+    const enemyDefense = document.getElementById('enemy-defense');
+    const enemySpeed = document.getElementById('enemy-speed');
+    const enemyLuck = document.getElementById('enemy-luck');
     const confirmBtn = document.getElementById('confirm-attack-btn');
 
     if (enemyName) enemyName.textContent = enemyInfo.name;
@@ -48,6 +51,9 @@ EndlessWinterGame.prototype.showEnemyInfo = function(enemyInfo) {
     if (enemyHp) enemyHp.textContent = enemyInfo.hp;
     if (enemyMaxHp) enemyMaxHp.textContent = enemyInfo.maxHp;
     if (enemyAttack) enemyAttack.textContent = enemyInfo.attack;
+    if (enemyDefense) enemyDefense.textContent = enemyInfo.defense || 0;
+    if (enemySpeed) enemySpeed.textContent = enemyInfo.speed || 0;
+    if (enemyLuck) enemyLuck.textContent = enemyInfo.luck || 0;
 
     // 更新敌人图标
     const enemyIconElement = document.querySelector('#enemy-icon i');
@@ -103,31 +109,40 @@ EndlessWinterGame.prototype.showEnemyInfo = function(enemyInfo) {
     if (this.gameState.enemy?.name) {
         // 基础掉率
         let dropRates = {
-            white: 0.4,
-            blue: 0.3,
-            purple: 0.15,
-            gold: 0.1,
-            legendary: 0.05
+            white: 0.3,
+            green: 0.25,
+            blue: 0.2,
+            cyan: 0.1,
+            purple: 0.08,
+            pink: 0.04,
+            gold: 0.02,
+            legendary: 0.01
         };
         
         // 根据怪物类型调整掉率
         if (this.gameState.enemy.isBoss) {
             // BOSS掉率调整
             dropRates = {
-                white: 0.2,
-                blue: 0.3,
-                purple: 0.25,
-                gold: 0.2,
+                white: 0.1,
+                green: 0.15,
+                blue: 0.2,
+                cyan: 0.15,
+                purple: 0.15,
+                pink: 0.1,
+                gold: 0.1,
                 legendary: 0.05
             };
         } else if (this.gameState.enemy.isElite) {
             // 精英怪掉率调整
             dropRates = {
-                white: 0.3,
-                blue: 0.35,
-                purple: 0.2,
-                gold: 0.1,
-                legendary: 0.05
+                white: 0.2,
+                green: 0.2,
+                blue: 0.2,
+                cyan: 0.15,
+                purple: 0.1,
+                pink: 0.08,
+                gold: 0.05,
+                legendary: 0.02
             };
         }
         
@@ -137,11 +152,14 @@ EndlessWinterGame.prototype.showEnemyInfo = function(enemyInfo) {
         
         // 调整掉率，提高高品质装备的概率
         const adjustedRates = {
-            white: Math.max(0, dropRates.white - luckBonus * 2),
+            white: Math.max(0, dropRates.white - luckBonus * 3),
+            green: Math.max(0, dropRates.green - luckBonus * 2),
             blue: Math.max(0, dropRates.blue - luckBonus),
+            cyan: Math.max(0, dropRates.cyan),
             purple: Math.max(0, dropRates.purple + luckBonus * 0.5),
-            gold: Math.max(0, dropRates.gold + luckBonus * 1),
-            legendary: Math.max(0, dropRates.legendary + luckBonus * 1.5)
+            pink: Math.max(0, dropRates.pink + luckBonus * 1),
+            gold: Math.max(0, dropRates.gold + luckBonus * 1.5),
+            legendary: Math.max(0, dropRates.legendary + luckBonus * 2)
         };
         
         // 归一化概率
@@ -157,8 +175,11 @@ EndlessWinterGame.prototype.showEnemyInfo = function(enemyInfo) {
         // 品质颜色映射
         const rarityColors = {
             white: 'bg-white/10',
+            green: 'bg-green-500/20',
             blue: 'bg-blue-500/20',
+            cyan: 'bg-cyan-500/20',
             purple: 'bg-purple-500/20',
+            pink: 'bg-pink-500/20',
             gold: 'bg-yellow-500/20',
             legendary: 'bg-red-500/20'
         };
@@ -166,8 +187,11 @@ EndlessWinterGame.prototype.showEnemyInfo = function(enemyInfo) {
         // 品质名称映射
         const rarityNames = {
             white: '白色',
+            green: '绿色',
             blue: '蓝色',
+            cyan: '青色',
             purple: '紫色',
+            pink: '粉色',
             gold: '金色',
             legendary: '传说'
         };
@@ -198,6 +222,9 @@ EndlessWinterGame.prototype.clearEnemyInfo = function() {
     const enemyHp = document.getElementById('enemy-hp');
     const enemyMaxHp = document.getElementById('enemy-max-hp');
     const enemyAttack = document.getElementById('enemy-attack');
+    const enemyDefense = document.getElementById('enemy-defense');
+    const enemySpeed = document.getElementById('enemy-speed');
+    const enemyLuck = document.getElementById('enemy-luck');
     const confirmBtn = document.getElementById('confirm-attack-btn');
     const enemyEliteBadge = document.getElementById('enemy-elite-badge');
 
@@ -206,11 +233,13 @@ EndlessWinterGame.prototype.clearEnemyInfo = function() {
     if (enemyHp) enemyHp.textContent = '';
     if (enemyMaxHp) enemyMaxHp.textContent = '';
     if (enemyAttack) enemyAttack.textContent = '';
+    if (enemyDefense) enemyDefense.textContent = '';
+    if (enemySpeed) enemySpeed.textContent = '';
+    if (enemyLuck) enemyLuck.textContent = '';
     if (enemyEliteBadge) enemyEliteBadge.classList.add('hidden');
     
-    const eliteBadge = document.getElementById('enemy-elite-badge');
-    if (eliteBadge) {
-        eliteBadge.classList.add('hidden');
+    if (enemyEliteBadge) {
+        enemyEliteBadge.classList.add('hidden');
     }
     
     const enemyIconElement = document.querySelector('#enemy-icon i');
@@ -660,10 +689,6 @@ EndlessWinterGame.prototype.createEnemy = function(enemyDistribution, enemyIndex
         bonus = 0.5;
     }
 
-    const finalAttack = Math.floor(baseAttack * (1 + bonus));
-    const finalDefense = Math.floor(baseDefense * (1 + bonus));
-    const finalHp = Math.floor(baseHp * (1 + bonus));
-
     const currentBackground = this.gameState.mapBackgrounds && this.gameState.currentBackgroundIndex !== undefined ? 
         this.gameState.mapBackgrounds[this.gameState.currentBackgroundIndex] : null;
     let mapType = currentBackground ? currentBackground.type : null;
@@ -686,6 +711,7 @@ EndlessWinterGame.prototype.createEnemy = function(enemyDistribution, enemyIndex
             baseAttack: 8,
             baseDefense: 2,
             baseSpeed: 5,
+            baseLuck: 1,
             expMultiplier: 1,
             resourceMultiplier: 1,
             icon: 'fa-skull',
@@ -693,12 +719,22 @@ EndlessWinterGame.prototype.createEnemy = function(enemyDistribution, enemyIndex
         };
     }
 
+    const finalAttack = Math.floor(baseAttack * (1 + bonus));
+    const finalDefense = Math.floor(baseDefense * (1 + bonus));
+    const finalHp = Math.floor(baseHp * (1 + bonus));
+    const baseSpeed = enemyLevel * (selectedEnemyType.baseSpeed || 5);
+    const baseLuck = enemyLevel * (selectedEnemyType.baseLuck || 1);
+    const finalSpeed = Math.floor(baseSpeed * (1 + bonus));
+    const finalLuck = Math.floor(baseLuck * (1 + bonus));
+
     return {
         level: enemyLevel,
         hp: finalHp,
         maxHp: finalHp,
         attack: finalAttack,
         defense: finalDefense,
+        speed: finalSpeed,
+        luck: finalLuck,
         energy: isBoss ? 100 : 0,
         maxEnergy: isBoss ? 100 : 0,
         isElite: isElite,

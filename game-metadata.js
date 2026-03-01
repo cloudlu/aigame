@@ -3,14 +3,14 @@
 const gameMetadata = {
     // 装备品质定义
     equipmentRarities: [
-        { name: "white", displayName: "白色", multiplier: 1, color: "text-gray-400", realmPhase: "前期", statCount: 1 },
-        { name: "green", displayName: "绿色", multiplier: 1.5, color: "text-green-400", realmPhase: "前期", statCount: 1 },
-        { name: "blue", displayName: "蓝色", multiplier: 2, color: "text-blue-400", realmPhase: "中期", statCount: 2 },
-        { name: "cyan", displayName: "青色", multiplier: 2.5, color: "text-cyan-400", realmPhase: "中期", statCount: 2 },
-        { name: "purple", displayName: "紫色", multiplier: 3, color: "text-purple-400", realmPhase: "后期", statCount: 3 },
-        { name: "pink", displayName: "粉色", multiplier: 3.5, color: "text-pink-400", realmPhase: "后期", statCount: 3 },
-        { name: "gold", displayName: "黄金", multiplier: 4, color: "text-yellow-400", realmPhase: "大圆满", statCount: 4 },
-        { name: "legendary", displayName: "传奇", multiplier: 5, color: "text-orange-400", realmPhase: "大圆满", statCount: 4 }
+        { name: "white", displayName: "白色", multiplier: 1, realmPhase: "前期", statCount: 1 },
+        { name: "green", displayName: "绿色", multiplier: 1.5, realmPhase: "前期", statCount: 1 },
+        { name: "blue", displayName: "蓝色", multiplier: 2, realmPhase: "中期", statCount: 2 },
+        { name: "cyan", displayName: "青色", multiplier: 2.5, realmPhase: "中期", statCount: 2 },
+        { name: "purple", displayName: "紫色", multiplier: 3, realmPhase: "后期", statCount: 3 },
+        { name: "pink", displayName: "粉色", multiplier: 3.5, realmPhase: "后期", statCount: 3 },
+        { name: "gold", displayName: "黄金", multiplier: 4, realmPhase: "大圆满", statCount: 4 },
+        { name: "legendary", displayName: "传奇", multiplier: 5, realmPhase: "大圆满", statCount: 4 }
     ],
     
     // 装备模板
@@ -642,25 +642,52 @@ const gameMetadata = {
     // 特殊技
     skills: [
         {
+            name: "重击",
+            description: "造成1.5倍普通伤害",
+            energyCost: 15,
+            damageMultiplier: 1.5,
+            levelRequired: 1,
+            realmRequired: 0
+        },
+        {
+            name: "闪避",
+            description: "提高闪避率，本回合有30%几率闪避攻击",
+            energyCost: 10,
+            dodgeBonus: 0.3,
+            levelRequired: 5,
+            realmRequired: 0
+        },
+        {
+            name: "耐力恢复",
+            description: "恢复10%最大生命值",
+            energyCost: 20,
+            healPercentage: 0.1,
+            levelRequired: 15,
+            realmRequired: 0
+        },
+        {
             name: "强力攻击",
             description: "造成2倍普通伤害",
             energyCost: 20,
             damageMultiplier: 2,
-            levelRequired: 1
+            levelRequired: 1,
+            realmRequired: 1
         },
         {
             name: "防御姿态",
             description: "本回合减少50%受到的伤害",
             energyCost: 15,
             defenseBonus: 0.5,
-            levelRequired: 10
+            levelRequired: 10,
+            realmRequired: 1
         },
         {
             name: "生命恢复",
             description: "恢复20%最大生命值",
             energyCost: 25,
             healPercentage: 0.2,
-            levelRequired: 20
+            levelRequired: 20,
+            realmRequired: 1
         },
         {
             name: "幸运一击",
@@ -668,7 +695,8 @@ const gameMetadata = {
             energyCost: 30,
             criticalMultiplier: 3,
             criticalChance: 0.7,
-            levelRequired: 30
+            levelRequired: 30,
+            realmRequired: 1
         }
     ],
     
@@ -848,6 +876,21 @@ const gameMetadata = {
     
     // 境界系统配置
     realmConfig: [
+        {
+            name: "武者",
+            stages: [
+                { stage: 1, name: "初期", levelCap: 10, bonus: { attack: 0, defense: 0, hp: 0, luck: 0 }, breakthroughStones: 0 },
+                { stage: 2, name: "初期", levelCap: 10, bonus: { attack: 0, defense: 0, hp: 0, luck: 0 }, breakthroughStones: 0 },
+                { stage: 3, name: "初期", levelCap: 10, bonus: { attack: 0, defense: 0, hp: 0, luck: 0 }, breakthroughStones: 0 },
+                { stage: 4, name: "中期", levelCap: 20, bonus: { attack: 0, defense: 0, hp: 0, luck: 0 }, breakthroughStones: 0 },
+                { stage: 5, name: "中期", levelCap: 20, bonus: { attack: 0, defense: 0, hp: 0, luck: 0 }, breakthroughStones: 0 },
+                { stage: 6, name: "中期", levelCap: 20, bonus: { attack: 0, defense: 0, hp: 0, luck: 0 }, breakthroughStones: 0 },
+                { stage: 7, name: "后期", levelCap: 30, bonus: { attack: 0, defense: 0, hp: 0, luck: 0 }, breakthroughStones: 0 },
+                { stage: 8, name: "后期", levelCap: 30, bonus: { attack: 0, defense: 0, hp: 0, luck: 0 }, breakthroughStones: 0 },
+                { stage: 9, name: "后期", levelCap: 30, bonus: { attack: 0, defense: 0, hp: 0, luck: 0 }, breakthroughStones: 0 },
+                { stage: 10, name: "巅峰", levelCap: 30, bonus: { attack: 0, defense: 0, hp: 0, luck: 0 }, breakthroughStones: 1 }
+            ]
+        },
         {
             name: "炼气",
             stages: [
