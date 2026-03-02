@@ -103,6 +103,149 @@ EndlessWinterGame.prototype.createBattleScene = function(enemyInfo) {
         }
     });
 
+    // 创建玩家信息工具提示元素
+    let playerTooltip = null;
+    
+    // 设置鼠标悬停事件
+    scene.onPointerObservable.add((pointerInfo) => {
+        // 清理之前的工具提示
+        if (playerTooltip) {
+            playerTooltip.remove();
+            playerTooltip = null;
+        }
+        
+        if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERMOVE) {
+            const pickResult = scene.pick(scene.pointerX, scene.pointerY);
+            if (pickResult.hit && pickResult.pickedMesh && pickResult.pickedMesh.name === 'player') {
+                // 显示玩家信息工具提示
+                playerTooltip = document.createElement('div');
+                playerTooltip.className = 'absolute bg-dark/90 text-white p-2 rounded text-xs z-50 pointer-events-none';
+                playerTooltip.style.position = 'fixed';
+                playerTooltip.style.left = `${pointerInfo.event.clientX + 10}px`;
+                playerTooltip.style.top = `${pointerInfo.event.clientY + 10}px`;
+                
+                // 计算临时命中和闪避率
+                const calculateHitChance = () => {
+                    const baseHit = 90; // 基础命中率 90%
+                    const playerSpeed = this.gameState.player.speed || 0;
+                    const luck = this.gameState.player.luck || 0;
+                    // 每10点速度增加1%命中，每10点幸运增加1%命中
+                    const hitBonus = Math.floor(playerSpeed / 10) + Math.floor(luck / 10);
+                    const finalHit = Math.min(99, baseHit + hitBonus);
+                    return finalHit;
+                };
+                
+                const calculateDodgeChance = () => {
+                    const baseDodge = 10; // 基础闪避率 10%
+                    const playerSpeed = this.gameState.player.speed || 0;
+                    const luck = this.gameState.player.luck || 0;
+                    // 每8点速度增加1%闪避，每15点幸运增加1%闪避
+                    const dodgeBonus = Math.floor(playerSpeed / 8) + Math.floor(luck / 15);
+                    const finalDodge = Math.min(50, baseDodge + dodgeBonus);
+                    return finalDodge;
+                };
+                
+                const hitChance = calculateHitChance();
+                const dodgeChance = calculateDodgeChance();
+                
+                // 构建工具提示内容
+                playerTooltip.innerHTML = `
+                    <div class="font-bold">${this.gameState.user?.username || '玩家'}</div>
+                    <div>等级: ${this.calculateTotalLevel()}</div>
+                    <div>生命值: ${this.gameState.player.hp}/${this.gameState.player.maxHp}</div>
+                    <div>能量: ${this.gameState.player.energy}/${this.gameState.player.maxEnergy}</div>
+                    <div>攻击: ${this.gameState.player.attack}</div>
+                    <div>防御: ${this.gameState.player.defense}</div>
+                    <div>速度: ${this.gameState.player.speed || 0}</div>
+                    <div>幸运: ${this.gameState.player.luck || 0}</div>
+                    <div>命中率: ${hitChance}%</div>
+                    <div>闪避率: ${dodgeChance}%</div>
+                `;
+                
+                document.body.appendChild(playerTooltip);
+            }
+        }
+    });
+
+    // 鼠标离开场景时清理工具提示
+    scene.onPointerObservable.add((pointerInfo) => {
+        if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERUP || 
+            pointerInfo.type === BABYLON.PointerEventTypes.POINTERLEAVE) {
+            if (playerTooltip) {
+                playerTooltip.remove();
+                playerTooltip = null;
+            }
+            if (enemyTooltip) {
+                enemyTooltip.remove();
+                enemyTooltip = null;
+            }
+        }
+    });
+
+    // 创建敌人信息工具提示元素
+    let enemyTooltip = null;
+    
+    // 设置敌人鼠标悬停事件
+    scene.onPointerObservable.add((pointerInfo) => {
+        // 清理之前的工具提示
+        if (enemyTooltip) {
+            enemyTooltip.remove();
+            enemyTooltip = null;
+        }
+        
+        if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERMOVE) {
+            const pickResult = scene.pick(scene.pointerX, scene.pointerY);
+            if (pickResult.hit && pickResult.pickedMesh && pickResult.pickedMesh.name === 'enemy') {
+                // 显示敌人信息工具提示
+                enemyTooltip = document.createElement('div');
+                enemyTooltip.className = 'absolute bg-dark/90 text-white p-2 rounded text-xs z-50 pointer-events-none';
+                enemyTooltip.style.position = 'fixed';
+                enemyTooltip.style.left = `${pointerInfo.event.clientX + 10}px`;
+                enemyTooltip.style.top = `${pointerInfo.event.clientY + 10}px`;
+                
+                // 计算敌人临时命中和闪避率
+                const calculateEnemyHitChance = () => {
+                    const baseHit = 90; // 基础命中率 90%
+                    const enemySpeed = this.gameState.enemy.speed || 0;
+                    const enemyLuck = this.gameState.enemy.luck || 0;
+                    // 每10点速度增加1%命中，每10点幸运增加1%命中
+                    const hitBonus = Math.floor(enemySpeed / 10) + Math.floor(enemyLuck / 10);
+                    const finalHit = Math.min(99, baseHit + hitBonus);
+                    return finalHit;
+                };
+                
+                const calculateEnemyDodgeChance = () => {
+                    const baseDodge = 10; // 基础闪避率 10%
+                    const enemySpeed = this.gameState.enemy.speed || 0;
+                    const enemyLuck = this.gameState.enemy.luck || 0;
+                    // 每8点速度增加1%闪避，每15点幸运增加1%闪避
+                    const dodgeBonus = Math.floor(enemySpeed / 8) + Math.floor(enemyLuck / 15);
+                    const finalDodge = Math.min(50, baseDodge + dodgeBonus);
+                    return finalDodge;
+                };
+                
+                const enemyHitChance = calculateEnemyHitChance();
+                const enemyDodgeChance = calculateEnemyDodgeChance();
+                
+                // 构建工具提示内容
+                enemyTooltip.innerHTML = `
+                    <div class="font-bold">${this.gameState.enemy.name}</div>
+                    <div>等级: ${this.gameState.enemy.level}</div>
+                    <div>生命值: ${this.gameState.enemy.hp}/${this.gameState.enemy.maxHp}</div>
+                    ${this.gameState.enemy.isBoss || this.gameState.enemy.energy > 0 ? `<div>能量: ${this.gameState.enemy.energy}/${this.gameState.enemy.maxEnergy || 100}</div>` : ''}
+                    <div>攻击: ${this.gameState.enemy.attack}</div>
+                    <div>防御: ${this.gameState.enemy.defense || 0}</div>
+                    <div>速度: ${this.gameState.enemy.speed || 0}</div>
+                    <div>幸运: ${this.gameState.enemy.luck || 0}</div>
+                    <div>命中率: ${enemyHitChance}%</div>
+                    <div>闪避率: ${enemyDodgeChance}%</div>
+                `;
+                
+                document.body.appendChild(enemyTooltip);
+            }
+        }
+    });
+
     // 初始化 battle3D 对象（战斗模式专用）
     this.battle3D = {
         engine: engine,
