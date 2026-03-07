@@ -172,7 +172,7 @@ app.post('/api/save', verifyToken, (req, res) => {
         }
         
         // 过滤掉元数据部分和不需要存储的临时数据
-        const metadataFields = ['equipmentRarities', 'equipmentTemplates', 'dropRates', 'enemyTypes', 'skills', 'shop', 'mapBackgrounds', 'sceneMonsters', 'user'];
+        const metadataFields = ['equipmentRarities', 'equipmentTemplates', 'dropRates', 'enemyTypes', 'skills', 'shop', 'mapBackgrounds', 'sceneMonsters', 'user', 'metadata'];
         metadataFields.forEach(field => {
             if (gameState[field]) {
                 delete gameState[field];
@@ -196,18 +196,30 @@ app.post('/api/save', verifyToken, (req, res) => {
 app.get('/api/load', verifyToken, (req, res) => {
     try {
         const userId = req.user.userId;
-        
+
         // 生成保存文件路径
         const saveFilePath = path.join(SAVE_DIR, `${userId}.json`);
-        
+
         // 检查文件是否存在
         if (!fs.existsSync(saveFilePath)) {
             return res.status(404).json({ error: 'Save file not found' });
         }
-        
+
         // 读取游戏状态
         const gameState = JSON.parse(fs.readFileSync(saveFilePath, 'utf8'));
-        
+
+        // 初始化技能数据（如果不存在）
+        if (gameState.player && !gameState.player.skills) {
+            gameState.player.skills = {
+                levels: {},
+                equipped: []
+            };
+            for (let i = 0; i < 6; i++) {
+                gameState.player.skills.equipped[i] = null;
+            }
+            fs.writeFileSync(saveFilePath, JSON.stringify(gameState, null, 2));
+        }
+
         res.json({ success: true, gameState });
     } catch (error) {
         console.error('Error loading game:', error);

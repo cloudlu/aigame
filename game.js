@@ -1,3 +1,11 @@
+// 导入装备系统
+if (typeof module !== 'undefined' && module.exports) {
+    const EquipmentSystem = require('./equipment');
+    const SkillTreeSystem = require('./skillTreeSystem');
+} else {
+    // 浏览器环境，EquipmentSystem 和 SkillTreeSystem 已经通过 script 标签加载
+}
+
 // 游戏核心数据结构和状态管理
 class EndlessWinterGame {
     constructor() {
@@ -27,6 +35,12 @@ class EndlessWinterGame {
             afkTimer: null
         };
         
+        // 初始化装备系统
+        this.equipmentSystem = new EquipmentSystem(this);
+
+        // 初始化技能树系统
+        this.skillTreeSystem = new SkillTreeSystem(this);
+        
         // 初始化游戏
         this.initGame();
     }
@@ -53,12 +67,15 @@ class EndlessWinterGame {
         this.loadTextures();
         
         // 确保所有装备都有refineLevel属性
-        for (const slot in this.gameState.player.equipment) {
-            const item = this.gameState.player.equipment[slot];
-            if (item && item.refineLevel === undefined) {
-                item.refineLevel = 0;
+            for (const slot in this.gameState.player.equipment) {
+                const item = this.gameState.player.equipment[slot];
+                if (item && item.refineLevel === undefined) {
+                    item.refineLevel = 0;
+                }
             }
-        }
+            
+            // 计算初始装备效果
+            this.equipmentSystem.calculateEquipmentEffects();
         
         // 延迟执行需要map.js的方法
         setTimeout(() => {
@@ -109,45 +126,41 @@ class EndlessWinterGame {
             }
             
             const metadata = data.metadata;
+
+            // 保存metadata引用供后续使用
+            this.metadata = metadata;
             
+            // 添加辅助方法
+            this.metadata.getSkillById = function(skillId) {
+                // 从技能树系统中查找技能
+                if (this.skillTrees) {
+                    for (let skillTree of this.skillTrees) {
+                        // 在技能树的等级中查找
+                        if (skillTree.levels) {
+                            for (let level of skillTree.levels) {
+                                // 检查是否匹配技能树ID或技能名称
+                                if (skillTree.id === skillId || level.name === skillId) {
+                                    return {
+                                        ...level,
+                                        id: skillTree.id,
+                                        treeName: skillTree.name,
+                                        type: skillTree.type,
+                                        realmRequired: skillTree.realmRequired
+                                    };
+                                }
+                            }
+                        }
+                    }
+                }
+                return null;
+            };
+
             // 更新游戏状态中的元数据
-            if (metadata.equipmentRarities) {
-                this.gameState.equipmentRarities = metadata.equipmentRarities;
-            }
-            if (metadata.equipmentTemplates) {
-                this.gameState.equipmentTemplates = metadata.equipmentTemplates;
-            }
+          
             if (metadata.dropRates) {
-                this.gameState.dropRates = metadata.dropRates;
+                this.metadata.dropRates = metadata.dropRates;
             }
-            if (metadata.enemyTypes) {
-                this.gameState.enemyTypes = metadata.enemyTypes;
-            }
-            if (metadata.skills) {
-                this.gameState.player.skills = metadata.skills;
-            }
-            if (metadata.shop) {
-                this.gameState.shop = metadata.shop;
-            }
-            if (metadata.mapBackgrounds) {
-                this.gameState.mapBackgrounds = metadata.mapBackgrounds;
-            }
-            if (metadata.mapEnemyMapping) {
-                this.gameState.mapEnemyMapping = metadata.mapEnemyMapping;
-            }
-            if (metadata.player) {
-                this.playerMetadata = metadata.player;
-            }
-            if (metadata.resources && metadata.resources.types) {
-                // 保存资源元数据供后续使用
-                this.resourceMetadata = metadata.resources;
-            }
-            
-            // 加载境界系统配置
-            if (metadata.realmConfig) {
-                this.realmConfig = metadata.realmConfig;
-            }
-            
+
             this.addBattleLog('从服务器加载游戏数据成功！');
         } catch (error) {
             console.error('获取元数据失败:', error);
@@ -207,8 +220,8 @@ class EndlessWinterGame {
     
     // 更新地图背景UI
     updateMapBackgroundUI() {
-        if (this.gameState.mapBackgrounds.length > 0) {
-            const currentBackground = this.gameState.mapBackgrounds[this.gameState.currentBackgroundIndex];
+        if (this.metadata.mapBackgrounds.length > 0) {
+            const currentBackground = this.metadata.mapBackgrounds[this.gameState.currentBackgroundIndex];
             if (currentBackground) {
                 // 更新3D场景背景
                 if (this.battle3D) {
@@ -325,7 +338,7 @@ class EndlessWinterGame {
             const energyMax = this.gameState.player.maxEnergy || 100;
             energyElement.textContent = `${energyCurrent}/${energyMax}`;
             // 使用元数据中的回复速率，如果没有则使用默认值2
-            const energyRegenRate = this.playerMetadata?.regenRates?.energy || 2;
+            const energyRegenRate = this.metadata.player?.regenRates?.energy || 2;
             energyElement.setAttribute('data-tooltip', `能量恢复: +${energyRegenRate}/秒`);
         }
         const spiritWoodElement = document.getElementById('spiritWood');
@@ -354,11 +367,11 @@ class EndlessWinterGame {
         }
         
         // 计算装备效果
-        this.calculateEquipmentEffects();
+        this.equipmentSystem.calculateEquipmentEffects();
         
         // 计算境界加成
         let realmBonus = { attack: 0, defense: 0, hp: 0, luck: 0 };
-        if (this.realmConfig) {
+        if (this.metadata.realmConfig) {
             realmBonus = this.calculateRealmBonus();
         }
         
@@ -372,10 +385,10 @@ class EndlessWinterGame {
         // 更新玩家属性显示
             const levelElement = document.getElementById('level');
             if (levelElement) {
-                if (this.realmConfig) {
+                if (this.metadata.realmConfig) {
                     const realm = this.gameState.player.realm;
-                    const realmName = this.realmConfig[realm.currentRealm].name;
-                    const stageConfig = this.realmConfig[realm.currentRealm].stages[realm.currentStage - 1];
+                    const realmName = this.metadata.realmConfig[realm.currentRealm].name;
+                    const stageConfig = this.metadata.realmConfig[realm.currentRealm].stages[realm.currentStage - 1];
                     const stageName = stageConfig.name;
                     levelElement.textContent = `${realmName} ${stageName} ${realm.currentStage}阶 ${realm.currentLevel}级`;
                 } else {
@@ -403,9 +416,9 @@ class EndlessWinterGame {
             }
             // 更新突破按钮状态
             const breakthroughBtnElement = document.getElementById('breakthrough-btn');
-            if (breakthroughBtnElement && this.realmConfig) {
+            if (breakthroughBtnElement && this.metadata.realmConfig) {
                 const realm = this.gameState.player.realm;
-                const currentStageConfig = this.realmConfig[realm.currentRealm].stages[realm.currentStage - 1];
+                const currentStageConfig = this.metadata.realmConfig[realm.currentRealm].stages[realm.currentStage - 1];
                 const requiredStones = currentStageConfig.breakthroughStones;
                 const hasEnoughLevel = realm.currentLevel >= currentStageConfig.levelCap;
                 const hasEnoughStones = (this.gameState.resources.breakthroughStones || 0) >= requiredStones;
@@ -471,10 +484,10 @@ class EndlessWinterGame {
                     }
                     equipmentElement.textContent = displayName;
                     // 根据装备稀有度设置颜色
-                    const colorClass = this.getEquipmentColorClass(item);
+                    const colorClass = this.equipmentSystem.getEquipmentColorClass(item);
                     equipmentElement.className = `text-sm ${colorClass}`;
                     // 设置装备属性的tooltip
-                    const statsDescription = this.getStatsDescription(item.stats);
+                    const statsDescription = this.equipmentSystem.getStatsDescription(item.stats);
                     const levelDisplay = item.realmName ? item.realmName : item.level;
                     const tooltipText = `${item.name}\n等级: ${levelDisplay}\n品质: ${item.rarityDisplayName || '白色'}\n精炼: +${item.refineLevel || 0}\n属性: ${statsDescription}`;
                     equipmentElement.setAttribute('data-tooltip', tooltipText);
@@ -490,7 +503,7 @@ class EndlessWinterGame {
         this.initTooltips();
         
         // 更新人物装备显示
-        this.updateCharacterEquipmentDisplay();
+        this.equipmentSystem.updateCharacterEquipmentDisplay();
         
         // 更新挂机时间显示
         const afkTimeElement = document.getElementById('afk-time');
@@ -516,7 +529,7 @@ class EndlessWinterGame {
         }
         
         // 更新精炼信息
-        this.updateRefineInfo(this.selectedRefineSlot);
+        this.equipmentSystem.updateRefineInfo(this.selectedRefineSlot);
         
     }
     
@@ -559,7 +572,7 @@ class EndlessWinterGame {
         // 生命自动恢复
         if (this.gameState.player.hp < this.gameState.player.maxHp) {
             // 使用元数据中的回复速率，如果没有则使用默认值0.5
-            const hpRegenRate = this.playerMetadata?.regenRates?.hp || 0.5;
+            const hpRegenRate = this.metadata.player?.regenRates?.hp || 0.5;
             this.gameState.player.hp = Math.min(
                 this.gameState.player.hp + hpRegenRate,
                 this.gameState.player.maxHp
@@ -570,7 +583,7 @@ class EndlessWinterGame {
         if (this.gameState.player && this.gameState.player.energy !== undefined && this.gameState.player.maxEnergy !== undefined) {
             if (this.gameState.player.energy < this.gameState.player.maxEnergy) {
                 // 使用元数据中的回复速率，如果没有则使用默认值2
-                const energyRegenRate = this.playerMetadata?.regenRates?.energy || 2;
+                const energyRegenRate = this.metadata.player?.regenRates?.energy || 2;
                 this.gameState.player.energy = Math.min(
                     this.gameState.player.energy + energyRegenRate,
                     this.gameState.player.maxEnergy
@@ -707,17 +720,18 @@ class EndlessWinterGame {
             const equipmentSlots = document.querySelectorAll('.equipment-slot');
             equipmentSlots.forEach(slot => {
                 slot.addEventListener('click', () => {
-                    const selectedSlot = slot.dataset.slot;
-                    this.updateRefineInfo(selectedSlot);
-                    this.updateDisassembleInfo(selectedSlot);
-                    // 存储当前选中的装备槽位
-                    this.selectedRefineSlot = selectedSlot;
-                    // 更新装备槽位的样式
-                    document.querySelectorAll('.equipment-slot').forEach(s => {
-                        s.classList.remove('border-accent');
+                        const selectedSlot = slot.dataset.slot;
+                        this.equipmentSystem.updateRefineInfo(selectedSlot);
+                        this.equipmentSystem.updateDisassembleInfo(selectedSlot);
+                        this.equipmentSystem.updateRefreshInfo(selectedSlot);
+                        // 存储当前选中的装备槽位
+                        this.selectedRefineSlot = selectedSlot;
+                        // 更新装备槽位的样式
+                        document.querySelectorAll('.equipment-slot').forEach(s => {
+                            s.classList.remove('border-accent');
+                        });
+                        slot.classList.add('border-accent');
                     });
-                    slot.classList.add('border-accent');
-                });
                 
                 // 添加双击事件来卸下装备
                 slot.addEventListener('dblclick', () => {
@@ -736,33 +750,50 @@ class EndlessWinterGame {
         // 精炼装备按钮
         bindEvent('#refine-weapon-btn', 'click', () => {
             const slot = this.selectedRefineSlot || 'weapon';
-            this.refineEquipment(slot);
+            this.equipmentSystem.refineEquipment(slot);
         });
-        
 
-        
+        // 刷新装备属性按钮
+        bindEvent('#refresh-equipment-btn', 'click', () => {
+            const slot = this.selectedRefineSlot || 'weapon';
+            this.equipmentSystem.refreshEquipmentStats(slot);
+            // 刷新后更新刷新信息显示
+            this.equipmentSystem.updateRefreshInfo(slot);
+        });
+
+
+
         // 一键装备最好的装备按钮
         bindEvent('#auto-equip-btn', 'click', () => {
-            this.autoEquipBestGear();
+            this.equipmentSystem.autoEquipBestGear();
         });
         
         // 特殊技按钮
         bindEvent('#skill-0', 'click', () => {
-            this.useSkill(0);
+            this.useSkill();
         });
-        
+
         bindEvent('#skill-1', 'click', () => {
-            this.useSkill(1);
+            this.useSkill();
         });
-        
+
         bindEvent('#skill-2', 'click', () => {
-            this.useSkill(2);
+            this.useSkill();
         });
-        
+
+
         bindEvent('#skill-3', 'click', () => {
-            this.useSkill(3);
+            this.useSkill();
         });
-        
+
+        bindEvent('#skill-4', 'click', () => {
+            this.useSkill();
+        });
+
+        bindEvent('#skill-5', 'click', () => {
+            this.useSkill();
+        });
+
         // 商店购买按钮
         bindEvent('#buy-health-potion', 'click', () => {
             this.buyShopItem('health_potion');
@@ -797,10 +828,6 @@ class EndlessWinterGame {
             this.buyShopItem('basic_boots');
         });
         
-        bindEvent('#reset-game', 'click', () => {
-            this.resetGame();
-        });
-        
         // 注销账号按钮
         bindEvent('#delete-account-btn', 'click', () => {
             this.deleteAccount();
@@ -829,11 +856,11 @@ class EndlessWinterGame {
             this.generateMiniMap(); // 重新生成整个地图的敌人，确保与用户等级匹配
             
             // 随机刷新3D场景背景
-            if (this.gameState.mapBackgrounds.length > 0) {
-                const randomBackgroundIndex = Math.floor(Math.random() * this.gameState.mapBackgrounds.length);
+            if (this.metadata.mapBackgrounds.length > 0) {
+                const randomBackgroundIndex = Math.floor(Math.random() * this.metadata.mapBackgrounds.length);
                 this.gameState.currentBackgroundIndex = randomBackgroundIndex;
                 this.updateMapBackgroundUI();
-                this.addBattleLog(`刷新了敌人和场景背景为：${this.gameState.mapBackgrounds[randomBackgroundIndex].name}！`);
+                this.addBattleLog(`刷新了敌人和场景背景为：${this.metadata.mapBackgrounds[randomBackgroundIndex].name}！`);
             } else {
                 this.addBattleLog('刷新了敌人！');
             }
@@ -957,154 +984,7 @@ class EndlessWinterGame {
     }
     
     // 生成装备掉落
-    generateEquipmentDrop() {
-        // 计算掉落概率（普通、精英、BOSS怪物不同掉落概率）
-        let baseDropChance;
-        if (this.gameState.enemy.isBoss) {
-            baseDropChance = 1.0; // BOSS必定掉落
-        } else if (this.gameState.enemy.isElite) {
-            baseDropChance = 0.8; // 精英怪高掉落概率
-        } else {
-            baseDropChance = 0.5; // 普通怪物基础掉落概率
-        }
-        
-        // 随机决定是否掉落
-        if (Math.random() > baseDropChance) {
-            return null;
-        }
-        
-        // 随机选择装备类型
-        const templateIndex = Math.floor(Math.random() * this.gameState.equipmentTemplates.length);
-        const template = this.gameState.equipmentTemplates[templateIndex];
-        
-        // 根据人物境界确定装备等级
-        const realm = this.gameState.player.realm;
-        const equipmentLevel = realm.currentRealm + 1; // 境界从0开始，装备等级从1开始
-        const realmName = this.realmConfig[realm.currentRealm].name; // 获取境界名称
-        
-        // 根据人物阶段确定装备品质范围
-        let phaseRarities = [];
-        if (realm.currentStage <= 3) {
-            // 前期
-            phaseRarities = ['white', 'green'];
-        } else if (realm.currentStage <= 6) {
-            // 中期
-            phaseRarities = ['blue', 'cyan'];
-        } else if (realm.currentStage <= 9) {
-            // 后期
-            phaseRarities = ['purple', 'pink'];
-        } else {
-            // 大圆满
-            phaseRarities = ['gold', 'legendary'];
-        }
-        
-        // 从对应阶段的品质中随机选择
-        const rarity = phaseRarities[Math.floor(Math.random() * phaseRarities.length)];
-        const rarityInfo = this.gameState.equipmentRarities.find(r => r.name === rarity);
-        
-        // 使用公共函数计算装备属性
-        const stats = this.calculateEquipmentStats(template, equipmentLevel, rarityInfo);
-        
-        // 生成装备名称
-        const prefixIndex = Math.floor(Math.min((rarityInfo ? rarityInfo.multiplier : 1) - 1, template.namePrefixes.length - 1));
-        const suffixIndex = Math.floor(Math.random() * template.nameSuffixes.length);
-        const prefix = template.namePrefixes[prefixIndex] || "";
-        const suffix = template.nameSuffixes[suffixIndex] || "装备";
-        const name = prefix + suffix;
-        
-        // 创建装备对象
-        return {
-            id: `${template.type}_${equipmentLevel}_${rarity}_${Math.floor(Math.random() * 1000)}`,
-            name: name,
-            type: template.type,
-            level: equipmentLevel,
-            realmName: realmName,
-            refineLevel: 0,
-            stats: stats,
-            description: `${rarityInfo.displayName}品质的${template.type}`,
-            rarity: rarity,
-            rarityDisplayName: rarityInfo.displayName,
-            rarityMultiplier: rarityInfo.multiplier
-        };
-    }
-    
-    // 随机获取装备品质（考虑怪物类型和幸运值）
-    getRandomRarity() {
-        // 基础掉率
-        let dropRates = {
-            white: 0.3,
-            green: 0.25,
-            blue: 0.2,
-            cyan: 0.1,
-            purple: 0.08,
-            pink: 0.04,
-            gold: 0.02,
-            legendary: 0.01
-        };
-        
-        // 根据怪物类型调整掉率
-        if (this.gameState.enemy.isBoss) {
-            // BOSS掉率调整
-            dropRates = {
-                white: 0.1,
-                green: 0.15,
-                blue: 0.2,
-                cyan: 0.15,
-                purple: 0.15,
-                pink: 0.1,
-                gold: 0.1,
-                legendary: 0.05
-            };
-        } else if (this.gameState.enemy.isElite) {
-            // 精英怪掉率调整
-            dropRates = {
-                white: 0.2,
-                green: 0.2,
-                blue: 0.2,
-                cyan: 0.15,
-                purple: 0.1,
-                pink: 0.08,
-                gold: 0.05,
-                legendary: 0.02
-            };
-        }
-        
-        // 考虑幸运值影响（每点幸运值提高0.5%的高品质装备掉率）
-        const luck = this.gameState.player.luck || 0;
-        const luckBonus = luck * 0.005;
-        
-        // 调整掉率，提高高品质装备的概率
-        const adjustedRates = {
-            white: Math.max(0, dropRates.white - luckBonus * 3),
-            green: Math.max(0, dropRates.green - luckBonus * 2),
-            blue: Math.max(0, dropRates.blue - luckBonus),
-            cyan: Math.max(0, dropRates.cyan),
-            purple: Math.max(0, dropRates.purple + luckBonus * 0.5),
-            pink: Math.max(0, dropRates.pink + luckBonus * 1),
-            gold: Math.max(0, dropRates.gold + luckBonus * 1.5),
-            legendary: Math.max(0, dropRates.legendary + luckBonus * 2)
-        };
-        
-        // 归一化概率
-        const totalProbability = Object.values(adjustedRates).reduce((sum, rate) => sum + rate, 0);
-        const normalizedRates = {};
-        for (const [rarity, rate] of Object.entries(adjustedRates)) {
-            normalizedRates[rarity] = rate / totalProbability;
-        }
-        
-        // 随机选择品质
-        const rand = Math.random();
-        let cumulativeProbability = 0;
-        
-        for (const [rarity, probability] of Object.entries(normalizedRates)) {
-            cumulativeProbability += probability;
-            if (rand <= cumulativeProbability) {
-                return rarity;
-            }
-        }
-        
-        return "white"; // 默认白色
-    }
+
     
     // 玩家被击败
     playerDefeated() {
@@ -1147,7 +1027,7 @@ class EndlessWinterGame {
    
         if (this.gameState.player.exp >= this.gameState.player.maxExp) {
             const realm = this.gameState.player.realm;
-            const currentRealmConfig = this.realmConfig[realm.currentRealm];
+            const currentRealmConfig = this.metadata.realmConfig[realm.currentRealm];
             const currentStageConfig = currentRealmConfig.stages[realm.currentStage - 1];
             
             // 检查是否达到当前阶段的等级上限
@@ -1215,130 +1095,12 @@ class EndlessWinterGame {
     }
     
     // 更新人物装备显示
-    updateCharacterEquipmentDisplay() {
-        // 确保玩家装备存在
-        if (!this.gameState.player || !this.gameState.player.equipment) {
-            return;
-        }
-        
-        const equipment = this.gameState.player.equipment;
-        
-        // 装备槽位映射
-        const equipmentSlots = {
-            'weapon': 'character-weapon',
-            'armor': 'character-armor',
-            'helmet': 'character-helmet',
-            'boots': 'character-boots',
-            'accessory': 'character-accessory',
-            'pants': 'character-pants'
-        };
-        
-        // 遍历所有装备槽位
-        for (const slot in equipmentSlots) {
-            const elementId = equipmentSlots[slot];
-            const element = document.getElementById(elementId);
-            
-            if (element) {
-                const item = equipment[slot];
-                
-                if (item) {
-                    // 显示装备
-                    element.style.opacity = '1';
-                    
-                    // 根据装备品质设置颜色
-                    let colorClass = this.getEquipmentColorClass(item);
-                    
-                    element.className = element.className.replace(/quality-\w+/g, '');
-                    element.classList.add(colorClass);
-                    
-                    // 根据装备品质设置边框颜色
-                    const container = element.parentElement;
-                    const rarity = item.rarity || item.rarityDisplayName;
-                    
-                    // 使用getEquipmentColor函数获取边框颜色
-                    
-                    container.style.borderColor = this.getEquipmentColor(rarity, 'color');
-                    
-                    // 更新装备提示窗口
-                    const tooltip = container.querySelector('.equipment-tooltip');
-                    if (tooltip) {
-                        // 填充装备信息
-                        const nameElement = tooltip.querySelector('.equipment-name');
-                        const levelElement = tooltip.querySelector('.equipment-level');
-                        const qualityElement = tooltip.querySelector('.equipment-quality');
-                        const refineElement = tooltip.querySelector('.equipment-refine');
-                        const statsElement = tooltip.querySelector('.equipment-stats');
-                        const imageElement = tooltip.querySelector('.equipment-image');
-                        
-                        if (nameElement) {
-                            nameElement.textContent = item.name;
-                            // 根据装备品质设置装备名称颜色
-                            nameElement.className = `font-bold ${colorClass}`;
-                        }
-                        if (levelElement) {
-                            levelElement.textContent = item.realmName ? item.realmName : item.level;
-                        }
-                        if (qualityElement) {
-                            qualityElement.textContent = item.rarityDisplayName || '白色';
-                            // 根据装备品质设置品质文本颜色
-                            qualityElement.className = `equipment-quality ${colorClass}`;
-                        }
-                        if (refineElement) {
-                            refineElement.textContent = `+${item.refineLevel || 0}`;
-                        }
-                        if (statsElement) {
-                            const statsDescription = this.getStatsDescription(item.stats);
-                            statsElement.textContent = statsDescription;
-                        }
-                        if (imageElement) {
-                            // 设置装备图片
-                            const equipmentImage = element.src;
-                            imageElement.src = equipmentImage;
-                            imageElement.alt = item.name;
-                            imageElement.style.display = 'block';
-                        }
-                        // 显示图片容器
-                        const imageContainer = tooltip.querySelector('.w-32');
-                        if (imageContainer) {
-                            imageContainer.style.display = 'flex';
-                        }
-                    }
-                    // 绑定鼠标悬停事件
-                    container.addEventListener('mouseenter', () => {
-                        const tooltip = container.querySelector('.equipment-tooltip');
-                        if (tooltip && item) {
-                            tooltip.classList.remove('hidden');
-                        }
-                    });
-                    
-                    container.addEventListener('mouseleave', () => {
-                        const tooltip = container.querySelector('.equipment-tooltip');
-                        if (tooltip) {
-                            tooltip.classList.add('hidden');
-                        }
-                    });
-                } else {
-                    // 隐藏装备
-                    element.style.opacity = '0';
-                    // 清除颜色类
-                    element.className = element.className.replace(/quality-\w+/g, '');
-                    // 移除鼠标悬停事件
-                    const container = element.parentElement;
-                    container.style.borderColor = '#ffffff80'; // 白色半透明
-                    const tooltip = container.querySelector('.equipment-tooltip');
-                    if (tooltip) {
-                        // 确保弹窗保持隐藏
-                        tooltip.classList.add('hidden');
-                    }
-                }
-            }
-        }
-    }
+
     
     // 计算境界加成
     calculateRealmBonus() {
         const realm = this.gameState.player.realm;
-        const currentRealmConfig = this.realmConfig[realm.currentRealm];
+        const currentRealmConfig = this.metadata.realmConfig[realm.currentRealm];
         const currentStageConfig = currentRealmConfig.stages[realm.currentStage - 1];
         
         // 基础加成（当前阶段）
@@ -1349,7 +1111,7 @@ class EndlessWinterGame {
         
         // 计算当前境界之前所有境界的加成
         for (let i = 0; i < realm.currentRealm; i++) {
-            const previousRealm = this.realmConfig[i];
+            const previousRealm = this.metadata.realmConfig[i];
             const maxStage = previousRealm.stages[previousRealm.stages.length - 1];
             totalBonus.attack += maxStage.bonus.attack;
             totalBonus.defense += maxStage.bonus.defense;
@@ -1388,31 +1150,12 @@ class EndlessWinterGame {
 
 
     // 清理装备的colorClass属性
-    cleanupEquipmentColorClass() {
-        // 清理已装备的装备
-        if (this.gameState.player && this.gameState.player.equipment) {
-            for (const slot in this.gameState.player.equipment) {
-                const item = this.gameState.player.equipment[slot];
-                if (item && item.colorClass) {
-                    delete item.colorClass;
-                }
-            }
-        }
-        
-        // 清理背包中的装备
-        if (this.gameState.player && this.gameState.player.inventory) {
-            this.gameState.player.inventory.forEach(item => {
-                if (item && item.colorClass) {
-                    delete item.colorClass;
-                }
-            });
-        }
-    }
+
     
     // 获取突破所需突破石数量
     getRequiredBreakthroughStones(realmIndex, stage) {
         // 从realmConfig中获取突破石数量
-        const realmConfig = this.realmConfig[realmIndex];
+        const realmConfig = this.metadata.realmConfig[realmIndex];
         const stageConfig = realmConfig.stages[stage - 1];
         return stageConfig.breakthroughStones;
     }
@@ -1420,7 +1163,7 @@ class EndlessWinterGame {
     // 尝试突破
     attemptBreakthrough() {
         const realm = this.gameState.player.realm;
-        const currentRealmConfig = this.realmConfig[realm.currentRealm];
+        const currentRealmConfig = this.metadata.realmConfig[realm.currentRealm];
         const currentStageConfig = currentRealmConfig.stages[realm.currentStage - 1];
         
         // 检查等级是否达到上限
@@ -1446,7 +1189,7 @@ class EndlessWinterGame {
             realm.currentLevel = 1;
         } else {
             // 突破到下一个大境界
-            if (realm.currentRealm < this.realmConfig.length - 1) {
+            if (realm.currentRealm < this.metadata.realmConfig.length - 1) {
                 realm.currentRealm++;
                 realm.currentStage = 1;
                 realm.currentLevel = 1;
@@ -1465,71 +1208,7 @@ class EndlessWinterGame {
     }
     
     // 根据稀有度和类型获取装备颜色
-    getEquipmentColor(rarity, type = 'text') {
-        const colorMap = {
-            white: {
-                text: 'text-gray-400',
-                border: 'border-gray-400',
-                color: '#9ca3af'
-            },
-            green: {
-                text: 'text-green-400',
-                border: 'border-green-400',
-                color: '#4ade80'
-            },
-            blue: {
-                text: 'text-blue-400',
-                border: 'border-blue-400',
-                color: '#60a5fa'
-            },
-            cyan: {
-                text: 'text-cyan-400',
-                border: 'border-cyan-400',
-                color: '#22d3ee'
-            },
-            purple: {
-                text: 'text-purple-400',
-                border: 'border-purple-400',
-                color: '#a78bfa'
-            },
-            pink: {
-                text: 'text-pink-400',
-                border: 'border-pink-400',
-                color: '#f9a8d4'
-            },
-            gold: {
-                text: 'text-yellow-400',
-                border: 'border-yellow-400',
-                color: '#fbbf24'
-            },
-            legendary: {
-                text: 'text-orange-400',
-                border: 'border-orange-400',
-                color: '#f87171'
-            }
-        };
-        
-        // 处理中文稀有度名称
-        const rarityMap = {
-            '白色': 'white',
-            '绿色': 'green',
-            '蓝色': 'blue',
-            '青色': 'cyan',
-            '紫色': 'purple',
-            '粉色': 'pink',
-            '黄金': 'gold',
-            '传奇': 'legendary'
-        };
-        
-        const normalizedRarity = rarityMap[rarity] || rarity;
-        return colorMap[normalizedRarity]?.[type] || colorMap.white[type];
-    }
-    
-    // 获取装备的颜色类
-    getEquipmentColorClass(item) {
-        const rarity = item.rarityDisplayName || item.rarity;
-        return this.getEquipmentColor(rarity, 'text');
-    }
+
     
     // 刷新敌人
     refreshEnemy() {
@@ -1541,41 +1220,41 @@ class EndlessWinterGame {
         
         // 获取当前地图类型
         let mapType = 'xianxia-mountain'; // 默认地图
-        if (this.gameState.mapBackgrounds && this.gameState.currentBackgroundIndex !== undefined) {
-            const currentBackground = this.gameState.mapBackgrounds[this.gameState.currentBackgroundIndex];
+        if (this.metadata.mapBackgrounds && this.gameState.currentBackgroundIndex !== undefined) {
+            const currentBackground = this.metadata.mapBackgrounds[this.gameState.currentBackgroundIndex];
             if (currentBackground && currentBackground.type) {
                 mapType = currentBackground.type;
             }
         }
         
         // 从地图敌人映射中获取当前地图的敌人列表
-        const mapEnemies = this.gameState.mapEnemyMapping && this.gameState.mapEnemyMapping[mapType] ? 
-            this.gameState.mapEnemyMapping[mapType] : 
-            this.gameState.enemyTypes.map(enemy => enemy.name);
+        const mapEnemies = this.metadata.mapEnemyMapping && this.metadata.mapEnemyMapping[mapType] ? 
+            this.metadata.mapEnemyMapping[mapType] : 
+            this.metadata.enemyTypes.map(enemy => enemy.name);
         
         // 随机选择一个敌人名称
         const randomEnemyName = mapEnemies[Math.floor(Math.random() * mapEnemies.length)];
         
         // 从enemyTypes中找到对应的敌人类型
-        let enemyType = this.gameState.enemyTypes.find(enemy => enemy.name === randomEnemyName);
+        let enemyType = this.metadata.enemyTypes.find(enemy => enemy.name === randomEnemyName);
         
         // 如果找不到对应敌人，使用默认敌人
         if (!enemyType) {
             // 根据玩家等级选择合适的敌人类型
             let enemyTypeIndex = 0;
             if (enemyLevel >= 5) {
-                enemyTypeIndex = Math.min(Math.floor(enemyLevel / 5), this.gameState.enemyTypes.length - 1);
+                enemyTypeIndex = Math.min(Math.floor(enemyLevel / 5), this.metadata.enemyTypes.length - 1);
             } else {
-                enemyTypeIndex = Math.floor(Math.random() * Math.min(enemyLevel, this.gameState.enemyTypes.length));
+                enemyTypeIndex = Math.floor(Math.random() * Math.min(enemyLevel, this.metadata.enemyTypes.length));
             }
             
             // 随机选择敌人类型（有概率遇到高级敌人）
             const randomFactor = Math.random();
-            if (randomFactor > 0.7 && enemyTypeIndex < this.gameState.enemyTypes.length - 1) {
+            if (randomFactor > 0.7 && enemyTypeIndex < this.metadata.enemyTypes.length - 1) {
                 enemyTypeIndex++;
             }
             
-            enemyType = this.gameState.enemyTypes[enemyTypeIndex];
+            enemyType = this.metadata.enemyTypes[enemyTypeIndex];
         }
         
         // 计算是否为精英怪（15%概率）
@@ -1978,9 +1657,9 @@ class EndlessWinterGame {
                             }
                         
                             this.gameState = { ...gameData, user: userInfo };
-                        
+
                             // 清理装备的colorClass属性
-                            this.cleanupEquipmentColorClass();
+                            this.equipmentSystem.cleanupEquipmentColorClass();
                         
                             await this.fetchGameMetadata();
                             // 检查临时状态是否过期
@@ -2017,320 +1696,11 @@ class EndlessWinterGame {
     }
     
     // 计算武器精炼所需材料
-    calculateRefineCost(refineLevel) {
-        // 基础材料需求
-        const baseSpiritWood = 50;
-        const baseBlackIron = 30;
-        const baseSpiritCrystal = 10;
-        
-        // 每级精炼增加的材料倍数
-        const multiplier = Math.pow(1.5, refineLevel);
-        
-        return {
-            spiritWood: Math.floor(baseSpiritWood * multiplier),
-            blackIron: Math.floor(baseBlackIron * multiplier),
-            spiritCrystal: Math.floor(baseSpiritCrystal * multiplier)
-        };
-    }
-    
-    // 精炼装备
-    refineEquipment(slot = 'weapon') {
-        const item = this.gameState.player.equipment[slot];
-        if (!item) {
-            this.addBattleLog(`没有装备${slot === 'weapon' ? '武器' : slot === 'armor' ? '护甲' : slot === 'helmet' ? '头盔' : slot === 'boots' ? '靴子' : '饰品'}，无法精炼！`);
-            return;
-        }
-        
-        // 确保refineLevel有值
-        if (item.refineLevel === undefined) {
-            item.refineLevel = 0;
-        }
-        
-        // 检查是否已达到最大精炼等级
-        if (item.refineLevel >= 10) {
-            this.addBattleLog(`${slot === 'weapon' ? '武器' : slot === 'armor' ? '护甲' : slot === 'helmet' ? '头盔' : slot === 'boots' ? '靴子' : '饰品'}已达到最大精炼等级+10！`);
-            return;
-        }
-        
-        // 计算精炼所需材料
-        const nextLevel = item.refineLevel + 1;
-        const cost = this.calculateRefineCost(item.refineLevel);
-        
-        // 检查材料是否足够
-        if (this.gameState.resources.spiritWood < cost.spiritWood ||
-            this.gameState.resources.blackIron < cost.blackIron ||
-            this.gameState.resources.spiritCrystal < cost.spiritCrystal) {
-            this.addBattleLog('材料不足，无法精炼装备！');
-            return;
-        }
-        
-        // 消耗材料
-        this.gameState.resources.spiritWood -= cost.spiritWood;
-        this.gameState.resources.blackIron -= cost.blackIron;
-        this.gameState.resources.spiritCrystal -= cost.spiritCrystal;
-        
-        // 提升精炼等级
-        item.refineLevel = nextLevel;
-        
-        // 重新计算装备效果
-        this.calculateEquipmentEffects();
-        
-        // 更新UI
-        this.updateUI();
-        
-        // 更新血条显示
-        if (typeof this.updateHealthBars === 'function') {
-            this.updateHealthBars();
-        }
-        
-        // 添加日志
-        this.addBattleLog(`${slot === 'weapon' ? '武器' : slot === 'armor' ? '护甲' : slot === 'helmet' ? '头盔' : slot === 'boots' ? '靴子' : '饰品'}精炼成功！当前精炼等级：+${item.refineLevel}`);
-        this.addBattleLog(`消耗了 ${cost.spiritWood} 灵木，${cost.blackIron} 玄铁，${cost.spiritCrystal} 灵晶`);
-    }
-    
-    // 精炼武器（保留向后兼容）
-    refineWeapon() {
-        this.refineEquipment('weapon');
-    }
-    
-    // 更新精炼信息UI
-    updateRefineInfo(selectedSlot = 'weapon') {
-        const item = this.gameState.player.equipment[selectedSlot];
-        const refineInfo = document.getElementById('refine-info');
-        
-        if (item) {
-            // 确保refineLevel有值
-            if (item.refineLevel === undefined) {
-                item.refineLevel = 0;
-            }
-            
-            // 显示精炼信息
-            refineInfo.classList.remove('hidden');
-            
-            // 更新装备名称
-            const refineWeaponNameElement = document.getElementById('refine-weapon-name');
-            refineWeaponNameElement.textContent = item.name;
-            // 设置装备颜色
-            const colorClass = this.getEquipmentColorClass(item);
-            refineWeaponNameElement.className = `text-sm font-medium ${colorClass}`;
-            
-            // 更新精炼等级
-            document.getElementById('refine-weapon-level').textContent = `+${item.refineLevel}`;
-            
-            // 计算下一级精炼所需材料
-            if (item.refineLevel < 10) {
-                const cost = this.calculateRefineCost(item.refineLevel);
-                document.getElementById('refine-requirements').textContent = 
-                    `灵木: ${cost.spiritWood}, 玄铁: ${cost.blackIron}, 灵晶: ${cost.spiritCrystal}`;
-            } else {
-                document.getElementById('refine-requirements').textContent = '已达到最大等级';
-            }
-            
-            // 更新属性提升
-            const bonus = item.refineLevel * 10;
-            document.getElementById('refine-bonus').textContent = `+${bonus}%`;
-        } else {
-            // 隐藏精炼信息
-            refineInfo.classList.add('hidden');
-        }
-    }
-    
-    // 更新分解信息UI
-    updateDisassembleInfo(selectedSlot = 'weapon') {
-        const item = this.gameState.player.equipment[selectedSlot];
-        const disassembleInfo = document.getElementById('disassemble-info');
-        
-        if (item) {
-            // 确保refineLevel有值
-            if (item.refineLevel === undefined) {
-                item.refineLevel = 0;
-            }
-            
-            // 显示分解信息
-            disassembleInfo.classList.remove('hidden');
-            
-            // 更新装备名称
-            const disassembleWeaponNameElement = document.getElementById('disassemble-weapon-name');
-            disassembleWeaponNameElement.textContent = item.name;
-            // 设置装备颜色
-            const colorClass = this.getEquipmentColorClass(item);
-            disassembleWeaponNameElement.className = `text-sm font-medium ${colorClass}`;
-            
-            // 更新精炼等级
-            document.getElementById('disassemble-weapon-level').textContent = `+${item.refineLevel}`;
-            
-            // 计算分解返还材料
-            const returns = this.calculateDisassembleReturns(item);
-            document.getElementById('disassemble-returns').textContent = 
-                `灵木: ${returns.spiritWood}, 玄铁: ${returns.blackIron}, 灵晶: ${returns.spiritCrystal}`;
-        } else {
-            // 隐藏分解信息
-            disassembleInfo.classList.add('hidden');
-        }
-    }
-    
-    // 计算分解返还材料
-    calculateDisassembleReturns(item) {
-        // 确保refineLevel有值
-        const refineLevel = item.refineLevel || 0;
-        
-        // 计算精炼材料返还（只返还50%的精炼材料，保持游戏经济平衡）
-        let refineSpiritWood = 0;
-        let refineBlackIron = 0;
-        let refineSpiritCrystal = 0;
-        
-        // 计算从0级到当前精炼等级的所有材料消耗
-        for (let i = 0; i < refineLevel; i++) {
-            const cost = this.calculateRefineCost(i);
-            refineSpiritWood += Math.floor(cost.spiritWood * 0.5);
-            refineBlackIron += Math.floor(cost.blackIron * 0.5);
-            refineSpiritCrystal += Math.floor(cost.spiritCrystal * 0.5);
-        }
-        
-        // 计算品质材料返还
-        let qualitySpiritWood = 0;
-        let qualityBlackIron = 0;
-        let qualitySpiritCrystal = 0;
-        
-        // 根据装备品质确定返还材料
-        if (item.rarity) {
-            // 优先使用rarity属性
-            switch (item.rarity) {
-                case 'white':
-                    qualitySpiritWood = 30;
-                    qualityBlackIron = 15;
-                    qualitySpiritCrystal = 5;
-                    break;
-                case 'blue':
-                    qualitySpiritWood = 50;
-                    qualityBlackIron = 25;
-                    qualitySpiritCrystal = 10;
-                    break;
-                case 'purple':
-                    qualitySpiritWood = 80;
-                    qualityBlackIron = 40;
-                    qualitySpiritCrystal = 15;
-                    break;
-                case 'gold':
-                    qualitySpiritWood = 120;
-                    qualityBlackIron = 60;
-                    qualitySpiritCrystal = 25;
-                    break;
-                case 'legendary':
-                    qualitySpiritWood = 180;
-                    qualityBlackIron = 90;
-                    qualitySpiritCrystal = 40;
-                    break;
-            }
-        } else if (item.rarity) {
-            // 根据稀有度判断品质
-            switch(item.rarity) {
-                case 'white':
-                    // 白色品质
-                    qualitySpiritWood = 30;
-                    qualityBlackIron = 15;
-                    qualitySpiritCrystal = 5;
-                    break;
-                case 'green':
-                    // 绿色品质
-                    qualitySpiritWood = 40;
-                    qualityBlackIron = 20;
-                    qualitySpiritCrystal = 8;
-                    break;
-                case 'blue':
-                    // 蓝色品质
-                    qualitySpiritWood = 50;
-                    qualityBlackIron = 25;
-                    qualitySpiritCrystal = 10;
-                    break;
-                case 'cyan':
-                    // 青色品质
-                    qualitySpiritWood = 65;
-                    qualityBlackIron = 32;
-                    qualitySpiritCrystal = 12;
-                    break;
-                case 'purple':
-                    // 紫色品质
-                    qualitySpiritWood = 80;
-                    qualityBlackIron = 40;
-                    qualitySpiritCrystal = 15;
-                    break;
-                case 'pink':
-                    // 粉色品质
-                    qualitySpiritWood = 100;
-                    qualityBlackIron = 50;
-                    qualitySpiritCrystal = 20;
-                    break;
-                case 'gold':
-                    // 黄金品质
-                    qualitySpiritWood = 120;
-                    qualityBlackIron = 60;
-                    qualitySpiritCrystal = 25;
-                    break;
-                case 'legendary':
-                    // 传奇品质
-                    qualitySpiritWood = 180;
-                    qualityBlackIron = 90;
-                    qualitySpiritCrystal = 40;
-                    break;
-            }
-        }
-        
-        // 总返还材料
-        return {
-            spiritWood: refineSpiritWood + qualitySpiritWood,
-            blackIron: refineBlackIron + qualityBlackIron,
-            spiritCrystal: refineSpiritCrystal + qualitySpiritCrystal
-        };
-    }
-    
-    // 分解装备
-    disassembleEquipment(slot = 'weapon') {
-        const item = this.gameState.player.equipment[slot];
-        if (!item) {
-            this.addBattleLog(`没有装备${slot === 'weapon' ? '武器' : slot === 'armor' ? '护甲' : slot === 'helmet' ? '头盔' : slot === 'boots' ? '靴子' : '饰品'}，无法分解！`);
-            return;
-        }
-        
-        // 计算分解返还材料
-        const returns = this.calculateDisassembleReturns(item);
-        
-        // 添加确认窗口，防止误分解操作
-        const confirmMessage = `确定要分解${slot === 'weapon' ? '武器' : slot === 'armor' ? '护甲' : slot === 'helmet' ? '头盔' : slot === 'boots' ? '靴子' : '饰品'} ${item.name}吗？
 
-分解后将获得：
-灵木：${returns.spiritWood}
-玄铁：${returns.blackIron}
-灵晶：${returns.spiritCrystal}`;
-        
-        if (!confirm(confirmMessage)) {
-            this.addBattleLog('分解操作已取消！');
-            return;
-        }
-        
-        // 获得材料
-        this.gameState.resources.spiritWood += returns.spiritWood;
-        this.gameState.resources.blackIron += returns.blackIron;
-        this.gameState.resources.spiritCrystal += returns.spiritCrystal;
-        
-        // 卸下并移除装备
-        this.gameState.player.equipment[slot] = null;
-        
-        // 重新计算装备效果
-        this.calculateEquipmentEffects();
-        
-        // 更新UI
-        this.updateUI();
-        
-        // 更新血条显示
-        if (typeof this.updateHealthBars === 'function') {
-            this.updateHealthBars();
-        }
-        
-        // 添加日志
-        this.addBattleLog(`成功分解${slot === 'weapon' ? '武器' : slot === 'armor' ? '护甲' : slot === 'helmet' ? '头盔' : slot === 'boots' ? '靴子' : '饰品'} ${item.name}！`);
-        this.addBattleLog(`获得了 ${returns.spiritWood} 灵木，${returns.blackIron} 玄铁，${returns.spiritCrystal} 灵晶！`);
-    }
+    
+
+    
+
     
     // 保存游戏状态
     async saveGameState() {
@@ -2468,7 +1838,7 @@ class EndlessWinterGame {
         
         slot.innerHTML = `
             <div class="text-xs ${rarityColor} text-center">
-                <i class="fa ${this.getEquipmentIcon(itemType)}"></i><br>
+                <i class="fa ${this.equipmentSystem.getEquipmentIcon(itemType)}"></i><br>
                 ${item.name}
             </div>
         `;
@@ -2480,29 +1850,8 @@ class EndlessWinterGame {
     }
     
     // 获取装备图标
-    getEquipmentIcon(type) {
-        const icons = {
-            weapon: 'fa-sword',
-            armor: 'fa-shield',
-            helmet: 'fa-hat-wizard',
-            boots: 'fa-boot',
-            accessory: 'fa-gem'
-        };
-        return icons[type] || 'fa-box';
-    }
-    
-    // 获取品质颜色
-    getRarityColor(rarity) {
-        const colors = {
-            white: 'text-gray-400',
-            blue: 'text-blue-400',
-            purple: 'text-purple-400',
-            gold: 'text-yellow-400',
-            legendary: 'text-orange-400'
-        };
-        return colors[rarity] || 'text-gray-400';
-    }
-    
+
+
     // 更新合成成功率
     updateCraftSuccessRate() {
         const slots = document.querySelectorAll('[craft-data-slot]');
@@ -2562,7 +1911,7 @@ class EndlessWinterGame {
                 case 'gold':
                     successRate = 60;
                     break;
-                case 'legendary':
+                case 'rainbow':
                     successRate = 50;
                     break;
             }
@@ -2654,7 +2003,7 @@ class EndlessWinterGame {
         
         // 生成新装备
         const newRarity = this.getNextRarity(firstRarity);
-        const newEquipment = this.generateEquipment(firstType, firstLevel, newRarity);
+        const newEquipment = this.equipmentSystem.generateEquipment(firstType, firstLevel, newRarity);
         
         // 合成结果
         const resultSlot = document.getElementById('craft-result-slot');
@@ -2677,16 +2026,16 @@ class EndlessWinterGame {
             }
             
             // 显示合成成功动画，使用装备品质对应的颜色
-            const newEquipmentColorClass = this.getEquipmentColorClass(newEquipment);
+            const newEquipmentColorClass = this.equipmentSystem.getEquipmentColorClass(newEquipment);
             resultSlot.innerHTML = `
                 <div class="text-xs ${newEquipmentColorClass} text-center animate-pulse">
-                    <i class="fa ${this.getEquipmentIcon(firstType)}"></i><br>
+                    <i class="fa ${this.equipmentSystem.getEquipmentIcon(firstType)}"></i><br>
                     ${newEquipment.name}
                 </div>
             `;
         } else {
             // 合成失败，返回一个原品质的装备
-            const failedEquipment = this.generateEquipment(firstType, firstLevel, firstRarity);
+            const failedEquipment = this.equipmentSystem.generateEquipment(firstType, firstLevel, firstRarity);
             this.gameState.player.inventory.push(failedEquipment);
             this.addBattleLog(`合成失败！获得了${failedEquipment.rarityDisplayName} ${failedEquipment.name}！`);
             
@@ -2703,10 +2052,10 @@ class EndlessWinterGame {
             }
             
             // 显示合成失败动画，使用装备品质对应的颜色
-            const failedEquipmentColorClass = this.getEquipmentColorClass(failedEquipment);
+            const failedEquipmentColorClass = this.equipmentSystem.getEquipmentColorClass(failedEquipment);
             resultSlot.innerHTML = `
                 <div class="text-xs ${failedEquipmentColorClass} text-center animate-pulse">
-                    <i class="fa ${this.getEquipmentIcon(firstType)}"></i><br>
+                    <i class="fa ${this.equipmentSystem.getEquipmentIcon(firstType)}"></i><br>
                     ${failedEquipment.name}
                 </div>
             `;
@@ -2725,72 +2074,12 @@ class EndlessWinterGame {
     
     // 获取下一个品质
     getNextRarity(rarity) {
-        const rarityOrder = ['white', 'blue', 'purple', 'gold', 'legendary'];
+        const rarityOrder = ['white', 'blue', 'purple', 'gold', 'rainbow'];
         const currentIndex = rarityOrder.indexOf(rarity);
         return rarityOrder[Math.min(currentIndex + 1, rarityOrder.length - 1)];
     }
     
-    // 生成装备
-    generateEquipment(type, level, rarity) {
-        // 找到对应类型的装备模板
-        const template = this.gameState.equipmentTemplates.find(t => t.type === type);
-        if (!template) {
-            // 如果找不到模板，返回一个基础装备
-            return {
-                id: `${type}_${level}_${rarity}_${Math.floor(Math.random() * 1000)}`,
-                name: `${rarity} ${type}`,
-                type: type,
-                level: level,
-                refineLevel: 0,
-                stats: {
-                    attack: 10 * level,
-                    defense: 5 * level
-                },
-                description: `${rarity}品质的${type}`,
-                rarity: rarity,
-            rarityDisplayName: rarity,
-            rarityMultiplier: 1
-            };
-        }
-        
-        // 获取品质信息
-        const rarityInfo = this.gameState.equipmentRarities.find(r => r.name === rarity);
-        
-        // 计算装备属性（基础属性 * 等级 * 品质倍数）
-        const stats = {};
-        for (const stat in template.baseStats) {
-            const value = template.baseStats[stat] * level * (rarityInfo ? rarityInfo.multiplier : 1);
-            // 对于小数属性，使用Math.max确保至少为1，对于整数属性使用Math.floor
-            if (template.baseStats[stat] < 1) {
-                stats[stat] = Math.max(1, Math.floor(value));
-            } else {
-                stats[stat] = Math.floor(value);
-            }
-        }
-        
-        // 生成装备名称
-        const prefixIndex = Math.floor(Math.min((rarityInfo ? rarityInfo.multiplier : 1) - 1, template.namePrefixes.length - 1));
-        const suffixIndex = Math.floor(Math.random() * template.nameSuffixes.length);
-        const prefix = template.namePrefixes[prefixIndex] || "";
-        const suffix = template.nameSuffixes[suffixIndex] || "装备";
-        const name = prefix + suffix;
-        
-        // 创建装备对象
-        return {
-            id: `${type}_${level}_${rarity}_${Math.floor(Math.random() * 1000)}`,
-            name: name,
-            type: type,
-            level: level,
-            refineLevel: 0,
-            stats: stats,
-            description: `${rarityInfo ? rarityInfo.displayName : rarity}品质的${type}`,
-            rarity: rarity,
-            rarityDisplayName: rarityInfo ? rarityInfo.displayName : rarity,
-            rarityMultiplier: rarityInfo ? rarityInfo.multiplier : 1,
-            // 不再需要colorClass属性，颜色由getEquipmentColorClass函数动态计算
-        };
-    }
-    
+
     // 一键合成相关变量
     isAutoCrafting = false;
     autoCraftInterval = null;
@@ -2828,7 +2117,7 @@ class EndlessWinterGame {
                 const equipmentGroups = {};
                 currentInventory.forEach((item, index) => {
                     // 检查装备是否正在穿戴
-                    const isEquipped = this.isEquipmentEquipped(item);
+                    const isEquipped = this.equipmentSystem.isEquipmentEquipped(item);
                     if (isEquipped) {
                         return; // 跳过正在穿戴的装备
                     }
@@ -2869,7 +2158,7 @@ class EndlessWinterGame {
                             if (slot) {
                                 slot.innerHTML = `
                                     <div class="text-xs ${rarityColor} text-center">
-                                        <i class="fa ${this.getEquipmentIcon(itemType)}"></i><br>
+                                        <i class="fa ${this.equipmentSystem.getEquipmentIcon(itemType)}"></i><br>
                                         ${item.name}
                                     </div>
                                 `;
@@ -2938,21 +2227,7 @@ class EndlessWinterGame {
     }
     
     // 检查装备是否正在穿戴
-    isEquipmentEquipped(item) {
-        const player = this.gameState.player;
-        if (!player) return false;
-        
-        // 检查各个装备槽位
-        const equipmentSlots = ['weapon', 'armor', 'helmet', 'boots', 'accessory'];
-        for (const slot of equipmentSlots) {
-            const equippedItem = player[slot];
-            if (equippedItem && equippedItem.id === item.id) {
-                return true;
-            }
-        }
-        return false;
-    }
-    
+
     // 检查可合成的装备
     checkCraftableEquipment() {
         const inventory = this.gameState.player.inventory || [];
@@ -3008,7 +2283,7 @@ class EndlessWinterGame {
             blue: '蓝色',
             purple: '紫色',
             gold: '金色',
-            legendary: '传奇'
+            rainbow: '彩色'
         };
         return rarityNames[rarity] || '';
     }
@@ -3071,117 +2346,59 @@ class EndlessWinterGame {
     // 自动合成装备
 
     
-    // 一键装备最好的装备
-    autoEquipBestGear() {
-        const inventory = this.gameState.player.inventory;
-        if (!inventory || inventory.length === 0) {
-            this.addBattleLog('背包中没有装备！');
-            return;
-        }
-        
-        // 按装备类型分组
-        const equipmentByType = {};
-        for (const item of inventory) {
-            if (item.type && item.type !== 'consumable') {
-                if (!equipmentByType[item.type]) {
-                    equipmentByType[item.type] = [];
-                }
-                equipmentByType[item.type].push(item);
-            }
-        }
-        
-        let equippedCount = 0;
-        
-        // 对每种类型的装备，找出最好的并装备
-        for (const type in equipmentByType) {
-            const items = equipmentByType[type];
-            if (items.length === 0) continue;
-            
-            // 按装备好坏排序
-            items.sort((a, b) => {
-                if (this.compareEquipment(a, b)) {
-                    return -1;
-                } else {
-                    return 1;
-                }
-            });
-            
-            // 获得最好的装备
-            const bestItem = items[0];
-            
-            // 检查是否比当前装备更好
-            const currentItem = this.gameState.player.equipment[type];
-            if (!currentItem || this.compareEquipment(bestItem, currentItem)) {
-                // 从背包中移除该装备
-                const index = inventory.indexOf(bestItem);
-                if (index > -1) {
-                    inventory.splice(index, 1);
-                }
-                
-                // 装备最好的装备
-                this.equipItem(bestItem);
-                equippedCount++;
-            }
-        }
-        
-        if (equippedCount > 0) {
-            this.addBattleLog(`一键装备完成！共装备了${equippedCount}件最好的装备。`);
-        } else {
-            this.addBattleLog('背包中没有比当前装备更好的装备！');
-        }
-    }
+
     
-    // 计算装备属性的公共函数
-    calculateEquipmentStats(template, level, rarityInfo) {
+    // 计算合成装备属性的公共函数（用于合成装备，随机选择属性）
+    calculateCraftedEquipmentStats(template, level, rarityInfo) {
         // 计算属性（基础属性 * 等级 * 品质倍数）
         const stats = {};
-        
+
         // 获取该品质的属性数量
         const statCount = rarityInfo.statCount || 3;
-        
+
         // 获取所有基础属性的键
         const statKeys = Object.keys(template.baseStats);
-        
+
         // 随机选择指定数量的属性
         const selectedStats = [];
         const tempKeys = [...statKeys];
-        
+
         for (let i = 0; i < statCount && tempKeys.length > 0; i++) {
             const randomIndex = Math.floor(Math.random() * tempKeys.length);
             selectedStats.push(tempKeys.splice(randomIndex, 1)[0]);
         }
-        
+
         // 为选中的属性计算值
         for (const stat of selectedStats) {
             let value = template.baseStats[stat] * level * rarityInfo.multiplier;
-            
+
             // 为基础属性较低的装备类型增加额外系数
             if (template.type === 'boots') {
                 // 靴子基础属性较低，增加额外系数
                 value *= 1.5;
             }
-            
+
             // 使用Math.max确保最低属性值
             const minValue = level; // 最低值至少为装备等级
             stats[stat] = Math.max(minValue, Math.floor(value));
         }
-        
+
         return stats;
     }
-    
+
     // 生成合成后的装备
     generateCraftedEquipment(type, level, rarity) {
-        // 获取装备模板
-        const template = this.gameState.equipmentTemplates.find(t => t.type === type);
+        // 装备模板
+        const template = this.metadata.equipmentTemplates.find(t => t.type === type);
         if (!template) {
             return null;
         }
-        
+
         // 使用指定的品质
-        const rarityInfo = this.gameState.equipmentRarities.find(r => r.name === rarity);
-        
+        const rarityInfo = this.metadata.equipmentRarities.find(r => r.name === rarity);
+
         // 使用公共函数计算装备属性
-        const stats = this.calculateEquipmentStats(template, level, rarityInfo);
+        const stats = this.calculateCraftedEquipmentStats(template, level, rarityInfo);
         
         // 生成装备名称
         const prefixIndex = Math.floor(Math.random() * template.namePrefixes.length);
@@ -3204,21 +2421,6 @@ class EndlessWinterGame {
     }
     
     // 获取随机品质
-    getRandomRarity() {
-        const dropRates = this.gameState.dropRates;
-        const random = Math.random();
-        let cumulative = 0;
-        
-        for (const [rarity, rate] of Object.entries(dropRates)) {
-            cumulative += rate;
-            if (random <= cumulative) {
-                return rarity;
-            }
-        }
-        
-        return 'white'; // 默认白色品质
-    }
-    
     // 获取下一个品质（固定升级路径）
     getNextRarity(currentRarity) {
         const rarityOrder = ['white', 'blue', 'purple', 'gold', 'legendary'];
@@ -3238,310 +2440,13 @@ class EndlessWinterGame {
             white: 1.0,    // 白色到蓝色：100%成功
             blue: 0.8,     // 蓝色到紫色：80%成功
             purple: 0.6,   // 紫色到黄金：60%成功
-            gold: 0.4,     // 黄金到传奇：40%成功
-            legendary: 1.0 // 传奇已经是最高品质，返回当前品质
+            gold: 0.4,     // 黄金到彩色：40%成功
+            rainbow: 1.0   // 彩色已经是最高品质，返回当前品质
         };
-        
+
         const successRate = successRates[currentRarity] || 1.0;
         return Math.random() < successRate;
     }
-    
-    // 重置游戏
-    resetGame() {
-        if (confirm('确定要重置游戏吗？所有进度将会丢失！')) {
-            // 重置游戏状态
-            this.gameState = {
-                // 用户信息
-                user: {
-                    loggedIn: false,
-                    username: "Guest",
-                    userId: "guest"
-                },
-                // 玩家属性
-                player: {
-                    level: 1,
-                    exp: 0,
-                    maxExp: 100,
-                    attack: 10,
-                    defense: 5,
-                    hp: 100,
-                    maxHp: 100,
-                    luck: 2,
-                    // 装备栏
-                    equipment: {
-                        weapon: null,    // 武器
-                        armor: null,     //  armor
-                        helmet: null,    // 头盔
-                        boots: null,     // 靴子
-                        accessory: null  // 饰品
-                    },
-                    // 装备效果
-                    equipmentEffects: {
-                        attack: 0,
-                        defense: 0,
-                        hp: 0,
-                        luck: 0
-                    },
-                    // 背包
-                    inventory: [],
-                    // 特殊技
-                    skills: [
-                        {
-                            name: "强力攻击",
-                            description: "造成2倍普通伤害",
-                            energyCost: 20,
-                            damageMultiplier: 2,
-                            levelRequired: 1
-                        },
-                        {
-                            name: "防御姿态",
-                            description: "减少50%受到的伤害",
-                            energyCost: 15,
-                            defenseBonus: 0.5,
-                            levelRequired: 10
-                        },
-                        {
-                            name: "生命恢复",
-                            description: "恢复20%最大生命值",
-                            energyCost: 25,
-                            healPercentage: 0.2,
-                            levelRequired: 20
-                        },
-                        {
-                            name: "幸运一击",
-                            description: "有几率造成3倍伤害",
-                            energyCost: 30,
-                            criticalMultiplier: 3,
-                            criticalChance: 0.7,
-                            levelRequired: 30
-                        }
-                    ]
-                },
-                // 装备品质定义
-                equipmentRarities: [
-                    { name: "white", displayName: "白色", multiplier: 1, color: "text-gray-400" },
-                    { name: "blue", displayName: "蓝色", multiplier: 1.5, color: "text-blue-400" },
-                    { name: "purple", displayName: "紫色", multiplier: 2, color: "text-purple-400" },
-                    { name: "gold", displayName: "黄金", multiplier: 2.5, color: "text-yellow-400" },
-                    { name: "legendary", displayName: "传奇", multiplier: 3, color: "text-orange-400" }
-                ],
-                // 装备模板
-                equipmentTemplates: [
-                    {
-                        type: "weapon",
-                        baseStats: { attack: 5 },
-                        namePrefixes: ["", "锋利的", "坚固的", "魔法的", "神圣的", "传奇的"],
-                        nameSuffixes: ["剑", "长刀", "战斧", "长矛", "匕首", "大剑", "短剑", "弯刀", "战锤", "法杖", "弓箭", "弩箭"]
-                    },
-                    {
-                        type: "armor",
-                        baseStats: { defense: 3 },
-                        namePrefixes: ["", "轻便的", "坚固的", "魔法的", "神圣的", "传奇的"],
-                        nameSuffixes: ["护甲", "胸甲", "锁甲", "板甲", "皮甲", "鳞甲", "皮胸甲", "链甲", "布甲", "魔法护甲", "骑士甲", "巫师袍"]
-                    },
-                    {
-                        type: "helmet",
-                        baseStats: { defense: 2, hp: 10 },
-                        namePrefixes: ["", "轻便的", "坚固的", "魔法的", "神圣的", "传奇的"],
-                        nameSuffixes: ["头盔", "头冠", "兜帽", "面具", "战盔", "钢盔", "皮帽", "魔法帽", "骑士盔", "巫师帽", "头巾", "护额"]
-                    },
-                    {
-                        type: "boots",
-                        baseStats: { defense: 1, luck: 1 },
-                        namePrefixes: ["", "轻便的", "坚固的", "魔法的", "神圣的", "传奇的"],
-                        nameSuffixes: ["靴子", "战靴", "皮靴", "钢靴", "魔靴", "神靴", "长靴", "短靴", "雪地靴", "登山靴", "骑士靴", "巫师靴"]
-                    },
-                    {
-                        type: "accessory",
-                        baseStats: { luck: 2, hp: 5 },
-                        namePrefixes: ["", "简单的", "精致的", "魔法的", "神圣的", "传奇的"],
-                        nameSuffixes: ["戒指", "项链", "护符", "徽章", "耳环", "手镯", "脚链", "腰带", "披风", "手套", "护腕", "戒指"]
-                    }
-                ],
-                // 装备掉落概率
-                dropRates: {
-                    white: 0.4,
-                    blue: 0.3,
-                    purple: 0.15,
-                    gold: 0.1,
-                    legendary: 0.05
-                },
-                // 资源系统
-                resources: {
-                    energy: 100,
-                    maxEnergy: 100,
-                    energyRate: 2,
-                    spiritWood: 0,
-                    spiritWoodRate: 1,
-                    blackIron: 0,
-                    blackIronRate: 0.5,
-                    spiritCrystal: 0,
-                    spiritCrystalRate: 0.2
-                },
-                // 敌人类型
-                enemyTypes: [
-                    {
-                        name: "雪原狼",
-                        baseHp: 30,
-                        baseAttack: 8,
-                        baseDefense: 2,
-                        expMultiplier: 1,
-                        resourceMultiplier: 1,
-                        icon: "fa-skull",
-                        image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20snow%20wolf%2C%20cute%20style%2C%20winter%20theme%2C%20simple%20background&size=512x512"
-                    },
-                    {
-                        name: "冰原熊",
-                        baseHp: 60,
-                        baseAttack: 12,
-                        baseDefense: 4,
-                        expMultiplier: 1.5,
-                        resourceMultiplier: 1.2,
-                        icon: "fa-paw",
-                        image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20ice%20bear%2C%20cute%20style%2C%20winter%20theme%2C%20simple%20background&size=512x512"
-                    },
-                    {
-                        name: "冰霜巨人",
-                        baseHp: 100,
-                        baseAttack: 18,
-                        baseDefense: 6,
-                        expMultiplier: 2,
-                        resourceMultiplier: 1.5,
-                        icon: "fa-user",
-                        image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20frost%20giant%2C%20cute%20style%2C%20winter%20theme%2C%20simple%20background&size=512x512"
-                    }
-                ],
-                // 当前敌人
-                enemy: {
-                    name: "雪原狼",
-                    level: 1,
-                    hp: 30,
-                    maxHp: 30,
-                    attack: 8,
-                    defense: 2,
-                    isElite: false,
-                    eliteBonus: 0,
-                    icon: "fa-skull",
-                    image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20snow%20wolf%2C%20cute%20style%2C%20winter%20theme%2C%20simple%20background&size=512x512"
-                },
-                // 游戏设置
-                settings: {
-                    autoPlay: false,
-                    autoBattle: false,
-                    afkTime: 0,
-                    collectedResources: 0
-                },
-                // 战斗状态
-                battle: {
-                    inBattle: false,
-                    battleLog: []
-                },
-                // 商店系统
-                shop: {
-                    items: [
-                        {
-                            id: "health_potion",
-                            name: "生命药水",
-                            description: "恢复50%最大生命值",
-                            price: 50,
-                            type: "consumable",
-                            effect: "heal",
-                            value: 0.5
-                        },
-                        {
-                            id: "energy_potion",
-                            name: "能量药水",
-                            description: "恢复满能量",
-                            price: 30,
-                            type: "consumable",
-                            effect: "energy",
-                            value: 1
-                        },
-                        {
-                            id: "attack_potion",
-                            name: "攻击药水",
-                            description: "临时提升20%攻击力",
-                            price: 40,
-                            type: "consumable",
-                            effect: "attack",
-                            value: 0.2
-                        },
-                        {
-                            id: "defense_potion",
-                            name: "防御药水",
-                            description: "临时提升20%防御力",
-                            price: 40,
-                            type: "consumable",
-                            effect: "defense",
-                            value: 0.2
-                        },
-                        {
-                            id: "basic_sword",
-                            name: "基础剑",
-                            description: "基础攻击力+10",
-                            price: 100,
-                            type: "equipment",
-                            equipmentType: "weapon",
-                            stats: { attack: 10 },
-                            level: 1
-                        },
-                        {
-                            id: "basic_armor",
-                            name: "基础护甲",
-                            description: "基础防御力+8",
-                            price: 80,
-                            type: "equipment",
-                            equipmentType: "armor",
-                            stats: { defense: 8 },
-                            level: 1
-                        },
-                        {
-                            id: "basic_helmet",
-                            name: "基础头盔",
-                            description: "基础防御力+5，生命值+20",
-                            price: 60,
-                            type: "equipment",
-                            equipmentType: "helmet",
-                            stats: { defense: 5, hp: 20 },
-                            level: 1
-                        },
-                        {
-                            id: "basic_boots",
-                            name: "基础靴子",
-                            description: "基础防御力+3，幸运值+2",
-                            price: 40,
-                            type: "equipment",
-                            equipmentType: "boots",
-                            stats: { defense: 3, luck: 2 },
-                            level: 1
-                        }
-                    ]
-                }
-            };
-            
-            // 重置UI
-            document.getElementById('auto挂机').checked = false;
-            document.getElementById('auto-battle-btn').innerHTML = '<i class="fa fa-play mr-1"></i> 自动战斗';
-            
-            // 停止所有计时器
-            this.stopAutoBattle();
-            this.stopAutoPlay();
-            this.stopAfkTimer();
-            
-            // 清除本地存储
-            localStorage.removeItem('endlessWinterGame');
-            
-            this.addBattleLog('游戏已重置！');
-            this.updateUI();
-        }
-    }
-    
-    
-    
- 
-    
-    
-    
     
     // 登出
     async logout() {
@@ -3679,10 +2584,10 @@ class EndlessWinterGame {
     // 初始化新的游戏状态
     initNewGameState() {
         // 使用metadata中的数据初始化游戏状态
-        if (this.playerMetadata) {
+        if (this.metadata.player) {
             // 加载初始属性
-            if (this.playerMetadata.initialStats) {
-                Object.assign(this.gameState.player, this.playerMetadata.initialStats);
+            if (this.metadata.player.initialStats) {
+                Object.assign(this.gameState.player, this.metadata.player.initialStats);
             }
             
             this.gameState.player.equipment = {}; // 重置装备栏
@@ -3690,25 +2595,53 @@ class EndlessWinterGame {
             this.gameState.player.equipmentEffects = {}; // 重置装备效果
 
             this.gameState.player.inventory = []; // 重置背包
-
-            // 加载技能
-            if (this.playerMetadata.skills) {
-                this.gameState.player.skills = this.playerMetadata.skills;
-            }
             
+            // 重新计算装备效果
+            this.equipmentSystem.calculateEquipmentEffects();
+
+            // 初始化玩家技能数据（只存储技能ID）
+            if (!this.gameState.player.skills) {
+                this.gameState.player.skills = {
+                    learned: {},  // 按境界存储已学习的技能ID
+                    equipped: {}  // 按境界存储已装备的技能ID
+                };
+
+                // 为每个境界初始化空数组
+                if (this.metadata.realmConfig) {
+                    this.metadata.realmConfig.forEach((_, index) => {
+                        this.gameState.player.skills.learned[index] = [];
+                    });
+                }
+
+                // 使用新的技能树系统初始化默认技能
+                if (this.metadata.skillTrees && this.metadata.skillTrees.length > 0) {
+                    this.skillTreeSystem.initializeDefaultSkillTrees();
+                } else {
+                    console.warn('skillTrees not found in metadata, using legacy skill system');
+                    // 后备方案：使用旧的技能系统
+                    if (this.metadata && this.metadata.skills && this.metadata.skills[0]) {
+                        const firstSkill = this.metadata.skills[0][0];
+                        if (firstSkill) {
+                            this.gameState.player.skills.learned[0] = [firstSkill.id];
+                            this.gameState.player.skills.equipped[0] = firstSkill.id;
+                        }
+                    }
+                }
+            }
+
             // 使用metadata中的默认设置初始化
-            if (this.playerMetadata.defaultSettings) {
-                this.gameState.settings = JSON.parse(JSON.stringify(this.playerMetadata.defaultSettings));
+            if (this.metadata.player.defaultSettings) {
+                this.gameState.settings = JSON.parse(JSON.stringify(this.metadata.player.defaultSettings));
             }
             
             // 使用metadata中的默认战斗状态初始化
-            if (this.playerMetadata.defaultBattleState) {
-                this.gameState.battle = JSON.parse(JSON.stringify(this.playerMetadata.defaultBattleState));
+            if (this.metadata.player.defaultBattleState) {
+                this.gameState.battle = JSON.parse(JSON.stringify(this.metadata.player.defaultBattleState));
             }
 
             // 只在新游戏时初始化资源速率
-            if (this.resourceMetadata) {
-                this.resourceMetadata.types.forEach(resource => {
+            if (this.metadata.resources) {
+                this.metadata.resources.types.forEach(resource => {
                     if (this.gameState.resources[resource.name]) {
                         this.gameState.resources[`${resource.name}Rate`] = resource.baseRate;
                     }
@@ -3718,40 +2651,7 @@ class EndlessWinterGame {
     }
     
     // 计算装备效果
-    calculateEquipmentEffects() {
-        // 重置装备效果
-        this.gameState.player.equipmentEffects = {
-            attack: 0,
-            defense: 0,
-            hp: 0,
-            luck: 0,
-            speed: 0,
-            criticalRate: 0,
-            dodgeRate: 0,
-            accuracy: 0,
-            moveSpeed: 0,
-            tenacity: 0,
-            energyRegen: 0
-        };
-        
-        // 遍历所有装备
-        for (const slot in this.gameState.player.equipment) {
-            const item = this.gameState.player.equipment[slot];
-            if (item) {
-                // 计算精炼加成（每级精炼增加10%属性）
-                const refineBonus = (item.refineLevel || 0) * 0.1;
-                
-                // 添加装备属性（包括精炼加成）
-                for (const stat in item.stats) {
-                    if (this.gameState.player.equipmentEffects[stat] !== undefined) {
-                        const baseValue = item.stats[stat];
-                        const refinedValue = Math.floor(baseValue * (1 + refineBonus));
-                        this.gameState.player.equipmentEffects[stat] += refinedValue;
-                    }
-                }
-            }
-        }
-    }
+
     
     // 显示装备菜单
     showEquipMenu() {
@@ -3772,7 +2672,7 @@ class EndlessWinterGame {
         
         // 创建装备选择菜单
         const itemList = availableEquipment.map((item, index) => 
-            `${index + 1}. ${item.name} (${item.type}) - 等级: ${item.level} - ${this.getStatsDescription(item.stats)}`
+            `${index + 1}. ${item.name} (${item.type}) - 等级: ${item.level} - ${this.equipmentSystem.getStatsDescription(item.stats)}`
         ).join('\n');
         
         const choice = prompt(`请选择要装备的物品:\n${itemList}\n\n输入物品编号:`);
@@ -3810,7 +2710,7 @@ class EndlessWinterGame {
         
         // 创建卸下装备选择菜单
         const itemList = equippedItems.map((item, index) => 
-            `${index + 1}. ${item.name} (${item.slot}) - ${this.getStatsDescription(item.stats)}`
+            `${index + 1}. ${item.name} (${item.slot}) - ${this.equipmentSystem.getStatsDescription(item.stats)}`
         ).join('\n');
         
         const choice = prompt(`请选择要卸下的物品:\n${itemList}\n\n输入物品编号:`);
@@ -3842,7 +2742,7 @@ class EndlessWinterGame {
         }
         
         // 计算装备效果
-        this.calculateEquipmentEffects();
+        this.equipmentSystem.calculateEquipmentEffects();
         
         // 更新UI
         this.updateUI();
@@ -3871,7 +2771,7 @@ class EndlessWinterGame {
             this.gameState.player.inventory.push(item);
             
             // 计算装备效果
-            this.calculateEquipmentEffects();
+            this.equipmentSystem.calculateEquipmentEffects();
             
             // 更新UI
             this.updateUI();
@@ -3921,11 +2821,6 @@ class EndlessWinterGame {
     
     // 检查并自动穿戴更好的装备
     checkAndEquipBetterGear(item) {
-        // 检查物品是否是装备
-        if (!item || item.type === 'consumable') {
-            return false;
-        }
-        
         // 检查当前是否有同类型装备
         const currentItem = this.gameState.player.equipment[item.type];
         
@@ -3948,7 +2843,7 @@ class EndlessWinterGame {
     
     // 购买商店物品
     buyShopItem(itemId) {
-        const item = this.gameState.shop.items.find(item => item.id === itemId);
+        const item = this.metadata.shop.items.find(item => item.id === itemId);
         
         if (!item) {
             this.addBattleLog('无效的商品！');
@@ -4317,7 +3212,7 @@ class EndlessWinterGame {
         }
         
         // 物品品质颜色
-        const rarityColor = this.getEquipmentColorClass(item);
+        const rarityColor = this.equipmentSystem.getEquipmentColorClass(item);
         
         itemElement.innerHTML = `
             <div class="text-xs ${rarityColor} mb-0.5">
@@ -4347,7 +3242,7 @@ class EndlessWinterGame {
                 info += `类型: 装备 (${item.type})<br>`;
                 info += `等级: ${item.level || 1}<br>`;
                 if (item.stats) {
-                    info += `属性: ${this.getStatsDescription(item.stats)}<br>`;
+                    info += `属性: ${this.equipmentSystem.getStatsDescription(item.stats)}<br>`;
                 } else {
                     info += `属性: 无<br>`;
                 }
@@ -4444,7 +3339,7 @@ class EndlessWinterGame {
                 
                 document.getElementById('context-disassemble').onclick = () => {
                     // 分解
-                    const returns = this.calculateDisassembleReturns(item);
+                    const returns = this.equipmentSystem.calculateDisassembleReturns(item);
                     const itemName = item.name || '未知装备';
                     const woodAmount = returns.spiritWood || 0;
                     const ironAmount = returns.blackIron || 0;
@@ -4490,27 +3385,7 @@ class EndlessWinterGame {
     }
     
     // 获取属性描述
-    getStatsDescription(stats) {
-        const statDescriptions = [];
-        for (const stat in stats) {
-            let statName = stat;
-            switch (stat) {
-                case 'attack': statName = '攻击'; break;
-                case 'defense': statName = '防御'; break;
-                case 'hp': statName = '生命'; break;
-                case 'luck': statName = '幸运'; break;
-                case 'speed': statName = '速度'; break;
-                case 'criticalRate': statName = '暴击'; break;
-                case 'dodgeRate': statName = '闪避'; break;
-                case 'accuracy': statName = '命中'; break;
-                case 'moveSpeed': statName = '移速'; break;
-                case 'tenacity': statName = '韧性'; break;
-                case 'energyRegen': statName = '回蓝'; break;
-            }
-            statDescriptions.push(`${statName}+${stats[stat]}`);
-        }
-        return statDescriptions.join(', ');
-    }
+
     
     // 初始化tooltip
     initTooltips() {

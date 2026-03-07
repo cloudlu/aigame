@@ -18,7 +18,7 @@ EndlessWinterGame.prototype.attackEnemy = function() {
     }
 
     // 计算装备效果
-    this.calculateEquipmentEffects();
+    this.equipmentSystem.calculateEquipmentEffects();
 
     // 计算最终属性
     const finalAttack = this.gameState.player.attack + this.gameState.player.equipmentEffects.attack;
@@ -126,41 +126,47 @@ EndlessWinterGame.prototype.attackEnemy = function() {
     this.playSound('attack-sound', 1, 200);
 };
 
-// 使用技能攻击敌人
-EndlessWinterGame.prototype.useSkill = function(skillIndex) {
+// 使用技能攻击敌人（使用当前境界装备的技能）
+EndlessWinterGame.prototype.useSkill = function() {
     if (!this.gameState.battle.inBattle) {
         this.addBattleLog('只有在战斗模式中才能使用技能！');
         return;
     }
-    
-    // 检查技能是否允许在当前境界使用
-    let skill = this.gameState.player.skills[skillIndex];
+
+    // 获取当前境界的装备技能
+    const currentRealm = this.gameState.player.realm.currentRealm;
+    const equippedSkills = this.gameState.player.skills.equipped;
+    const skillId = equippedSkills[currentRealm];
+
+    if (!skillId) {
+        this.addBattleLog('当前境界没有装备技能！');
+        return;
+    }
+
+    // 使用新的技能树系统获取技能详情
+    let skill = this.skillTreeSystem.getCurrentSkill();
+
     if (!skill) {
-        this.addBattleLog(`找不到技能：${skillIndex}`);
+        this.addBattleLog(`找不到技能：${skillId}`);
         return;
     }
-    
-    // 检查境界要求
-    if (skill.realmRequired && this.gameState.player.realm.currentRealm < skill.realmRequired) {
-        this.addBattleLog('当前境界无法使用此技能！');
-        return;
-    }
-    
+
     // 确保有足够的能量
-    if (!skill) {
-        this.addBattleLog(`找不到技能：${skillIndex}`);
-        return;
-    }
-    
     if (this.gameState.player.energy < skill.energyCost) {
         this.addBattleLog(`能量不足！需要${skill.energyCost}能量`);
         return;
     }
-    // 播放技能声音
-    this.playSound(`skill-${skillIndex}-sound`, 1, 300);
+
+    // 播放技能声音 - 使用技能特定的音效
+    if (skill.soundUrl) {
+        this.playSkillSound(skill.soundUrl);
+    } else {
+        // 后备音效
+        this.playSound('skill-0-sound', 1, 300);
+    }
 
     // 计算装备效果
-    this.calculateEquipmentEffects();
+    this.equipmentSystem.calculateEquipmentEffects();
     const finalAttack = this.gameState.player.attack + this.gameState.player.equipmentEffects.attack;
     const finalDefense = this.gameState.player.defense + this.gameState.player.equipmentEffects.defense;
     const finalAccuracy = (this.gameState.player.accuracy || 100) + (this.gameState.player.equipmentEffects.accuracy || 0);
@@ -184,14 +190,29 @@ EndlessWinterGame.prototype.useSkill = function(skillIndex) {
             // 技能攻击命中判断
             const playerHitChance = Math.min(95, finalAccuracy - enemyDodge);
             hit = Math.random() * 100 < playerHitChance;
-            
+
             if (hit) {
                 playerDamage = Math.max(1, Math.floor(finalAttack * skill.damageMultiplier) - this.gameState.enemy.defense);
+                // 额外伤害（百分比敌人最大生命）
+                if (skill.extraDamagePercent) {
+                    const extraDamage = Math.floor(this.gameState.enemy.maxHp * skill.extraDamagePercent);
+                    playerDamage += extraDamage;
+                }
+                // 无视防御
+                if (skill.ignoreDefense) {
+                    const ignoredDefense = Math.floor(this.gameState.enemy.defense * skill.ignoreDefense);
+                    playerDamage += ignoredDefense;
+                }
                 this.addBattleLog(`你使用了${skill.name}，对${this.gameState.enemy.name}造成了${playerDamage}点伤害！`);
             } else {
                 this.addBattleLog(`你的${skill.name}被${this.gameState.enemy.name}闪避了！`);
                 this.showDodge(this.battle3D.enemy, '闪避！');
             }
+        } else if (skill.defenseBonus) {
+            // 防御姿态
+            this.gameState.player.defenseActive = true;
+            this.gameState.player.defenseBonusValue = skill.defenseBonus;
+            this.addBattleLog(`你使用了${skill.name}，防御姿态已激活！下次受到的伤害减少${Math.floor(skill.defenseBonus * 100)}%！`);
         } else if (skill.healPercentage) {
             const healAmount = Math.floor(this.gameState.player.maxHp * skill.healPercentage);
             this.gameState.player.hp = Math.min(this.gameState.player.hp + healAmount, this.gameState.player.maxHp);
@@ -201,7 +222,7 @@ EndlessWinterGame.prototype.useSkill = function(skillIndex) {
             // 技能攻击命中判断
             const playerHitChance = Math.min(95, finalAccuracy - enemyDodge);
             hit = Math.random() * 100 < playerHitChance;
-            
+
             if (hit) {
                 // 幸运一击
                 if (Math.random() < skill.criticalChance) {
@@ -221,7 +242,55 @@ EndlessWinterGame.prototype.useSkill = function(skillIndex) {
             this.gameState.player.dodgeBonus = skill.dodgeBonus;
             this.addBattleLog(`你使用了${skill.name}，提高了闪避率！`);
         }
-        
+
+        // 新增：能量恢复
+        if (skill.energyRecover) {
+            const recoverAmount = Math.min(skill.energyRecover, this.gameState.player.maxEnergy - this.gameState.player.energy);
+            this.gameState.player.energy += recoverAmount;
+            this.addBattleLog(`恢复了${recoverAmount}点能量！`);
+        }
+
+        // 新增：免疫下次攻击
+        if (skill.immuneNextAttack) {
+            this.gameState.player.immuneNextAttack = true;
+            this.addBattleLog(`你获得了免疫状态，下次攻击将被完全抵挡！`);
+        }
+
+        // 新增：组合效果处理
+        if (skill.effects && skill.effects.length > 0) {
+            this.processSkillEffects(skill.effects);
+        }
+
+        // 新增：添加持续buff
+        if (skill.buffs && skill.buffs.length > 0) {
+            if (!this.gameState.player.buffs) {
+                this.gameState.player.buffs = [];
+            }
+            skill.buffs.forEach(buff => {
+                this.gameState.player.buffs.push({
+                    type: buff.type,
+                    value: buff.value,
+                    turns: buff.turns
+                });
+            });
+            this.addBattleLog(`获得了${skill.buffs.length}个持续增益效果！`);
+        }
+
+        // 新增：添加敌人debuff
+        if (skill.debuffs && skill.debuffs.length > 0) {
+            if (!this.gameState.enemy.debuffs) {
+                this.gameState.enemy.debuffs = [];
+            }
+            skill.debuffs.forEach(debuff => {
+                this.gameState.enemy.debuffs.push({
+                    type: debuff.type,
+                    value: debuff.value,
+                    turns: debuff.turns
+                });
+            });
+            this.addBattleLog(`对敌人施加了${skill.debuffs.length}个减益效果！`);
+        }
+
         if (playerDamage > 0) {
             this.gameState.enemy.hp -= playerDamage;
             if (this.gameState.enemy.hp < 0) {
@@ -257,16 +326,18 @@ EndlessWinterGame.prototype.useSkill = function(skillIndex) {
 
             if (enemyHit) {
                 if (this.gameState.player.defenseActive) {
-                    finalEnemyDamage = Math.max(1, Math.floor(finalEnemyDamage * 0.5));
+                    const reductionRate = this.gameState.player.defenseBonusValue || 0.5;
+                    finalEnemyDamage = Math.max(1, Math.floor(finalEnemyDamage * (1 - reductionRate)));
                     if (this.gameState.enemy.isBoss && this.gameState.enemy.energy >= 50) {
                         const skillDamage = Math.floor(finalEnemyDamage * 1.5);
-                        finalEnemyDamage = Math.max(1, Math.floor((finalEnemyDamage + skillDamage) * 0.5));
+                        finalEnemyDamage = Math.max(1, Math.floor((finalEnemyDamage + skillDamage) * (1 - reductionRate)));
                         this.gameState.enemy.energy -= 50;
-                        this.addBattleLog(`${this.gameState.enemy.name}释放了技能，对你造成了${finalEnemyDamage}点伤害！（防御减免50%）`);
+                        this.addBattleLog(`${this.gameState.enemy.name}释放了技能，对你造成了${finalEnemyDamage}点伤害！（防御减免${Math.floor(reductionRate * 100)}%）`);
                     } else {
-                        this.addBattleLog(`${this.gameState.enemy.name}对你造成了${finalEnemyDamage}点伤害！（防御减免50%）`);
+                        this.addBattleLog(`${this.gameState.enemy.name}对你造成了${finalEnemyDamage}点伤害！（防御减免${Math.floor(reductionRate * 100)}%）`);
                     }
                     this.gameState.player.defenseActive = false;
+                    this.gameState.player.defenseBonusValue = 0;
                     this.removeDefenseEffect();
                 } else {
                     if (this.gameState.enemy.isBoss && this.gameState.enemy.energy >= 50) {
@@ -307,17 +378,25 @@ EndlessWinterGame.prototype.useSkill = function(skillIndex) {
     };
 
     // 播放技能动画，在动画结束后执行技能效果
+    const skillEffectColor = skill.effectColor || { r: 0, g: 0.5, b: 1 }; // 默认蓝色
+
     if (skill.damageMultiplier) {
-        this.playSkillAttackAnimation(false, handleSkillEffect);
+        this.playSkillAttackAnimation(false, skillEffectColor, handleSkillEffect);
     } else if (skill.defenseBonus) {
         this.playDefenseAnimation(handleSkillEffect);
     } else if (skill.criticalMultiplier) {
-        this.playSkillAttackAnimation(true, handleSkillEffect); // 传入true表示是幸运一击
+        this.playSkillAttackAnimation(true, skillEffectColor, handleSkillEffect); // 传入true表示是幸运一击
     } else if (skill.healPercentage) {
         // 直接执行治疗效果
         handleSkillEffect();
     } else if (skill.dodgeBonus) {
         // 直接执行闪避效果
+        handleSkillEffect();
+    } else if (skill.effects) {
+        // 复合效果技能
+        handleSkillEffect();
+    } else if (skill.energyRecover) {
+        // 能量恢复技能
         handleSkillEffect();
     }
 };
@@ -365,8 +444,18 @@ EndlessWinterGame.prototype.enemyDefeated = function() {
     this.gameState.player.energy = Math.min(this.gameState.player.energy + killEnergyRecovery, this.gameState.player.maxEnergy);
     this.addBattleLog(`杀死敌人恢复了${killEnergyRecovery}点能量！`);
 
+    // 杀死敌人恢复生命值
+    const hpRecoveryPercent = 0.2; // 恢复20%最大HP
+    const hpRecovery = Math.floor(this.gameState.player.maxHp * hpRecoveryPercent);
+    const actualHpRecovered = Math.min(hpRecovery, this.gameState.player.maxHp - this.gameState.player.hp);
+    if (actualHpRecovered > 0) {
+        this.gameState.player.hp += actualHpRecovered;
+        this.addBattleLog(`战斗胜利恢复了${actualHpRecovered}点生命值！`);
+        this.showDamage(this.battle3D.player, actualHpRecovered, 'green');
+    }
+
     // 装备掉落
-    const droppedEquipment = this.generateEquipmentDrop();
+    const droppedEquipment = this.equipmentSystem.generateEquipmentDrop();
     if (droppedEquipment) {
         const equipped = this.checkAndEquipBetterGear(droppedEquipment);
         if (!equipped) {
@@ -428,6 +517,9 @@ EndlessWinterGame.prototype.playerDefeated = function() {
         this.battle3D.playerDefeated = true;
     }
 
+    // 播放玩家倒地动画
+    this.showPlayerDefeatedAnimation();
+
     // 播放失败声音
     this.playSound('defeat-sound', 1, 1000);
 
@@ -450,82 +542,8 @@ EndlessWinterGame.prototype.playerDefeated = function() {
 // 触发升级动画 - 使用 game.js 中的实现
 // 注意：此函数在 game.js 中已有完整实现，这里保留为空以避免覆盖
 
-// ==================== 装备掉落 ====================
-
-// 生成装备掉落 - 使用 game.js 中的实现
-// 注意：此函数在 game.js 中已有完整实现，这里保留为空以避免覆盖
-
-// 获取稀有度数据
-EndlessWinterGame.prototype.getRarityData = function(rarity) {
-    const rarityData = this.gameState.equipmentRarities.find(r => r.name === rarity);
-    if (!rarityData) return null;
-
-    const template = this.gameState.equipmentTemplates[Math.floor(Math.random() * this.gameState.equipmentTemplates.length)];
-    const randomBonus = Math.floor(Math.random() * 5) + 1; // 1-5的随机加成
-    
-    // 根据装备类型和稀有度生成属性
-    const stats = {};
-    const baseValue = 5 + this.gameState.player.realm.currentLevel * 2;
-    const rarityMultiplier = rarityData.multiplier || 1;
-    
-    // 根据装备类型生成不同的属性
-    switch (template.type) {
-        case 'weapon':
-            stats.attack = Math.floor(baseValue * rarityMultiplier * (1 + randomBonus / 10));
-            stats.accuracy = Math.floor(5 * rarityMultiplier);
-            break;
-        case 'armor':
-            stats.defense = Math.floor(baseValue * rarityMultiplier * (1 + randomBonus / 10));
-            stats.maxHp = Math.floor(20 * rarityMultiplier);
-            break;
-        case 'helmet':
-            stats.defense = Math.floor((baseValue * 0.7) * rarityMultiplier * (1 + randomBonus / 10));
-            stats.maxHp = Math.floor(15 * rarityMultiplier);
-            break;
-        case 'boots':
-            stats.defense = Math.floor((baseValue * 0.5) * rarityMultiplier * (1 + randomBonus / 10));
-            stats.speed = Math.floor(3 * rarityMultiplier);
-            break;
-        case 'gloves':
-            stats.attack = Math.floor((baseValue * 0.7) * rarityMultiplier * (1 + randomBonus / 10));
-            stats.accuracy = Math.floor(8 * rarityMultiplier);
-            break;
-        case 'ring':
-            // 戒指可以提供多种属性
-            stats.attack = Math.floor((baseValue * 0.5) * rarityMultiplier * (1 + randomBonus / 10));
-            stats.defense = Math.floor((baseValue * 0.5) * rarityMultiplier * (1 + randomBonus / 10));
-            stats.maxHp = Math.floor(10 * rarityMultiplier);
-            break;
-        default:
-            // 默认属性
-            stats.attack = Math.floor(baseValue * 0.5 * rarityMultiplier * (1 + randomBonus / 10));
-            stats.defense = Math.floor(baseValue * 0.5 * rarityMultiplier * (1 + randomBonus / 10));
-    }
-
-    return {
-        id: `${template.type}_${rarity}_${Date.now()}`,
-        name: this.generateEquipmentName(template.type, rarityData),
-        type: template.type,
-        level: this.gameState.player.realm.currentLevel,
-        refineLevel: 0,
-        stats: stats,
-        description: `${rarityData.displayName}品质的${template.type}`,
-        rarity: rarity,
-        rarityDisplayName: rarityData.displayName,
-        rarityMultiplier: rarityData.multiplier
-    };
-};
-
-// 生成装备名称
-EndlessWinterGame.prototype.generateEquipmentName = function(type, rarityData) {
-    const prefixes = ['普通的', '坚固的', '精良的', '优秀的', '卓越的', '传奇的'];
-    const suffixes = this.gameState.equipmentTemplates.find(t => t.type === type)?.nameSuffixes || ['物品'];
-
-    const prefix = prefixes[Math.min(Math.floor(Math.random() * prefixes.length), prefixes.length - 1)];
-    const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
-
-    return `${prefix}${suffix}`;
-};
+// 装备掉落 - 使用 equipmentSystem.generateEquipmentDrop()
+// 注意：此函数已移至 equipment.js
 
 // ==================== 战斗UI管理 ====================
 
@@ -631,4 +649,108 @@ EndlessWinterGame.prototype.stopAutoBattle = function() {
         clearInterval(this.gameState.battle.autoBattleLoop);
         this.gameState.battle.autoBattleLoop = null;
     }
+};
+
+// ==================== 技能效果处理 ====================
+
+// 处理技能组合效果
+EndlessWinterGame.prototype.processSkillEffects = function(effects) {
+    for (const effect of effects) {
+        switch (effect.type) {
+            case 'dodgeBonus':
+                this.gameState.player.dodgeActive = true;
+                this.gameState.player.dodgeBonus = effect.value;
+                this.addBattleLog(`闪避率提升${Math.floor(effect.value * 100)}%！`);
+                break;
+            case 'energyRecover':
+                const recoverAmount = Math.min(effect.value, this.gameState.player.maxEnergy - this.gameState.player.energy);
+                this.gameState.player.energy += recoverAmount;
+                this.addBattleLog(`恢复了${recoverAmount}点能量！`);
+                break;
+            case 'defenseBonus':
+                this.gameState.player.defenseActive = true;
+                this.gameState.player.defenseBonusValue = effect.value;
+                this.addBattleLog(`防御提升，下次受伤减少${Math.floor(effect.value * 100)}%！`);
+                break;
+            case 'accuracyBonus':
+                this.gameState.player.tempAccuracyBonus = (this.gameState.player.tempAccuracyBonus || 0) + effect.value;
+                this.addBattleLog(`命中提升${Math.floor(effect.value * 100)}%！`);
+                break;
+            case 'healPercentage':
+                const healAmount = Math.floor(this.gameState.player.maxHp * effect.value);
+                this.gameState.player.hp = Math.min(this.gameState.player.hp + healAmount, this.gameState.player.maxHp);
+                this.addBattleLog(`恢复了${healAmount}点生命值！`);
+                this.showDamage(this.battle3D.player, healAmount, 'green');
+                break;
+            case 'allStatsBonus':
+                // 全属性加成
+                if (!this.gameState.player.buffs) {
+                    this.gameState.player.buffs = [];
+                }
+                this.gameState.player.buffs.push({
+                    type: 'allStatsBonus',
+                    value: effect.value,
+                    turns: effect.turns || 3
+                });
+                this.addBattleLog(`全属性提升${Math.floor(effect.value * 100)}%，持续${effect.turns || 3}回合！`);
+                break;
+        }
+    }
+};
+
+// 处理回合开始时的buff效果
+EndlessWinterGame.prototype.processBuffsAtTurnStart = function() {
+    if (!this.gameState.player.buffs || this.gameState.player.buffs.length === 0) {
+        return;
+    }
+
+    for (const buff of this.gameState.player.buffs) {
+        switch (buff.type) {
+            case 'damageBonus':
+                // 伤害加成已在使用技能时应用
+                break;
+            case 'allStatsBonus':
+                // 全属性加成
+                this.gameState.player.tempAttackBonus = (this.gameState.player.tempAttackBonus || 0) + buff.value;
+                this.gameState.player.tempDefenseBonus = (this.gameState.player.tempDefenseBonus || 0) + buff.value;
+                break;
+            case 'skillCostReduce':
+                // 技能消耗减少
+                this.gameState.player.tempSkillCostReduce = buff.value;
+                break;
+        }
+    }
+};
+
+// 处理回合结束时的buff/debuff衰减
+EndlessWinterGame.prototype.processBuffDecay = function() {
+    // 处理玩家buff衰减
+    if (this.gameState.player.buffs) {
+        this.gameState.player.buffs = this.gameState.player.buffs.filter(buff => {
+            buff.turns--;
+            if (buff.turns <= 0) {
+                this.addBattleLog(`${buff.type}效果已消失`);
+                return false;
+            }
+            return true;
+        });
+    }
+
+    // 处理敌人debuff衰减
+    if (this.gameState.enemy.debuffs) {
+        this.gameState.enemy.debuffs = this.gameState.enemy.debuffs.filter(debuff => {
+            debuff.turns--;
+            if (debuff.turns <= 0) {
+                this.addBattleLog(`敌人的${debuff.type}效果已消失`);
+                return false;
+            }
+            return true;
+        });
+    }
+
+    // 清除临时加成
+    this.gameState.player.tempAttackBonus = 0;
+    this.gameState.player.tempDefenseBonus = 0;
+    this.gameState.player.tempAccuracyBonus = 0;
+    this.gameState.player.tempSkillCostReduce = 0;
 };

@@ -295,26 +295,71 @@ EndlessWinterGame.prototype.createBattleScene = function(enemyInfo) {
         }
     });
 
-    // 更新技能按钮状态
+    // 动态生成技能按钮（显示当前境界及之前所有境界学到的所有技能）
     if (this.gameState.player && this.gameState.player.skills) {
-        for (let i = 0; i < this.gameState.player.skills.length; i++) {
-            const skill = this.gameState.player.skills[i];
-            const skillButton = document.getElementById(`skill-${i}`);
-            if (skillButton) {
-                if (this.calculateTotalLevel() >= skill.levelRequired) {
-                    console.log(`技能 ${skill.name} 可用（等级满足）`);
-                    // 等级满足，显示并启用技能按钮
-                    skillButton.style.display = 'flex';
-                    skillButton.disabled = false;
-                    skillButton.classList.remove('bg-dark/50', 'cursor-not-allowed');
-                    skillButton.classList.add('bg-accent', 'hover:bg-accent/80');
-                } else {
-                    console.log(`技能 ${skill.name} 不可用（等级不满足）`);
-                    // 等级不足，隐藏技能按钮
-                    skillButton.style.display = 'none';
-                }
+        const currentRealm = this.gameState.player.realm.currentRealm;
+        const attackSkillsContainer = document.getElementById('attack-skills');
+        if (!attackSkillsContainer) {
+            console.error('attack-skills container not found');
+            return;
+        }
+
+        // 清空现有按钮（保留普通攻击按钮）
+        attackSkillsContainer.innerHTML = '';
+
+        // 创建普通攻击按钮
+        const attackButton = document.createElement('button');
+        attackButton.id = 'attack-btn';
+        attackButton.className = 'btn-primary bg-primary hover:bg-primary/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all';
+        attackButton.setAttribute('data-tooltip', '对敌人进行普通攻击，不消耗能量');
+        attackButton.innerHTML = '<img src="Images/skill-0.jpg" alt="普通攻击" class="w-full h-full object-cover">';
+        attackButton.addEventListener('click', () => this.attackEnemy());
+        attackSkillsContainer.appendChild(attackButton);
+
+        // 遍历当前境界及之前所有境界，使用新的技能树系统
+        let skillButtonIndex = 0;
+        for (let realm = 0; realm <= currentRealm; realm++) {
+            // 获取装备的技能
+            const equipped = this.gameState.player.skills?.equipped;
+            if (!equipped) continue;
+
+            const equippedSkillId = equipped[realm];
+            if (!equippedSkillId) continue;
+
+            // 获取技能等级
+            const skillLevel = this.gameState.player.skills.levels?.[equippedSkillId] || 0;
+            if (skillLevel === 0) continue;
+
+            // 获取技能树数据
+            const skillTree = this.metadata.skillTrees?.find(tree => tree.id === equippedSkillId);
+            if (!skillTree) continue;
+
+            // 获取当前等级的技能数据
+            const skill = skillTree.levels[skillLevel - 1];
+            if (!skill) continue;
+
+            // 检查境界和阶段要求
+            if (this.gameState.player.realm.currentRealm >= skillTree.realmRequired) {
+                const skillButton = document.createElement('button');
+                skillButton.className = 'btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all';
+                skillButton.setAttribute('data-skill-id', equippedSkillId);
+
+                // 获取境界名称
+                const realmName = this.metadata.realmConfig?.[skillTree.realmRequired]?.name || '未知境界';
+                skillButton.setAttribute('data-tooltip', `${skill.name}: ${skill.description || ''}，消耗${skill.energyCost}能量，${realmName}可用`);
+
+                const skillImage = `Images/skill-${skill.imageId || equippedSkillId.replace('skill-', '')}.jpg`;
+                skillButton.innerHTML = `<img src="${skillImage}" alt="${skill.name}" class="w-full h-full object-cover">`;
+
+                // 添加点击事件
+                skillButton.addEventListener('click', () => this.useSkill());
+
+                attackSkillsContainer.appendChild(skillButton);
+                skillButtonIndex++;
             }
         }
+
+        console.log(`生成了 ${skillButtonIndex} 个技能按钮`);
     }
 
     // 淡入效果
@@ -401,7 +446,7 @@ EndlessWinterGame.prototype.playAttackAnimation = function(callback) {
 };
 
 // 播放玩家技能攻击动画
-EndlessWinterGame.prototype.playSkillAttackAnimation = function(isLuckyStrike = false, callback) {
+EndlessWinterGame.prototype.playSkillAttackAnimation = function(isLuckyStrike = false, skillColor = { r: 0, g: 0.5, b: 1 }, callback) {
     if (!this.battle3D || !this.battle3D.player || !this.battle3D.enemy || this.battle3D.isAttacking) {
         if (callback) callback();
         return;
@@ -430,18 +475,18 @@ EndlessWinterGame.prototype.playSkillAttackAnimation = function(isLuckyStrike = 
             // 创建技能特效
             const skillEffect = BABYLON.MeshBuilder.CreateSphere("skillEffect", { diameter: 0.5 }, this.battle3D.scene);
             const skillMaterial = new BABYLON.StandardMaterial("skillMaterial", this.battle3D.scene);
-            
-            // 根据是否是幸运一击设置不同的颜色
+
+            // 根据是否是幸运一击或技能特定颜色设置不同的颜色
             if (isLuckyStrike) {
                 // 幸运一击特效（金色）
                 skillMaterial.diffuseColor = new BABYLON.Color3(1, 0.8, 0);
                 skillMaterial.emissiveColor = new BABYLON.Color3(1, 0.8, 0);
             } else {
-                // 普通技能特效（蓝色）
-                skillMaterial.diffuseColor = new BABYLON.Color3(0, 0.5, 1);
-                skillMaterial.emissiveColor = new BABYLON.Color3(0, 0.5, 1);
+                // 使用技能特定的颜色
+                skillMaterial.diffuseColor = new BABYLON.Color3(skillColor.r, skillColor.g, skillColor.b);
+                skillMaterial.emissiveColor = new BABYLON.Color3(skillColor.r, skillColor.g, skillColor.b);
             }
-            
+
             skillMaterial.alpha = 0.8;
             skillEffect.material = skillMaterial;
             skillEffect.position.x = player.position.x;

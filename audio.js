@@ -57,3 +57,41 @@ EndlessWinterGame.prototype.stopBattleMusic = function() {
         }
     }
 };
+
+// 播放技能特定音效
+EndlessWinterGame.prototype.playSkillSound = function(soundUrl) {
+    try {
+        // 为每个URL创建唯一的音频ID
+        const audioId = `skill-sound-${soundUrl.hashCode ? soundUrl.hashCode() : soundUrl.replace(/[^a-zA-Z0-9]/g, '')}`;
+
+        // 检查是否已经有这个音频元素
+        let audioElement = document.getElementById(audioId);
+
+        if (!audioElement) {
+            // 创建新的音频元素
+            audioElement = document.createElement('audio');
+            audioElement.id = audioId;
+            audioElement.preload = 'auto';
+            audioElement.volume = 1;
+            audioElement.loop = false;
+
+            const source = document.createElement('source');
+            source.src = soundUrl;
+            source.type = 'audio/mpeg';
+            audioElement.appendChild(source);
+
+            document.body.appendChild(audioElement);
+        }
+
+        // 播放音频
+        audioElement.pause();
+        audioElement.currentTime = 0;
+        audioElement.play().catch(error => {
+            if (error.name !== 'AbortError') {
+                console.log('播放技能音效失败:', error);
+            }
+        });
+    } catch (error) {
+        console.log('播放技能音效失败:', error);
+    }
+};

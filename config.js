@@ -372,20 +372,20 @@ const CONSTANTS = {
     // ==================== 装备系统常量 ====================
     EQUIPMENT: {
         MAX_LEVEL: 100,
-        RARITY_NAMES: ['white', 'blue', 'purple', 'gold', 'legend'],
+        RARITY_NAMES: ['white', 'blue', 'purple', 'gold', 'rainbow'],
         RARITY_COLORS: {
             white: new BABYLON.Color3(1, 1, 1),
             blue: new BABYLON.Color3(0.2, 0.5, 1),
             purple: new BABYLON.Color3(0.6, 0.2, 1),
             gold: new BABYLON.Color3(1, 0.8, 0),
-            legend: new BABYLON.Color3(1, 0, 0.5)
+            rainbow: new BABYLON.Color3(1, 0, 0.5)
         },
         RARITY_DROP_RATES: {
             white: 0.40,
             blue: 0.30,
             purple: 0.15,
             gold: 0.10,
-            legend: 0.05
+            rainbow: 0.05
         },
         REQUIRED_EQUIPMENT_COUNT: 3,
         REFINEMENT_LEVELS: 10

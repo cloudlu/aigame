@@ -382,8 +382,8 @@ EndlessWinterGame.prototype.initMap3DScene = function() {
     const scene = new BABYLON.Scene(engine);
 
     // 探险场景背景设置
-    if (this.gameState.mapBackgrounds.length > 0 && this.gameState.currentBackgroundIndex !== undefined) {
-        const currentBackground = this.gameState.mapBackgrounds[this.gameState.currentBackgroundIndex];
+    if (this.metadata.mapBackgrounds.length > 0 && this.gameState.currentBackgroundIndex !== undefined) {
+        const currentBackground = this.metadata.mapBackgrounds[this.gameState.currentBackgroundIndex];
         const toHexColor = (color) => {
             if (typeof color === 'number') {
                 return '#' + color.toString(16).padStart(6, '0');
@@ -697,19 +697,19 @@ EndlessWinterGame.prototype.createEnemy = function(enemyDistribution, enemyIndex
         bonus = 0.5;
     }
 
-    const currentBackground = this.gameState.mapBackgrounds && this.gameState.currentBackgroundIndex !== undefined ? 
-        this.gameState.mapBackgrounds[this.gameState.currentBackgroundIndex] : null;
+    const currentBackground = this.metadata.mapBackgrounds && this.gameState.currentBackgroundIndex !== undefined ? 
+        this.metadata.mapBackgrounds[this.gameState.currentBackgroundIndex] : null;
     let mapType = currentBackground ? currentBackground.type : null;
 
-    const mapEnemies = this.gameState.mapEnemyMapping && this.gameState.mapEnemyMapping[mapType] ?
-        this.gameState.mapEnemyMapping[mapType] :
-        (this.gameState.enemyTypes && this.gameState.enemyTypes.length > 0) ?
-            this.gameState.enemyTypes.map(enemy => enemy.name) :
+    const mapEnemies = this.metadata.mapEnemyMapping && this.metadata.mapEnemyMapping[mapType] ?
+        this.metadata.mapEnemyMapping[mapType] :
+        (this.metadata.enemyTypes && this.metadata.enemyTypes.length > 0) ?
+            this.metadata.enemyTypes.map(enemy => enemy.name) :
             ['雪原狼'];
 
     const randomEnemyName = mapEnemies[Math.floor(Math.random() * mapEnemies.length)];
-    let selectedEnemyType = this.gameState.enemyTypes && this.gameState.enemyTypes.length > 0 ?
-        this.gameState.enemyTypes.find(enemy => enemy.name === randomEnemyName) : null;
+    let selectedEnemyType = this.metadata.enemyTypes && this.metadata.enemyTypes.length > 0 ?
+        this.metadata.enemyTypes.find(enemy => enemy.name === randomEnemyName) : null;
 
     if (!selectedEnemyType) {
         // 使用默认敌人类型
@@ -1098,7 +1098,7 @@ EndlessWinterGame.prototype.handleMouseClick = function() {
 
 // 更新地图背景
 EndlessWinterGame.prototype.updateMapBackground = function() {
-    const currentBackground = this.gameState.mapBackgrounds[this.gameState.currentBackgroundIndex];
+    const currentBackground = this.metadata.mapBackgrounds[this.gameState.currentBackgroundIndex];
     if (currentBackground && this.battle3D && this.battle3D.scene) {
         const toHexColor = (color) => {
             if (typeof color === 'number') {
@@ -1151,12 +1151,6 @@ EndlessWinterGame.prototype.animateMap3D = function() {
 
     // 更新血条显示
     this.updateHealthBars();
-};
-
-// 淡入战斗场景（为战斗场景单独准备）
-EndlessWinterGame.prototype.fadeInBattleScene = function() {
-    // 这个函数应该移到 battle3d.js
-    console.warn('fadeInBattleScene 应该在 battle3d.js 中实现');
 };
 
 // ==================== 探险3D元素创建 ====================

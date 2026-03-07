@@ -551,7 +551,7 @@
                     
                     <!-- 装备管理 -->
                     <div class="mt-4 space-y-2">
-                        <div class="grid grid-cols-4 gap-2 justify-items-center">
+                        <div class="grid grid-cols-5 gap-2 justify-items-center">
                                 <button id="auto-equip-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="一键装备最好的装备">
                                     <i class="fa fa-shield text-accent"></i>
                                 </button>
@@ -563,6 +563,9 @@
                                 </button>
                                 <button id="refine-weapon-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="精炼当前装备">
                                     <i class="fa fa-star text-accent"></i>
+                                </button>
+                                <button id="refresh-equipment-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="刷新装备属性">
+                                    <i class="fa fa-refresh text-accent"></i>
                                 </button>
                             </div>
                     </div>
@@ -591,7 +594,36 @@
                             </div>
                         </div>
                     </div>
-                    
+
+                    <!-- 装备刷新信息 -->
+                    <div id="refresh-info" class="mt-4 bg-dark/30 rounded-lg p-3 hidden">
+                        <h3 class="font-bold text-sm mb-2 text-light/90">装备属性刷新</h3>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-light/80">当前装备:</span>
+                                <span id="refresh-equipment-name" class="text-sm font-medium text-white">无</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-light/80">精炼等级:</span>
+                                <span id="refresh-equipment-level" class="text-sm font-medium text-accent">+0</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-light/80">刷新需求:</span>
+                                <div id="refresh-requirements" class="text-sm text-light/70">
+                                    灵木: 0, 玄铁: 0, 灵晶: 0
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-light/80">当前属性:</span>
+                                <span id="refresh-current-stats" class="text-sm text-light/70">无</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-light/80">刷新说明:</span>
+                                <span class="text-xs text-light/60">重新随机属性，保留精炼</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- 装备分解信息 -->
                     <div id="disassemble-info" class="mt-4 bg-dark/30 rounded-lg p-3 hidden">
                         <h3 class="font-bold text-sm mb-2 text-light/90">装备分解</h3>
@@ -1200,18 +1232,24 @@
             <!-- 战斗模式下的攻击技能 -->
             <div class="flex space-x-2" id="attack-skills">
                 <button id="attack-btn" class="btn-primary bg-primary hover:bg-primary/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="对敌人进行普通攻击，不消耗能量">
-                    <img src="Images/attack-button.png" alt="普通攻击" class="w-full h-full object-cover">
+                    <img src="Images/skill-0.jpg" alt="普通攻击" class="w-full h-full object-cover">
                 </button>
-                <button id="skill-0" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="强力攻击: 造成2倍普通伤害，消耗20能量，需要1级">
+                <button id="skill-0" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="重击: 造成1.5倍普通伤害，消耗15能量，武者可用">
+                    <img src="Images/power-attack-button.png" alt="重击" class="w-full h-full object-cover">
+                </button>
+                <button id="skill-1" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="闪避: 本回合30%几率闪避攻击，消耗10能量，炼气期可用">
+                    <img src="Images/dodge-button.png" alt="闪避" class="w-full h-full object-cover">
+                </button>
+                <button id="skill-2" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="强力攻击: 造成2倍普通伤害，消耗20能量，炼气期可用">
                     <img src="Images/power-attack-button.png" alt="强力攻击" class="w-full h-full object-cover">
                 </button>
-                <button id="skill-1" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="防御姿态: 减少50%受到的敌人伤害，消耗15能量，需要10级">
+                <button id="skill-3" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="防御姿态: 本回合减少50%受到的伤害，消耗15能量，炼气期可用">
                     <img src="Images/defense-stance-button.png" alt="防御姿态" class="w-full h-full object-cover">
                 </button>
-                <button id="skill-2" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="生命恢复: 恢复20%最大生命值，消耗25能量，需要20级">
+                <button id="skill-4" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="生命恢复: 恢复20%最大生命值，消耗25能量，炼气期可用">
                     <img src="Images/heal-button.png" alt="生命恢复" class="w-full h-full object-cover">
                 </button>
-                <button id="skill-3" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="幸运一击: 有70%几率造成3倍伤害，消耗30能量，需要30级">
+                <button id="skill-5" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="幸运一击: 有70%几率造成3倍伤害，消耗30能量，炼气期可用">
                     <img src="Images/lucky-strike-button.png" alt="幸运一击" class="w-full h-full object-cover">
                 </button>
             </div>
@@ -1220,7 +1258,9 @@
 
     <!-- 游戏脚本: 核心及模块 -->
     <script src="config.js"></script>
+    <script src="equipment.js"></script>
     <script src="game.js"></script>
+    <script src="skillTreeSystem.js"></script>
     <script src="models.js"></script>
     <script src="map.js"></script>
     <script src="battle3d.js"></script>
