@@ -107,7 +107,7 @@ EndlessWinterGame.prototype.attackEnemy = function() {
             this.showDodge(this.battle3D.player, '闪避！');
         }
 
-        // BOSS能量恢复
+        // BOSS灵力恢复
         if (this.gameState.enemy.isBoss) {
             this.gameState.enemy.energy = Math.min(this.gameState.enemy.energy + 20, this.gameState.enemy.maxEnergy);
         }
@@ -151,9 +151,9 @@ EndlessWinterGame.prototype.useSkill = function() {
         return;
     }
 
-    // 确保有足够的能量
+    // 确保有足够的灵力
     if (this.gameState.player.energy < skill.energyCost) {
-        this.addBattleLog(`能量不足！需要${skill.energyCost}能量`);
+        this.addBattleLog(`灵力不足！需要${skill.energyCost}灵力`);
         return;
     }
 
@@ -179,10 +179,10 @@ EndlessWinterGame.prototype.useSkill = function() {
 
     // 技能效果处理函数
     const handleSkillEffect = () => {
-        // 消耗能量
+        // 消耗灵力
         this.gameState.player.energy -= skill.energyCost;
         
-        // 显示能量消耗
+        // 显示灵力消耗
         this.showEnergyChange(this.battle3D.player, -skill.energyCost);
         
         // 根据技能类型计算伤害
@@ -243,11 +243,11 @@ EndlessWinterGame.prototype.useSkill = function() {
             this.addBattleLog(`你使用了${skill.name}，提高了闪避率！`);
         }
 
-        // 新增：能量恢复
+        // 新增：灵力恢复
         if (skill.energyRecover) {
             const recoverAmount = Math.min(skill.energyRecover, this.gameState.player.maxEnergy - this.gameState.player.energy);
             this.gameState.player.energy += recoverAmount;
-            this.addBattleLog(`恢复了${recoverAmount}点能量！`);
+            this.addBattleLog(`恢复了${recoverAmount}点灵力！`);
         }
 
         // 新增：免疫下次攻击
@@ -361,7 +361,7 @@ EndlessWinterGame.prototype.useSkill = function() {
                 this.addBattleLog(`你闪避了${this.gameState.enemy.name}的攻击！`);
             }
 
-            // BOSS能量恢复
+            // BOSS灵力恢复
             if (this.gameState.enemy.isBoss) {
                 this.gameState.enemy.energy = Math.min(this.gameState.enemy.energy + 20, this.gameState.enemy.maxEnergy);
             }
@@ -396,7 +396,7 @@ EndlessWinterGame.prototype.useSkill = function() {
         // 复合效果技能
         handleSkillEffect();
     } else if (skill.energyRecover) {
-        // 能量恢复技能
+        // 灵力恢复技能
         handleSkillEffect();
     }
 };
@@ -439,10 +439,10 @@ EndlessWinterGame.prototype.enemyDefeated = function() {
 
     this.addBattleLog(`获得了${woodGained}灵木，${ironGained}玄铁，${crystalGained}灵晶！`);
 
-    // 杀死敌人恢复能量
+    // 杀死敌人恢复灵力
     const killEnergyRecovery = 15;
     this.gameState.player.energy = Math.min(this.gameState.player.energy + killEnergyRecovery, this.gameState.player.maxEnergy);
-    this.addBattleLog(`杀死敌人恢复了${killEnergyRecovery}点能量！`);
+    this.addBattleLog(`杀死敌人恢复了${killEnergyRecovery}点灵力！`);
 
     // 杀死敌人恢复生命值
     const hpRecoveryPercent = 0.2; // 恢复20%最大HP
@@ -682,7 +682,7 @@ EndlessWinterGame.prototype.processSkillEffects = function(effects) {
             case 'energyRecover':
                 const recoverAmount = Math.min(effect.value, this.gameState.player.maxEnergy - this.gameState.player.energy);
                 this.gameState.player.energy += recoverAmount;
-                this.addBattleLog(`恢复了${recoverAmount}点能量！`);
+                this.addBattleLog(`恢复了${recoverAmount}点灵力！`);
                 break;
             case 'defenseBonus':
                 this.gameState.player.defenseActive = true;

@@ -915,7 +915,7 @@ const gameMetadata = {
             levels: [
                 {
                     name: '聚气术',
-                    description: '恢复18点能量',
+                    description: '恢复18点灵力',
                     stageRequired: 4,
                     energyCost: 5,
                     energyRecover: 18,
@@ -925,7 +925,7 @@ const gameMetadata = {
                 },
                 {
                     name: '真气治疗',
-                    description: '恢复18%HP + 15点能量',
+                    description: '恢复18%HP + 15点灵力',
                     stageRequired: 7,
                     energyCost: 15,
                     healPercentage: 0.18,
@@ -936,7 +936,7 @@ const gameMetadata = {
                 },
                 {
                     name: '周天运转',
-                    description: '恢复22%HP + 20点能量，清除负面状态',
+                    description: '恢复22%HP + 20点灵力，清除负面状态',
                     stageRequired: 10,
                     energyCost: 20,
                     healPercentage: 0.22,
@@ -956,7 +956,7 @@ const gameMetadata = {
             levels: [
                 {
                     name: '追风步',
-                    description: '20%闪避 + 恢复12能量',
+                    description: '20%闪避 + 恢复12灵力',
                     stageRequired: 4,
                     energyCost: 10,
                     dodgeBonus: 0.2,
@@ -967,7 +967,7 @@ const gameMetadata = {
                 },
                 {
                     name: '冰心诀',
-                    description: '20%防御 + 15%闪避 + 恢复15能量',
+                    description: '20%防御 + 15%闪避 + 恢复15灵力',
                     stageRequired: 7,
                     energyCost: 15,
                     defenseBonus: 0.2,
@@ -1333,7 +1333,7 @@ const gameMetadata = {
                 },
                 {
                     name: '金丹之愈',
-                    description: '恢复48%最大HP，恢复30点能量',
+                    description: '恢复48%最大HP，恢复30点灵力',
                     stageRequired: 4,
                     energyCost: 36,
                     healPercentage: 0.48,
@@ -1344,7 +1344,7 @@ const gameMetadata = {
                 },
                 {
                     name: '金丹妙药',
-                    description: '恢复55%最大HP，恢复40点能量，清除负面状态',
+                    description: '恢复55%最大HP，恢复40点灵力，清除负面状态',
                     stageRequired: 7,
                     energyCost: 42,
                     healPercentage: 0.55,
@@ -1356,7 +1356,7 @@ const gameMetadata = {
                 },
                 {
                     name: '金丹涅槃',
-                    description: '恢复65%最大HP，恢复50点能量，清除负面状态，+15%防御持续3回合',
+                    description: '恢复65%最大HP，恢复50点灵力，清除负面状态，+15%防御持续3回合',
                     stageRequired: 10,
                     energyCost: 50,
                     healPercentage: 0.65,
@@ -1399,7 +1399,7 @@ const gameMetadata = {
                 },
                 {
                     name: '金丹之力',
-                    description: '35%防御 + 35%闪避 + 下3次攻击伤害+80%，恢复30点能量',
+                    description: '35%防御 + 35%闪避 + 下3次攻击伤害+80%，恢复30点灵力',
                     stageRequired: 7,
                     energyCost: 50,
                     defenseBonus: 0.35,
@@ -1412,7 +1412,7 @@ const gameMetadata = {
                 },
                 {
                     name: '金丹大成',
-                    description: '40%防御 + 40%闪避 + 下4次攻击伤害+100%，恢复40点能量，免疫控制',
+                    description: '40%防御 + 40%闪避 + 下4次攻击伤害+100%，恢复40点灵力，免疫控制',
                     stageRequired: 10,
                     energyCost: 60,
                     defenseBonus: 0.4,
@@ -1548,7 +1548,7 @@ const gameMetadata = {
             levels: [
                 {
                     name: '元婴回复',
-                    description: '恢复60%最大HP，恢复40点能量',
+                    description: '恢复60%最大HP，恢复40点灵力',
                     stageRequired: 1,
                     energyCost: 38,
                     healPercentage: 0.6,
@@ -1559,7 +1559,7 @@ const gameMetadata = {
                 },
                 {
                     name: '元婴之愈',
-                    description: '恢复68%最大HP，恢复50点能量，清除负面状态',
+                    description: '恢复68%最大HP，恢复50点灵力，清除负面状态',
                     stageRequired: 4,
                     energyCost: 45,
                     healPercentage: 0.68,
@@ -1571,7 +1571,7 @@ const gameMetadata = {
                 },
                 {
                     name: '元婴涅槃',
-                    description: '恢复78%最大HP，恢复60点能量，清除负面状态，持续恢复10回合',
+                    description: '恢复78%最大HP，恢复60点灵力，清除负面状态，持续恢复10回合',
                     stageRequired: 7,
                     energyCost: 52,
                     healPercentage: 0.78,
@@ -1584,7 +1584,7 @@ const gameMetadata = {
                 },
                 {
                     name: '元婴重生',
-                    description: '恢复90%最大HP，恢复80点能量，清除负面状态，持续恢复10回合，+20%防御',
+                    description: '恢复90%最大HP，恢复80点灵力，清除负面状态，持续恢复10回合，+20%防御',
                     stageRequired: 10,
                     energyCost: 60,
                     healPercentage: 0.9,
@@ -1618,7 +1618,7 @@ const gameMetadata = {
                 },
                 {
                     name: '神识感应',
-                    description: '45%闪避 + 20%暴击率 + 下3次攻击伤害+90%，恢复40点能量',
+                    description: '45%闪避 + 20%暴击率 + 下3次攻击伤害+90%，恢复40点灵力',
                     stageRequired: 4,
                     energyCost: 52,
                     dodgeBonus: 0.45,
@@ -1631,7 +1631,7 @@ const gameMetadata = {
                 },
                 {
                     name: '元婴领域',
-                    description: '50%闪避 + 25%暴击率 + 下4次攻击伤害+100%，恢复50点能量，免疫控制',
+                    description: '50%闪避 + 25%暴击率 + 下4次攻击伤害+100%，恢复50点灵力，免疫控制',
                     stageRequired: 7,
                     energyCost: 60,
                     dodgeBonus: 0.5,
@@ -1645,7 +1645,7 @@ const gameMetadata = {
                 },
                 {
                     name: '元婴大成',
-                    description: '55%闪避 + 30%暴击率 + 下5次攻击伤害+120%，恢复60点能量，免疫控制',
+                    description: '55%闪避 + 30%暴击率 + 下5次攻击伤害+120%，恢复60点灵力，免疫控制',
                     stageRequired: 10,
                     energyCost: 70,
                     dodgeBonus: 0.55,
@@ -1783,7 +1783,7 @@ const gameMetadata = {
             levels: [
                 {
                     name: '神佑',
-                    description: '恢复85%最大HP，恢复60点能量，清除负面状态',
+                    description: '恢复85%最大HP，恢复60点灵力，清除负面状态',
                     stageRequired: 1,
                     energyCost: 48,
                     healPercentage: 0.85,
@@ -1795,7 +1795,7 @@ const gameMetadata = {
                 },
                 {
                     name: '神之恩赐',
-                    description: '恢复95%最大HP，恢复80点能量，清除负面状态，持续恢复12回合',
+                    description: '恢复95%最大HP，恢复80点灵力，清除负面状态，持续恢复12回合',
                     stageRequired: 4,
                     energyCost: 55,
                     healPercentage: 0.95,
@@ -1808,7 +1808,7 @@ const gameMetadata = {
                 },
                 {
                     name: '化神涅槃',
-                    description: '恢复110%最大HP，恢复100点能量，清除负面状态，持续恢复12回合，+25%防御',
+                    description: '恢复110%最大HP，恢复100点灵力，清除负面状态，持续恢复12回合，+25%防御',
                     stageRequired: 7,
                     energyCost: 62,
                     healPercentage: 1.1,
@@ -1822,7 +1822,7 @@ const gameMetadata = {
                 },
                 {
                     name: '天地造化',
-                    description: '恢复130%最大HP（可超量治疗），恢复120点能量，清除负面状态，持续恢复15回合，+30%全属性',
+                    description: '恢复130%最大HP（可超量治疗），恢复120点灵力，清除负面状态，持续恢复15回合，+30%全属性',
                     stageRequired: 10,
                     energyCost: 70,
                     healPercentage: 1.3,
@@ -1856,7 +1856,7 @@ const gameMetadata = {
                 },
                 {
                     name: '化神之力',
-                    description: '60%全属性 + 下5次攻击伤害+120%，免疫控制，恢复60点能量',
+                    description: '60%全属性 + 下5次攻击伤害+120%，免疫控制，恢复60点灵力',
                     stageRequired: 4,
                     energyCost: 70,
                     allStatsBonus: 0.6,
@@ -1869,7 +1869,7 @@ const gameMetadata = {
                 },
                 {
                     name: '化神领域',
-                    description: '70%全属性 + 下6次攻击伤害+150%，免疫控制，恢复80点能量，必定暴击',
+                    description: '70%全属性 + 下6次攻击伤害+150%，免疫控制，恢复80点灵力，必定暴击',
                     stageRequired: 7,
                     energyCost: 80,
                     allStatsBonus: 0.7,
@@ -1883,7 +1883,7 @@ const gameMetadata = {
                 },
                 {
                     name: '化神大成',
-                    description: '80%全属性 + 下8次攻击伤害+200%，免疫控制，恢复100点能量，必定暴击，无视60%防御',
+                    description: '80%全属性 + 下8次攻击伤害+200%，免疫控制，恢复100点灵力，必定暴击，无视60%防御',
                     stageRequired: 10,
                     energyCost: 90,
                     allStatsBonus: 0.8,
@@ -1914,8 +1914,8 @@ const gameMetadata = {
             },
             {
                 id: "energy_potion",
-                name: "能量药水",
-                description: "恢复满能量",
+                name: "灵力药水",
+                description: "恢复满灵力",
                 price: 30,
                 type: "consumable",
                 effect: "energy",
@@ -1940,48 +1940,30 @@ const gameMetadata = {
                 value: 0.2
             },
             {
-                id: "basic_sword",
-                name: "基础剑",
-                description: "基础攻击力+10",
-                price: 100,
-                type: "equipment",
-                equipmentType: "weapon",
-                stats: { attack: 10 },
-                level: 1,
-                refineLevel: 0
-            },
-            {
-                id: "basic_armor",
-                name: "基础护甲",
-                description: "基础防御力+8",
-                price: 80,
-                type: "equipment",
-                equipmentType: "armor",
-                stats: { defense: 8 },
-                level: 1,
-                refineLevel: 0
-            },
-            {
-                id: "basic_helmet",
-                name: "基础头盔",
-                description: "基础防御力+5，生命值+20",
-                price: 60,
-                type: "equipment",
-                equipmentType: "helmet",
-                stats: { defense: 5, hp: 20 },
-                level: 1,
-                refineLevel: 0
-            },
-            {
-                id: "basic_boots",
-                name: "基础靴子",
-                description: "基础防御力+3，幸运值+2",
+                id: "speed_potion",
+                name: "速度药水",
+                description: "临时提升20%速度，持续30秒",
                 price: 40,
-                type: "equipment",
-                equipmentType: "boots",
-                stats: { defense: 3, luck: 2 },
-                level: 1,
-                refineLevel: 0
+                type: "consumable",
+                effect: "speed",
+                value: 0.2
+            },
+            {
+                id: "luck_potion",
+                name: "幸运药水",
+                description: "临时提升20%幸运，持续30秒",
+                price: 40,
+                type: "consumable",
+                effect: "luck",
+                value: 0.2
+            },
+            {
+                id: "white_equipment_box",
+                name: "白色装备箱",
+                description: "随机获得一件对应境界的白色装备",
+                price: 100,
+                type: "random_equipment",
+                rarity: "white"
             }
         ]
     },
@@ -2023,7 +2005,7 @@ const gameMetadata = {
         // 回复速度（每秒）
         regenRates: {
             hp: 0.5, // 每秒恢复0.5点生命值
-            energy: 2 // 每秒恢复2点能量
+            energy: 2 // 每秒恢复2点灵力
         },
         // 默认游戏设置
         defaultSettings: {

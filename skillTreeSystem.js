@@ -87,7 +87,7 @@ class SkillTreeSystem {
             return false;
         }
 
-        // 检查能量消耗
+        // 检查灵力消耗
         const upgradeCost = nextLevelData.energyCost;
         if (this.game.gameState.player.energy < upgradeCost) {
             console.warn(`Not enough energy to upgrade ${skillTree.name} (需要 ${upgradeCost}, current energy ${this.game.gameState.player.energy})`);

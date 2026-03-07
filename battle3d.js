@@ -153,7 +153,7 @@ EndlessWinterGame.prototype.createBattleScene = function(enemyInfo) {
                     <div class="font-bold">${this.gameState.user?.username || '玩家'}</div>
                     <div>等级: ${this.calculateTotalLevel()}</div>
                     <div>生命值: ${this.gameState.player.hp}/${this.gameState.player.maxHp}</div>
-                    <div>能量: ${this.gameState.player.energy}/${this.gameState.player.maxEnergy}</div>
+                    <div>灵力: ${this.gameState.player.energy}/${this.gameState.player.maxEnergy}</div>
                     <div>攻击: ${this.gameState.player.attack}</div>
                     <div>防御: ${this.gameState.player.defense}</div>
                     <div>速度: ${this.gameState.player.speed || 0}</div>
@@ -232,7 +232,7 @@ EndlessWinterGame.prototype.createBattleScene = function(enemyInfo) {
                     <div class="font-bold">${this.gameState.enemy.name}</div>
                     <div>等级: ${this.gameState.enemy.level}</div>
                     <div>生命值: ${this.gameState.enemy.hp}/${this.gameState.enemy.maxHp}</div>
-                    ${this.gameState.enemy.isBoss || this.gameState.enemy.energy > 0 ? `<div>能量: ${this.gameState.enemy.energy}/${this.gameState.enemy.maxEnergy || 100}</div>` : ''}
+                    ${this.gameState.enemy.isBoss || this.gameState.enemy.energy > 0 ? `<div>灵力: ${this.gameState.enemy.energy}/${this.gameState.enemy.maxEnergy || 100}</div>` : ''}
                     <div>攻击: ${this.gameState.enemy.attack}</div>
                     <div>防御: ${this.gameState.enemy.defense || 0}</div>
                     <div>速度: ${this.gameState.enemy.speed || 0}</div>
@@ -311,7 +311,7 @@ EndlessWinterGame.prototype.createBattleScene = function(enemyInfo) {
         const attackButton = document.createElement('button');
         attackButton.id = 'attack-btn';
         attackButton.className = 'btn-primary bg-primary hover:bg-primary/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all';
-        attackButton.setAttribute('data-tooltip', '对敌人进行普通攻击，不消耗能量');
+        attackButton.setAttribute('data-tooltip', '对敌人进行普通攻击，不消耗灵力');
         attackButton.innerHTML = '<img src="Images/skill-0.jpg" alt="普通攻击" class="w-full h-full object-cover">';
         attackButton.addEventListener('click', () => this.attackEnemy());
         attackSkillsContainer.appendChild(attackButton);
@@ -346,7 +346,7 @@ EndlessWinterGame.prototype.createBattleScene = function(enemyInfo) {
 
                 // 获取境界名称
                 const realmName = this.metadata.realmConfig?.[skillTree.realmRequired]?.name || '未知境界';
-                skillButton.setAttribute('data-tooltip', `${skill.name}: ${skill.description || ''}，消耗${skill.energyCost}能量，${realmName}可用`);
+                skillButton.setAttribute('data-tooltip', `${skill.name}: ${skill.description || ''}，消耗${skill.energyCost}灵力，${realmName}可用`);
 
                 const skillImage = `Images/skill-${skill.imageId || equippedSkillId.replace('skill-', '')}.jpg`;
                 skillButton.innerHTML = `<img src="${skillImage}" alt="${skill.name}" class="w-full h-full object-cover">`;
@@ -887,11 +887,11 @@ EndlessWinterGame.prototype.showDamage = function(target, amount, type = 'red') 
     }
 };
 
-// 显示能量变化
+// 显示灵力变化
 EndlessWinterGame.prototype.showEnergyChange = function(target, amount) {
     if (!this.battle3D || !this.battle3D.scene) return;
 
-    // 使用HTML元素显示能量变化
+    // 使用HTML元素显示灵力变化
     const energyElement = document.createElement('div');
     energyElement.className = 'absolute pointer-events-none';
     energyElement.style.fontSize = '20px';

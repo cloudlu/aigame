@@ -233,12 +233,12 @@ EndlessWinterGame.prototype.createHealthBars = function() {
     }
     this.battle3D.playerHealthBar = playerHealthBar;
 
-    // 创建玩家能量条（蓝色）
-    const playerEnergyBar = this.createHealthBar(0x0000ff); // 蓝色能量条
+    // 创建玩家灵力条（蓝色）
+    const playerEnergyBar = this.createHealthBar(0x0000ff); // 蓝色灵力条
     playerEnergyBar.position.x = 0;
-    playerEnergyBar.position.y = 0.95; // 默认能量条位置，更贴近血条
+    playerEnergyBar.position.y = 0.95; // 默认灵力条位置，更贴近血条
     playerEnergyBar.position.z = 0;
-    playerEnergyBar.isVisible = true; // 确保能量条可见
+    playerEnergyBar.isVisible = true; // 确保灵力条可见
     if (this.battle3D.player) {
         playerEnergyBar.parent = this.battle3D.player;
     }
@@ -254,13 +254,13 @@ EndlessWinterGame.prototype.createHealthBars = function() {
         enemyHealthBar.parent = this.battle3D.enemy;
         this.battle3D.enemyHealthBar = enemyHealthBar;
 
-        // 创建敌人能量条（蓝色）
+        // 创建敌人灵力条（蓝色）
         if (this.gameState.enemy && (this.gameState.enemy.isBoss || this.gameState.enemy.energy > 0)) {
-            const enemyEnergyBar = this.createHealthBar(0x0000ff); // 蓝色能量条
+            const enemyEnergyBar = this.createHealthBar(0x0000ff); // 蓝色灵力条
             enemyEnergyBar.position.x = 0;
-            enemyEnergyBar.position.y = 0.95; // 默认能量条位置，更贴近血条
+            enemyEnergyBar.position.y = 0.95; // 默认灵力条位置，更贴近血条
             enemyEnergyBar.position.z = 0;
-            enemyEnergyBar.isVisible = true; // 确保能量条可见
+            enemyEnergyBar.isVisible = true; // 确保灵力条可见
             enemyEnergyBar.parent = this.battle3D.enemy;
             this.battle3D.enemyEnergyBar = enemyEnergyBar;
         }
@@ -287,7 +287,7 @@ EndlessWinterGame.prototype.createHealthBar = function(color = 0xff0000) {
         fillMaterial.diffuseColor = new BABYLON.Color3(1, 0, 0);
         fillMaterial.emissiveColor = new BABYLON.Color3(0.5, 0, 0);
     } else if (color === 0x0000ff) {
-        // 蓝色能量条
+        // 蓝色灵力条
         fillMaterial.diffuseColor = new BABYLON.Color3(0, 0, 1);
         fillMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0.5);
     } else {
@@ -326,7 +326,7 @@ EndlessWinterGame.prototype.updateHealthBars = function() {
         this.battle3D.playerHealthBar.position.x = 0; // 固定位置，从左边开始减少
     }
 
-    // 更新玩家能量条
+    // 更新玩家灵力条
     if (this.battle3D.playerEnergyBar) {
         const playerEnergyPercent = Math.max(0, this.gameState.player.energy / this.gameState.player.maxEnergy);
         this.battle3D.playerEnergyBar.scaling.x = playerEnergyPercent;
@@ -353,7 +353,7 @@ EndlessWinterGame.prototype.updateHealthBars = function() {
             this.battle3D.enemyHealthBar.position.x = 0; // 固定位置，从左边开始减少
         }
         
-        // 更新敌人能量条
+        // 更新敌人灵力条
         if (this.battle3D.enemyEnergyBar) {
             const enemyEnergyPercent = Math.max(0, this.gameState.enemy.energy / (this.gameState.enemy.maxEnergy || 100));
             this.battle3D.enemyEnergyBar.scaling.x = enemyEnergyPercent;

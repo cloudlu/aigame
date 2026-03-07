@@ -51,9 +51,9 @@ const CONSTANTS = {
             RELATIVE_Y: 0.2            // 相对身体的高度
         },
 
-        // 能量条属性
+        // 灵力条属性
         ENERGY_BAR: {
-            ABSOLUTE_Y: 1.8,           // 能量条绝对高度
+            ABSOLUTE_Y: 1.8,           // 灵力条绝对高度
             RELATIVE_Y: 0.5            // 相对身体的高度
         },
 
@@ -160,14 +160,14 @@ const CONSTANTS = {
             MAX_WIDTH_PERCENTAGE: 1.0
         },
 
-        // 能量条属性
+        // 灵力条属性
         ENERGY_BAR: {
             RELATIVE_Y: 0.5,           // 相对于敌人的高度
             ABSOLUTE_Y: 1.8,           // 绝对高度
             WIDTH: 2.0,
             HEIGHT: 0.3,
             SCALING: 0.5,
-            COLOR: 0x0000ff            // 蓝色能量条
+            COLOR: 0x0000ff            // 蓝色灵力条
         },
 
         // 狼模型特殊参数
@@ -329,8 +329,8 @@ const CONSTANTS = {
             BASE_ENERGY: 100,
             MAX_ENERGY: 100,
             BASE_HP_COLOR: 0xff0000,      // 红色血条颜色
-            BASE_ENERGY_COLOR: 0x0000ff, // 蓝色能量条颜色
-            ENERGY_REGEN_RATE: 2,       // 能量恢复：+2/秒
+            BASE_ENERGY_COLOR: 0x0000ff, // 蓝色灵力条颜色
+            ENERGY_REGEN_RATE: 2,       // 灵力恢复：+2/秒
             HP_REGEN_RATE: 1            // 生命恢复：+1/秒
         },
 
@@ -339,7 +339,7 @@ const CONSTANTS = {
             WOOD_RATE: 1,                // 木材产量：+1/秒
             IRON_RATE: 0.5,              // 铁矿产量：+0.5/秒
             CRYSTAL_RATE: 0.2,           // 水晶产量：+0.2/秒
-            AUTO_COLLECT_ENERGY_COST: 5  // 自动收集能量消耗
+            AUTO_COLLECT_ENERGY_COST: 5  // 自动收集灵力消耗
         },
 
         // 战斗系统

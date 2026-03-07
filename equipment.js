@@ -685,7 +685,7 @@ class EquipmentSystem {
             tenacity: '韧性',
             accuracy: '命中率',
             moveSpeed: '移动速度',
-            energyRegen: '能量回复'
+            energyRegen: '灵力回复'
         };
 
         const percentageStats = ['criticalRate', 'dodgeRate', 'tenacity', 'accuracy', 'moveSpeed', 'energyRegen'];
@@ -783,7 +783,7 @@ class EquipmentSystem {
             tenacity: '韧性',
             accuracy: '命中率',
             moveSpeed: '移动速度',
-            energyRegen: '能量回复'
+            energyRegen: '灵力回复'
         };
 
         const percentageStats = ['criticalRate', 'dodgeRate', 'tenacity', 'accuracy', 'moveSpeed', 'energyRegen'];
@@ -953,7 +953,7 @@ class EquipmentSystem {
             tenacity: '韧性',
             accuracy: '命中率',
             moveSpeed: '移动速度',
-            energyRegen: '能量回复'
+            energyRegen: '灵力回复'
         };
 
         // 百分比属性列表
@@ -1080,9 +1080,30 @@ class EquipmentSystem {
 
         // 获取品质信息
         const rarityInfo = this.game.metadata.equipmentRarities.find(r => r.name === rarity);
+        const rarityMultiplier = rarityInfo ? rarityInfo.multiplier : 1;
 
-        // 使用统一的属性计算函数
-        const stats = this.calculateEquipmentStats(template, level, rarityInfo);
+        // 根据品质获取属性条数限制
+        const statCount = rarityInfo ? rarityInfo.statCount : 1;
+
+        // 从模板的baseStats中随机选择statCount个属性
+        const allStatNames = Object.keys(template.baseStats);
+        const shuffledStats = allStatNames.sort(() => Math.random() - 0.5);
+        const selectedStats = shuffledStats.slice(0, Math.min(statCount, allStatNames.length));
+
+        // 计算选中属性的值
+        const percentageStats = ['criticalRate', 'dodgeRate', 'tenacity', 'accuracy', 'moveSpeed', 'energyRegen'];
+        const stats = {};
+
+        for (const statName of selectedStats) {
+            const baseValue = template.baseStats[statName];
+            const calculatedValue = baseValue * level * rarityMultiplier;
+
+            if (percentageStats.includes(statName)) {
+                stats[statName] = Math.round(calculatedValue * 100) / 100;
+            } else {
+                stats[statName] = Math.floor(calculatedValue);
+            }
+        }
 
         // 生成装备名称
         const prefixIndex = Math.floor(Math.min((rarityInfo ? rarityInfo.multiplier : 1) - 1, template.namePrefixes.length - 1));

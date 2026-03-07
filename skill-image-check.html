@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>技能图片对照表</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #ffd700;
+        }
+        .realm-section {
+            margin-bottom: 40px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 20px;
+        }
+        .realm-title {
+            font-size: 24px;
+            color: #00d4ff;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #00d4ff;
+            padding-bottom: 10px;
+        }
+        .skill-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .skill-card {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 15px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .skill-card:hover {
+            border-color: #ffd700;
+            transform: translateY(-2px);
+            transition: all 0.3s;
+        }
+        .skill-image {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #ffd700;
+            flex-shrink: 0;
+        }
+        .skill-image.error {
+            border-color: #ff4444;
+            opacity: 0.5;
+        }
+        .skill-info {
+            flex: 1;
+        }
+        .skill-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 5px;
+        }
+        .skill-desc {
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+        .skill-meta {
+            font-size: 11px;
+            color: #888;
+        }
+        .imageId-badge {
+            background: #ff6b6b;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            margin-left: 10px;
+        }
+        .summary {
+            background: rgba(0,212,255,0.1);
+            border: 1px solid #00d4ff;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        .summary h2 {
+            color: #00d4ff;
+            margin-bottom: 15px;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+        }
+        .summary-item {
+            text-align: center;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            min-width: 120px;
+        }
+        .summary-item img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 5px;
+            border: 2px solid #ffd700;
+        }
+        .summary-item.has-error {
+            border: 1px solid #ff4444;
+        }
+        .summary-item .skill-names {
+            font-size: 10px;
+            color: #aaa;
+            margin-top: 5px;
+            max-height: 60px;
+            overflow-y: auto;
+            text-align: left;
+        }
+        .summary-item .skill-names div {
+            padding: 2px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .summary-item .skill-names div:last-child {
+            border-bottom: none;
+        }
+        .summary-item .realm-tag {
+            font-size: 8px;
+            background: rgba(0,212,255,0.3);
+            padding: 1px 4px;
+            border-radius: 3px;
+            margin-left: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎮 技能图片对照表</h1>
+
+    <div class="summary">
+        <h2>📷 图片预览 (skill-0 到 skill-28)</h2>
+        <div class="summary-grid" id="image-preview"></div>
+    </div>
+
+    <div id="skill-list"></div>
+
+    <script type="module">
+        import { gameMetadata } from './game-metadata.js';
+
+        // 境界配置
+        const realmNames = ['武者境', '炼气境', '筑基境', '金丹境', '元婴境', '化神境'];
+
+        // 构建imageId到技能的映射
+        function buildImageIdMap() {
+            const map = {};
+            gameMetadata.skillTrees.forEach(tree => {
+                tree.levels.forEach(skill => {
+                    const imageId = skill.imageId || 0;
+                    if (!map[imageId]) map[imageId] = [];
+                    map[imageId].push({
+                        name: skill.name,
+                        desc: skill.description,
+                        realm: tree.realmRequired,
+                        treeName: tree.name,
+                        type: tree.type
+                    });
+                });
+            });
+            return map;
+        }
+
+        // 生成图片预览（带技能详情）
+        function generateImagePreview() {
+            const container = document.getElementById('image-preview');
+            const imageIdMap = buildImageIdMap();
+
+            for (let i = 0; i <= 28; i++) {
+                const item = document.createElement('div');
+                item.className = 'summary-item';
+
+                const skills = imageIdMap[i] || [];
+                const skillNames = skills.map(s => s.name).join(', ') || '未使用';
+
+                item.innerHTML = `
+                    <img src="Images/skill-${i}.jpg"
+                         onerror="this.parentElement.classList.add('has-error'); this.style.opacity='0.3'"
+                         onload="this.style.opacity='1'"
+                         title="${skillNames}">
+                    <div style="font-weight:bold;">skill-${i}</div>
+                    <div style="font-size:10px; color:#aaa; margin-top:5px; max-height:60px; overflow-y:auto;">
+                        ${skills.length > 0 ? skills.map(s => `<div style="margin:2px 0;">• ${s.name}</div>`).join('') : '<span style="color:#ff6b6b;">未使用</span>'}
+                    </div>
+                `;
+                container.appendChild(item);
+            }
+        }
+
+        // 生成技能列表
+        function generateSkillList() {
+            const container = document.getElementById('skill-list');
+            const skillTrees = gameMetadata.skillTrees;
+
+            // 按境界分组
+            const realms = {};
+            skillTrees.forEach(tree => {
+                const realm = tree.realmRequired;
+                if (!realms[realm]) realms[realm] = [];
+                realms[realm].push(tree);
+            });
+
+            // 生成HTML
+            Object.keys(realms).sort((a, b) => a - b).forEach(realm => {
+                const section = document.createElement('div');
+                section.className = 'realm-section';
+
+                let html = `<div class="realm-title">🌟 ${realmNames[realm] || '未知境界'} (Realm ${realm})</div>`;
+                html += '<div class="skill-grid">';
+
+                realms[realm].forEach(tree => {
+                    tree.levels.forEach((skill, index) => {
+                        const imageId = skill.imageId || 0;
+                        html += `
+                            <div class="skill-card">
+                                <img src="Images/skill-${imageId}.jpg"
+                                     alt="${skill.name}"
+                                     class="skill-image"
+                                     onerror="this.classList.add('error'); this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><rect fill=%22%23333%22 width=%22100%%22 height=%22100%%22/><text x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23ff4444%22 font-size=%2212%22>图片缺失</text></svg>'">
+                                <div class="skill-info">
+                                    <div class="skill-name">
+                                        ${skill.name}
+                                        <span class="imageId-badge">ID: ${imageId}</span>
+                                    </div>
+                                    <div class="skill-desc">${skill.description}</div>
+                                    <div class="skill-meta">
+                                        灵力: ${skill.energyCost} |
+                                        类型: ${tree.type} |
+                                        树: ${tree.name}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                });
+
+                html += '</div>';
+                section.innerHTML = html;
+                container.appendChild(section);
+            });
+        }
+
+        // 初始化
+        generateImagePreview();
+        generateSkillList();
+    </script>
+</body>
+</html>

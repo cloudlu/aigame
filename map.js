@@ -660,7 +660,7 @@ EndlessWinterGame.prototype.createEnemyIcon = function(enemyInfo) {
     enemyIcon.innerHTML = `<i class="fa fa-skull text-xs ${enemyIconColor}"></i>`;
 
     enemyIcon.dataset.enemyInfo = JSON.stringify(enemyInfo);
-    enemyIcon.setAttribute('data-tooltip', `${enemyInfo.name}\n等级: ${enemyInfo.level}\nHP: ${enemyInfo.hp}/${enemyInfo.maxHp}\n攻击: ${enemyInfo.attack}\n防御: ${enemyInfo.defense}${enemyInfo.isBoss ? '\n能量: 100/100' : ''}`);
+    enemyIcon.setAttribute('data-tooltip', `${enemyInfo.name}\n等级: ${enemyInfo.level}\nHP: ${enemyInfo.hp}/${enemyInfo.maxHp}\n攻击: ${enemyInfo.attack}\n防御: ${enemyInfo.defense}${enemyInfo.isBoss ? '\n灵力: 100/100' : ''}`);
 
     enemyIcon.addEventListener('click', (e) => {
         e.stopPropagation();
