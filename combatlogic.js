@@ -525,6 +525,23 @@ EndlessWinterGame.prototype.playerDefeated = function() {
 
     this.addBattleLog(`你被${this.gameState.enemy.name}击败了！`);
 
+    // 经验损失惩罚（损失20%经验）
+    const expLoss = Math.floor(this.gameState.player.exp * 0.2);
+    this.gameState.player.exp = Math.floor(this.gameState.player.exp * 0.8);
+    this.addBattleLog(`你失去了 ${expLoss} 点经验！(20%)`);
+
+    // 重置玩家HP
+    this.gameState.player.hp = this.gameState.player.maxHp;
+
+    // 刷新敌人
+    this.refreshEnemy();
+
+    // 更新UI
+    this.updateUI();
+    if (typeof this.updateHealthBars === 'function') {
+        this.updateHealthBars();
+    }
+
     // 关闭战斗模态窗口
     setTimeout(() => {
         this.closeBattleModal();

@@ -211,7 +211,7 @@ class EquipmentSystem {
         let qualityBlackIron = 0;
         let qualitySpiritCrystal = 0;
 
-        // 根据装备品质确定返还材料
+        // 根据装备品质确定返还材料（仅支持标准品质：white, blue, purple, gold, rainbow）
         if (item.rarity) {
             switch (item.rarity) {
                 case 'white':
@@ -239,6 +239,7 @@ class EquipmentSystem {
                     qualityBlackIron = 110;
                     qualitySpiritCrystal = 50;
                     break;
+                // 非标准品质不返还材料
             }
         }
 
@@ -481,40 +482,6 @@ class EquipmentSystem {
             refineInfo.classList.add('hidden');
         }
     }
-    
-    // 更新分解信息UI
-    updateDisassembleInfo(selectedSlot = 'weapon') {
-        const item = this.game.gameState.player.equipment[selectedSlot];
-        const disassembleInfo = document.getElementById('disassemble-info');
-        
-        if (item) {
-            // 确保refineLevel有值
-            if (item.refineLevel === undefined) {
-                item.refineLevel = 0;
-            }
-            
-            // 显示分解信息
-            disassembleInfo.classList.remove('hidden');
-            
-            // 更新装备名称
-            const disassembleWeaponNameElement = document.getElementById('disassemble-weapon-name');
-            disassembleWeaponNameElement.textContent = item.name;
-            // 设置装备颜色
-            const colorClass = this.getEquipmentColorClass(item);
-            disassembleWeaponNameElement.className = `text-sm font-medium ${colorClass}`;
-            
-            // 更新精炼等级
-            document.getElementById('disassemble-weapon-level').textContent = `+${item.refineLevel}`;
-            
-            // 计算分解返还材料
-            const returns = this.calculateDisassembleReturns(item);
-            document.getElementById('disassemble-returns').textContent = 
-                `灵木: ${returns.spiritWood}, 玄铁: ${returns.blackIron}, 灵晶: ${returns.spiritCrystal}`;
-        } else {
-            // 隐藏分解信息
-            disassembleInfo.classList.add('hidden');
-        }
-    }
 
     // ==================== 装备属性刷新系统 ====================
 
@@ -563,8 +530,8 @@ class EquipmentSystem {
         };
     }
 
-    // 刷新装备属性
-    refreshEquipmentStats(slot = 'weapon') {
+    // 刷新装备属性（预览模式）
+    previewRefreshStats(slot = 'weapon') {
         const item = this.game.gameState.player.equipment[slot];
         if (!item) {
             this.game.addBattleLog(`没有装备${this.getSlotDisplayName(slot)}，无法刷新属性！`);
@@ -582,15 +549,6 @@ class EquipmentSystem {
             return false;
         }
 
-        // 保存旧的属性用于日志
-        const oldStats = { ...item.stats };
-        const oldStatsDesc = this.getStatsDescription(oldStats);
-
-        // 消耗材料
-        this.game.gameState.resources.spiritWood -= cost.spiritWood;
-        this.game.gameState.resources.blackIron -= cost.blackIron;
-        this.game.gameState.resources.spiritCrystal -= cost.spiritCrystal;
-
         // 获取装备模板和品质信息
         const template = this.game.metadata.equipmentTemplates.find(t => t.type === item.type);
         const rarityInfo = this.game.metadata.equipmentRarities.find(r => r.name === item.rarity);
@@ -599,6 +557,15 @@ class EquipmentSystem {
             this.game.addBattleLog('装备模板错误，无法刷新！');
             return false;
         }
+
+        // 保存旧的属性
+        const oldStats = { ...item.stats };
+        const oldName = item.name;
+
+        // 立即消耗材料（刷新即消耗，无论是否接受结果）
+        this.game.gameState.resources.spiritWood -= cost.spiritWood;
+        this.game.gameState.resources.blackIron -= cost.blackIron;
+        this.game.gameState.resources.spiritCrystal -= cost.spiritCrystal;
 
         // 根据品质获取属性条数限制
         const statCount = rarityInfo ? rarityInfo.statCount : 1;
@@ -624,38 +591,280 @@ class EquipmentSystem {
             }
         }
 
-        // 更新装备属性
-        item.stats = newStats;
-        item.id = `${item.type}_${item.level}_${item.rarity}_${Math.floor(Math.random() * 100000)}`; // 新的唯一ID
-
-        // 重新生成名称
+        // 生成新名称
         const prefixIndex = Math.floor(Math.min((rarityInfo ? rarityInfo.multiplier : 1) - 1, template.namePrefixes.length - 1));
         const suffixIndex = Math.floor(Math.random() * template.nameSuffixes.length);
         const prefix = template.namePrefixes[prefixIndex] || "";
         const suffix = template.nameSuffixes[suffixIndex] || "装备";
-        item.name = prefix + suffix;
+        const newName = prefix + suffix;
+
+        // 保存预览数据到临时状态
+        this.pendingRefresh = {
+            slot: slot,
+            oldStats: oldStats,
+            oldName: oldName,
+            newStats: newStats,
+            newName: newName,
+            cost: cost
+        };
+
+        // 更新UI显示资源消耗
+        this.game.updateUI();
+
+        // 显示确认模态框
+        this.showRefreshConfirmModal(slot, oldStats, newStats, oldName, newName, cost);
+
+        return true;
+    }
+
+    // 显示刷新确认模态框
+    showRefreshConfirmModal(slot, oldStats, newStats, oldName, newName, cost) {
+        // 移除已存在的模态框
+        const existingModal = document.getElementById('refresh-confirm-modal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // 生成属性对比HTML
+        const comparisonHtml = this.generateStatsComparisonHtml(oldStats, newStats);
+
+        const modalHtml = `
+            <div id="refresh-confirm-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+                <div class="bg-dark border border-glass rounded-xl p-6 max-w-lg w-full mx-4">
+                    <h3 class="text-xl font-bold text-accent mb-2 text-center">装备属性刷新预览</h3>
+                    <div class="text-center text-sm text-light/70 mb-3">${this.getSlotDisplayName(slot)} · ${oldName} → ${newName}</div>
+
+                    <div class="bg-dark/50 rounded-lg p-4 mb-4">
+                        <div class="text-xs text-light/60 mb-2 text-center">
+                            消耗: <span class="text-light/80">${cost.spiritWood}</span> 灵木,
+                            <span class="text-light/80">${cost.blackIron}</span> 玄铁,
+                            <span class="text-light/80">${cost.spiritCrystal}</span> 灵晶
+                        </div>
+
+                        <div class="border-t border-glass/30 pt-3 mt-2">
+                            <div class="space-y-1">
+                                ${comparisonHtml}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex space-x-3">
+                        <button id="cancel-refresh-btn" class="flex-1 bg-dark border border-glass rounded-lg px-4 py-2 text-light hover:bg-dark/80 transition-all flex items-center justify-center">
+                            <i class="fa fa-times mr-2"></i> 取消
+                        </button>
+                        <button id="confirm-refresh-btn" class="flex-1 bg-success rounded-lg px-4 py-2 text-white font-medium hover:bg-success/80 transition-all flex items-center justify-center">
+                            <i class="fa fa-check mr-2"></i> 确认刷新
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        // 绑定按钮事件
+        document.getElementById('cancel-refresh-btn').addEventListener('click', () => {
+            this.cancelRefreshStats();
+        });
+
+        document.getElementById('confirm-refresh-btn').addEventListener('click', () => {
+            this.confirmRefreshStats();
+        });
+    }
+
+    // 生成属性对比HTML（显示变化情况）
+    generateStatsComparisonHtml(oldStats, newStats) {
+        const statNames = {
+            attack: '攻击',
+            defense: '防御',
+            hp: '生命',
+            luck: '幸运',
+            speed: '速度',
+            criticalRate: '暴击率',
+            dodgeRate: '闪避率',
+            tenacity: '韧性',
+            accuracy: '命中率',
+            moveSpeed: '移动速度',
+            energyRegen: '能量回复'
+        };
+
+        const percentageStats = ['criticalRate', 'dodgeRate', 'tenacity', 'accuracy', 'moveSpeed', 'energyRegen'];
+
+        // 格式化属性值
+        const formatValue = (stat, value) => {
+            if (percentageStats.includes(stat)) {
+                return `+${(value * 100).toFixed(1)}%`;
+            }
+            return `+${value}`;
+        };
+
+        // 获取所有涉及的属性
+        const allStats = new Set([...Object.keys(oldStats), ...Object.keys(newStats)]);
+        const lines = [];
+
+        // 按优先级排序
+        const statOrder = ['attack', 'defense', 'hp', 'luck', 'speed', 'criticalRate', 'dodgeRate', 'tenacity', 'accuracy', 'moveSpeed', 'energyRegen'];
+        const sortedStats = [...allStats].sort((a, b) => {
+            return statOrder.indexOf(a) - statOrder.indexOf(b);
+        });
+
+        for (const stat of sortedStats) {
+            if (!statNames[stat]) continue;
+
+            const oldValue = oldStats[stat];
+            const newValue = newStats[stat];
+            const statName = statNames[stat];
+
+            if (oldValue !== undefined && newValue !== undefined) {
+                // 属性都存在，比较变化
+                if (newValue > oldValue) {
+                    // 变好了
+                    lines.push(`
+                        <div class="flex justify-between items-center py-1">
+                            <span class="text-light/80">${statName}</span>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-light/50 line-through">${formatValue(stat, oldValue)}</span>
+                                <span class="text-success">→ ${formatValue(stat, newValue)} ↑</span>
+                            </div>
+                        </div>
+                    `);
+                } else if (newValue < oldValue) {
+                    // 变差了
+                    lines.push(`
+                        <div class="flex justify-between items-center py-1">
+                            <span class="text-light/80">${statName}</span>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-light/50 line-through">${formatValue(stat, oldValue)}</span>
+                                <span class="text-danger">→ ${formatValue(stat, newValue)} ↓</span>
+                            </div>
+                        </div>
+                    `);
+                } else {
+                    // 没变化
+                    lines.push(`
+                        <div class="flex justify-between items-center py-1">
+                            <span class="text-light/80">${statName}</span>
+                            <span class="text-light/70">${formatValue(stat, newValue)}</span>
+                        </div>
+                    `);
+                }
+            } else if (oldValue === undefined && newValue !== undefined) {
+                // 新增属性
+                lines.push(`
+                    <div class="flex justify-between items-center py-1">
+                        <span class="text-light/80">${statName}</span>
+                        <span class="text-accent">${formatValue(stat, newValue)} +新增</span>
+                    </div>
+                `);
+            } else if (oldValue !== undefined && newValue === undefined) {
+                // 删除属性
+                lines.push(`
+                    <div class="flex justify-between items-center py-1">
+                        <span class="text-light/50">${statName}</span>
+                        <span class="text-light/40 line-through">${formatValue(stat, oldValue)} -移除</span>
+                    </div>
+                `);
+            }
+        }
+
+        return lines.join('');
+    }
+
+    // 生成属性列表HTML（保留用于其他地方）
+    generateStatsListHtml(stats, colorClass) {
+        const statNames = {
+            attack: '攻击',
+            defense: '防御',
+            hp: '生命',
+            luck: '幸运',
+            speed: '速度',
+            criticalRate: '暴击率',
+            dodgeRate: '闪避率',
+            tenacity: '韧性',
+            accuracy: '命中率',
+            moveSpeed: '移动速度',
+            energyRegen: '能量回复'
+        };
+
+        const percentageStats = ['criticalRate', 'dodgeRate', 'tenacity', 'accuracy', 'moveSpeed', 'energyRegen'];
+
+        const lines = [];
+        for (const stat in stats) {
+            if (statNames[stat]) {
+                const value = stats[stat];
+                let valueStr;
+                if (percentageStats.includes(stat)) {
+                    valueStr = `+${(value * 100).toFixed(1)}%`;
+                } else {
+                    valueStr = `+${value}`;
+                }
+                lines.push(`<div class="${colorClass}">${statNames[stat]}: ${valueStr}</div>`);
+            }
+        }
+
+        return lines.join('');
+    }
+
+    // 确认刷新属性
+    confirmRefreshStats() {
+        if (!this.pendingRefresh) {
+            this.game.addBattleLog('没有待确认的刷新操作！');
+            return false;
+        }
+
+        const { slot, oldStats, newStats, newName } = this.pendingRefresh;
+        const item = this.game.gameState.player.equipment[slot];
+
+        if (!item) {
+            this.closeRefreshConfirmModal();
+            this.pendingRefresh = null;
+            return false;
+        }
+
+        // 应用新属性（资源已在预览时扣除）
+        item.stats = newStats;
+        item.name = newName;
+        item.id = `${item.type}_${item.level}_${item.rarity}_${Math.floor(Math.random() * 100000)}`;
 
         // 重新计算装备效果
         this.calculateEquipmentEffects();
 
         // 更新UI
         this.game.updateUI();
-
-        // 更新血条显示
         if (typeof this.game.updateHealthBars === 'function') {
             this.game.updateHealthBars();
         }
 
-        // 生成新的属性描述
-        const newStatsDesc = this.getStatsDescription(newStats);
+        // 更新刷新信息显示
+        this.updateRefreshInfo(slot);
 
         // 添加日志
+        const oldStatsDesc = this.getStatsDescription(oldStats);
+        const newStatsDesc = this.getStatsDescription(newStats);
         this.game.addBattleLog(`${this.getSlotDisplayName(slot)}属性刷新成功！`);
         this.game.addBattleLog(`原属性: ${oldStatsDesc}`);
         this.game.addBattleLog(`新属性: ${newStatsDesc}`);
-        this.game.addBattleLog(`消耗了 ${cost.spiritWood} 灵木，${cost.blackIron} 玄铁，${cost.spiritCrystal} 灵晶`);
+
+        // 关闭模态框
+        this.closeRefreshConfirmModal();
+        this.pendingRefresh = null;
 
         return true;
+    }
+
+    // 取消刷新属性
+    cancelRefreshStats() {
+        this.closeRefreshConfirmModal();
+        this.pendingRefresh = null;
+        this.game.addBattleLog('取消了装备属性刷新');
+    }
+
+    // 关闭刷新确认模态框
+    closeRefreshConfirmModal() {
+        const modal = document.getElementById('refresh-confirm-modal');
+        if (modal) {
+            modal.remove();
+        }
     }
 
     // 更新刷新信息UI

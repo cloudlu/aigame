@@ -722,7 +722,6 @@ class EndlessWinterGame {
                 slot.addEventListener('click', () => {
                         const selectedSlot = slot.dataset.slot;
                         this.equipmentSystem.updateRefineInfo(selectedSlot);
-                        this.equipmentSystem.updateDisassembleInfo(selectedSlot);
                         this.equipmentSystem.updateRefreshInfo(selectedSlot);
                         // 存储当前选中的装备槽位
                         this.selectedRefineSlot = selectedSlot;
@@ -756,9 +755,7 @@ class EndlessWinterGame {
         // 刷新装备属性按钮
         bindEvent('#refresh-equipment-btn', 'click', () => {
             const slot = this.selectedRefineSlot || 'weapon';
-            this.equipmentSystem.refreshEquipmentStats(slot);
-            // 刷新后更新刷新信息显示
-            this.equipmentSystem.updateRefreshInfo(slot);
+            this.equipmentSystem.previewRefreshStats(slot);
         });
 
 
@@ -982,46 +979,7 @@ class EndlessWinterGame {
         
         defeatAnimation();
     }
-    
-    // 生成装备掉落
 
-    
-    // 玩家被击败
-    playerDefeated() {
-        // 显示玩家倒地的画面
-        this.showPlayerDefeatedAnimation();
-        
-        // 设置玩家被击败状态
-        if (this.battle3D) {
-            this.battle3D.playerDefeated = true;
-        }
-        
-        // 播放失败声音
-        this.playSound('defeat-sound', 1, 1000);
-
-        this.addBattleLog('你被击败了！');
-        // 重置玩家状态
-        this.gameState.player.hp = this.gameState.player.maxHp;
-        this.gameState.player.exp = Math.floor(this.gameState.player.exp * 0.8); // 失去20%经验
-        this.addBattleLog('你失去了20%的经验！');
-        
-        // 刷新敌人
-        this.refreshEnemy();
-        
-        // 更新UI
-        this.updateUI();
-        
-        // 更新血条显示
-        if (typeof this.updateHealthBars === 'function') {
-            this.updateHealthBars();
-        }
-        
-        // 战斗结束，延迟后关闭战斗模态窗口并返回主界面
-        setTimeout(() => {
-            this.closeBattleModal();
-        }, 2000);
-    }
-    
     // 检查升级
     checkLevelUp() {
    
@@ -1587,7 +1545,7 @@ class EndlessWinterGame {
             }, 500); // 等待动画完成（与CSS transition duration一致）
         }
     }
-    
+
     // 添加战斗日志
     addBattleLog(message) {
         // 确保battle对象存在
@@ -1607,7 +1565,88 @@ class EndlessWinterGame {
             this.gameState.battle.battleLog.shift();
         }
     }
-    
+
+    // ==================== 模态框工具函数 ====================
+
+    // 显示选择模态框
+    showSelectionModal(title, description, items, onSelect) {
+        const modal = document.getElementById('selection-modal');
+        const titleElement = document.getElementById('selection-modal-title');
+        const descElement = document.getElementById('selection-modal-description');
+        const contentElement = document.getElementById('selection-modal-content');
+
+        titleElement.textContent = title;
+        descElement.textContent = description || '';
+
+        // 清空内容
+        contentElement.innerHTML = '';
+
+        // 添加选项
+        items.forEach((item, index) => {
+            const itemElement = document.createElement('div');
+            itemElement.className = 'bg-dark/50 hover:bg-dark/70 border border-glass/50 rounded-lg p-3 cursor-pointer transition-all flex items-center';
+            itemElement.innerHTML = `
+                <div class="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center mr-3 text-accent font-bold">
+                    ${index + 1}
+                </div>
+                <div class="flex-1">
+                    <div class="text-light font-medium">${item.name}</div>
+                    <div class="text-light/60 text-sm">${item.description || ''}</div>
+                </div>
+                <i class="fa fa-chevron-right text-light/40"></i>
+            `;
+            itemElement.addEventListener('click', () => {
+                this.hideSelectionModal();
+                if (onSelect) onSelect(index);
+            });
+            contentElement.appendChild(itemElement);
+        });
+
+        // 显示模态框
+        modal.classList.remove('hidden');
+
+        // 绑定关闭事件
+        document.getElementById('close-selection-modal').onclick = () => this.hideSelectionModal();
+        document.getElementById('cancel-selection').onclick = () => this.hideSelectionModal();
+    }
+
+    // 隐藏选择模态框
+    hideSelectionModal() {
+        const modal = document.getElementById('selection-modal');
+        modal.classList.add('hidden');
+    }
+
+    // 显示提示模态框
+    showAlertModal(title, message, type = 'info') {
+        const modal = document.getElementById('alert-modal');
+        const titleElement = document.getElementById('alert-modal-title');
+        const messageElement = document.getElementById('alert-modal-message');
+        const iconElement = document.getElementById('alert-modal-icon');
+
+        titleElement.textContent = title;
+        messageElement.textContent = message;
+
+        // 根据类型设置图标
+        const icons = {
+            info: 'fa-info-circle text-accent',
+            warning: 'fa-exclamation-triangle text-warning',
+            error: 'fa-times-circle text-danger',
+            success: 'fa-check-circle text-success'
+        };
+        iconElement.className = `fa ${icons[type] || icons.info} text-2xl mr-3`;
+
+        modal.classList.remove('hidden');
+
+        // 绑定关闭事件
+        document.getElementById('close-alert-modal').onclick = () => this.hideAlertModal();
+    }
+
+    // 隐藏提示模态框
+    hideAlertModal() {
+        const modal = document.getElementById('alert-modal');
+        modal.classList.add('hidden');
+    }
+
     // 更新战斗日志UI
     updateBattleLog() {
         const battleLogContainer = document.getElementById('battle-log');
@@ -2491,7 +2530,8 @@ class EndlessWinterGame {
     async deleteAccount() {
         try {
             const username = this.gameState.user.username;
-            
+            const self = this; // 保存this引用
+
             // 创建密码输入模态框
             const modalHtml = `
                 <div id="password-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
@@ -2502,48 +2542,52 @@ class EndlessWinterGame {
                             <input type="password" id="delete-password" class="w-full bg-dark/50 border border-glass rounded-lg px-4 py-2 text-light focus:outline-none">
                         </div>
                         <div class="flex space-x-3">
-                            <button id="cancel-delete" class="flex-1 bg-dark border border-glass rounded-lg px-4 py-2 text-light hover:bg-dark/80">取消</button>
-                            <button id="confirm-delete" class="flex-1 bg-danger rounded-lg px-4 py-2 text-white hover:bg-danger/80">确认注销</button>
+                            <button id="cancel-delete" class="flex-1 bg-dark border border-glass rounded-lg px-4 py-2 text-light hover:bg-dark/80 flex items-center justify-center">
+                                <i class="fa fa-times mr-2"></i>取消
+                            </button>
+                            <button id="confirm-delete" class="flex-1 bg-danger rounded-lg px-4 py-2 text-white hover:bg-danger/80 flex items-center justify-center">
+                                <i class="fa fa-trash mr-2"></i>确认注销
+                            </button>
                         </div>
                     </div>
                 </div>
             `;
-            
+
             // 添加模态框到页面
             document.body.insertAdjacentHTML('beforeend', modalHtml);
-            
+
             // 获取模态框元素
             const modal = document.getElementById('password-modal');
             const passwordInput = document.getElementById('delete-password');
             const cancelBtn = document.getElementById('cancel-delete');
             const confirmBtn = document.getElementById('confirm-delete');
-            
+
             // 聚焦密码输入框
             passwordInput.focus();
-            
+
             // 回车键确认
             passwordInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     confirmBtn.click();
                 }
             });
-            
+
             // 取消按钮点击事件
             cancelBtn.addEventListener('click', function() {
                 modal.remove();
             });
-            
+
             // 确认按钮点击事件
             confirmBtn.addEventListener('click', async function() {
                 const password = passwordInput.value;
-                
+
                 if (!password) {
-                    alert('请输入密码');
+                    self.showAlertModal('提示', '请输入密码', 'warning');
                     return;
                 }
-                
+
                 const token = localStorage.getItem('endlessWinterToken');
-                
+
                 try {
                     const response = await fetch('http://localhost:3002/api/delete-account', {
                         method: 'POST',
@@ -2553,12 +2597,12 @@ class EndlessWinterGame {
                         },
                         body: JSON.stringify({ username, password })
                     });
-                    
+
                     const result = await response.json();
                     modal.remove();
-                    
+
                     if (result.success) {
-                        this.addBattleLog('账号注销成功！');
+                        self.addBattleLog('账号注销成功！');
                         // 清除本地存储的token和用户信息
                         localStorage.removeItem('endlessWinterToken');
                         localStorage.removeItem('endlessWinterUser');
@@ -2567,14 +2611,14 @@ class EndlessWinterGame {
                             window.location.href = 'login.html';
                         }, 2000);
                     } else {
-                        this.addBattleLog(`注销失败：${result.error}`);
+                        self.addBattleLog(`注销失败：${result.error}`);
                     }
                 } catch (error) {
                     console.error('注销用户失败:', error);
-                    this.addBattleLog('注销用户失败，请稍后再试');
+                    self.addBattleLog('注销用户失败，请稍后再试');
                     modal.remove();
                 }
-            }.bind(this));
+            });
         } catch (error) {
             console.error('注销用户失败:', error);
             this.addBattleLog('注销用户失败，请稍后再试');
@@ -2659,39 +2703,36 @@ class EndlessWinterGame {
         if (!this.gameState.player.inventory) {
             this.gameState.player.inventory = [];
         }
-        
+
         // 过滤背包中可用的装备（玩家等级 >= 装备等级）
         const availableEquipment = this.gameState.player.inventory.filter(
             item => item.level <= this.calculateTotalLevel()
         );
-        
+
         if (availableEquipment.length === 0) {
-            this.addBattleLog('背包中没有可用的装备！');
+            this.showAlertModal('提示', '背包中没有可用的装备！', 'warning');
             return;
         }
-        
-        // 创建装备选择菜单
-        const itemList = availableEquipment.map((item, index) => 
-            `${index + 1}. ${item.name} (${item.type}) - 等级: ${item.level} - ${this.equipmentSystem.getStatsDescription(item.stats)}`
-        ).join('\n');
-        
-        const choice = prompt(`请选择要装备的物品:\n${itemList}\n\n输入物品编号:`);
-        
-        if (choice) {
-            const index = parseInt(choice) - 1;
-            if (index >= 0 && index < availableEquipment.length) {
-                const selectedItem = availableEquipment[index];
-                // 从背包中移除装备
-                const inventoryIndex = this.gameState.player.inventory.indexOf(selectedItem);
-                if (inventoryIndex > -1) {
-                    this.gameState.player.inventory.splice(inventoryIndex, 1);
-                }
-                // 装备物品
-                this.equipItem(selectedItem);
+
+        // 创建选项列表
+        const items = availableEquipment.map(item => ({
+            name: item.name,
+            description: `${item.type} | 等级: ${item.level} | ${this.equipmentSystem.getStatsDescription(item.stats)}`
+        }));
+
+        // 显示选择模态框
+        this.showSelectionModal('选择要装备的物品', '点击选择要装备的物品', items, (index) => {
+            const selectedItem = availableEquipment[index];
+            // 从背包中移除装备
+            const inventoryIndex = this.gameState.player.inventory.indexOf(selectedItem);
+            if (inventoryIndex > -1) {
+                this.gameState.player.inventory.splice(inventoryIndex, 1);
             }
-        }
+            // 装备物品
+            this.equipItem(selectedItem);
+        });
     }
-    
+
     // 显示卸下装备菜单
     showUnequipMenu() {
         // 获取已装备的物品
@@ -2702,25 +2743,22 @@ class EndlessWinterGame {
                 equippedItems.push({ ...item, slot });
             }
         }
-        
+
         if (equippedItems.length === 0) {
-            this.addBattleLog('没有已装备的物品！');
+            this.showAlertModal('提示', '没有已装备的物品！', 'warning');
             return;
         }
-        
-        // 创建卸下装备选择菜单
-        const itemList = equippedItems.map((item, index) => 
-            `${index + 1}. ${item.name} (${item.slot}) - ${this.equipmentSystem.getStatsDescription(item.stats)}`
-        ).join('\n');
-        
-        const choice = prompt(`请选择要卸下的物品:\n${itemList}\n\n输入物品编号:`);
-        
-        if (choice) {
-            const index = parseInt(choice) - 1;
-            if (index >= 0 && index < equippedItems.length) {
-                this.unequipItem(equippedItems[index].slot);
-            }
-        }
+
+        // 创建选项列表
+        const items = equippedItems.map(item => ({
+            name: item.name,
+            description: `${item.slot} | ${this.equipmentSystem.getStatsDescription(item.stats)}`
+        }));
+
+        // 显示选择模态框
+        this.showSelectionModal('选择要卸下的物品', '点击选择要卸下的物品', items, (index) => {
+            this.unequipItem(equippedItems[index].slot);
+        });
     }
     
     // 装备物品
@@ -3029,47 +3067,114 @@ class EndlessWinterGame {
                 break;
         }
     }
-    
+
     // 使用药水
     usePotion() {
         // 过滤背包中的药水
         const potions = this.gameState.player.inventory.filter(
             item => item.type === 'consumable'
         );
-        
+
         if (potions.length === 0) {
-            this.addBattleLog('背包中没有药水！');
+            this.showAlertModal('提示', '背包中没有药水！', 'warning');
             return;
         }
-        
-        // 创建药水选择菜单
-        const potionList = potions.map((potion, index) => 
-            `${index + 1}. ${potion.name} - ${potion.description}`
-        ).join('\n');
-        
-        const choice = prompt(`选择要使用的药水:\n${potionList}\n\n输入编号使用，0 取消:`);
-        
-        if (choice === '0') {
-            return;
-        }
-        
-        if (choice) {
-            const index = parseInt(choice) - 1;
-            if (index >= 0 && index < potions.length) {
-                const selectedPotion = potions[index];
-                // 从背包中移除药水
-                const inventoryIndex = this.gameState.player.inventory.indexOf(selectedPotion);
-                if (inventoryIndex > -1) {
-                    this.gameState.player.inventory.splice(inventoryIndex, 1);
-                }
-                // 使用药水
-                this.useConsumable(selectedPotion);
-                // 更新UI
-                this.updateUI();
+
+        // 创建选项列表
+        const items = potions.map(potion => ({
+            name: potion.name,
+            description: potion.description || ''
+        }));
+
+        // 显示选择模态框
+        this.showSelectionModal('选择要使用的药水', '点击选择要使用的药水', items, (index) => {
+            const selectedPotion = potions[index];
+            // 从背包中移除药水
+            const inventoryIndex = this.gameState.player.inventory.indexOf(selectedPotion);
+            if (inventoryIndex > -1) {
+                this.gameState.player.inventory.splice(inventoryIndex, 1);
             }
-        }
+            // 使用药水
+            this.useConsumable(selectedPotion);
+            // 更新UI
+            this.updateUI();
+        });
     }
-    
+
+    // 显示分解确认模态框
+    showDisassembleModal(item, inventory, index) {
+        const returns = this.equipmentSystem.calculateDisassembleReturns(item);
+        const itemName = item.name || '未知装备';
+        const woodAmount = returns.spiritWood || 0;
+        const ironAmount = returns.blackIron || 0;
+        const crystalAmount = returns.spiritCrystal || 0;
+
+        const modal = document.getElementById('disassemble-modal');
+        const infoDiv = document.getElementById('disassemble-modal-info');
+        const confirmBtn = document.getElementById('confirm-disassemble');
+        const cancelBtn = document.getElementById('cancel-disassemble');
+
+        // 设置分解信息
+        infoDiv.innerHTML = `
+            <div class="mb-3">
+                <span class="text-light/60">装备：</span>
+                <span class="text-white font-medium">${itemName}</span>
+            </div>
+            <div class="bg-dark/30 rounded p-3 mb-3">
+                <p class="text-sm text-light/70 mb-2">分解可获得：</p>
+                <div class="flex justify-around">
+                    <div class="text-center">
+                        <i class="fa fa-wood text-accent mb-1"></i>
+                        <p class="text-sm text-light/60">灵木</p>
+                        <p class="text-lg font-bold text-success">${woodAmount}</p>
+                    </div>
+                    <div class="text-center">
+                        <i class="fa fa-iron text-accent mb-1"></i>
+                        <p class="text-sm text-light/60">玄铁</p>
+                        <p class="text-lg font-bold text-success">${ironAmount}</p>
+                    </div>
+                    <div class="text-center">
+                        <i class="fa fa-gem text-accent mb-1"></i>
+                        <p class="text-sm text-light/60">灵晶</p>
+                        <p class="text-lg font-bold text-success">${crystalAmount}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 移除旧的事件监听器
+        const newConfirmBtn = confirmBtn.cloneNode(true);
+        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+        const newCancelBtn = cancelBtn.cloneNode(true);
+        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+        // 添加新的事件监听器
+        newConfirmBtn.addEventListener('click', () => {
+            inventory.splice(index, 1);
+            this.gameState.resources.spiritWood += woodAmount;
+            this.gameState.resources.blackIron += ironAmount;
+            this.gameState.resources.spiritCrystal += crystalAmount;
+            this.addBattleLog(`分解 ${itemName} 获得了 ${woodAmount} 灵木, ${ironAmount} 玄铁, ${crystalAmount} 灵晶！`);
+            this.updateUI();
+            this.showInventory();
+            modal.classList.add('hidden');
+        });
+
+        newCancelBtn.addEventListener('click', () => {
+            modal.classList.add('hidden');
+        });
+
+        // 点击模态框外部关闭
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                modal.classList.add('hidden');
+            }
+        };
+
+        // 显示模态框
+        modal.classList.remove('hidden');
+    }
+
     // 显示背包
     showInventory() {
         try {
@@ -3338,25 +3443,9 @@ class EndlessWinterGame {
                 };
                 
                 document.getElementById('context-disassemble').onclick = () => {
-                    // 分解
-                    const returns = this.equipmentSystem.calculateDisassembleReturns(item);
-                    const itemName = item.name || '未知装备';
-                    const woodAmount = returns.spiritWood || 0;
-                    const ironAmount = returns.blackIron || 0;
-                    const crystalAmount = returns.spiritCrystal || 0;
-                    
-                    const confirmDisassemble = confirm(`分解 ${itemName} 将会获得：\n灵木: ${woodAmount}\n玄铁: ${ironAmount}\n灵晶: ${crystalAmount}\n\n确定分解吗？`);
-                    
-                    if (confirmDisassemble) {
-                        inventory.splice(index, 1);
-                        this.gameState.resources.spiritWood += woodAmount;
-                        this.gameState.resources.blackIron += ironAmount;
-                        this.gameState.resources.spiritCrystal += crystalAmount;
-                        this.addBattleLog(`分解 ${itemName} 获得了 ${woodAmount} 灵木, ${ironAmount} 玄铁, ${crystalAmount} 灵晶！`);
-                        this.updateUI();
-                        this.showInventory();
-                    }
+                    // 分解 - 使用自定义模态框
                     contextMenu.classList.add('hidden');
+                    this.showDisassembleModal(item, inventory, index);
                 };
                 
                 document.getElementById('context-drop').onclick = () => {

@@ -565,7 +565,7 @@
                                     <i class="fa fa-star text-accent"></i>
                                 </button>
                                 <button id="refresh-equipment-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="刷新装备属性">
-                                    <i class="fa fa-refresh text-accent"></i>
+                                    <i class="fa fa-random text-accent"></i>
                                 </button>
                             </div>
                     </div>
@@ -624,31 +624,6 @@
                         </div>
                     </div>
 
-                    <!-- 装备分解信息 -->
-                    <div id="disassemble-info" class="mt-4 bg-dark/30 rounded-lg p-3 hidden">
-                        <h3 class="font-bold text-sm mb-2 text-light/90">装备分解</h3>
-                        <div class="space-y-2">
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-light/80">当前装备:</span>
-                                <span id="disassemble-weapon-name" class="text-sm font-medium text-white">无</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-light/80">精炼等级:</span>
-                                <span id="disassemble-weapon-level" class="text-sm font-medium text-accent">+0</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-light/80">分解返还:</span>
-                                <div id="disassemble-returns" class="text-sm text-light/70">
-                                    木材: 0, 铁矿: 0, 水晶: 0
-                                </div>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-light/80">返还说明:</span>
-                                <span class="text-xs text-light/60">返还所有精炼材料</span>
-                            </div>
-                        </div>
-                    </div>
-                    
                     <!-- 装备合成信息 -->
                     <div id="craft-info" class="mt-4 bg-dark/30 rounded-lg p-3 hidden">
                         <h3 class="font-bold text-sm mb-2 text-light/90">装备合成</h3>
@@ -1181,18 +1156,18 @@
     </div>
     
     <!-- 分解提示框 -->
-    <div id="disassemble-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-60 hidden">
+    <div id="disassemble-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center hidden" style="z-index: 60;">
         <div class="bg-gray-900 rounded-lg p-6 max-w-md w-full">
-            <h3 class="text-xl font-bold text-white mb-4">分解装备</h3>
-            <div class="text-light/80 mb-4" id="disassemble-modal-info">
+            <h3 class="text-xl font-bold text-accent mb-4">分解装备</h3>
+            <div class="text-light/80 mb-6" id="disassemble-modal-info">
                 <!-- 分解信息将通过 JavaScript 动态添加 -->
             </div>
-            <div class="flex justify-end space-x-2">
-                <button id="cancel-disassemble" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm transition-colors flex items-center">
+            <div class="flex justify-center space-x-4">
+                <button id="cancel-disassemble" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded text-sm transition-colors flex items-center">
                     <i class="fa fa-times mr-2"></i> 取消
                 </button>
-                <button id="confirm-disassemble" class="bg-danger hover:bg-danger/80 text-white px-4 py-2 rounded text-sm transition-colors flex items-center">
-                    <i class="fa fa-trash mr-2"></i> 确认分解
+                <button id="confirm-disassemble" class="bg-secondary hover:bg-secondary/80 text-white px-6 py-2 rounded text-sm transition-colors flex items-center">
+                    <i class="fa fa-check mr-2"></i> 确认分解
                 </button>
             </div>
         </div>
@@ -1212,7 +1187,45 @@
             </div>
         </div>
     </div>
-    
+
+    <!-- 通用选择模态框 -->
+    <div id="selection-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-60 hidden">
+        <div class="bg-dark border border-glass rounded-xl p-6 max-w-lg w-full mx-4 max-h-[80vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-accent" id="selection-modal-title">选择物品</h3>
+                <button id="close-selection-modal" class="text-gray-400 hover:text-white transition-colors">
+                    <i class="fa fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="text-sm text-light/70 mb-3" id="selection-modal-description"></div>
+            <div id="selection-modal-content" class="flex-1 overflow-y-auto space-y-2 mb-4">
+                <!-- 选项将通过 JavaScript 动态添加 -->
+            </div>
+            <div class="flex justify-end space-x-2 pt-3 border-t border-glass/30">
+                <button id="cancel-selection" class="bg-dark border border-glass hover:bg-dark/80 text-white px-4 py-2 rounded-lg text-sm transition-colors flex items-center">
+                    <i class="fa fa-times mr-2"></i> 取消
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通用提示模态框 -->
+    <div id="alert-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-60 hidden">
+        <div class="bg-dark border border-glass rounded-xl p-6 max-w-sm w-full mx-4">
+            <div class="flex items-center mb-4">
+                <i class="fa fa-exclamation-circle text-2xl text-warning mr-3" id="alert-modal-icon"></i>
+                <h3 class="text-xl font-bold text-light" id="alert-modal-title">提示</h3>
+            </div>
+            <div class="text-light/80 mb-6" id="alert-modal-message">
+                <!-- 提示信息将通过 JavaScript 动态添加 -->
+            </div>
+            <div class="flex justify-end">
+                <button id="close-alert-modal" class="bg-accent hover:bg-accent/80 text-white px-6 py-2 rounded-lg text-sm transition-colors flex items-center">
+                    <i class="fa fa-check mr-2"></i> 确定
+                </button>
+            </div>
+        </div>
+    </div>
 
 
     <!-- 3D战斗模态窗口 -->
