@@ -9,12 +9,12 @@ class SkillTreeSystem {
 
     // 学习技能树(境界提升时自动解锁第一个技能等级)
     learnSkillTree(skillTreeId) {
-        if (!this.game.gameState.metadata.skillTrees) {
+        if (!this.game.metadata?.skillTrees) {
             console.warn('skillTrees not found in metadata');
             return false;
         }
 
-        const skillTree = this.game.gameState.metadata.skillTrees.find(tree => tree.id === skillTreeId);
+        const skillTree = this.game.metadata.skillTrees.find(tree => tree.id === skillTreeId);
         if (!skillTree) {
             console.warn(`Skill tree ${skillTreeId} not found`);
             return false;
@@ -58,12 +58,12 @@ class SkillTreeSystem {
 
     // 升级技能树
     upgradeSkillTree(skillTreeId) {
-        if (!this.game.gameState.metadata.skillTrees) {
+        if (!this.game.metadata?.skillTrees) {
             console.warn('skillTrees not found in metadata');
             return false;
         }
 
-        const skillTree = this.game.gameState.metadata.skillTrees.find(tree => tree.id === skillTreeId);
+        const skillTree = this.game.metadata.skillTrees.find(tree => tree.id === skillTreeId);
         if (!skillTree) {
             console.warn(`Skill tree ${skillTreeId} not found`);
             return false;
@@ -198,7 +198,7 @@ class SkillTreeSystem {
         const currentRealm = this.game.gameState.player.realm.currentRealm;
         const currentStage = this.game.gameState.player.realm.currentStage;
 
-        return this.game.gameState.metadata.skillTrees.filter(tree => {
+        return this.game.metadata.skillTrees.filter(tree => {
             // 检查境界要求
             if (tree.realmRequired > currentRealm) return false;
 

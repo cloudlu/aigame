@@ -51,35 +51,11 @@ function createInitialGameState(username, gender) {
             role: 'player'
         },
         player: {
-            // 标记：需要初始化
-            isNewPlayer: true,
-            realm: {
-                currentRealm: 0,
-                currentStage: 1,
-                currentLevel: 1
-            },
-            skills: {
-                levels: {},
-                equipped: {
-                    attack: null,
-                    defense: null,
-                    recovery: null,
-                    special: null
-                }
-            },
-            equipment: {},
-            equipmentEffects: {},
-            inventory: []
-        },
-        resources: {},
-        settings: {},
-        battle: {
-            inBattle: false,
-            battleLog: []
-        },
-        currentBackgroundIndex: 0,
-        currentMapType: 'xianxia-mountain',
-        sceneMonsters: []
+            // 标记：需要初始化（前端检测到此标记会执行 initializeNewPlayer）
+            isNewPlayer: true
+        }
+        // 其他所有字段由前端从 game-metadata.js 初始化
+        // 这样可以保证前后端数据结构一致，避免重复逻辑
     };
 }
 

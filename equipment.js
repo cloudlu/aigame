@@ -310,14 +310,27 @@ class EquipmentSystem {
                 }
             }
         }
-        
+
         // 清理背包中的装备
         if (this.game.gameState.player && this.game.gameState.player.inventory) {
-            this.game.gameState.player.inventory.forEach(item => {
-                if (item && item.colorClass) {
-                    delete item.colorClass;
-                }
-            });
+            const inventory = this.game.gameState.player.inventory;
+
+            // 兼容旧版本：如果 inventory 是数组
+            if (Array.isArray(inventory)) {
+                inventory.forEach(item => {
+                    if (item && item.colorClass) {
+                        delete item.colorClass;
+                    }
+                });
+            }
+            // 新版本：inventory.items 是数组
+            else if (inventory.items && Array.isArray(inventory.items)) {
+                inventory.items.forEach(item => {
+                    if (item && item.colorClass) {
+                        delete item.colorClass;
+                    }
+                });
+            }
         }
     }
     

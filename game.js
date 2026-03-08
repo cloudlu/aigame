@@ -697,16 +697,16 @@ class EndlessWinterGame {
     }
 
     // 检查保存的登录状态
-    loadUserFromSession() {
+    async loadUserFromSession() {
         try {
             // 从 localStorage 中获取 token 和用户信息
             const token = localStorage.getItem('endlessWinterToken');
             const userStr = localStorage.getItem('endlessWinterUser');
-            
+
             if (token && userStr) {
                 try {
                     const userInfo = JSON.parse(userStr);
-                    
+
                     // 设置用户信息
                     this.gameState.user = {
                         loggedIn: true,
@@ -715,13 +715,13 @@ class EndlessWinterGame {
                         gender: userInfo.gender,
                         role: userInfo.role || 'player'
                     };
-                    
-                    // 加载游戏状态
-                    this.loadGame();
-                    
+
+                    // 加载游戏状态（等待完成）
+                    await this.loadGame();
+
                     // 显示登录成功消息
                     this.addBattleLog(`登录成功！欢迎回来，${userInfo.username}！`);
-                    
+
                     // 登录成功后初始化游戏
                     this.initAfterLogin();
                 } catch (parseError) {
@@ -2487,62 +2487,63 @@ class EndlessWinterGame {
         battleLogElement.scrollTop = battleLogElement.scrollHeight;
     }
     
-    
+
     // 加载游戏
-    loadGame() {
+    async loadGame() {
         try {
-               // 保存用户信息
+            // 保存用户信息
             const userInfo = { ...this.gameState.user };
-            
+
             // 只从服务器加载
             if (this.gameState.user.loggedIn) {
-                (async () => {
-                    const serverGameState = await this.loadFromServer();
-                    if (serverGameState) {
-                        if (serverGameState.success && serverGameState.gameState) {
-                            this.addBattleLog('从服务器加载游戏成功！');
-                            // 保留用户信息，只更新游戏的其他部分
-                            const { user, ...gameData } = serverGameState.gameState;                            
-                            // 补充缺失的资源属性
-                            if (gameData.resources) {
-                                gameData.resources.spiritWood = gameData.resources.spiritWood || 0;
-                                gameData.resources.spiritWoodRate = gameData.resources.spiritWoodRate || 1;
-                                gameData.resources.blackIron = gameData.resources.blackIron || 0;
-                                gameData.resources.blackIronRate = gameData.resources.blackIronRate || 0.5;
-                                gameData.resources.spiritCrystal = gameData.resources.spiritCrystal || 0;
-                                gameData.resources.spiritCrystalRate = gameData.resources.spiritCrystalRate || 0.2;
-                                gameData.resources.breakthroughStones = gameData.resources.breakthroughStones || 0;
-                            }
-                        
-                            this.gameState = { ...gameData, user: userInfo };
+                const serverGameState = await this.loadFromServer();
+                if (serverGameState) {
+                    if (serverGameState.success && serverGameState.gameState) {
+                        this.addBattleLog('从服务器加载游戏成功！');
+                        // 保留用户信息，只更新游戏的其他部分
+                        const { user, ...gameData } = serverGameState.gameState;
 
-                            // 检查是否是新玩家，需要初始化
-                            if (this.gameState.player?.isNewPlayer) {
-                                console.log('检测到新玩家，开始初始化游戏状态...');
-                                this.initializeNewPlayer();
-                                delete this.gameState.player.isNewPlayer; // 移除标记
-                                this.saveGame(); // 保存初始化后的状态
-                            }
-
-                            // 清理装备的colorClass属性
-                            this.equipmentSystem.cleanupEquipmentColorClass();
-                        
-                            await this.fetchGameMetadata();
-                            // 检查临时状态是否过期
-                            this.checkTemporaryStats();                        
-                        } else {
-                            // 如果token无效，重定向到登录页面
-                            if (serverGameState.error === 'Invalid token' || serverGameState.error === 'No token provided') {
-                                console.warn('Token无效，正在退出登录...');
-                                this.logout();
-                                return null;
-                            }  
+                        // 补充缺失的资源属性
+                        if (gameData.resources) {
+                            gameData.resources.spiritWood = gameData.resources.spiritWood || 0;
+                            gameData.resources.spiritWoodRate = gameData.resources.spiritWoodRate || 1;
+                            gameData.resources.blackIron = gameData.resources.blackIron || 0;
+                            gameData.resources.blackIronRate = gameData.resources.blackIronRate || 0.5;
+                            gameData.resources.spiritCrystal = gameData.resources.spiritCrystal || 0;
+                            gameData.resources.spiritCrystalRate = gameData.resources.spiritCrystalRate || 0.2;
+                            gameData.resources.breakthroughStones = gameData.resources.breakthroughStones || 0;
                         }
+
+                        this.gameState = { ...gameData, user: userInfo };
+
+                        // 先加载 metadata（初始化需要从 metadata 读取配置）
+                        await this.fetchGameMetadata();
+
+                        // 检查是否是新玩家，需要初始化
+                        if (this.gameState.player?.isNewPlayer) {
+                            console.log('检测到新玩家，开始初始化游戏状态...');
+                            this.initializeNewPlayer();
+                            delete this.gameState.player.isNewPlayer; // 移除标记
+                            this.saveGameState(); // 保存初始化后的状态
+                        }
+
+                        // 清理装备的colorClass属性
+                        this.equipmentSystem.cleanupEquipmentColorClass();
+
+                        // 检查临时状态是否过期
+                        this.checkTemporaryStats();
                     } else {
-                        console.error('服务器端加载失败:', serverGameState.error);
-                        this.logout();
+                        // 如果token无效，重定向到登录页面
+                        if (serverGameState.error === 'Invalid token' || serverGameState.error === 'No token provided') {
+                            console.warn('Token无效，正在退出登录...');
+                            this.logout();
+                            return null;
+                        }
                     }
-                })();
+                } else {
+                    console.error('服务器端加载失败:', serverGameState.error);
+                    this.logout();
+                }
             } else {
                 this.addBattleLog('访客模式无法加载游戏！');
                 return null;
@@ -2631,10 +2632,10 @@ class EndlessWinterGame {
         // 3. 初始化装备和背包
         this.gameState.player.equipment = {};
         this.gameState.player.equipmentEffects = {};
-        this.gameState.player.inventory = [];
         this.gameState.player.inventory = {
-            consumables: {},
-            waypoints: []
+            items: [],          // 装备和物品
+            consumables: {},    // 消耗品
+            waypoints: []       // 解锁的传送点
         };
 
         // 4. 初始化技能（使用新的技能树系统）
