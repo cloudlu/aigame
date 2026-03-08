@@ -342,7 +342,7 @@
                                 </div>
                                 <div class="flex items-center mb-1">
                                     <input type="checkbox" id="auto-collect-spiritCrystal" class="mr-2 accent-accent" checked>
-                                    <label for="auto-collect-spiritCrystal" class="text-sm text-light/90">灵晶</label>
+                                    <label for="auto-collect-spiritCrystal" class="text-sm text-light/90">灵石</label>
                                 </div>
                             </div>
                         </div> 
@@ -610,7 +610,7 @@
                             <div class="flex justify-between items-center">
                                 <span class="text-sm text-light/80">刷新需求:</span>
                                 <div id="refresh-requirements" class="text-sm text-light/70">
-                                    灵木: 0, 玄铁: 0, 灵晶: 0
+                                    灵木: 0, 玄铁: 0, 灵石: 0
                                 </div>
                             </div>
                             <div class="flex justify-between items-center">
@@ -662,8 +662,11 @@
                                 <button id="auto-collect-btn" class="btn-primary bg-secondary hover:bg-secondary/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="自动收集资源，消耗灵力">
                                     <i class="fa fa-leaf text-green-400"></i>
                                 </button>
-                                <button id="refresh-enemy-btn" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="刷新随机敌人">
+                                <button id="refresh-enemy-btn" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="刷新当前地图敌人">
                                     <i class="fa fa-refresh text-white"></i>
+                                </button>
+                                <button id="travel-map-btn" class="btn-primary bg-purple-600 hover:bg-purple-500 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="地图移动">
+                                    <i class="fa fa-map text-white"></i>
                                 </button>
                             </div>
                         </div>
@@ -711,7 +714,10 @@
                         <!-- 3D探索场景 -->
                         <div id="battle-area" class="bg-dark/50 border border-glass rounded-lg p-3 hover:shadow-lg hover:shadow-danger/20 transition-all" style="height: 500px; width: 100%; position: relative; z-index: 1; overflow: hidden;">
                             <!-- 3D场景将由JavaScript动态生成 -->
-                            <div style="color: white; position: absolute; top: 10px; left: 10px; z-index: 2;">3D探索场景</div>
+                            <div id="current-map-label" style="color: white; position: absolute; top: 10px; left: 10px; z-index: 2; background: rgba(0,0,0,0.5); padding: 4px 8px; border-radius: 4px; font-size: 14px;">
+                                <i class="fa fa-map-marker-alt text-accent mr-1"></i>
+                                <span id="current-map-name">仙侠山峰</span>
+                            </div>
                             <canvas id="map-canvas" style="width: 100%; height: 100%; display: block; position: absolute; top: 0; left: 0; z-index: 1;"></canvas>
                         </div>
                         
@@ -775,7 +781,7 @@
                             <i class="fa fa-gem text-accent text-lg"></i>
                         </div>
                         <div>
-                            <h3 class="text-sm font-medium text-light/90">灵晶</h3>
+                            <h3 class="text-sm font-medium text-light/90">灵石</h3>
                             <p class="text-lg font-bold text-white" id="spiritCrystal">0</p>
                         </div>
                     </div>
@@ -849,10 +855,10 @@
                         <div class="bg-dark/30 rounded p-3 hover:bg-dark/40 transition-colors border border-dark/50 shadow-sm">
                             <div class="flex items-center justify-between mb-2">
                                 <span class="text-sm text-light/90 flex items-center">
-                                    <i class="fa fa-gem text-accent mr-2"></i> 灵晶收集
+                                    <i class="fa fa-gem text-accent mr-2"></i> 灵石收集
                                 </span>
-                                <button id="collect-spiritCrystal" class="btn-primary bg-secondary/70 hover:bg-secondary w-8 h-8 rounded flex items-center justify-center overflow-hidden shadow-sm transition-all" data-tooltip="收集灵晶资源，消耗5点灵力">
-                                    <img src="Images/collect-crystal-button.png" alt="收集灵晶" class="w-full h-full object-cover">
+                                <button id="collect-spiritCrystal" class="btn-primary bg-secondary/70 hover:bg-secondary w-8 h-8 rounded flex items-center justify-center overflow-hidden shadow-sm transition-all" data-tooltip="收集灵石资源，消耗5点灵力">
+                                    <img src="Images/collect-crystal-button.png" alt="收集灵石" class="w-full h-full object-cover">
                                 </button>
                             </div>
                             <div class="w-full bg-dark/50 rounded-full h-2 overflow-hidden">

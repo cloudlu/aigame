@@ -180,7 +180,7 @@ class EquipmentSystem {
         
         // 添加日志
         this.game.addBattleLog(`${slot === 'weapon' ? '武器' : slot === 'armor' ? '护甲' : slot === 'helmet' ? '头盔' : slot === 'boots' ? '靴子' : '饰品'}精炼成功！当前精炼等级：+${item.refineLevel}`);
-        this.game.addBattleLog(`消耗了 ${cost.spiritWood} 灵木，${cost.blackIron} 玄铁，${cost.spiritCrystal} 灵晶`);
+        this.game.addBattleLog(`消耗了 ${cost.spiritWood} 灵木，${cost.blackIron} 玄铁，${cost.spiritCrystal} 灵石`);
     }
     
     // 精炼武器（保留向后兼容）
@@ -469,7 +469,7 @@ class EquipmentSystem {
             if (item.refineLevel < 10) {
                 const cost = this.calculateRefineCost(item.refineLevel);
                 document.getElementById('refine-requirements').textContent = 
-                    `灵木: ${cost.spiritWood}, 玄铁: ${cost.blackIron}, 灵晶: ${cost.spiritCrystal}`;
+                    `灵木: ${cost.spiritWood}, 玄铁: ${cost.blackIron}, 灵石: ${cost.spiritCrystal}`;
             } else {
                 document.getElementById('refine-requirements').textContent = '已达到最大等级';
             }
@@ -638,7 +638,7 @@ class EquipmentSystem {
                         <div class="text-xs text-light/60 mb-2 text-center">
                             消耗: <span class="text-light/80">${cost.spiritWood}</span> 灵木,
                             <span class="text-light/80">${cost.blackIron}</span> 玄铁,
-                            <span class="text-light/80">${cost.spiritCrystal}</span> 灵晶
+                            <span class="text-light/80">${cost.spiritCrystal}</span> 灵石
                         </div>
 
                         <div class="border-t border-glass/30 pt-3 mt-2">
@@ -889,7 +889,7 @@ class EquipmentSystem {
             // 计算刷新所需材料
             const cost = this.calculateRefreshCost(item);
             document.getElementById('refresh-requirements').textContent =
-                `灵木: ${cost.spiritWood}, 玄铁: ${cost.blackIron}, 灵晶: ${cost.spiritCrystal}`;
+                `灵木: ${cost.spiritWood}, 玄铁: ${cost.blackIron}, 灵石: ${cost.spiritCrystal}`;
 
             // 显示当前属性
             const currentStatsDesc = this.getStatsDescription(item.stats);

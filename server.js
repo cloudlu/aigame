@@ -39,6 +39,50 @@ function generateToken() {
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }
 
+// 生成初始游戏状态（新用户）- 创建最小化存档
+function createInitialGameState(username, gender) {
+    // 只创建最小框架，前端会自动调用初始化
+    return {
+        user: {
+            loggedIn: true,
+            username: username,
+            userId: username,
+            gender: gender,
+            role: 'player'
+        },
+        player: {
+            // 标记：需要初始化
+            isNewPlayer: true,
+            realm: {
+                currentRealm: 0,
+                currentStage: 1,
+                currentLevel: 1
+            },
+            skills: {
+                levels: {},
+                equipped: {
+                    attack: null,
+                    defense: null,
+                    recovery: null,
+                    special: null
+                }
+            },
+            equipment: {},
+            equipmentEffects: {},
+            inventory: []
+        },
+        resources: {},
+        settings: {},
+        battle: {
+            inBattle: false,
+            battleLog: []
+        },
+        currentBackgroundIndex: 0,
+        currentMapType: 'xianxia-mountain',
+        sceneMonsters: []
+    };
+}
+
 // 登录API
 app.post('/api/login', async (req, res) => {
     try {
@@ -93,33 +137,39 @@ app.post('/api/login', async (req, res) => {
 app.post('/api/register', async (req, res) => {
     try {
         const { username, password, gender } = req.body;
-        
+
         if (!username || !password || !gender) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
-        
+
         // 检查用户是否已存在
         const userFilePath = path.join(USERS_DIR, `${username}.json`);
         if (fs.existsSync(userFilePath)) {
             return res.status(400).json({ error: 'User already exists' });
         }
-        
+
         // 生成密码哈希
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
-        
+
         // 创建新用户
         const userData = {
             password: hashedPassword,
             gender: gender,
             role: 'player'
         };
-        
+
         fs.writeFileSync(userFilePath, JSON.stringify(userData, null, 2));
-        
+
+        // 创建初始游戏存档
+        const saveFilePath = path.join(SAVE_DIR, `${username}.json`);
+        const initialGameState = createInitialGameState(username, gender);
+        fs.writeFileSync(saveFilePath, JSON.stringify(initialGameState, null, 2));
+        console.log(`Created initial save file for user: ${username}`);
+
         // 生成token
         const token = generateToken();
-        
+
         // 存储token
         users.set(token, {
             username: username,
@@ -127,9 +177,9 @@ app.post('/api/register', async (req, res) => {
             gender: gender,
             role: 'player'
         });
-        
-        res.json({ 
-            success: true, 
+
+        res.json({
+            success: true,
             token: token,
             user: {
                 username: username,
@@ -212,11 +262,13 @@ app.get('/api/load', verifyToken, (req, res) => {
         if (gameState.player && !gameState.player.skills) {
             gameState.player.skills = {
                 levels: {},
-                equipped: []
+                equipped: {
+                    attack: null,
+                    defense: null,
+                    recovery: null,
+                    special: null
+                }
             };
-            for (let i = 0; i < 6; i++) {
-                gameState.player.skills.equipped[i] = null;
-            }
             fs.writeFileSync(saveFilePath, JSON.stringify(gameState, null, 2));
         }
 

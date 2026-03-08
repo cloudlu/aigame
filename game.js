@@ -73,7 +73,27 @@ class EndlessWinterGame {
                     item.refineLevel = 0;
                 }
             }
-            
+
+            // 数据迁移：确保玩家有 inventory 结构（v1.15+ 新增）
+            if (!this.gameState.player.inventory) {
+                this.gameState.player.inventory = {
+                    consumables: {},
+                    waypoints: []
+                };
+            }
+
+            if (!this.gameState.player.inventory.waypoints) {
+                this.gameState.player.inventory.waypoints = [];
+            }
+
+            // 自动解锁起始地图的传送点
+            if (!this.gameState.player.inventory.waypoints.includes('xianxia-mountain')) {
+                this.gameState.player.inventory.waypoints.push('xianxia-mountain');
+            }
+
+            // 初始化地图邻接表
+            this.adjacencyMap = this.buildAdjacencyMap(this.getConnections());
+
             // 计算初始装备效果
             this.equipmentSystem.calculateEquipmentEffects();
         
@@ -207,13 +227,10 @@ class EndlessWinterGame {
     
     // 更新地图背景
     updateMapBackground() {
-        // 根据玩家等级计算当前背景索引（每10级更换一次背景）
-        const playerLevel = this.calculateTotalLevel();
-        const newBackgroundIndex = Math.min(9, Math.floor((playerLevel - 1) / 10));
-        
-        // 如果背景索引变化，更新背景
-        if (newBackgroundIndex !== this.gameState.currentBackgroundIndex) {
-            this.gameState.currentBackgroundIndex = newBackgroundIndex;
+        // 不再自动随等级切换地图，玩家需要主动选择移动
+        // 只在初始化时设置默认地图
+        if (this.gameState.currentBackgroundIndex === undefined) {
+            this.gameState.currentBackgroundIndex = 0; // 默认山峰（武者起始地图）
             this.updateMapBackgroundUI();
         }
     }
@@ -223,6 +240,12 @@ class EndlessWinterGame {
         if (this.metadata.mapBackgrounds.length > 0) {
             const currentBackground = this.metadata.mapBackgrounds[this.gameState.currentBackgroundIndex];
             if (currentBackground) {
+                // 更新当前地图名称显示
+                const mapNameElement = document.getElementById('current-map-name');
+                if (mapNameElement) {
+                    mapNameElement.textContent = currentBackground.name;
+                }
+
                 // 更新3D场景背景
                 if (this.battle3D) {
                     // 辅助函数：转换色值为hex字符串
@@ -232,10 +255,10 @@ class EndlessWinterGame {
                         }
                         return color;
                     };
-                    
+
                     // 更新天空颜色
                     this.battle3D.scene.clearColor = new BABYLON.Color4.FromHexString(toHexColor(currentBackground.skyColor), 1);
-                    
+
                     // 更新雾效
                     if (this.battle3D.scene.fogMode === BABYLON.Scene.FOGMODE_LINEAR) {
                         this.battle3D.scene.fogColor = new BABYLON.Color3.FromHexString(toHexColor(currentBackground.fogColor));
@@ -248,7 +271,7 @@ class EndlessWinterGame {
                         this.battle3D.scene.fogEnd = currentBackground.fogFar;
                     }
                 }
-                
+
                 // 更新2D地图背景图片
                 const backgroundElement = document.querySelector('#map-background img');
                 if (backgroundElement && currentBackground.imageUrl) {
@@ -257,7 +280,422 @@ class EndlessWinterGame {
             }
         }
     }
-    
+
+    // ===== 地图移动系统 =====
+
+    // 获取地图连接定义（线性路线）
+    getConnections() {
+        return [
+            ["xianxia-mountain", "xianxia-beach"],
+            ["xianxia-beach", "xianxia-plains"],
+            ["xianxia-plains", "xianxia-canyon"],
+            ["xianxia-canyon", "xianxia-desert"],
+            ["xianxia-desert", "xianxia-lake"],
+            ["xianxia-lake", "xianxia-forest"],
+            ["xianxia-forest", "xianxia-volcano"],
+            ["xianxia-volcano", "xianxia-cave"],
+            ["xianxia-cave", "xianxia-heaven"]
+        ];
+    }
+
+    // 构建邻接表（双向）
+    buildAdjacencyMap(connections) {
+        const adjacencyMap = {};
+
+        connections.forEach(([mapA, mapB]) => {
+            if (!adjacencyMap[mapA]) adjacencyMap[mapA] = [];
+            if (!adjacencyMap[mapB]) adjacencyMap[mapB] = [];
+
+            adjacencyMap[mapA].push(mapB);
+            adjacencyMap[mapB].push(mapA);
+        });
+
+        return adjacencyMap;
+    }
+
+    // 检查两个地图是否相邻
+    isAdjacentMap(currentMapType, targetMapType) {
+        if (currentMapType === targetMapType) return false;
+
+        if (!this.adjacencyMap) {
+            this.adjacencyMap = this.buildAdjacencyMap(this.getConnections());
+        }
+
+        const adjacentMaps = this.adjacencyMap[currentMapType] || [];
+        return adjacentMaps.includes(targetMapType);
+    }
+
+    // 移动到指定地图
+    travelToMap(targetMapType, options = {}) {
+        // 解构选项参数
+        const {
+            bypassAdjacentCheck = false,  // 允许传送绕过
+            teleportType = null           // 'waypoint', 'item', 'admin', null
+        } = options;
+
+        const playerRealm = this.gameState.player.realm.currentRealm;
+        const realmRequirement = this.metadata.mapRealmRequirements[targetMapType];
+        const currentMapType = this.metadata.mapBackgrounds[
+            this.gameState.currentBackgroundIndex
+        ]?.type;
+
+        // 检查1：境界限制
+        if (!realmRequirement) {
+            this.addBattleLog('找不到目标地图的境界需求配置！');
+            return false;
+        }
+
+        if (playerRealm < realmRequirement.realm) {
+            this.addBattleLog(`境界不足！需要达到 ${realmRequirement.name} 期才能进入该地图。`);
+            return false;
+        }
+
+        // 检查2：相邻地图限制（可被传送绕过）
+        if (!bypassAdjacentCheck && currentMapType !== targetMapType) {
+            if (!this.isAdjacentMap(currentMapType, targetMapType)) {
+                // 获取相邻地图列表用于友好提示
+                if (!this.adjacencyMap) {
+                    this.adjacencyMap = this.buildAdjacencyMap(this.getConnections());
+                }
+                const adjacentMaps = this.adjacencyMap[currentMapType] || [];
+                const adjacentNames = adjacentMaps.map(mapType => {
+                    const map = this.metadata.mapBackgrounds.find(bg => bg.type === mapType);
+                    return map ? map.name : mapType;
+                }).join('、');
+
+                this.addBattleLog(`只能移动到相邻的地图！当前可到达: ${adjacentNames}`);
+                this.addBattleLog(`提示: 使用传送道具可以到达更远的地图`);
+                return false;
+            }
+        }
+
+        // 检查3：能量消耗（传送点免费，正常移动消耗10点）
+        const energyCost = teleportType === 'waypoint' ? 0 : 10;
+
+        if (this.gameState.player.energy < energyCost) {
+            this.addBattleLog(`灵力不足！需要 ${energyCost} 点灵力才能移动。`);
+            return false;
+        }
+
+        // 查找目标地图索引
+        const targetIndex = this.metadata.mapBackgrounds.findIndex(
+            bg => bg.type === targetMapType
+        );
+
+        if (targetIndex === -1) {
+            this.addBattleLog('找不到目标地图！');
+            return false;
+        }
+
+        // 执行移动
+        this.gameState.player.energy -= energyCost;
+        this.gameState.currentBackgroundIndex = targetIndex;
+        this.updateMapBackgroundUI();
+        this.generateMiniMap();
+
+        const mapInfo = this.metadata.mapBackgrounds[targetIndex];
+
+        // 根据移动类型显示不同消息
+        if (teleportType === 'waypoint') {
+            this.addBattleLog(`通过传送点，瞬间到达 ${mapInfo.name}！`);
+        } else if (teleportType === 'item') {
+            this.addBattleLog(`使用传送符，传送到了 ${mapInfo.name}！`);
+        } else {
+            this.addBattleLog(`消耗 ${energyCost} 灵力，移动到了 ${mapInfo.name}！`);
+        }
+
+        // 首次访问处理
+        this.onMapVisit(targetMapType);
+
+        this.updateUI();
+        return true;
+    }
+
+    // 获取当前可进入的地图列表
+    getAvailableMaps() {
+        const playerRealm = this.gameState.player.realm.currentRealm;
+        const currentMapType = this.metadata.mapBackgrounds[this.gameState.currentBackgroundIndex]?.type;
+
+        return this.metadata.mapBackgrounds.map((mapBg, index) => {
+            const realmReq = this.metadata.mapRealmRequirements[mapBg.type] || { realm: 0, name: "武者" };
+            const isUnlocked = playerRealm >= realmReq.realm;
+            const isCurrent = mapBg.type === currentMapType;
+
+            return {
+                index,
+                type: mapBg.type,
+                name: mapBg.name,
+                realmRequired: realmReq.realm,
+                realmName: realmReq.name,
+                isUnlocked,
+                isCurrent
+            };
+        });
+    }
+
+    // 地图首次访问处理
+    onMapVisit(mapType) {
+        // 确保玩家有 inventory 结构
+        if (!this.gameState.player.inventory) {
+            this.gameState.player.inventory = {
+                consumables: {},
+                waypoints: []
+            };
+        }
+
+        if (!this.gameState.player.inventory.waypoints) {
+            this.gameState.player.inventory.waypoints = [];
+        }
+
+        // 首次访问解锁传送点
+        if (!this.gameState.player.inventory.waypoints.includes(mapType)) {
+            this.gameState.player.inventory.waypoints.push(mapType);
+
+            const map = this.metadata.mapBackgrounds.find(bg => bg.type === mapType);
+            this.addBattleLog(`解锁了 ${map.name} 的传送点！`);
+
+            // 首次探索奖励
+            const bonus = { exp: 100, spiritCrystal: 50 };
+            this.gameState.player.exp += bonus.exp;
+            this.gameState.resources.spiritCrystal += bonus.spiritCrystal;
+            this.addBattleLog(`首次探索！获得 ${bonus.exp} 经验和 ${bonus.spiritCrystal} 灵石`);
+        }
+    }
+
+    // 传送到已解锁的传送点
+    teleportToWaypoint(mapType) {
+        // 确保有传送点数据
+        if (!this.gameState.player.inventory || !this.gameState.player.inventory.waypoints) {
+            this.addBattleLog('尚未解锁任何传送点！');
+            return false;
+        }
+
+        if (!this.gameState.player.inventory.waypoints.includes(mapType)) {
+            this.addBattleLog('尚未解锁该地图的传送点！');
+            return false;
+        }
+
+        return this.travelToMap(mapType, {
+            bypassAdjacentCheck: true,
+            teleportType: 'waypoint'
+        });
+    }
+
+    // 显示地图选择面板 - 绝对定位（配合背景图片）
+    showMapSelectionPanel() {
+        const maps = this.getAvailableMaps();
+
+        // 地图节点位置（基于背景图片的地理布局 - 百分比坐标）
+        const mapPositions = {
+            "xianxia-mountain": { x: 5, y: 80, name: "山峰" },   
+            "xianxia-beach":    { x: 8,  y: 25, name: "海滩" },   
+            "xianxia-forest":   { x: 50, y: 36, name: "森林" },   
+            "xianxia-plains":   { x: 22, y: 28, name: "平原" },   
+            "xianxia-lake":     { x: 60, y: 55, name: "湖泊" },   
+            "xianxia-canyon":   { x: 42, y: 55, name: "峡谷" },   
+            "xianxia-desert":   { x: 42, y: 72, name: "沙漠" },   
+            "xianxia-cave":     { x: 78, y: 28, name: "洞穴" },   
+            "xianxia-heaven":   { x: 95, y: 15, name: "仙境" },   
+            "xianxia-volcano":  { x: 68, y: 38, name: "火山" }    
+        };
+
+        // 连接线定义（按路线顺序：山峰→海滩→平原→峡谷→沙漠→湖泊→森林→火山→洞穴→仙境）
+        const connections = [
+            ["xianxia-mountain", "xianxia-beach"],
+            ["xianxia-beach", "xianxia-plains"],
+            ["xianxia-plains", "xianxia-canyon"],
+            ["xianxia-canyon", "xianxia-desert"],
+            ["xianxia-desert", "xianxia-lake"],
+            ["xianxia-lake", "xianxia-forest"],
+            ["xianxia-forest", "xianxia-volcano"],
+            ["xianxia-volcano", "xianxia-cave"],
+            ["xianxia-cave", "xianxia-heaven"]
+        ];
+
+        // 构建HTML
+        let html = `
+        <style>
+            .world-map-container {
+                position: relative;
+                width: 100%;
+                height: 520px;
+                border-radius: 12px;
+                overflow: hidden;
+            }
+            .world-map-bg {
+                position: absolute;
+                inset: 0;
+                opacity: 0.55;
+            }
+            .world-map-bg img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+            .map-svg-layer {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                pointer-events: none;
+            }
+            .map-connection {
+                stroke: rgba(150, 180, 220, 0.3);
+                stroke-width: 1;
+                fill: none;
+            }
+            .map-connection.active {
+                stroke: rgba(96, 165, 250, 0.4);
+                stroke-width: 1.5;
+            }
+            .map-node-abs {
+                position: absolute;
+                width: 65px;
+                height: 65px;
+                border-radius: 50%;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                transition: all 0.3s;
+                font-size: 11px;
+                text-align: center;
+                transform: translate(-50%, -50%);
+                pointer-events: auto;
+                backdrop-filter: blur(8px);
+                z-index: 10;
+            }
+            .map-node-abs.unlocked {
+                background: linear-gradient(135deg, rgba(30, 64, 175, 0.92), rgba(59, 130, 246, 0.92));
+                border: 3px solid #60a5fa;
+                color: white;
+                box-shadow: 0 0 18px rgba(59, 130, 246, 0.6);
+            }
+            .map-node-abs.unlocked:hover {
+                transform: translate(-50%, -50%) scale(1.25);
+                box-shadow: 0 0 35px rgba(59, 130, 246, 1);
+                z-index: 20;
+            }
+            .map-node-abs.current {
+                background: linear-gradient(135deg, rgba(5, 150, 105, 0.95), rgba(16, 185, 129, 0.95));
+                border: 4px solid #34d399;
+                animation: pulse-glow 2s infinite;
+                box-shadow: 0 0 30px rgba(16, 185, 129, 0.9);
+            }
+            .map-node-abs.locked {
+                background: rgba(55, 65, 81, 0.85);
+                border: 3px solid #4b5563;
+                color: #9ca3af;
+                cursor: not-allowed;
+            }
+            .map-node-abs .name {
+                font-weight: bold;
+                font-size: 12px;
+                line-height: 1.2;
+                text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+            }
+            @keyframes pulse-glow {
+                0%, 100% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.6); }
+                50% { box-shadow: 0 0 45px rgba(16, 185, 129, 1); }
+            }
+        </style>
+        <div class="world-map-container">
+            <!-- 背景图片 -->
+            <div class="world-map-bg">
+                <img src="Images/world_map.jpg" alt="世界地图" onerror="this.parentElement.style.opacity=0">
+            </div>
+
+            <!-- SVG连接线层 -->
+            <svg class="map-svg-layer" viewBox="0 0 100 100" preserveAspectRatio="none">`;
+
+        // 绘制连接线
+        connections.forEach(([from, to]) => {
+            const fromPos = mapPositions[from];
+            const toPos = mapPositions[to];
+            if (!fromPos || !toPos) return;
+
+            const fromMap = maps.find(m => m.type === from);
+            const toMap = maps.find(m => m.type === to);
+            const isActive = (fromMap?.isUnlocked || toMap?.isUnlocked);
+
+            html += `<line class="map-connection ${isActive ? 'active' : ''}"
+                x1="${fromPos.x}" y1="${fromPos.y}"
+                x2="${toPos.x}" y2="${toPos.y}"/>`;
+        });
+
+        html += '</svg>';
+
+        // 绘制地图节点
+        Object.entries(mapPositions).forEach(([mapType, pos]) => {
+            const map = maps.find(m => m.type === mapType);
+            if (!map) return;
+
+            let nodeClass = 'locked';
+            let prefix = '🔒';
+            if (map.isCurrent) {
+                nodeClass = 'current';
+                prefix = '📍';
+            } else if (map.isUnlocked) {
+                nodeClass = 'unlocked';
+                prefix = '';
+            }
+
+            if (map.isUnlocked && !map.isCurrent) {
+                html += `<div class="map-node-abs ${nodeClass}"
+                    style="left: ${pos.x}%; top: ${pos.y}%;"
+                    onclick="game.travelToMap('${mapType}')">
+                    <span class="name">${pos.name}</span>
+                </div>`;
+            } else {
+                html += `<div class="map-node-abs ${nodeClass}"
+                    style="left: ${pos.x}%; top: ${pos.y}%;">
+                    <span class="name">${prefix}${pos.name}</span>
+                </div>`;
+            }
+        });
+
+        html += '</div>';
+        html += '<p class="text-center text-sm text-gray-400 mt-3">💡 点击节点移动 | 消耗 10 灵力 | 📍=当前位置</p>';
+
+        // 显示在模态框中
+        this.showSimpleMapModal(html);
+    }
+
+    // 简单地图选择弹窗
+    showSimpleMapModal(html) {
+        // 创建临时模态框
+        let modal = document.createElement('div');
+        modal.id = 'temp-map-modal';
+        modal.className = 'fixed inset-0 bg-black/85 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="relative bg-gray-900/98 rounded-xl p-5 w-[95vw] max-w-5xl mx-4 max-h-[90vh] overflow-auto border border-gray-600 shadow-2xl">
+                <!-- 标题 -->
+                <div class="text-center mb-4 relative z-10">
+                    <h2 class="text-2xl font-bold text-white">🗺️ 修仙世界</h2>
+                    <p class="text-sm text-gray-400">沿着灵脉探索各个神秘区域</p>
+                </div>
+                <!-- 内容区域 -->
+                <div class="relative z-10">
+                    ${html}
+                </div>
+                <!-- 关闭按钮 -->
+                <button onclick="document.getElementById('temp-map-modal').remove()"
+                    class="relative z-10 mt-4 w-full bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors">
+                    关闭地图
+                </button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        // 点击背景关闭
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+    }
+
     // 检查保存的登录状态
     loadUserFromSession() {
         try {
@@ -578,7 +1016,7 @@ class EndlessWinterGame {
         // 生成玄铁
         this.gameState.resources.blackIron += blackIronRate;
         
-        // 生成灵晶
+        // 生成灵石
         this.gameState.resources.spiritCrystal += spiritCrystalRate;
         
         // 生命自动恢复
@@ -857,19 +1295,16 @@ class EndlessWinterGame {
         
         // 刷新敌人按钮
         bindEvent('#refresh-enemy-btn', 'click', () => {
-            this.generateMiniMap(); // 重新生成整个地图的敌人，确保与用户等级匹配
-            
-            // 随机刷新3D场景背景
-            if (this.metadata.mapBackgrounds.length > 0) {
-                const randomBackgroundIndex = Math.floor(Math.random() * this.metadata.mapBackgrounds.length);
-                this.gameState.currentBackgroundIndex = randomBackgroundIndex;
-                this.updateMapBackgroundUI();
-                this.addBattleLog(`刷新了敌人和场景背景为：${this.metadata.mapBackgrounds[randomBackgroundIndex].name}！`);
-            } else {
-                this.addBattleLog('刷新了敌人！');
-            }
-            
+            // 不再随机切换地图，只刷新当前地图的敌人
+            this.generateMiniMap();
+            const currentMap = this.metadata.mapBackgrounds[this.gameState.currentBackgroundIndex];
+            this.addBattleLog(`刷新了${currentMap ? currentMap.name : '当前地图'}的敌人！`);
             this.updateUI();
+        });
+
+        // 地图移动按钮
+        bindEvent('#travel-map-btn', 'click', () => {
+            this.showMapSelectionPanel();
         });
         
         // 初始化所有按钮的tooltip
@@ -1194,95 +1629,6 @@ class EndlessWinterGame {
     
     // 根据稀有度和类型获取装备颜色
 
-    
-    // 刷新敌人
-    refreshEnemy() {
-        // 敌人等级与玩家等级差距不超过3级
-        const playerLevel = this.calculateTotalLevel();
-        const minLevel = Math.max(1, playerLevel - 3);
-        const maxLevel = playerLevel + 3;
-        const enemyLevel = Math.floor(Math.random() * (maxLevel - minLevel + 1)) + minLevel;
-        
-        // 获取当前地图类型
-        let mapType = 'xianxia-mountain'; // 默认地图
-        if (this.metadata.mapBackgrounds && this.gameState.currentBackgroundIndex !== undefined) {
-            const currentBackground = this.metadata.mapBackgrounds[this.gameState.currentBackgroundIndex];
-            if (currentBackground && currentBackground.type) {
-                mapType = currentBackground.type;
-            }
-        }
-        
-        // 从地图敌人映射中获取当前地图的敌人列表
-        const mapEnemies = this.metadata.mapEnemyMapping && this.metadata.mapEnemyMapping[mapType] ? 
-            this.metadata.mapEnemyMapping[mapType] : 
-            this.metadata.enemyTypes.map(enemy => enemy.name);
-        
-        // 随机选择一个敌人名称
-        const randomEnemyName = mapEnemies[Math.floor(Math.random() * mapEnemies.length)];
-        
-        // 从enemyTypes中找到对应的敌人类型
-        let enemyType = this.metadata.enemyTypes.find(enemy => enemy.name === randomEnemyName);
-        
-        // 如果找不到对应敌人，使用默认敌人
-        if (!enemyType) {
-            // 根据玩家等级选择合适的敌人类型
-            let enemyTypeIndex = 0;
-            if (enemyLevel >= 5) {
-                enemyTypeIndex = Math.min(Math.floor(enemyLevel / 5), this.metadata.enemyTypes.length - 1);
-            } else {
-                enemyTypeIndex = Math.floor(Math.random() * Math.min(enemyLevel, this.metadata.enemyTypes.length));
-            }
-            
-            // 随机选择敌人类型（有概率遇到高级敌人）
-            const randomFactor = Math.random();
-            if (randomFactor > 0.7 && enemyTypeIndex < this.metadata.enemyTypes.length - 1) {
-                enemyTypeIndex++;
-            }
-            
-            enemyType = this.metadata.enemyTypes[enemyTypeIndex];
-        }
-        
-        // 计算是否为精英怪（15%概率）
-        const isElite = Math.random() < 0.15;
-        const eliteBonus = isElite ? 1.5 : 1;
-        
-        // 计算敌人属性，确保所有属性都有值
-        const baseHp = enemyType.baseHp || 30;
-        const baseAttack = enemyType.baseAttack || 8;
-        const baseDefense = enemyType.baseDefense || 2;
-        const baseSpeed = enemyType.baseSpeed || 5;
-        const baseLuck = enemyType.baseLuck || 1;
-        const expMultiplier = enemyType.expMultiplier || 1;
-        const resourceMultiplier = enemyType.resourceMultiplier || 1;
-        
-        const hp = Math.floor(baseHp * enemyLevel * eliteBonus);
-        const attack = Math.floor(baseAttack * enemyLevel * eliteBonus);
-        const defense = Math.floor(baseDefense * enemyLevel * eliteBonus);
-        const speed = Math.floor(baseSpeed * enemyLevel * eliteBonus);
-        const luck = Math.floor(baseLuck * enemyLevel * eliteBonus);
-        
-        // 创建完整的敌人对象，确保所有必要属性都有值
-        this.gameState.enemy = {
-            name: isElite ? `精英${enemyType.name}` : enemyType.name,
-            level: enemyLevel,
-            hp: hp,
-            maxHp: hp,
-            attack: attack,
-            defense: defense,
-            speed: speed,
-            luck: luck,
-            isElite: isElite,
-            eliteBonus: eliteBonus,
-            icon: enemyType.icon || 'fa-skull',
-            image: enemyType.image || '',
-            expMultiplier: expMultiplier * eliteBonus,
-            resourceMultiplier: resourceMultiplier * eliteBonus,
-            // 添加额外的默认属性，确保完整
-            accuracy: 90,
-            dodge: 10
-        };
-    }
-    
     // 切换自动战斗
     toggleAutoBattle() {
         this.gameState.settings.autoBattleSettings.enabled = !this.gameState.settings.autoBattleSettings.enabled;
@@ -1554,7 +1900,7 @@ class EndlessWinterGame {
             }
             
             this.gameState.settings.collectedResources += amount;
-            this.addBattleLog(`收集了${amount}${type === 'spiritWood' ? '灵木' : type === 'blackIron' ? '玄铁' : '灵晶'}！`);
+            this.addBattleLog(`收集了${amount}${type === 'spiritWood' ? '灵木' : type === 'blackIron' ? '玄铁' : '灵石'}！`);
             
             // 更新UI
             this.updateUI();
@@ -1795,6 +2141,14 @@ class EndlessWinterGame {
                         
                             this.gameState = { ...gameData, user: userInfo };
 
+                            // 检查是否是新玩家，需要初始化
+                            if (this.gameState.player?.isNewPlayer) {
+                                console.log('检测到新玩家，开始初始化游戏状态...');
+                                this.initializeNewPlayer();
+                                delete this.gameState.player.isNewPlayer; // 移除标记
+                                this.saveGame(); // 保存初始化后的状态
+                            }
+
                             // 清理装备的colorClass属性
                             this.equipmentSystem.cleanupEquipmentColorClass();
                         
@@ -1807,15 +2161,7 @@ class EndlessWinterGame {
                                 console.warn('Token无效，正在退出登录...');
                                 this.logout();
                                 return null;
-                            }
-                            // 如果是保存文件未找到错误，返回一个标记对象
-                            if (serverGameState.error === 'Save file not found') {
-                                this.addBattleLog('没有找到保存的游戏，初始化新游戏！');
-                                // 先获取游戏元数据
-                                await this.fetchGameMetadata();
-                                // 然后初始化新的游戏状态
-                                this.initNewGameState();
-                            }   
+                            }  
                         }
                     } else {
                         console.error('服务器端加载失败:', serverGameState.error);
@@ -1888,7 +2234,60 @@ class EndlessWinterGame {
             return null;
         }
     }
-    
+
+    // 初始化新玩家
+    initializeNewPlayer() {
+        console.log('正在初始化新玩家数据...');
+
+        // 1. 初始化玩家属性（从metadata）
+        if (this.metadata.player?.initialStats) {
+            Object.assign(this.gameState.player, this.metadata.player.initialStats);
+        }
+
+        // 2. 初始化资源
+        if (this.metadata.resources?.types) {
+            this.gameState.resources = {};
+            this.metadata.resources.types.forEach(resource => {
+                this.gameState.resources[resource.name] = resource.initialAmount || 0;
+                this.gameState.resources[`${resource.name}Rate`] = resource.baseRate || 0;
+            });
+        }
+
+        // 3. 初始化装备和背包
+        this.gameState.player.equipment = {};
+        this.gameState.player.equipmentEffects = {};
+        this.gameState.player.inventory = [];
+        this.gameState.player.inventory = {
+            consumables: {},
+            waypoints: []
+        };
+
+        // 4. 初始化技能（使用新的技能树系统）
+        if (this.metadata.skillTrees && this.skillTreeSystem) {
+            this.skillTreeSystem.initializeDefaultSkillTrees();
+        }
+
+        // 5. 初始化设置（从metadata）
+        if (this.metadata.player?.defaultSettings) {
+            this.gameState.settings = JSON.parse(JSON.stringify(this.metadata.player.defaultSettings));
+        }
+
+        // 6. 初始化战斗状态
+        if (this.metadata.player?.defaultBattleState) {
+            this.gameState.battle = JSON.parse(JSON.stringify(this.metadata.player.defaultBattleState));
+        }
+
+        // 7. 计算初始装备效果
+        this.equipmentSystem.calculateEquipmentEffects();
+
+        // 8. 初始化地图状态
+        this.gameState.currentBackgroundIndex = 0;
+        this.gameState.sceneMonsters = [];
+
+        console.log('新玩家初始化完成');
+        this.addBattleLog('欢迎来到无尽寒冬的世界！');
+    }
+
     // 显示合成菜单
     showCraftMenu() {
         // 直接打开背包，因为合成功能已经整合到背包中
@@ -2154,7 +2553,7 @@ class EndlessWinterGame {
             case 'gold':
                 successRate = 60;
                 break;
-            case 'legendary':
+            case 'rainbow':
                 successRate = 50;
                 break;
         }
@@ -2631,10 +3030,9 @@ class EndlessWinterGame {
         };
     }
     
-    // 获取随机品质
     // 获取下一个品质（固定升级路径）
     getNextRarity(currentRarity) {
-        const rarityOrder = ['white', 'blue', 'purple', 'gold', 'legendary'];
+        const rarityOrder = ['white', 'blue', 'purple', 'gold', 'rainbow'];
         const currentIndex = rarityOrder.indexOf(currentRarity);
         
         if (currentIndex < rarityOrder.length - 1) {
@@ -2796,76 +3194,7 @@ class EndlessWinterGame {
             this.addBattleLog('注销用户失败，请稍后再试');
         }
     }
-    
-    // 初始化新的游戏状态
-    initNewGameState() {
-        // 使用metadata中的数据初始化游戏状态
-        if (this.metadata.player) {
-            // 加载初始属性
-            if (this.metadata.player.initialStats) {
-                Object.assign(this.gameState.player, this.metadata.player.initialStats);
-            }
-            
-            this.gameState.player.equipment = {}; // 重置装备栏
 
-            this.gameState.player.equipmentEffects = {}; // 重置装备效果
-
-            this.gameState.player.inventory = []; // 重置背包
-            
-            // 重新计算装备效果
-            this.equipmentSystem.calculateEquipmentEffects();
-
-            // 初始化玩家技能数据（只存储技能ID）
-            if (!this.gameState.player.skills) {
-                this.gameState.player.skills = {
-                    learned: {},  // 按境界存储已学习的技能ID
-                    equipped: {}  // 按境界存储已装备的技能ID
-                };
-
-                // 为每个境界初始化空数组
-                if (this.metadata.realmConfig) {
-                    this.metadata.realmConfig.forEach((_, index) => {
-                        this.gameState.player.skills.learned[index] = [];
-                    });
-                }
-
-                // 使用新的技能树系统初始化默认技能
-                if (this.metadata.skillTrees && this.metadata.skillTrees.length > 0) {
-                    this.skillTreeSystem.initializeDefaultSkillTrees();
-                } else {
-                    console.warn('skillTrees not found in metadata, using legacy skill system');
-                    // 后备方案：使用旧的技能系统
-                    if (this.metadata && this.metadata.skills && this.metadata.skills[0]) {
-                        const firstSkill = this.metadata.skills[0][0];
-                        if (firstSkill) {
-                            this.gameState.player.skills.learned[0] = [firstSkill.id];
-                            this.gameState.player.skills.equipped[0] = firstSkill.id;
-                        }
-                    }
-                }
-            }
-
-            // 使用metadata中的默认设置初始化
-            if (this.metadata.player.defaultSettings) {
-                this.gameState.settings = JSON.parse(JSON.stringify(this.metadata.player.defaultSettings));
-            }
-            
-            // 使用metadata中的默认战斗状态初始化
-            if (this.metadata.player.defaultBattleState) {
-                this.gameState.battle = JSON.parse(JSON.stringify(this.metadata.player.defaultBattleState));
-            }
-
-            // 只在新游戏时初始化资源速率
-            if (this.metadata.resources) {
-                this.metadata.resources.types.forEach(resource => {
-                    if (this.gameState.resources[resource.name]) {
-                        this.gameState.resources[`${resource.name}Rate`] = resource.baseRate;
-                    }
-                });
-            }
-        }
-    }
-    
     // 计算装备效果
 
     
@@ -3438,7 +3767,7 @@ class EndlessWinterGame {
                     </div>
                     <div class="text-center">
                         <i class="fa fa-gem text-accent mb-1"></i>
-                        <p class="text-sm text-light/60">灵晶</p>
+                        <p class="text-sm text-light/60">灵石</p>
                         <p class="text-lg font-bold text-success">${crystalAmount}</p>
                     </div>
                 </div>
@@ -3457,7 +3786,7 @@ class EndlessWinterGame {
             this.gameState.resources.spiritWood += woodAmount;
             this.gameState.resources.blackIron += ironAmount;
             this.gameState.resources.spiritCrystal += crystalAmount;
-            this.addBattleLog(`分解 ${itemName} 获得了 ${woodAmount} 灵木, ${ironAmount} 玄铁, ${crystalAmount} 灵晶！`);
+            this.addBattleLog(`分解 ${itemName} 获得了 ${woodAmount} 灵木, ${ironAmount} 玄铁, ${crystalAmount} 灵石！`);
             this.updateUI();
             this.showInventory();
             modal.classList.add('hidden');

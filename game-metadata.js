@@ -630,26 +630,58 @@ const gameMetadata = {
     
     // 地图与敌人的映射关系
     mapEnemyMapping: {
-        "xianxia-mountain": ["山妖", "岩怪", "神雕", "石精", "山魈", "山精", "风魔", "雷兽", "麒麟", "岩巨人", "山神", "山鬼", "山妖王", "岩妖", "石怪", "山魈王", "神雕王", "石精王", "岩怪王", "山妖王"],
-        "xianxia-forest": ["树精", "花妖", "狐仙", "鹿灵", "木怪", "妖狐", "风魔", "树妖", "花仙", "狐妖", "鹿妖", "木妖", "树精王", "花妖王", "狐仙王", "鹿灵王", "木怪王", "森林守护者", "森林精灵", "森林之王"],
-        "xianxia-lake": ["水怪", "蛟蛇", "龟妖", "鱼精", "水仙", "鲛人", "海妖", "海怪", "龙王", "水精灵", "湖妖", "水妖", "水怪王", "蛟蛇王", "龟妖王", "鱼精王", "水仙王", "鲛人王", "海妖王", "龙王"],
-        "xianxia-desert": ["沙妖", "蝎精", "蛇怪", "沙漠巨蜥", "沙虫", "风魔", "土妖", "沙漠精灵", "沙漠巨人", "沙漠守护者", "沙妖王", "蝎精王", "蛇怪王", "沙漠巨蜥王", "沙虫王", "沙漠领主", "沙漠守护神", "沙漠妖皇", "沙漠兽王", "沙漠尊者"],
-        "xianxia-cave": ["洞穴蝙蝠", "石怪", "蜘蛛精", "蚯蚓怪", "洞穴幽灵", "土妖", "岩怪", "石精", "洞穴守护者", "洞穴精灵", "洞穴蝙蝠王", "石怪王", "蜘蛛精王", "蚯蚓怪王", "洞穴幽灵王", "洞穴领主", "洞穴守护神", "洞穴妖皇", "洞穴兽王", "洞穴尊者"],
-        "xianxia-heaven": ["仙鹤", "麒麟", "凤凰", "火凤凰", "雷兽", "风魔", "天庭守卫", "天仙境者", "天庭神将", "天庭仙女", "仙鹤王", "麒麟王", "凤凰王", "火凤凰王", "雷兽王", "风魔王", "天庭守护者", "天仙境主", "天庭神将", "天庭仙女"],
-        "xianxia-volcano": ["火灵", "熔岩巨兽", "凤凰", "火凤凰", "火妖", "火山精灵", "火山守护者", "熔岩巨人", "火凤凰王", "火灵王", "熔岩巨兽王", "火山领主", "火山守护神", "火山妖皇", "火山兽王", "火山尊者", "火凤凰", "熔岩巨兽", "火灵", "火山精灵"],
-        "xianxia-beach": ["水怪", "鱼精", "鲛人", "海妖", "海怪", "龙王", "海滩精灵", "海滩守护者", "水怪王", "鱼精王", "鲛人王", "海妖王", "海怪王", "龙王", "海滩领主", "海滩守护神", "海滩妖皇", "海滩兽王", "海滩尊者", "海精灵"]
+        "xianxia-mountain": ["山妖", "岩怪", "神雕", "石精", "山魈", "山精", "风魔", "雷兽", "麒麟"],
+        "xianxia-beach": ["水怪", "鱼精", "鲛人", "海妖", "海怪", "龙王"],
+        "xianxia-plains": ["草原狼", "野牛精", "鹰妖", "草原巨兽", "风狼", "游侠", "风魔", "雷兽"],
+        "xianxia-canyon": ["峡谷巨鹰", "石巨人", "风魔", "岩怪", "峡谷蜥蜴", "鹰王", "风狼"],
+        "xianxia-desert": ["沙妖", "蝎精", "蛇怪", "沙漠巨蜥", "沙虫", "风魔", "土妖"],
+        "xianxia-lake": ["水怪", "蛟蛇", "龟妖", "鱼精", "水仙", "鲛人", "海妖", "海怪", "龙王"],
+        "xianxia-forest": ["树精", "花妖", "狐仙", "鹿灵", "木怪", "妖狐", "风魔"],
+        "xianxia-volcano": ["火灵", "熔岩巨兽", "凤凰", "火凤凰"],
+        "xianxia-cave": ["洞穴蝙蝠", "蜘蛛精", "蚯蚓怪", "洞穴幽灵", "土妖", "岩怪", "石精"],
+        "xianxia-heaven": ["仙鹤", "麒麟", "凤凰", "火凤凰", "雷兽", "风魔"]
     },
-    
-    // 地图等级范围
-    mapLevelRanges: {
-        "xianxia-mountain": { min: 1, max: 10 },
-        "xianxia-forest": { min: 5, max: 15 },
-        "xianxia-lake": { min: 10, max: 20 },
-        "xianxia-desert": { min: 15, max: 25 },
-        "xianxia-cave": { min: 20, max: 30 },
-        "xianxia-heaven": { min: 25, max: 35 },
-        "xianxia-volcano": { min: 30, max: 40 },
-        "xianxia-beach": { min: 1, max: 10 }
+
+    // 地图境界需求（替代旧的 mapLevelRanges）- 按线性路线配置
+    mapRealmRequirements: {
+        "xianxia-mountain":  { realm: 0, name: "武者" },   // 起始地图
+        "xianxia-beach":     { realm: 1, name: "炼气" },
+        "xianxia-plains":    { realm: 2, name: "筑基" },
+        "xianxia-canyon":    { realm: 3, name: "金丹" },
+        "xianxia-desert":    { realm: 3, name: "金丹" },
+        "xianxia-lake":      { realm: 4, name: "元婴" },
+        "xianxia-forest":    { realm: 4, name: "元婴" },
+        "xianxia-volcano":   { realm: 4, name: "元婴" },
+        "xianxia-cave":      { realm: 5, name: "化神" },
+        "xianxia-heaven":    { realm: 5, name: "化神" }
+    },
+
+    // 地图连接关系
+    mapConnections: {
+        "xianxia-mountain": ["xianxia-beach", "xianxia-forest"],
+        "xianxia-beach": ["xianxia-mountain", "xianxia-forest"],
+        "xianxia-forest": ["xianxia-mountain", "xianxia-beach", "xianxia-plains", "xianxia-lake"],
+        "xianxia-plains": ["xianxia-forest", "xianxia-lake", "xianxia-canyon"],
+        "xianxia-lake": ["xianxia-forest", "xianxia-plains", "xianxia-canyon", "xianxia-desert"],
+        "xianxia-canyon": ["xianxia-plains", "xianxia-lake", "xianxia-desert", "xianxia-cave", "xianxia-heaven"],
+        "xianxia-desert": ["xianxia-lake", "xianxia-canyon", "xianxia-cave"],
+        "xianxia-cave": ["xianxia-canyon", "xianxia-desert", "xianxia-heaven", "xianxia-volcano"],
+        "xianxia-heaven": ["xianxia-canyon", "xianxia-cave", "xianxia-volcano"],
+        "xianxia-volcano": ["xianxia-cave", "xianxia-heaven"]
+    },
+
+    // 地图奖励倍率（按境界递进）
+    mapRewardMultipliers: {
+        "xianxia-mountain":  { exp: 1.0, dropRate: 1.0 },
+        "xianxia-beach":     { exp: 1.2, dropRate: 1.1 },
+        "xianxia-forest":    { exp: 1.5, dropRate: 1.2 },
+        "xianxia-plains":    { exp: 2.0, dropRate: 1.4 },
+        "xianxia-lake":      { exp: 2.0, dropRate: 1.4 },
+        "xianxia-canyon":    { exp: 3.0, dropRate: 1.8 },
+        "xianxia-desert":    { exp: 3.0, dropRate: 1.8 },
+        "xianxia-cave":      { exp: 3.0, dropRate: 1.8 },
+        "xianxia-heaven":    { exp: 4.0, dropRate: 2.2 },
+        "xianxia-volcano":   { exp: 4.0, dropRate: 2.2 }
     },
     
     // 技能树系统（新的升级系统）
@@ -2048,7 +2080,7 @@ const gameMetadata = {
             },
             {
                 name: "spiritCrystal",
-                displayName: "灵晶",
+                displayName: "灵石",
                 initialAmount: 0,
                 baseRate: 0.2,
                 description: "高级修仙资源，用于装备精炼"

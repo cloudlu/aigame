@@ -126,28 +126,40 @@ EndlessWinterGame.prototype.attackEnemy = function() {
     this.playSound('attack-sound', 1, 200);
 };
 
-// 使用技能攻击敌人（使用当前境界装备的技能）
-EndlessWinterGame.prototype.useSkill = function() {
+// 使用技能攻击敌人（按类型使用装备的技能）
+EndlessWinterGame.prototype.useSkill = function(skillType = 'attack') {
     if (!this.gameState.battle.inBattle) {
         this.addBattleLog('只有在战斗模式中才能使用技能！');
         return;
     }
 
-    // 获取当前境界的装备技能
-    const currentRealm = this.gameState.player.realm.currentRealm;
-    const equippedSkills = this.gameState.player.skills.equipped;
-    const skillId = equippedSkills[currentRealm];
+    // 获取指定类型的装备技能
+    const equippedSkillId = this.gameState.player.skills.equipped?.[skillType];
 
-    if (!skillId) {
-        this.addBattleLog('当前境界没有装备技能！');
+    if (!equippedSkillId) {
+        const typeNames = { attack: '攻击', defense: '防御', recovery: '恢复', special: '特殊' };
+        this.addBattleLog(`${typeNames[skillType] || skillType}槽位没有装备技能！右键选择技能`);
         return;
     }
 
-    // 使用新的技能树系统获取技能详情
-    let skill = this.skillTreeSystem.getCurrentSkill();
+    // 获取技能等级
+    const skillLevel = this.gameState.player.skills.levels?.[equippedSkillId] || 0;
+    if (skillLevel === 0) {
+        this.addBattleLog(`技能尚未学习！`);
+        return;
+    }
 
+    // 获取技能树数据
+    const skillTree = this.metadata.skillTrees?.find(tree => tree.id === equippedSkillId);
+    if (!skillTree) {
+        this.addBattleLog(`找不到技能树：${equippedSkillId}`);
+        return;
+    }
+
+    // 获取当前等级的技能数据
+    const skill = skillTree.levels[skillLevel - 1];
     if (!skill) {
-        this.addBattleLog(`找不到技能：${skillId}`);
+        this.addBattleLog(`找不到技能数据：${equippedSkillId} Level ${skillLevel}`);
         return;
     }
 
@@ -437,7 +449,7 @@ EndlessWinterGame.prototype.enemyDefeated = function() {
     this.gameState.resources.blackIron += ironGained;
     this.gameState.resources.spiritCrystal += crystalGained;
 
-    this.addBattleLog(`获得了${woodGained}灵木，${ironGained}玄铁，${crystalGained}灵晶！`);
+    this.addBattleLog(`获得了${woodGained}灵木，${ironGained}玄铁，${crystalGained}灵石！`);
 
     // 杀死敌人恢复灵力
     const killEnergyRecovery = 15;
@@ -445,7 +457,7 @@ EndlessWinterGame.prototype.enemyDefeated = function() {
     this.addBattleLog(`杀死敌人恢复了${killEnergyRecovery}点灵力！`);
 
     // 杀死敌人恢复生命值
-    const hpRecoveryPercent = 0.2; // 恢复20%最大HP
+    const hpRecoveryPercent = 0.35; // 恢复35%最大HP（从20%提升）
     const hpRecovery = Math.floor(this.gameState.player.maxHp * hpRecoveryPercent);
     const actualHpRecovered = Math.min(hpRecovery, this.gameState.player.maxHp - this.gameState.player.hp);
     if (actualHpRecovered > 0) {
@@ -530,11 +542,33 @@ EndlessWinterGame.prototype.playerDefeated = function() {
     this.gameState.player.exp = Math.floor(this.gameState.player.exp * 0.8);
     this.addBattleLog(`你失去了 ${expLoss} 点经验！(20%)`);
 
-    // 重置玩家HP
+    // 重置玩家HP和灵力
     this.gameState.player.hp = this.gameState.player.maxHp;
+    this.gameState.player.energy = this.gameState.player.maxEnergy;
 
-    // 刷新敌人
-    this.refreshEnemy();
+    // 重置敌人HP/灵力
+    this.gameState.enemy.hp = this.gameState.enemy.maxHp;
+    this.gameState.enemy.energy = this.gameState.enemy.maxEnergy;
+
+    // 清理玩家战斗状态
+    this.gameState.player.defenseActive = false;
+    this.gameState.player.defenseBonusValue = 0;
+    this.gameState.player.dodgeActive = false;
+    this.gameState.player.dodgeBonus = 0;
+    this.gameState.player.immuneNextAttack = false;
+    this.gameState.player.buffs = [];
+    this.gameState.player.tempAttackBonus = 0;
+    this.gameState.player.tempDefenseBonus = 0;
+    this.gameState.player.tempAccuracyBonus = 0;
+    this.gameState.player.tempSkillCostReduce = 0;
+
+    // 清理敌人战斗状态
+    this.gameState.enemy.debuffs = [];
+
+    // 移除防御特效（如果存在）
+    if (typeof this.removeDefenseEffect === 'function') {
+        this.removeDefenseEffect();
+    }
 
     // 更新UI
     this.updateUI();

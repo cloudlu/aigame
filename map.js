@@ -115,95 +115,60 @@ EndlessWinterGame.prototype.showEnemyInfo = function(enemyInfo) {
     // 更新敌人装备掉率信息
     const enemyDropRatesElement = document.getElementById('enemy-drop-rates');
     if (this.gameState.enemy?.name) {
-        // 基础掉率
-        let dropRates = {
-            white: 0.3,
-            green: 0.25,
-            blue: 0.2,
-            cyan: 0.1,
-            purple: 0.08,
-            pink: 0.04,
-            gold: 0.02,
-            legendary: 0.01
-        };
-        
-        // 根据怪物类型调整掉率
+        // 从 metadata 获取掉率配置
+        const dropRatesConfig = this.metadata.dropRates;
+
+        // 根据怪物类型选择对应的掉率表
+        let dropRates;
         if (this.gameState.enemy.isBoss) {
-            // BOSS掉率调整
-            dropRates = {
-                white: 0.1,
-                green: 0.15,
-                blue: 0.2,
-                cyan: 0.15,
-                purple: 0.15,
-                pink: 0.1,
-                gold: 0.1,
-                legendary: 0.05
-            };
+            dropRates = dropRatesConfig.boss;
         } else if (this.gameState.enemy.isElite) {
-            // 精英怪掉率调整
-            dropRates = {
-                white: 0.2,
-                green: 0.2,
-                blue: 0.2,
-                cyan: 0.15,
-                purple: 0.1,
-                pink: 0.08,
-                gold: 0.05,
-                legendary: 0.02
-            };
+            dropRates = dropRatesConfig.elite;
+        } else {
+            dropRates = dropRatesConfig.normal;
         }
-        
+
         // 考虑幸运值影响（每点幸运值提高0.5%的高品质装备掉率）
         const luck = this.gameState.player.luck || 0;
         const luckBonus = luck * 0.005;
-        
+
         // 调整掉率，提高高品质装备的概率
         const adjustedRates = {
             white: Math.max(0, dropRates.white - luckBonus * 3),
-            green: Math.max(0, dropRates.green - luckBonus * 2),
-            blue: Math.max(0, dropRates.blue - luckBonus),
-            cyan: Math.max(0, dropRates.cyan),
-            purple: Math.max(0, dropRates.purple + luckBonus * 0.5),
-            pink: Math.max(0, dropRates.pink + luckBonus * 1),
+            blue: Math.max(0, dropRates.blue - luckBonus * 1.5),
+            purple: Math.max(0, dropRates.purple + luckBonus * 1),
             gold: Math.max(0, dropRates.gold + luckBonus * 1.5),
-            legendary: Math.max(0, dropRates.legendary + luckBonus * 2)
+            rainbow: Math.max(0, dropRates.rainbow + luckBonus * 2)
         };
-        
+
         // 归一化概率
         const totalProbability = Object.values(adjustedRates).reduce((sum, rate) => sum + rate, 0);
         const normalizedRates = {};
         for (const [rarity, rate] of Object.entries(adjustedRates)) {
             normalizedRates[rarity] = rate / totalProbability;
         }
-        
+
         // 生成掉率显示元素
         enemyDropRatesElement.innerHTML = '';
-        
-        // 品质颜色映射
+
+        // 品质颜色映射（5种品质）
         const rarityColors = {
             white: 'bg-white/10',
-            green: 'bg-green-500/20',
             blue: 'bg-blue-500/20',
-            cyan: 'bg-cyan-500/20',
             purple: 'bg-purple-500/20',
-            pink: 'bg-pink-500/20',
             gold: 'bg-yellow-500/20',
-            legendary: 'bg-red-500/20'
+            rainbow: 'bg-gradient-to-r from-red-500 via-yellow-500 to-blue-500/20'
         };
-        
-        // 品质名称映射
+
+        // 品质名称映射（5种品质）
         const rarityNames = {
             white: '白色',
-            green: '绿色',
             blue: '蓝色',
-            cyan: '青色',
             purple: '紫色',
-            pink: '粉色',
             gold: '金色',
-            legendary: '传说'
+            rainbow: '彩虹'
         };
-        
+
         // 添加掉率信息
         for (const [rarity, rate] of Object.entries(normalizedRates)) {
             const ratePercent = Math.round(rate * 100);
@@ -587,12 +552,28 @@ EndlessWinterGame.prototype.generateMiniMap = function() {
     this.updateMapBackground();
 };
 
-// 根据格子总数生成敌人分布
+// 根据格子总数生成敌人分布（根据地图境界调整难度）
 EndlessWinterGame.prototype.createEnemyDistribution = function(totalCells) {
     const availableCells = totalCells - 1;
     const totalEnemies = Math.max(10, Math.floor(availableCells * 0.8));
-    const bossCount = Math.ceil(totalEnemies * 0.1);
-    const eliteCount = Math.ceil(totalEnemies * 0.3);
+
+    // 获取当前地图的境界需求
+    const mapType = this.metadata.mapBackgrounds[this.gameState.currentBackgroundIndex]?.type;
+    const realmReq = this.metadata.mapRealmRequirements[mapType];
+    const realmLevel = realmReq ? realmReq.realm : 0; // 0-5
+
+    // 根据境界调整分布（高境界更多精英和Boss）
+    // 武者(0): 8% Boss, 25% Elite, 67% Normal
+    // 炼气(1): 10% Boss, 30% Elite, 60% Normal
+    // 筑基(2): 12% Boss, 35% Elite, 53% Normal
+    // 金丹(3): 14% Boss, 40% Elite, 46% Normal
+    // 元婴(4): 16% Boss, 45% Elite, 39% Normal
+    // 化神(5): 18% Boss, 50% Elite, 32% Normal
+    const bossRatio = 0.08 + realmLevel * 0.02;  // 8% + 2%*境界
+    const eliteRatio = 0.25 + realmLevel * 0.05; // 25% + 5%*境界
+
+    const bossCount = Math.ceil(totalEnemies * bossRatio);
+    const eliteCount = Math.ceil(totalEnemies * eliteRatio);
     const normalCount = totalEnemies - bossCount - eliteCount;
 
     const enemyDistribution = [];
@@ -609,6 +590,7 @@ EndlessWinterGame.prototype.createEnemyDistribution = function(totalCells) {
         enemyDistribution.push('normal');
     }
 
+    // 随机打乱
     for (let i = enemyDistribution.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [enemyDistribution[i], enemyDistribution[j]] = [enemyDistribution[j], enemyDistribution[i]];
@@ -680,10 +662,6 @@ EndlessWinterGame.prototype.createEnemy = function(enemyDistribution, enemyIndex
     const playerLevel = this.calculateTotalLevel(this.gameState.player);
     const enemyLevel = Math.max(1, Math.min(playerLevel + 3, playerLevel + Math.floor(Math.random() * 3) - 1));
 
-    const baseAttack = enemyLevel * 8;
-    const baseDefense = enemyLevel * 2;
-    const baseHp = enemyLevel * 30;
-
     const enemyType = enemyDistribution[enemyIndex];
     let isElite = false;
     let isBoss = false;
@@ -697,43 +675,61 @@ EndlessWinterGame.prototype.createEnemy = function(enemyDistribution, enemyIndex
         bonus = 0.5;
     }
 
-    const currentBackground = this.metadata.mapBackgrounds && this.gameState.currentBackgroundIndex !== undefined ? 
+    // 获取当前地图类型
+    const currentBackground = this.metadata.mapBackgrounds && this.gameState.currentBackgroundIndex !== undefined ?
         this.metadata.mapBackgrounds[this.gameState.currentBackgroundIndex] : null;
-    let mapType = currentBackground ? currentBackground.type : null;
+    const mapType = currentBackground ? currentBackground.type : null;
 
-    const mapEnemies = this.metadata.mapEnemyMapping && this.metadata.mapEnemyMapping[mapType] ?
-        this.metadata.mapEnemyMapping[mapType] :
-        (this.metadata.enemyTypes && this.metadata.enemyTypes.length > 0) ?
-            this.metadata.enemyTypes.map(enemy => enemy.name) :
-            ['雪原狼'];
-
-    const randomEnemyName = mapEnemies[Math.floor(Math.random() * mapEnemies.length)];
-    let selectedEnemyType = this.metadata.enemyTypes && this.metadata.enemyTypes.length > 0 ?
-        this.metadata.enemyTypes.find(enemy => enemy.name === randomEnemyName) : null;
-
-    if (!selectedEnemyType) {
-        // 使用默认敌人类型
-        selectedEnemyType = {
-            name: '雪原狼',
-            baseHp: 30,
-            baseAttack: 8,
-            baseDefense: 2,
-            baseSpeed: 5,
-            baseLuck: 1,
-            expMultiplier: 1,
-            resourceMultiplier: 1,
-            icon: 'fa-skull',
-            image: ''
-        };
+    if (!mapType) {
+        console.error('createEnemy: 当前地图类型未定义', {
+            currentBackgroundIndex: this.gameState.currentBackgroundIndex,
+            mapBackgroundsLength: this.metadata.mapBackgrounds?.length
+        });
+        return null;
     }
 
-    const finalAttack = Math.floor(baseAttack * (1 + bonus));
-    const finalDefense = Math.floor(baseDefense * (1 + bonus));
-    const finalHp = Math.floor(baseHp * (1 + bonus));
-    const baseSpeed = enemyLevel * (selectedEnemyType.baseSpeed || 5);
-    const baseLuck = enemyLevel * (selectedEnemyType.baseLuck || 1);
-    const finalSpeed = Math.floor(baseSpeed * (1 + bonus));
-    const finalLuck = Math.floor(baseLuck * (1 + bonus));
+    // 获取当前地图的敌人列表
+    if (!this.metadata.mapEnemyMapping || !this.metadata.mapEnemyMapping[mapType]) {
+        console.error('createEnemy: mapEnemyMapping 中未找到当前地图类型', {
+            mapType: mapType,
+            availableMapTypes: this.metadata.mapEnemyMapping ? Object.keys(this.metadata.mapEnemyMapping) : []
+        });
+        return null;
+    }
+    const mapEnemies = this.metadata.mapEnemyMapping[mapType];
+
+    // 检查敌人类型配置
+    if (!this.metadata.enemyTypes || this.metadata.enemyTypes.length === 0) {
+        console.error('createEnemy: enemyTypes 未配置或为空');
+        return null;
+    }
+
+    // 随机选择敌人
+    const randomEnemyName = mapEnemies[Math.floor(Math.random() * mapEnemies.length)];
+    const selectedEnemyType = this.metadata.enemyTypes.find(enemy => enemy.name === randomEnemyName);
+
+    if (!selectedEnemyType) {
+        console.error('createEnemy: 在 enemyTypes 中找不到选中的敌人', {
+            randomEnemyName: randomEnemyName,
+            availableEnemyTypes: this.metadata.enemyTypes.map(e => e.name)
+        });
+        return null;
+    }
+
+    // 从敌人类型获取基础属性
+    const baseHp = selectedEnemyType.baseHp || 30;
+    const baseAttack = selectedEnemyType.baseAttack || 8;
+    const baseDefense = selectedEnemyType.baseDefense || 2;
+    const baseSpeed = selectedEnemyType.baseSpeed || 5;
+    const baseLuck = selectedEnemyType.baseLuck || 1;
+
+    // 线性成长公式（与 BALANCE_DESIGN.md 一致）
+    // 成长率：HP +50%基础值/级，Attack/Defense +30%基础值/级，Speed/Luck +20%基础值/级
+    const finalHp = Math.floor((baseHp + (enemyLevel - 1) * baseHp * 0.5) * (1 + bonus));
+    const finalAttack = Math.floor((baseAttack + (enemyLevel - 1) * baseAttack * 0.3) * (1 + bonus));
+    const finalDefense = Math.floor((baseDefense + (enemyLevel - 1) * baseDefense * 0.3) * (1 + bonus));
+    const finalSpeed = Math.floor((baseSpeed + (enemyLevel - 1) * baseSpeed * 0.2) * (1 + bonus));
+    const finalLuck = Math.floor((baseLuck + (enemyLevel - 1) * baseLuck * 0.2) * (1 + bonus));
 
     return {
         level: enemyLevel,
@@ -916,19 +912,47 @@ EndlessWinterGame.prototype.initMap = function() {
 
 // ==================== 探险控制 ====================
 
-// 处理键盘按键（人物移动）
+// 处理键盘按键（人物移动和技能快捷键）
 EndlessWinterGame.prototype.handleKeyPress = function(e) {
     console.log('检测到键盘按键:', e.key);
+
+    // 优先处理战斗中的技能快捷键
+    if (this.gameState.battle.inBattle) {
+        const attackSkillsContainer = document.getElementById('attack-skills');
+        if (attackSkillsContainer) {
+            const skillButtons = attackSkillsContainer.querySelectorAll('button');
+
+            // 使用 hjkl; 键对应技能按钮（更方便的键盘布局）
+            const keyMap = {
+                'h': 0,  // 普通攻击
+                'j': 1,  // 攻击技能
+                'k': 2,  // 防御技能
+                'l': 3,  // 恢复技能
+                ';': 4   // 特殊技能
+            };
+
+            const lowerKey = e.key.toLowerCase();
+            if (keyMap.hasOwnProperty(lowerKey)) {
+                const buttonIndex = keyMap[lowerKey];
+                if (skillButtons[buttonIndex]) {
+                    console.log(`触发快捷键 ${e.key}，点击按钮 ${buttonIndex}`);
+                    skillButtons[buttonIndex].click();
+                    e.preventDefault();
+                    return;
+                }
+            }
+        }
+
+        console.log('正在战斗中，无法移动');
+        return;
+    }
+
     if (!this.battle3D) {
         console.log('battle3D 不存在');
         return;
     }
     if (!this.battle3D.player) {
         console.log('player 不存在');
-        return;
-    }
-    if (this.gameState.battle.inBattle) {
-        console.log('正在战斗中，无法移动');
         return;
     }
 

@@ -13,6 +13,8 @@
 ### 系统设计
 - **[SKILL_SYSTEM_DESIGN.md](./SKILL_SYSTEM_DESIGN.md)** - 详细的技能系统设计文档
 - **[SKILL_SYSTEM_TESTING.md](./SKILL_SYSTEM_TESTING.md)** - 技能系统测试方法
+- **[MAP_SYSTEM_DESIGN.md](./MAP_SYSTEM_DESIGN.md)** - 地图系统设计文档 ⭐ NEW
+- **[BALANCE_DESIGN.md](./BALANCE_DESIGN.md)** - 游戏平衡性设计文档
 
 ### API与开发
 - **[API.md](./API.md)** - 完整的API接口文档
@@ -91,7 +93,44 @@
 
 ---
 
-### 5. API.md (5.5KB)
+### 5. BALANCE_DESIGN.md (16KB) ⭐ NEW
+**平衡性设计**
+
+包含内容：
+- 玩家属性成长公式
+- 敌人属性生成机制
+- 战斗伤害计算
+- 平衡性调整历史
+- 战斗模拟分析
+- 调试与监控方法
+
+**适合人群**：游戏设计师、开发者、平衡性测试人员
+
+**何时阅读**：需要调整游戏难度或理解属性系统时
+
+---
+
+### 6. MAP_SYSTEM_DESIGN.md (25KB) ⭐ NEW
+**地图系统设计**
+
+包含内容：
+- 地图境界需求配置
+- 相邻地图移动限制
+- 传送点系统
+- 首次访问奖励
+- 地图连接系统
+- 移动成本设计
+- UI设计方案
+- 未来扩展计划
+- 测试用例
+
+**适合人群**：游戏设计师、开发者
+
+**何时阅读**：需要理解或修改地图系统时
+
+---
+
+### 8. API.md (5.5KB)
 **API文档**
 
 包含内容：
@@ -107,7 +146,7 @@
 
 ---
 
-### 6. CONSTANTS_REFACTORING.md
+### 9. CONSTANTS_REFACTORING.md
 **重构指南**
 
 包含内容：
@@ -121,7 +160,7 @@
 
 ---
 
-### 7. CHANGELOG.md (2.3KB)
+### 10. CHANGELOG.md (2.3KB)
 **更新日志**
 
 包含内容：
@@ -136,7 +175,7 @@
 
 ---
 
-### 8. CONTRIBUTING.md (3.2KB)
+### 11. CONTRIBUTING.md (3.2KB)
 **贡献指南**
 
 包含内容：
@@ -161,9 +200,10 @@
 
 ### 路径2：深入理解
 1. README.md - 项目概况
-2. SKILL_SYSTEM_DESIGN.md - 理解核心系统
-3. API.md - 学习接口
-4. DEVELOPMENT.md - 开发实践
+2. BALANCE_DESIGN.md - 理解核心属性系统 ⭐
+3. SKILL_SYSTEM_DESIGN.md - 理解技能系统
+4. API.md - 学习接口
+5. DEVELOPMENT.md - 开发实践
 
 ### 路径3：贡献代码
 1. README.md - 项目了解
@@ -184,9 +224,11 @@
 
 ### 游戏系统
 - 技能系统 → SKILL_SYSTEM_DESIGN.md
+- 地图系统 → MAP_SYSTEM_DESIGN.md ⭐
 - 装备系统 → README.md#装备系统
 - 战斗系统 → README.md#战斗系统
 - 资源系统 → README.md#资源系统
+- 平衡性设计 → BALANCE_DESIGN.md
 
 ### 技术实现
 - 3D渲染 → README.md#技术栈
@@ -252,11 +294,13 @@
 | DEVELOPMENT.md | 2.8KB | 2024-03-07 |
 | SKILL_SYSTEM_DESIGN.md | 41KB | 2024-03-07 |
 | SKILL_SYSTEM_TESTING.md | 8.2KB | 2024-03-06 |
+| MAP_SYSTEM_DESIGN.md | 25KB | 2026-03-08 |
+| BALANCE_DESIGN.md | 16KB | 2024-03-07 |
 | API.md | 5.5KB | 2024-03-07 |
 | CHANGELOG.md | 2.3KB | 2024-03-07 |
 | CONTRIBUTING.md | 3.2KB | 2024-03-07 |
 
-**总计**: 约76KB的详细文档
+**总计**: 约117KB的详细文档
 
 ---
 

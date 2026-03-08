@@ -36,13 +36,22 @@ class SkillTreeSystem {
         this.game.gameState.player.skills.levels[skillTreeId] = 1;
         console.log(`学习了技能树: ${skillTree.name} (Lv.1: ${skillTree.levels[0].name})`);
 
-        // 自动装备技能
+        // 自动装备技能（按类型装备）
         if (!this.game.gameState.player.skills.equipped) {
-            this.game.gameState.player.skills.equipped = [];
+            this.game.gameState.player.skills.equipped = {
+                attack: null,
+                defense: null,
+                recovery: null,
+                special: null
+            };
         }
-        this.game.gameState.player.skills.equipped[currentRealm] = skillTreeId;
 
-        console.log(`自动装备技能: ${skillTree.name}`);
+        // 装备到对应类型的槽位
+        const skillType = skillTree.type; // attack, defense, recovery, special
+        if (!this.game.gameState.player.skills.equipped[skillType]) {
+            this.game.gameState.player.skills.equipped[skillType] = skillTreeId;
+            console.log(`自动装备技能到 ${skillType} 槽位: ${skillTree.name}`);
+        }
 
         return true;
     }
@@ -97,7 +106,13 @@ class SkillTreeSystem {
         // 执行升级
         this.game.gameState.player.energy -= upgradeCost;
         this.game.gameState.player.skills.levels[skillTreeId] = currentLevel + 1;
-        this.game.gameState.player.skills.equipped[skillTree.realmRequired] = skillTreeId;
+
+        // 自动装备到对应类型的槽位（如果该槽位为空）
+        const skillType = skillTree.type;
+        if (!this.game.gameState.player.skills.equipped[skillType]) {
+            this.game.gameState.player.skills.equipped[skillType] = skillTreeId;
+            console.log(`自动装备技能到 ${skillType} 槽位: ${skillTree.name}`);
+        }
 
         const skill = skillTree.levels[currentLevel];
         this.game.addBattleLog(`技能 ${skill.name} 升级到 Lv.${currentLevel + 1}`);
@@ -107,33 +122,70 @@ class SkillTreeSystem {
         return true;
     }
 
-    // 获取当前技能数据(整合技能树和等级)
-    getCurrentSkill() {
-        const currentRealm = this.game.gameState.player.realm.currentRealm;
-        const equippedSkillTreeId = this.game.gameState.player.skills.equipped[currentRealm];
+    // 获取指定类型的当前装备技能
+    getCurrentSkill(skillType = 'attack') {
+        const equippedSkillId = this.game.gameState.player.skills.equipped?.[skillType];
 
-        if (!equippedSkillTreeId) {
+        if (!equippedSkillId) {
             return null;
         }
 
-        const skillTree = this.game.metadata.skillTrees.find(tree => tree.id === equippedSkillTreeId);
+        const skillTree = this.game.metadata.skillTrees.find(tree => tree.id === equippedSkillId);
         if (!skillTree) {
-            console.warn(`Skill tree ${equippedSkillTreeId} not found`);
+            console.warn(`Skill tree ${equippedSkillId} not found`);
             return null;
         }
 
-        const skillLevel = this.game.gameState.player.skills.levels[equippedSkillTreeId] || 0;
+        const skillLevel = this.game.gameState.player.skills.levels[equippedSkillId] || 0;
         if (skillLevel === 0) {
             return null;
         }
 
         const skillData = skillTree.levels[skillLevel - 1];
         if (!skillData) {
-            console.warn(`Skill tree ${equippedSkillTreeId} level ${skillLevel} data not found`);
+            console.warn(`Skill tree ${equippedSkillId} level ${skillLevel} data not found`);
             return null;
         }
 
-        return skillData;
+        return {
+            ...skillData,
+            skillTreeId: equippedSkillId,
+            skillTreeName: skillTree.name,
+            level: skillLevel,
+            type: skillTree.type,
+            realmRequired: skillTree.realmRequired
+        };
+    }
+
+    // 获取指定类型的所有可用技能（已学习且符合境界要求）
+    getAvailableSkillsByType(skillType) {
+        const currentRealm = this.game.gameState.player.realm.currentRealm;
+
+        return this.game.metadata.skillTrees.filter(tree => {
+            // 检查类型
+            if (tree.type !== skillType) return false;
+
+            // 检查境界要求（可以装备当前或更低境界的技能）
+            if (tree.realmRequired > currentRealm) return false;
+
+            // 检查是否已学习
+            const level = this.game.gameState.player.skills.levels[tree.id] || 0;
+            if (level === 0) return false;
+
+            return true;
+        }).map(tree => {
+            const level = this.game.gameState.player.skills.levels[tree.id];
+            const skillData = tree.levels[level - 1];
+            return {
+                ...skillData,
+                skillTreeId: tree.id,
+                skillTreeName: tree.name,
+                level: level,
+                type: tree.type,
+                realmRequired: tree.realmRequired,
+                realmName: this.game.metadata.realmConfig?.[tree.realmRequired]?.name || '未知境界'
+            };
+        });
     }
 
     // 获取指定技能树的当前等级
@@ -171,27 +223,44 @@ class SkillTreeSystem {
 
     // 初始化默认技能树(新玩家)
     initializeDefaultSkillTrees() {
-        // 初始化技能树等级
+        // 初始化技能等级
         if (!this.game.gameState.player.skills.levels) {
             this.game.gameState.player.skills.levels = {};
         }
 
-        // 为每个境界装备默认攻击技能
-        if (this.game.gameState.metadata.skillTrees) {
-            for (let realm = 0; realm < this.game.gameState.metadata.realmConfig.length; realm++) {
-                const attackSkills = this.game.gameState.metadata.skillTrees.filter(
-                    tree => tree.realmRequired === realm && tree.type === 'attack'
-                );
-                if (attackSkills.length > 0 && !this.game.gameState.player.skills.levels[attackSkills[0].id]) {
-                    // 学习第一个攻击技能
-                    const firstAttackSkill = attackSkills[0];
-                    this.learnSkillTree(firstAttackSkill.id);
+        // 初始化装备槽位（按类型）
+        if (!this.game.gameState.player.skills.equipped) {
+            this.game.gameState.player.skills.equipped = {
+                attack: null,
+                defense: null,
+                recovery: null,
+                special: null
+            };
+        }
 
-                    if (!this.game.gameState.player.skills.equipped[realm]) {
-                        this.game.gameState.player.skills.equipped[realm] = firstAttackSkill.id;
+        // 为每种类型学习一个默认技能（武者境的第一个技能）
+        if (this.game.metadata.skillTrees) {
+            const skillTypes = ['attack', 'defense', 'recovery', 'special'];
+
+            skillTypes.forEach(type => {
+                const skillsOfType = this.game.metadata.skillTrees.filter(
+                    tree => tree.realmRequired === 0 && tree.type === type
+                );
+
+                if (skillsOfType.length > 0) {
+                    const firstSkill = skillsOfType[0];
+
+                    // 如果还没学习，则学习
+                    if (!this.game.gameState.player.skills.levels[firstSkill.id]) {
+                        this.learnSkillTree(firstSkill.id);
+                    }
+
+                    // 如果该类型槽位为空，则装备
+                    if (!this.game.gameState.player.skills.equipped[type]) {
+                        this.game.gameState.player.skills.equipped[type] = firstSkill.id;
                     }
                 }
-            }
+            });
         }
     }
 }

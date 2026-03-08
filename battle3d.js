@@ -295,16 +295,15 @@ EndlessWinterGame.prototype.createBattleScene = function(enemyInfo) {
         }
     });
 
-    // 动态生成技能按钮（显示当前境界及之前所有境界学到的所有技能）
+    // 动态生成技能按钮（按类型生成4个技能按钮）
     if (this.gameState.player && this.gameState.player.skills) {
-        const currentRealm = this.gameState.player.realm.currentRealm;
         const attackSkillsContainer = document.getElementById('attack-skills');
         if (!attackSkillsContainer) {
             console.error('attack-skills container not found');
             return;
         }
 
-        // 清空现有按钮（保留普通攻击按钮）
+        // 清空现有按钮
         attackSkillsContainer.innerHTML = '';
 
         // 创建普通攻击按钮
@@ -316,50 +315,69 @@ EndlessWinterGame.prototype.createBattleScene = function(enemyInfo) {
         attackButton.addEventListener('click', () => this.attackEnemy());
         attackSkillsContainer.appendChild(attackButton);
 
-        // 遍历当前境界及之前所有境界，使用新的技能树系统
-        let skillButtonIndex = 0;
-        for (let realm = 0; realm <= currentRealm; realm++) {
-            // 获取装备的技能
-            const equipped = this.gameState.player.skills?.equipped;
-            if (!equipped) continue;
+        // 定义技能类型配置
+        const skillTypes = [
+            { type: 'attack', icon: 'skill-1.jpg', defaultName: '攻击技能' },
+            { type: 'defense', icon: 'skill-4.jpg', defaultName: '防御技能' },
+            { type: 'recovery', icon: 'skill-3.jpg', defaultName: '恢复技能' },
+            { type: 'special', icon: 'skill-2.jpg', defaultName: '特殊技能' }
+        ];
 
-            const equippedSkillId = equipped[realm];
-            if (!equippedSkillId) continue;
+        // 为每种类型生成一个技能按钮
+        skillTypes.forEach(skillTypeConfig => {
+            const skillType = skillTypeConfig.type;
 
-            // 获取技能等级
-            const skillLevel = this.gameState.player.skills.levels?.[equippedSkillId] || 0;
-            if (skillLevel === 0) continue;
+            // 获取当前装备的该类型技能
+            const equippedSkillId = this.gameState.player.skills.equipped?.[skillType];
+            let skill = null;
+            let skillTree = null;
 
-            // 获取技能树数据
-            const skillTree = this.metadata.skillTrees?.find(tree => tree.id === equippedSkillId);
-            if (!skillTree) continue;
+            if (equippedSkillId) {
+                skillTree = this.metadata.skillTrees?.find(tree => tree.id === equippedSkillId);
+                if (skillTree) {
+                    const skillLevel = this.gameState.player.skills.levels[equippedSkillId] || 0;
+                    if (skillLevel > 0) {
+                        skill = skillTree.levels[skillLevel - 1];
+                    }
+                }
+            }
 
-            // 获取当前等级的技能数据
-            const skill = skillTree.levels[skillLevel - 1];
-            if (!skill) continue;
+            // 创建技能按钮
+            const skillButton = document.createElement('button');
+            skillButton.className = 'btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all';
+            skillButton.setAttribute('data-skill-type', skillType);
 
-            // 检查境界和阶段要求
-            if (this.gameState.player.realm.currentRealm >= skillTree.realmRequired) {
-                const skillButton = document.createElement('button');
-                skillButton.className = 'btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all';
-                skillButton.setAttribute('data-skill-id', equippedSkillId);
-
-                // 获取境界名称
+            if (skill && skillTree) {
+                // 有装备的技能
                 const realmName = this.metadata.realmConfig?.[skillTree.realmRequired]?.name || '未知境界';
-                skillButton.setAttribute('data-tooltip', `${skill.name}: ${skill.description || ''}，消耗${skill.energyCost}灵力，${realmName}可用`);
-
+                skillButton.setAttribute('data-tooltip', `${skill.name}: ${skill.description || ''}，消耗${skill.energyCost}灵力，${realmName} (右键切换)`);
                 const skillImage = `Images/skill-${skill.imageId || equippedSkillId.replace('skill-', '')}.jpg`;
                 skillButton.innerHTML = `<img src="${skillImage}" alt="${skill.name}" class="w-full h-full object-cover">`;
-
-                // 添加点击事件
-                skillButton.addEventListener('click', () => this.useSkill());
-
-                attackSkillsContainer.appendChild(skillButton);
-                skillButtonIndex++;
+            } else {
+                // 没有装备技能
+                skillButton.setAttribute('data-tooltip', `${skillTypeConfig.defaultName}（未装备）- 点击或右键选择技能`);
+                skillButton.innerHTML = `<img src="Images/${skillTypeConfig.icon}" alt="${skillTypeConfig.defaultName}" class="w-full h-full object-cover opacity-50">`;
             }
-        }
 
-        console.log(`生成了 ${skillButtonIndex} 个技能按钮`);
+            // 左键点击 - 使用技能（或提示选择技能）
+            skillButton.addEventListener('click', (e) => {
+                if (skill) {
+                    this.useSkill(skillType);
+                } else {
+                    this.showSkillSelectionMenu(skillType, e);
+                }
+            });
+
+            // 右键点击 - 显示技能选择菜单
+            skillButton.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                this.showSkillSelectionMenu(skillType, e);
+            });
+
+            attackSkillsContainer.appendChild(skillButton);
+        });
+
+        console.log(`生成了 1 个普通攻击按钮 + 4 个技能按钮`);
     }
 
     // 淡入效果
@@ -982,23 +1000,24 @@ EndlessWinterGame.prototype.showDodge = function(target, text) {
         );
         
         // 设置元素位置
+        const initialTop = (1 - screenPoint.y) * engine.getRenderHeight();
         dodgeElement.style.left = `${screenPoint.x * engine.getRenderWidth()}px`;
-        dodgeElement.style.top = `${(1 - screenPoint.y) * engine.getRenderHeight()}px`;
+        dodgeElement.style.top = `${initialTop}px`;
         dodgeElement.style.transform = 'translate(-50%, -50%)';
-        
+
         // 动画（向上飘动并消失）
         const startTime = Date.now();
         const duration = 1000;
-        
+
         const animateDodge = () => {
             const elapsed = Date.now() - startTime;
             const progress = Math.min(elapsed / duration, 1);
-            
-            // 向上移动
-            dodgeElement.style.transform = `translate(-50%, -${50 + progress * 100}px)`;
+
+            // 向上移动（修改 top 值而不是 transform）
+            dodgeElement.style.top = `${initialTop - progress * 100}px`;
             // 渐隐
             dodgeElement.style.opacity = (1 - progress).toString();
-            
+
             if (progress < 1) {
                 requestAnimationFrame(animateDodge);
             } else {
@@ -1008,7 +1027,7 @@ EndlessWinterGame.prototype.showDodge = function(target, text) {
                 }
             }
         };
-        
+
         animateDodge();
     }
 };
@@ -1039,4 +1058,187 @@ EndlessWinterGame.prototype.animateBattle3D = function() {
             fire.rotation.z += 0.05;
         });
     }
+};
+
+// ==================== 技能选择菜单 ====================
+
+// 显示技能选择菜单
+EndlessWinterGame.prototype.showSkillSelectionMenu = function(skillType, event) {
+    // 移除已存在的菜单
+    const existingMenu = document.getElementById('skill-selection-menu');
+    if (existingMenu) {
+        existingMenu.remove();
+    }
+
+    // 获取该类型的所有可用技能
+    const availableSkills = this.skillTreeSystem.getAvailableSkillsByType(skillType);
+
+    if (availableSkills.length === 0) {
+        this.addBattleLog(`没有可用的${skillType === 'attack' ? '攻击' : skillType === 'defense' ? '防御' : skillType === 'recovery' ? '恢复' : '特殊'}技能！`);
+        return;
+    }
+
+    // 创建菜单容器
+    const menu = document.createElement('div');
+    menu.id = 'skill-selection-menu';
+    menu.className = 'fixed bg-dark/95 border border-accent/50 rounded-lg shadow-xl p-3 z-50 max-h-96 overflow-y-auto';
+    menu.style.left = `${event.clientX}px`;
+    menu.style.top = `${event.clientY}px`;
+
+    // 标题
+    const title = document.createElement('div');
+    title.className = 'text-sm font-bold text-accent mb-2 border-b border-accent/30 pb-2';
+    title.textContent = `选择${skillType === 'attack' ? '攻击' : skillType === 'defense' ? '防御' : skillType === 'recovery' ? '恢复' : '特殊'}技能`;
+    menu.appendChild(title);
+
+    // 当前装备的技能ID
+    const currentEquippedId = this.gameState.player.skills.equipped?.[skillType];
+
+    // 技能列表
+    availableSkills.forEach(skill => {
+        const skillItem = document.createElement('div');
+        skillItem.className = `cursor-pointer p-2 rounded hover:bg-accent/20 transition-colors mb-1 ${
+            skill.skillTreeId === currentEquippedId ? 'bg-accent/30 border border-accent' : ''
+        }`;
+
+        // 技能信息
+        const skillInfo = document.createElement('div');
+        skillInfo.className = 'flex items-center justify-between';
+
+        const leftInfo = document.createElement('div');
+        leftInfo.className = 'flex-1';
+
+        // 技能名称和境界
+        const nameLine = document.createElement('div');
+        nameLine.className = 'text-sm font-medium text-white';
+        nameLine.innerHTML = `<span class="text-accent">[${skill.realmName}]</span> ${skill.name} <span class="text-light/60">Lv.${skill.level}</span>`;
+        leftInfo.appendChild(nameLine);
+
+        // 技能描述
+        if (skill.description) {
+            const descLine = document.createElement('div');
+            descLine.className = 'text-xs text-light/70 mt-1';
+            descLine.textContent = skill.description;
+            leftInfo.appendChild(descLine);
+        }
+
+        // 消耗和效果
+        const statsLine = document.createElement('div');
+        statsLine.className = 'text-xs text-light/60 mt-1';
+        statsLine.textContent = `消耗${skill.energyCost}灵力`;
+
+        // 根据类型显示不同效果
+        if (skill.damageMultiplier) {
+            statsLine.textContent += ` | ${skill.damageMultiplier}x伤害`;
+        }
+        if (skill.defenseBonus) {
+            statsLine.textContent += ` | 减伤${Math.round(skill.defenseBonus * 100)}%`;
+        }
+        if (skill.healPercentage) {
+            statsLine.textContent += ` | 恢复${Math.round(skill.healPercentage * 100)}%HP`;
+        }
+        if (skill.dodgeBonus) {
+            statsLine.textContent += ` | +${Math.round(skill.dodgeBonus * 100)}%闪避`;
+        }
+        if (skill.criticalBonus) {
+            statsLine.textContent += ` | +${Math.round(skill.criticalBonus * 100)}%暴击`;
+        }
+
+        leftInfo.appendChild(statsLine);
+
+        skillInfo.appendChild(leftInfo);
+
+        // 当前装备标识
+        if (skill.skillTreeId === currentEquippedId) {
+            const equippedBadge = document.createElement('div');
+            equippedBadge.className = 'text-xs text-accent ml-2';
+            equippedBadge.textContent = '已装备';
+            skillInfo.appendChild(equippedBadge);
+        }
+
+        skillItem.appendChild(skillInfo);
+
+        // 点击选择技能
+        skillItem.addEventListener('click', () => {
+            // 装备技能
+            if (!this.gameState.player.skills.equipped) {
+                this.gameState.player.skills.equipped = {
+                    attack: null,
+                    defense: null,
+                    recovery: null,
+                    special: null
+                };
+            }
+            this.gameState.player.skills.equipped[skillType] = skill.skillTreeId;
+
+            this.addBattleLog(`装备了技能: ${skill.name}`);
+
+            // 移除菜单
+            menu.remove();
+
+            // 重新生成技能按钮
+            this.updateBattleSkillButtons();
+        });
+
+        menu.appendChild(skillItem);
+    });
+
+    // 点击其他地方关闭菜单
+    setTimeout(() => {
+        document.addEventListener('click', function closeMenu(e) {
+            if (!menu.contains(e.target)) {
+                menu.remove();
+                document.removeEventListener('click', closeMenu);
+            }
+        });
+    }, 100);
+
+    document.body.appendChild(menu);
+};
+
+// 更新战斗技能按钮（不重新生成整个战斗场景）
+EndlessWinterGame.prototype.updateBattleSkillButtons = function() {
+    const attackSkillsContainer = document.getElementById('attack-skills');
+    if (!attackSkillsContainer) return;
+
+    // 获取所有技能按钮（跳过普通攻击按钮）
+    const skillButtons = attackSkillsContainer.querySelectorAll('button[data-skill-type]');
+
+    skillButtons.forEach(button => {
+        const skillType = button.getAttribute('data-skill-type');
+        const equippedSkillId = this.gameState.player.skills.equipped?.[skillType];
+
+        let skill = null;
+        let skillTree = null;
+
+        if (equippedSkillId) {
+            skillTree = this.metadata.skillTrees?.find(tree => tree.id === equippedSkillId);
+            if (skillTree) {
+                const skillLevel = this.gameState.player.skills.levels[equippedSkillId] || 0;
+                if (skillLevel > 0) {
+                    skill = skillTree.levels[skillLevel - 1];
+                }
+            }
+        }
+
+        if (skill && skillTree) {
+            // 更新按钮
+            const realmName = this.metadata.realmConfig?.[skillTree.realmRequired]?.name || '未知境界';
+            button.setAttribute('data-tooltip', `${skill.name}: ${skill.description || ''}，消耗${skill.energyCost}灵力，${realmName} (右键切换)`);
+            const skillImage = `Images/skill-${skill.imageId || equippedSkillId.replace('skill-', '')}.jpg`;
+            button.innerHTML = `<img src="${skillImage}" alt="${skill.name}" class="w-full h-full object-cover">`;
+            button.classList.remove('opacity-50');
+        } else {
+            // 没有装备技能
+            const typeConfig = {
+                attack: { icon: 'skill-1.jpg', name: '攻击技能' },
+                defense: { icon: 'skill-4.jpg', name: '防御技能' },
+                recovery: { icon: 'skill-3.jpg', name: '恢复技能' },
+                special: { icon: 'skill-2.jpg', name: '特殊技能' }
+            };
+            const config = typeConfig[skillType];
+            button.setAttribute('data-tooltip', `${config.name}（未装备）- 点击或右键选择技能`);
+            button.innerHTML = `<img src="Images/${config.icon}" alt="${config.name}" class="w-full h-full object-cover opacity-50">`;
+        }
+    });
 };
