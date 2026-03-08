@@ -336,7 +336,10 @@ EndlessWinterGame.prototype.createBattleScene = function(enemyInfo) {
                 skillTree = this.metadata.skillTrees?.find(tree => tree.id === equippedSkillId);
                 if (skillTree) {
                     const skillLevel = this.gameState.player.skills.levels[equippedSkillId] || 0;
-                    if (skillLevel > 0) {
+                    const playerRealm = this.gameState.player.realm.currentRealm;
+
+                    // 检查境界要求：只有境界满足时才显示技能
+                    if (skillLevel > 0 && skillTree.realmRequired <= playerRealm) {
                         skill = skillTree.levels[skillLevel - 1];
                     }
                 }
@@ -1082,8 +1085,9 @@ EndlessWinterGame.prototype.showSkillSelectionMenu = function(skillType, event) 
     const menu = document.createElement('div');
     menu.id = 'skill-selection-menu';
     menu.className = 'fixed bg-dark/95 border border-accent/50 rounded-lg shadow-xl p-3 z-50 max-h-96 overflow-y-auto';
-    menu.style.left = `${event.clientX}px`;
-    menu.style.top = `${event.clientY}px`;
+    // 临时隐藏以计算尺寸
+    menu.style.visibility = 'hidden';
+    menu.style.position = 'fixed';
 
     // 标题
     const title = document.createElement('div');
@@ -1183,6 +1187,49 @@ EndlessWinterGame.prototype.showSkillSelectionMenu = function(skillType, event) 
         menu.appendChild(skillItem);
     });
 
+    // 先将菜单添加到DOM以计算尺寸
+    document.body.appendChild(menu);
+
+    // 智能定位：计算最佳显示位置
+    const menuRect = menu.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const padding = 10; // 距离屏幕边缘的最小距离
+
+    let left = event.clientX;
+    let top = event.clientY;
+
+    // 水平位置：优先向右展开，如果超出则向左
+    if (left + menuRect.width + padding > viewportWidth) {
+        left = viewportWidth - menuRect.width - padding;
+    }
+    if (left < padding) {
+        left = padding;
+    }
+
+    // 垂直位置：优先向上展开（更友好），如果空间不足则向下
+    const spaceAbove = event.clientY - padding;
+    const spaceBelow = viewportHeight - event.clientY - padding;
+
+    if (spaceAbove >= menuRect.height || spaceAbove > spaceBelow) {
+        // 向上展开
+        top = event.clientY - menuRect.height;
+        if (top < padding) {
+            top = padding;
+        }
+    } else {
+        // 向下展开
+        top = event.clientY + padding;
+        if (top + menuRect.height + padding > viewportHeight) {
+            top = viewportHeight - menuRect.height - padding;
+        }
+    }
+
+    // 应用最终位置并显示
+    menu.style.left = `${left}px`;
+    menu.style.top = `${top}px`;
+    menu.style.visibility = 'visible';
+
     // 点击其他地方关闭菜单
     setTimeout(() => {
         document.addEventListener('click', function closeMenu(e) {
@@ -1192,8 +1239,6 @@ EndlessWinterGame.prototype.showSkillSelectionMenu = function(skillType, event) 
             }
         });
     }, 100);
-
-    document.body.appendChild(menu);
 };
 
 // 更新战斗技能按钮（不重新生成整个战斗场景）

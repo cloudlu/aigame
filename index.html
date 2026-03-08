@@ -284,6 +284,47 @@
         .equipment-slot-container:hover .equipment-tooltip {
             display: block !important;
         }
+
+        /* 技能树样式 */
+        .skill-card {
+            transition: all 0.2s ease;
+        }
+
+        .skill-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(168, 85, 247, 0.2);
+        }
+
+        .skill-upgrade-btn {
+            transition: all 0.2s ease;
+        }
+
+        .skill-upgrade-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(168, 85, 247, 0.3);
+        }
+
+        /* 技能节点样式 */
+        .skill-node-active {
+            filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.5));
+        }
+
+        .skill-node-locked {
+            filter: grayscale(100%) opacity(0.5);
+        }
+
+        .skill-node-upgradeable {
+            animation: skill-glow 2s ease-in-out infinite;
+        }
+
+        @keyframes skill-glow {
+            0%, 100% {
+                filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.5));
+            }
+            50% {
+                filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.8));
+            }
+        }
     </style>
 </head>
 <body class="font-game text-light">
@@ -379,6 +420,7 @@
                                 <div class="flex items-center mb-1">
                                     <span class="text-sm bg-primary/30 px-2 py-1 rounded shadow-md">等级 <span id="level" class="text-accent">1</span></span>
                                     <button id="breakthrough-btn" class="ml-2 text-xs bg-accent/30 hover:bg-accent/50 text-accent px-2 py-1 rounded shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors" disabled>突破</button>
+                                    <button id="skill-tree-btn" class="ml-2 text-xs bg-purple/30 hover:bg-purple/50 text-purple px-2 py-1 rounded shadow-md transition-colors" data-tooltip="打开技能树界面">技能</button>
                                 </div>
                                 <div class="w-full bg-dark/50 rounded-full h-1.5">
                                     <div id="exp-bar" class="bg-accent h-1.5 rounded-full" style="width: 0%"></div>
@@ -1239,6 +1281,88 @@
             </div>
             <div class="flex space-x-2" id="attack-skills">
                 <!-- 战斗模式下的技能 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 技能树模态窗口 -->
+    <div id="skill-tree-modal" class="modal hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+        <div class="bg-gray-900 rounded-lg w-11/12 max-w-6xl h-[90vh] overflow-hidden border border-purple/50 shadow-lg shadow-purple/50 flex flex-col">
+            <!-- 技能树头部 -->
+            <div class="flex justify-between items-center p-4 border-b border-purple/30">
+                <h2 class="text-2xl font-bold text-white">
+                    <i class="fa fa-magic mr-2 text-purple"></i>技能树
+                </h2>
+                <button id="close-skill-tree-modal" class="text-gray-400 hover:text-white transition-colors">
+                    <i class="fa fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <!-- 当前境界和灵力信息 -->
+            <div class="p-3 bg-dark/30 border-b border-purple/20">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <span class="text-sm text-light/60">当前境界：</span>
+                        <span id="skill-tree-realm" class="text-accent font-bold">武者</span>
+                    </div>
+                    <div>
+                        <span class="text-sm text-light/60">当前灵力：</span>
+                        <span id="skill-tree-energy" class="text-purple font-bold">100/100</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 境界选择Tabs -->
+            <div class="border-b border-purple/20 bg-dark/20">
+                <div id="skill-realm-tabs" class="flex px-4 pt-2">
+                    <!-- Tabs将在这里动态生成 -->
+                </div>
+            </div>
+
+            <!-- 主内容区域：左侧技能树 + 右侧详情 -->
+            <div class="flex-1 flex overflow-hidden">
+                <!-- 左侧：技能树容器 -->
+                <div id="skill-tree-container" class="flex-1 relative overflow-hidden border-r border-purple/20">
+                    <!-- 技能树背景图片和节点将在这里动态生成 -->
+                </div>
+
+                <!-- 右侧：技能详情面板 -->
+                <div id="skill-detail-panel" class="w-80 bg-dark/95 border-l border-purple/30 p-4 overflow-y-auto">
+                    <!-- 默认提示 -->
+                    <div id="skill-detail-placeholder" class="h-full flex flex-col items-center justify-center text-light/40">
+                        <i class="fa fa-hand-pointer text-4xl mb-3"></i>
+                        <p class="text-sm text-center">点击左侧技能节点<br>查看详情</p>
+                    </div>
+
+                    <!-- 技能详情内容（初始隐藏） -->
+                    <div id="skill-detail-content" class="hidden">
+                        <!-- 头部：技能名称 + 等级 -->
+                        <div class="flex items-center gap-2 mb-3 pb-3 border-b border-purple/20">
+                            <i class="fa fa-magic text-purple"></i>
+                            <h3 id="skill-detail-name" class="text-lg font-bold text-white flex-1"></h3>
+                            <span id="skill-detail-level" class="px-2 py-1 bg-purple/20 text-purple text-sm rounded-full font-semibold"></span>
+                        </div>
+
+                        <!-- 类型标签 -->
+                        <div class="mb-3">
+                            <span id="skill-detail-type" class="text-xs text-light/50"></span>
+                        </div>
+
+                        <!-- 描述 -->
+                        <p id="skill-detail-desc" class="text-sm text-light/70 mb-4 leading-relaxed"></p>
+
+                        <!-- 属性区域 -->
+                        <div id="skill-detail-stats" class="flex flex-wrap gap-2 mb-4"></div>
+
+                        <!-- 升级区域 -->
+                        <div class="pt-3 border-t border-purple/20">
+                            <div id="skill-upgrade-cost" class="text-sm text-light/60 mb-3"></div>
+                            <button id="skill-upgrade-btn" class="w-full px-4 py-2 bg-gradient-to-r from-purple/40 to-purple/60 hover:from-purple/50 hover:to-purple/70 text-white text-sm rounded-lg transition-all font-semibold shadow-sm hover:shadow-md hover:shadow-purple/30">
+                                升级技能
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

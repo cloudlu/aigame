@@ -91,8 +91,8 @@ class SkillTreeSystem {
 
         // 检查玩家境界是否满足升级条件
         const requiredRealm = skillTree.realmRequired;
-        if (this.game.gameState.player.realm.currentRealm !== requiredRealm) {
-            console.warn(`Cannot upgrade ${skillTree.name}: 境界不足 (需要 ${requiredRealm})`);
+        if (this.game.gameState.player.realm.currentRealm < requiredRealm) {
+            console.warn(`Cannot upgrade ${skillTree.name}: 境界不足 (需要 ${requiredRealm}, 当前 ${this.game.gameState.player.realm.currentRealm})`);
             return false;
         }
 

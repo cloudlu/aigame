@@ -1164,7 +1164,41 @@ class EndlessWinterGame {
         bindEvent('#breakthrough-btn', 'click', () => {
             this.attemptBreakthrough();
         });
+
+        // 技能树按钮
+        bindEvent('#skill-tree-btn', 'click', () => {
+            this.openSkillTreeModal();
+        });
+
+        // 关闭技能树模态窗口
+        bindEvent('#close-skill-tree-modal', 'click', () => {
+            this.closeSkillTreeModal();
+        });
         
+        // 关闭技能树模态窗口
+        bindEvent('#close-skill-tree-modal', 'click', () => {
+            this.closeSkillTreeModal();
+        });
+
+        // 点击模态窗口外部关闭
+        const skillTreeModal = document.getElementById('skill-tree-modal');
+        if (skillTreeModal) {
+            skillTreeModal.addEventListener('click', (e) => {
+                if (e.target === skillTreeModal) {
+                    this.closeSkillTreeModal();
+                }
+            });
+        }
+
+        // 关闭技能详情面板
+        bindEvent('#close-skill-detail', 'click', () => {
+            const placeholder = document.getElementById('skill-detail-placeholder');
+            const content = document.getElementById('skill-detail-content');
+
+            if (content) content.classList.add('hidden');
+            if (placeholder) placeholder.classList.remove('hidden');
+        });
+
         // 为装备槽位添加点击事件
         try {
             const equipmentSlots = document.querySelectorAll('.equipment-slot');
@@ -1626,7 +1660,348 @@ class EndlessWinterGame {
         this.updateUI();
         return true;
     }
-    
+
+    // ==================== 技能树系统 ====================
+
+    // 打开技能树模态窗口
+    openSkillTreeModal() {
+        const modal = document.getElementById('skill-tree-modal');
+        if (!modal) {
+            console.error('技能树模态窗口未找到');
+            return;
+        }
+
+        // 更新模态窗口信息
+        this.updateSkillTreeModal();
+
+        // 显示模态窗口
+        modal.classList.remove('hidden');
+    }
+
+    // 关闭技能树模态窗口
+    closeSkillTreeModal() {
+        const modal = document.getElementById('skill-tree-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+        // 隐藏技能详情面板
+        const detailPanel = document.getElementById('skill-detail-panel');
+        if (detailPanel) {
+            detailPanel.classList.add('hidden');
+        }
+    }
+
+    // 更新技能树模态窗口内容
+    updateSkillTreeModal() {
+        // 更新顶部信息
+        const realmName = this.metadata.realmConfig?.[this.gameState.player.realm.currentRealm]?.name || '未知境界';
+        document.getElementById('skill-tree-realm').textContent = realmName + '境';
+        document.getElementById('skill-tree-energy').textContent =
+            `${Math.floor(this.gameState.player.energy)}/${this.gameState.player.maxEnergy}`;
+
+        // 生成境界Tabs
+        this.generateRealmTabs();
+
+        // 默认显示当前境界的技能树
+        this.showRealmSkillTree(this.gameState.player.realm.currentRealm);
+    }
+
+    // 生成境界选择Tabs
+    generateRealmTabs() {
+        const tabsContainer = document.getElementById('skill-realm-tabs');
+        if (!tabsContainer) return;
+
+        tabsContainer.innerHTML = '';
+        const currentRealm = this.gameState.player.realm.currentRealm;
+
+        // 只显示当前已达到的境界
+        this.metadata.realmConfig.forEach((realmConfig, realmIndex) => {
+            if (realmIndex > currentRealm) return;
+
+            const tab = document.createElement('button');
+            tab.className = `px-4 py-2 border-b-2 transition-colors font-semibold text-sm ${
+                realmIndex === currentRealm
+                    ? 'border-purple text-purple'
+                    : 'border-transparent text-light/50 hover:text-light/80'
+            }`;
+            tab.textContent = realmConfig.name + '境';
+            tab.dataset.realm = realmIndex;
+
+            tab.addEventListener('click', () => {
+                this.showRealmSkillTree(realmIndex);
+                // 更新tab样式
+                tabsContainer.querySelectorAll('button').forEach(t => {
+                    t.classList.remove('border-purple', 'text-purple');
+                    t.classList.add('border-transparent', 'text-light/50');
+                });
+                tab.classList.remove('border-transparent', 'text-light/50');
+                tab.classList.add('border-purple', 'text-purple');
+            });
+
+            tabsContainer.appendChild(tab);
+        });
+    }
+
+    // 显示指定境界的技能树
+    showRealmSkillTree(realmIndex) {
+        const container = document.getElementById('skill-tree-container');
+        if (!container) return;
+
+        // 创建技能树可视化
+        container.innerHTML = `
+            <div class="relative w-full h-full">
+                <!-- 背景图片 -->
+                <div class="absolute inset-0 bg-gradient-radial from-purple/10 to-dark/50">
+                    <img src="Images/skill-tree.jpg"
+                         alt="技能树"
+                         class="w-full h-full object-contain opacity-80"
+                         onerror="this.style.display='none'">
+                </div>
+
+                <!-- 技能节点叠加层 -->
+                <div id="skill-nodes-layer" class="absolute inset-0">
+                    <!-- 节点将在这里动态生成 -->
+                </div>
+            </div>
+        `;
+
+        // 生成技能节点
+        this.generateSkillNodes(realmIndex);
+    }
+
+    // 生成技能节点
+    generateSkillNodes(realmIndex) {
+        const nodesLayer = document.getElementById('skill-nodes-layer');
+        if (!nodesLayer) return;
+
+        // 获取该境界的所有技能树
+        const realmSkillTrees = this.metadata.skillTrees.filter(tree => tree.realmRequired === realmIndex);
+
+        // 按类型分配位置（四个方向）
+        const positions = [
+            { type: 'attack', x: '50%', y: '13%', label: '攻击技能' },
+            { type: 'defense', x: '78%', y: '50%', label: '防御技能' },
+            { type: 'recovery', x: '22%', y: '50%', label: '恢复技能' },
+            { type: 'special', x: '50%', y: '86%', label: '特殊技能' }
+        ];
+
+        positions.forEach(pos => {
+            const skillTree = realmSkillTrees.find(tree => tree.type === pos.type);
+            if (!skillTree) return;
+
+            const currentLevel = this.gameState.player.skills.levels?.[skillTree.id] || 0;
+            const maxLevel = skillTree.levels.length;
+            const isUnlocked = currentLevel > 0;
+            const canUpgrade = this.canUpgradeSkill(skillTree, currentLevel);
+
+            // 创建节点
+            const node = document.createElement('div');
+            node.className = `absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all ${
+                isUnlocked ? 'skill-node-active' : 'skill-node-locked'
+            } ${canUpgrade.canUpgrade ? 'skill-node-upgradeable' : ''}`;
+            node.style.left = pos.x;
+            node.style.top = pos.y;
+
+            // 节点图标
+            const iconColors = {
+                'attack': '#f87171',
+                'defense': '#fbbf24',
+                'recovery': '#4ade80',
+                'special': '#a78bfa'
+            };
+
+            node.innerHTML = `
+                <div class="relative">
+                    <!-- 外圈光环 -->
+                    <div class="absolute inset-0 rounded-full ${isUnlocked ? 'animate-pulse' : ''}"
+                         style="background: radial-gradient(circle, ${iconColors[pos.type]}40 0%, transparent 70%);
+                                width: 120px; height: 120px; left: -12px; top: -12px;"></div>
+
+                    <!-- 节点本体 -->
+                    <div class="w-24 h-24 rounded-full border-4 flex items-center justify-center relative ${
+                        isUnlocked
+                            ? 'border-purple bg-purple/30'
+                            : 'border-light/20 bg-dark/50'
+                    } ${canUpgrade.canUpgrade ? 'ring-2 ring-yellow/50 ring-offset-2 ring-offset-dark' : ''}">
+                        ${isUnlocked
+                            ? `<img src="Images/skill-${skillTree.levels[currentLevel - 1]?.imageId || 1}.jpg"
+                                    alt="${skillTree.name}"
+                                    class="w-full h-full rounded-full object-cover"
+                                    onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\\'fa fa-magic text-4xl text-purple\\'></i>'">`
+                            : `<i class="fa fa-lock text-3xl text-light/30"></i>`
+                        }
+                    </div>
+
+                    <!-- 等级标签 -->
+                    <div class="absolute left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-lg text-base font-bold shadow-lg z-10 ${
+                        isUnlocked
+                            ? 'bg-purple/90 text-white'
+                            : 'bg-dark/90 text-light/50'
+                    }" style="bottom: -28px;">
+                        Lv.${currentLevel}/${maxLevel}
+                    </div>
+
+                    <!-- 升级提示 -->
+                    ${canUpgrade.canUpgrade ? `
+                        <div class="absolute -top-2 -right-2 w-8 h-8 bg-yellow rounded-full flex items-center justify-center animate-bounce">
+                            <i class="fa fa-arrow-up text-base text-dark"></i>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            // 点击事件
+            node.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.showSkillDetail(skillTree, realmIndex, node);
+            });
+
+            nodesLayer.appendChild(node);
+        });
+    }
+
+    // 显示技能详情面板
+    showSkillDetail(skillTree, realmIndex, nodeElement) {
+        const detailPanel = document.getElementById('skill-detail-panel');
+        if (!detailPanel) return;
+
+        const currentLevel = this.gameState.player.skills.levels?.[skillTree.id] || 0;
+        const maxLevel = skillTree.levels.length;
+        const currentSkill = currentLevel > 0 ? skillTree.levels[currentLevel - 1] : null;
+        const nextSkill = currentLevel < maxLevel ? skillTree.levels[currentLevel] : null;
+        const canUpgrade = this.canUpgradeSkill(skillTree, currentLevel);
+
+        // 更新详情面板内容
+        document.getElementById('skill-detail-name').textContent = skillTree.name;
+
+        // 等级显示
+        document.getElementById('skill-detail-level').textContent =
+            currentLevel > 0 ? `Lv.${currentLevel}` : '未学习';
+
+        document.getElementById('skill-detail-type').textContent =
+            `${this.metadata.realmConfig[realmIndex].name}境 · ${
+                skillTree.type === 'attack' ? '攻击技能' :
+                skillTree.type === 'defense' ? '防御技能' :
+                skillTree.type === 'recovery' ? '恢复技能' : '特殊技能'
+            }`;
+
+        document.getElementById('skill-detail-desc').textContent =
+            currentSkill?.description || '未学习此技能';
+
+        // 技能属性 - 改为紧凑的标签式显示
+        const statsDiv = document.getElementById('skill-detail-stats');
+        statsDiv.innerHTML = '';
+        if (currentSkill) {
+            const stats = [];
+
+            if (currentSkill.damageMultiplier) {
+                stats.push(`<span class="px-2 py-1 bg-red/20 text-red-200 rounded">伤害 ${currentSkill.damageMultiplier}x</span>`);
+            }
+            if (currentSkill.defenseBonus) {
+                stats.push(`<span class="px-2 py-1 bg-blue/20 text-blue-200 rounded">减伤 ${Math.round(currentSkill.defenseBonus * 100)}%</span>`);
+            }
+            if (currentSkill.healPercentage) {
+                stats.push(`<span class="px-2 py-1 bg-green/20 text-green-200 rounded">恢复 ${Math.round(currentSkill.healPercentage * 100)}%</span>`);
+            }
+            if (currentSkill.dodgeBonus) {
+                stats.push(`<span class="px-2 py-1 bg-yellow/20 text-yellow-200 rounded">闪避 +${Math.round(currentSkill.dodgeBonus * 100)}%</span>`);
+            }
+            stats.push(`<span class="px-2 py-1 bg-purple/20 text-purple-200 rounded">消耗 ${currentSkill.energyCost}</span>`);
+
+            statsDiv.innerHTML = stats.join('');
+        }
+
+        // 升级成本 - 更紧凑的显示
+        const costDiv = document.getElementById('skill-upgrade-cost');
+        if (nextSkill && canUpgrade.canUpgrade) {
+            costDiv.innerHTML = `<span class="text-purple">${nextSkill.energyCost} 灵力</span>`;
+        } else if (currentLevel >= maxLevel) {
+            costDiv.innerHTML = '<span class="text-accent text-xs">已满级</span>';
+        } else {
+            costDiv.innerHTML = `<span class="text-red/60 text-xs">${canUpgrade.reason}</span>`;
+        }
+
+        // 升级按钮
+        const upgradeBtn = document.getElementById('skill-upgrade-btn');
+        upgradeBtn.disabled = !canUpgrade.canUpgrade;
+
+        if (canUpgrade.canUpgrade) {
+            upgradeBtn.className = 'px-4 py-1.5 bg-gradient-to-r from-purple/40 to-purple/60 hover:from-purple/50 hover:to-purple/70 text-white text-xs rounded-full transition-all font-semibold shadow-sm hover:shadow-md hover:shadow-purple/30';
+            upgradeBtn.textContent = '升级';
+        } else {
+            upgradeBtn.className = 'px-4 py-1.5 bg-dark/50 text-light/40 text-xs rounded-full cursor-not-allowed';
+            upgradeBtn.textContent = currentLevel >= maxLevel ? '已满级' : '无法升级';
+        }
+
+        // 移除旧的点击事件监听器
+        const newUpgradeBtn = upgradeBtn.cloneNode(true);
+        upgradeBtn.parentNode.replaceChild(newUpgradeBtn, upgradeBtn);
+
+        // 添加新的点击事件
+        if (canUpgrade.canUpgrade) {
+            newUpgradeBtn.addEventListener('click', () => {
+                this.upgradeSkill(skillTree.id);
+                // 重新生成节点和更新详情
+                this.generateSkillNodes(realmIndex);
+                this.showSkillDetail(skillTree, realmIndex, nodeElement);
+            });
+        }
+
+        // 显示详情内容
+        const placeholder = document.getElementById('skill-detail-placeholder');
+        const content = document.getElementById('skill-detail-content');
+
+        if (placeholder) placeholder.classList.add('hidden');
+        if (content) content.classList.remove('hidden');
+    }
+
+    // 检查是否可以升级技能
+    canUpgradeSkill(skillTree, currentLevel) {
+        const player = this.gameState.player;
+        const nextSkill = skillTree.levels[currentLevel];
+
+        // 检查是否满级
+        if (currentLevel >= skillTree.levels.length) {
+            return { canUpgrade: false, reason: '已满级' };
+        }
+
+        // 检查境界要求
+        if (player.realm.currentRealm < skillTree.realmRequired) {
+            return { canUpgrade: false, reason: '境界不足' };
+        }
+
+        // 检查阶段要求
+        if (nextSkill.stageRequired && player.realm.currentStage < nextSkill.stageRequired) {
+            const realmName = this.metadata.realmConfig[player.realm.currentRealm]?.stages[nextSkill.stageRequired - 1]?.name || nextSkill.stageRequired;
+            return { canUpgrade: false, reason: `需要${realmName}阶段` };
+        }
+
+        // 检查灵力消耗
+        if (player.energy < nextSkill.energyCost) {
+            return { canUpgrade: false, reason: `灵力不足 (需要${nextSkill.energyCost})` };
+        }
+
+        return { canUpgrade: true, reason: '' };
+    }
+
+    // 升级技能
+    upgradeSkill(skillTreeId) {
+        if (!this.skillTreeSystem) {
+            console.error('技能树系统未初始化');
+            return false;
+        }
+
+        const success = this.skillTreeSystem.upgradeSkillTree(skillTreeId);
+
+        if (success) {
+            // 更新UI
+            this.updateUI();
+            this.addBattleLog('技能升级成功！');
+        }
+
+        return success;
+    }
+
     // 根据稀有度和类型获取装备颜色
 
     // 切换自动战斗
