@@ -147,7 +147,7 @@ endlessWinter/
 ├── index.html          # 主页面
 ├── game.js            # 游戏核心
 ├── server.js          # 服务器
-├── config.js          # 配置文件
+├── game-metadata.js   # 游戏元数据
 └── ...
 ```
 

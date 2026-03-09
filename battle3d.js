@@ -355,7 +355,7 @@ EndlessWinterGame.prototype.createBattleScene = function(enemyInfo) {
                 const realmName = this.metadata.realmConfig?.[skillTree.realmRequired]?.name || '未知境界';
                 const skillDisplayName = skill.displayName || skill.name;
                 skillButton.setAttribute('data-tooltip', `${skillDisplayName}: ${skill.description || ''}，消耗${skill.energyCost}灵力，${realmName} (右键切换)`);
-                const skillImage = `Images/skill-${skill.imageId || equippedSkillId.replace('skill-', '')}.jpg`;
+                const skillImage = skill.imageId ? `Images/skill-${skill.imageId}.jpg` : `Images/${skillTypeConfig.icon}`;
                 skillButton.innerHTML = `<img src="${skillImage}" alt="${skillDisplayName}" class="w-full h-full object-cover">`;
             } else {
                 // 没有装备技能
@@ -1274,7 +1274,7 @@ EndlessWinterGame.prototype.updateBattleSkillButtons = function() {
             const realmName = this.metadata.realmConfig?.[skillTree.realmRequired]?.name || '未知境界';
             const skillDisplayName = skill.displayName || skill.name;
             button.setAttribute('data-tooltip', `${skillDisplayName}: ${skill.description || ''}，消耗${skill.energyCost}灵力，${realmName} (右键切换)`);
-            const skillImage = `Images/skill-${skill.imageId || equippedSkillId.replace('skill-', '')}.jpg`;
+            const skillImage = skill.imageId ? `Images/skill-${skill.imageId}.jpg` : `Images/skill-${skillType === 'attack' ? 1 : skillType === 'defense' ? 4 : skillType === 'recovery' ? 3 : 2}.jpg`;
             button.innerHTML = `<img src="${skillImage}" alt="${skillDisplayName}" class="w-full h-full object-cover">`;
             button.classList.remove('opacity-50');
         } else {

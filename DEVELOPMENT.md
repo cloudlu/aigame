@@ -41,7 +41,6 @@ http://localhost:3002
 - `realmSkillSystem.js` - 境界技能系统
 - `equipment.js` - 装备系统
 - `audio.js` - 音效系统
-- `config.js` - 配置常量
 - `game-metadata.js` - 游戏元数据
 
 ## 主要类说明

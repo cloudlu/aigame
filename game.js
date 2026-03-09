@@ -1,11 +1,3 @@
-// 导入系统模块（Node.js环境）
-let EquipmentSystem, RealmSkillSystem;
-if (typeof module !== 'undefined' && module.exports) {
-    EquipmentSystem = require('./equipment');
-    RealmSkillSystem = require('./realmSkillSystem');
-}
-// 浏览器环境：EquipmentSystem 和 RealmSkillSystem 已经通过 script 标签加载
-
 // 游戏核心数据结构和状态管理
 class EndlessWinterGame {
     constructor() {
@@ -25,7 +17,7 @@ class EndlessWinterGame {
                 battleLog: []
             }
         };
-        
+
         // 游戏计时器
         this.timers = {
             resourceTimer: null,
@@ -34,13 +26,15 @@ class EndlessWinterGame {
             autoCollectTimer: null,
             afkTimer: null
         };
-        
-        // 初始化装备系统
-        this.equipmentSystem = new EquipmentSystem(this);
+
+        // 初始化装备系统（浏览器环境使用window，Node环境使用require的模块）
+        const EquipmentSystemClass = typeof window !== 'undefined' ? window.EquipmentSystem : require('./equipment');
+        this.equipmentSystem = new EquipmentSystemClass(this);
 
         // 初始化境界技能系统
-        this.realmSkillSystem = new RealmSkillSystem(this);
-        
+        const RealmSkillSystemClass = typeof window !== 'undefined' ? window.RealmSkillSystem : require('./realmSkillSystem');
+        this.realmSkillSystem = new RealmSkillSystemClass(this);
+
         // 初始化游戏
         this.initGame();
     }

@@ -164,7 +164,6 @@ endlessWinter/
 │   ├── ⚙️ equipment.js        # 装备系统
 │   ├── 🔊 audio.js            # 音效系统
 │   ├── 🎨 models.js           # 3D模型
-│   ├── ⚙️ config.js           # 配置常量
 │   └── 📊 game-metadata.js    # 游戏元数据
 │
 ├── 📂 server/                 # 后端服务
@@ -392,7 +391,7 @@ Response: { success: true, gameState }
 ### 代码规范
 - 使用 ES6+ 语法
 - 类和模块化开发
-- 统一的常量管理（config.js）
+- 统一的元数据管理（game-metadata.js）
 - 清晰的注释
 
 ### 添加新技能
@@ -470,10 +469,9 @@ CMD ["node", "server.js"]
 3. 查看服务器日志
 
 ### Q: 如何修改游戏数值？
-**A**: 
-1. 修改 `config.js` 中的常量
-2. 修改 `game-metadata.js` 中的元数据
-3. 重启服务器
+**A**:
+1. 修改 `game-metadata.js` 中的元数据
+2. 重启服务器
 
 ---
 
