@@ -580,9 +580,10 @@ EndlessWinterGame.prototype.playDefenseAnimation = function(callback) {
         defenseMaterial.emissiveColor = new BABYLON.Color3(1, 1, 0);
         defenseMaterial.alpha = 0.5;
         defenseEffect.material = defenseMaterial;
-        defenseEffect.position.x = player.position.x;
-        defenseEffect.position.y = player.position.y;
-        defenseEffect.position.z = player.position.z;
+
+        // 将防御特效作为玩家的子对象，使其跟随玩家移动
+        defenseEffect.parent = player;
+        defenseEffect.position = new BABYLON.Vector3(0, 0, 0);
 
         // 动画效果
         const effectStartTime = Date.now();
@@ -789,8 +790,9 @@ EndlessWinterGame.prototype.createDefenseEffect = function() {
     shieldMaterial.opacity = 0.5;
     shield.material = shieldMaterial;
 
-    shield.position = player.position.clone();
-    shield.position.y = 1.5;
+    // 将护盾作为玩家的子对象，使其跟随玩家移动
+    shield.parent = player;
+    shield.position = new BABYLON.Vector3(0, 1.5, 0);
     shield.rotation.x = Math.PI / 2;
 
     // 存储在 battle3D 中以便移除
@@ -810,6 +812,10 @@ EndlessWinterGame.prototype.removeDefenseEffect = function() {
     if (this.battle3D.defenseShield) {
         this.battle3D.defenseShield.dispose();
         this.battle3D.defenseShield = null;
+    }
+    if (this.battle3D.defenseEffect) {
+        this.battle3D.defenseEffect.dispose();
+        this.battle3D.defenseEffect = null;
     }
 };
 
@@ -865,15 +871,17 @@ EndlessWinterGame.prototype.showDamage = function(target, amount, type = 'red') 
     const battleModal = document.getElementById('battle-modal');
     if (battleModal) {
         battleModal.appendChild(damageElement);
-        
-        // 计算屏幕坐标
+
+        // 计算屏幕坐标 - 使用世界坐标
         const camera = this.battle3D.camera;
         const engine = this.battle3D.engine;
         const scene = this.battle3D.scene;
+        // 获取目标的世界坐标位置
+        const worldPos = target.getAbsolutePosition ? target.getAbsolutePosition() : target.position;
         const screenPoint = BABYLON.Vector3.Project(
-            target.position, 
-            BABYLON.Matrix.Identity(), 
-            scene.getTransformMatrix(), 
+            worldPos,
+            BABYLON.Matrix.Identity(),
+            scene.getTransformMatrix(),
             camera.viewport
         );
         
@@ -986,23 +994,25 @@ EndlessWinterGame.prototype.showDodge = function(target, text) {
     dodgeElement.style.zIndex = '9999';
     dodgeElement.style.position = 'absolute';
     dodgeElement.textContent = text;
-    
+
     // 获取战斗模态窗口
     const battleModal = document.getElementById('battle-modal');
     if (battleModal) {
         battleModal.appendChild(dodgeElement);
-        
-        // 计算屏幕坐标
+
+        // 计算屏幕坐标 - 使用世界坐标
         const camera = this.battle3D.camera;
         const engine = this.battle3D.engine;
         const scene = this.battle3D.scene;
+        // 获取目标的世界坐标位置
+        const worldPos = target.getAbsolutePosition ? target.getAbsolutePosition() : target.position;
         const screenPoint = BABYLON.Vector3.Project(
-            target.position, 
-            BABYLON.Matrix.Identity(), 
-            scene.getTransformMatrix(), 
+            worldPos,
+            BABYLON.Matrix.Identity(),
+            scene.getTransformMatrix(),
             camera.viewport
         );
-        
+
         // 设置元素位置
         const initialTop = (1 - screenPoint.y) * engine.getRenderHeight();
         dodgeElement.style.left = `${screenPoint.x * engine.getRenderWidth()}px`;

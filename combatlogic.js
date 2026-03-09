@@ -69,8 +69,14 @@ EndlessWinterGame.prototype.attackEnemy = function() {
         const enemyHit = Math.random() * 100 < enemyHitChance;
 
         if (enemyHit) {
-            // 检查防御状态
-            if (this.gameState.player.defenseActive) {
+            // 检查免疫状态（完全抵挡攻击）
+            let isImmune = false;
+            if (this.gameState.player.immuneNextAttack) {
+                this.gameState.player.immuneNextAttack = false;
+                this.addBattleLog(`你完全免疫了${this.gameState.enemy.name}的攻击！`);
+                isImmune = true;
+            } else if (this.gameState.player.defenseActive) {
+                // 检查防御状态
                 finalEnemyDamage = Math.max(1, Math.floor(finalEnemyDamage * 0.5));
                 if (this.gameState.enemy.isBoss && this.gameState.enemy.energy >= 50) {
                     const skillDamage = Math.floor(enemyDamage * 1.5);
@@ -93,15 +99,32 @@ EndlessWinterGame.prototype.attackEnemy = function() {
                 }
             }
 
-            // 玩家受到伤害
-            this.gameState.player.hp -= finalEnemyDamage;
-            if (this.gameState.player.hp < 0) {
-                this.gameState.player.hp = 0;
-            }
+            // 只有非免疫状态才扣血
+            if (!isImmune) {
+                // 护盾吸收伤害
+                let actualDamage = finalEnemyDamage;
+                if (this.gameState.player.shieldValue && this.gameState.player.shieldValue > 0) {
+                    if (this.gameState.player.shieldValue >= actualDamage) {
+                        this.gameState.player.shieldValue -= actualDamage;
+                        this.addBattleLog(`护盾吸收了${actualDamage}点伤害！剩余护盾：${this.gameState.player.shieldValue}`);
+                        actualDamage = 0;
+                    } else {
+                        const absorbed = this.gameState.player.shieldValue;
+                        actualDamage -= this.gameState.player.shieldValue;
+                        this.gameState.player.shieldValue = 0;
+                        this.addBattleLog(`护盾吸收了${absorbed}点伤害，护盾破碎！剩余伤害：${actualDamage}`);
+                    }
+                }
 
-            // 播放玩家受击动画
-            this.playPlayerHitAnimation();
-            this.showDamage(this.battle3D.player, finalEnemyDamage, 'red');
+                if (actualDamage > 0) {
+                    this.gameState.player.hp -= actualDamage;
+                    if (this.gameState.player.hp < 0) {
+                        this.gameState.player.hp = 0;
+                    }
+                    this.playPlayerHitAnimation();
+                    this.showDamage(this.battle3D.player, actualDamage, 'red');
+                }
+            }
         } else {
             this.addBattleLog(`你闪避了${this.gameState.enemy.name}的攻击！`);
             this.showDodge(this.battle3D.player, '闪避！');
@@ -268,6 +291,12 @@ EndlessWinterGame.prototype.useSkill = function(skillType = 'attack') {
             this.addBattleLog(`你获得了免疫状态，下次攻击将被完全抵挡！`);
         }
 
+        // 新增：护盾效果
+        if (skill.shield) {
+            this.gameState.player.shieldValue = (this.gameState.player.shieldValue || 0) + skill.shield;
+            this.addBattleLog(`获得了${skill.shield}点护盾！当前护盾：${this.gameState.player.shieldValue}`);
+        }
+
         // 新增：组合效果处理
         if (skill.effects && skill.effects.length > 0) {
             this.processSkillEffects(skill.effects);
@@ -337,7 +366,13 @@ EndlessWinterGame.prototype.useSkill = function(skillType = 'attack') {
             const enemyHit = Math.random() * 100 < enemyHitChance;
 
             if (enemyHit) {
-                if (this.gameState.player.defenseActive) {
+                // 检查免疫状态（完全抵挡攻击）
+                let isImmune = false;
+                if (this.gameState.player.immuneNextAttack) {
+                    this.gameState.player.immuneNextAttack = false;
+                    this.addBattleLog(`你完全免疫了${this.gameState.enemy.name}的攻击！`);
+                    isImmune = true;
+                } else if (this.gameState.player.defenseActive) {
                     const reductionRate = this.gameState.player.defenseBonusValue || 0.5;
                     finalEnemyDamage = Math.max(1, Math.floor(finalEnemyDamage * (1 - reductionRate)));
                     if (this.gameState.enemy.isBoss && this.gameState.enemy.energy >= 50) {
@@ -362,13 +397,32 @@ EndlessWinterGame.prototype.useSkill = function(skillType = 'attack') {
                     }
                 }
 
-                this.gameState.player.hp -= finalEnemyDamage;
-                if (this.gameState.player.hp < 0) {
-                    this.gameState.player.hp = 0;
-                }
+                // 只有非免疫状态才扣血
+                if (!isImmune) {
+                    // 护盾吸收伤害
+                    let actualDamage = finalEnemyDamage;
+                    if (this.gameState.player.shieldValue && this.gameState.player.shieldValue > 0) {
+                        if (this.gameState.player.shieldValue >= actualDamage) {
+                            this.gameState.player.shieldValue -= actualDamage;
+                            this.addBattleLog(`护盾吸收了${actualDamage}点伤害！剩余护盾：${this.gameState.player.shieldValue}`);
+                            actualDamage = 0;
+                        } else {
+                            const absorbed = this.gameState.player.shieldValue;
+                            actualDamage -= this.gameState.player.shieldValue;
+                            this.gameState.player.shieldValue = 0;
+                            this.addBattleLog(`护盾吸收了${absorbed}点伤害，护盾破碎！剩余伤害：${actualDamage}`);
+                        }
+                    }
 
-                this.playPlayerHitAnimation();
-                this.showDamage(this.battle3D.player, finalEnemyDamage, 'red');
+                    if (actualDamage > 0) {
+                        this.gameState.player.hp -= actualDamage;
+                        if (this.gameState.player.hp < 0) {
+                            this.gameState.player.hp = 0;
+                        }
+                        this.playPlayerHitAnimation();
+                        this.showDamage(this.battle3D.player, actualDamage, 'red');
+                    }
+                }
             } else {
                 this.addBattleLog(`你闪避了${this.gameState.enemy.name}的攻击！`);
             }
