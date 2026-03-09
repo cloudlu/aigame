@@ -160,7 +160,7 @@ endlessWinter/
 │   ├── ⚔️ combatlogic.js      # 战斗逻辑
 │   ├── 🎨 battle3d.js         # 3D战斗场景
 │   ├── 🗺️ map.js              # 地图系统
-│   ├── 🎯 skillTreeSystem.js  # 技能树系统
+│   ├── 🎯 realmSkillSystem.js  # 境界技能系统
 │   ├── ⚙️ equipment.js        # 装备系统
 │   ├── 🔊 audio.js            # 音效系统
 │   ├── 🎨 models.js           # 3D模型

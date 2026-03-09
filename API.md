@@ -114,7 +114,7 @@ Authorization: Bearer <token>
 {
   "success": true,
   "metadata": {
-    "skillTrees": [...],
+    "realmSkills": [...],
     "enemies": [...],
     "items": [...],
     "realms": [...]

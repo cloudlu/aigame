@@ -56,8 +56,8 @@ initializeNewPlayer() {
         });
     }
 
-    // 3. 初始化技能树系统
-    this.skillTreeSystem.initializeDefaultSkillTrees();
+    // 3. 初始化境界技能系统
+    this.realmSkillSystem.initializeDefaultSkillTrees();
 
     // 4. 初始化设置和战斗状态
     // 5. 计算装备效果

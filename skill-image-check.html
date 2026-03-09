@@ -165,7 +165,7 @@
         // 构建imageId到技能的映射
         function buildImageIdMap() {
             const map = {};
-            gameMetadata.skillTrees.forEach(tree => {
+            gameMetadata.realmSkills.forEach(tree => {
                 tree.levels.forEach(skill => {
                     const imageId = skill.imageId || 0;
                     if (!map[imageId]) map[imageId] = [];
@@ -210,11 +210,11 @@
         // 生成技能列表
         function generateSkillList() {
             const container = document.getElementById('skill-list');
-            const skillTrees = gameMetadata.skillTrees;
+            const realmSkills = gameMetadata.realmSkills;
 
             // 按境界分组
             const realms = {};
-            skillTrees.forEach(tree => {
+            realmSkills.forEach(tree => {
                 const realm = tree.realmRequired;
                 if (!realms[realm]) realms[realm] = [];
                 realms[realm].push(tree);

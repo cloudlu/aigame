@@ -333,7 +333,7 @@ EndlessWinterGame.prototype.createBattleScene = function(enemyInfo) {
             let skillTree = null;
 
             if (equippedSkillId) {
-                skillTree = this.metadata.skillTrees?.find(tree => tree.id === equippedSkillId);
+                skillTree = this.metadata.realmSkills?.find(tree => tree.id === equippedSkillId);
                 if (skillTree) {
                     const skillLevel = this.gameState.player.skills.levels[equippedSkillId] || 0;
                     const playerRealm = this.gameState.player.realm.currentRealm;
@@ -353,9 +353,10 @@ EndlessWinterGame.prototype.createBattleScene = function(enemyInfo) {
             if (skill && skillTree) {
                 // 有装备的技能
                 const realmName = this.metadata.realmConfig?.[skillTree.realmRequired]?.name || '未知境界';
-                skillButton.setAttribute('data-tooltip', `${skill.name}: ${skill.description || ''}，消耗${skill.energyCost}灵力，${realmName} (右键切换)`);
+                const skillDisplayName = skill.displayName || skill.name;
+                skillButton.setAttribute('data-tooltip', `${skillDisplayName}: ${skill.description || ''}，消耗${skill.energyCost}灵力，${realmName} (右键切换)`);
                 const skillImage = `Images/skill-${skill.imageId || equippedSkillId.replace('skill-', '')}.jpg`;
-                skillButton.innerHTML = `<img src="${skillImage}" alt="${skill.name}" class="w-full h-full object-cover">`;
+                skillButton.innerHTML = `<img src="${skillImage}" alt="${skillDisplayName}" class="w-full h-full object-cover">`;
             } else {
                 // 没有装备技能
                 skillButton.setAttribute('data-tooltip', `${skillTypeConfig.defaultName}（未装备）- 点击或右键选择技能`);
@@ -1074,7 +1075,7 @@ EndlessWinterGame.prototype.showSkillSelectionMenu = function(skillType, event) 
     }
 
     // 获取该类型的所有可用技能
-    const availableSkills = this.skillTreeSystem.getAvailableSkillsByType(skillType);
+    const availableSkills = this.realmSkillSystem.getAvailableSkillsByType(skillType);
 
     if (availableSkills.length === 0) {
         this.addBattleLog(`没有可用的${skillType === 'attack' ? '攻击' : skillType === 'defense' ? '防御' : skillType === 'recovery' ? '恢复' : '特殊'}技能！`);
@@ -1115,7 +1116,8 @@ EndlessWinterGame.prototype.showSkillSelectionMenu = function(skillType, event) 
         // 技能名称和境界
         const nameLine = document.createElement('div');
         nameLine.className = 'text-sm font-medium text-white';
-        nameLine.innerHTML = `<span class="text-accent">[${skill.realmName}]</span> ${skill.name} <span class="text-light/60">Lv.${skill.level}</span>`;
+        const skillDisplayName = skill.displayName || skill.name;
+        nameLine.innerHTML = `<span class="text-accent">[${skill.realmName}]</span> ${skillDisplayName} <span class="text-light/60">Lv.${skill.level}</span>`;
         leftInfo.appendChild(nameLine);
 
         // 技能描述
@@ -1175,7 +1177,8 @@ EndlessWinterGame.prototype.showSkillSelectionMenu = function(skillType, event) 
             }
             this.gameState.player.skills.equipped[skillType] = skill.skillTreeId;
 
-            this.addBattleLog(`装备了技能: ${skill.name}`);
+            const skillDisplay = skill.displayName || skill.name;
+            this.addBattleLog(`装备了技能: ${skillDisplay}`);
 
             // 移除菜单
             menu.remove();
@@ -1257,7 +1260,7 @@ EndlessWinterGame.prototype.updateBattleSkillButtons = function() {
         let skillTree = null;
 
         if (equippedSkillId) {
-            skillTree = this.metadata.skillTrees?.find(tree => tree.id === equippedSkillId);
+            skillTree = this.metadata.realmSkills?.find(tree => tree.id === equippedSkillId);
             if (skillTree) {
                 const skillLevel = this.gameState.player.skills.levels[equippedSkillId] || 0;
                 if (skillLevel > 0) {
@@ -1269,9 +1272,10 @@ EndlessWinterGame.prototype.updateBattleSkillButtons = function() {
         if (skill && skillTree) {
             // 更新按钮
             const realmName = this.metadata.realmConfig?.[skillTree.realmRequired]?.name || '未知境界';
-            button.setAttribute('data-tooltip', `${skill.name}: ${skill.description || ''}，消耗${skill.energyCost}灵力，${realmName} (右键切换)`);
+            const skillDisplayName = skill.displayName || skill.name;
+            button.setAttribute('data-tooltip', `${skillDisplayName}: ${skill.description || ''}，消耗${skill.energyCost}灵力，${realmName} (右键切换)`);
             const skillImage = `Images/skill-${skill.imageId || equippedSkillId.replace('skill-', '')}.jpg`;
-            button.innerHTML = `<img src="${skillImage}" alt="${skill.name}" class="w-full h-full object-cover">`;
+            button.innerHTML = `<img src="${skillImage}" alt="${skillDisplayName}" class="w-full h-full object-cover">`;
             button.classList.remove('opacity-50');
         } else {
             // 没有装备技能

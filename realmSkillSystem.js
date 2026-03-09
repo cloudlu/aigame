@@ -1,20 +1,20 @@
-// 技能树系统 - 完整实现
+// 境界技能系统 - 完整实现
 
 // ==================== 核心功能 ====================
 
-class SkillTreeSystem {
+class RealmSkillSystem {
     constructor(game) {
         this.game = game;
     }
 
     // 学习技能树(境界提升时自动解锁第一个技能等级)
     learnSkillTree(skillTreeId) {
-        if (!this.game.metadata?.skillTrees) {
-            console.warn('skillTrees not found in metadata');
+        if (!this.game.metadata?.realmSkills) {
+            console.warn('realmSkills not found in metadata');
             return false;
         }
 
-        const skillTree = this.game.metadata.skillTrees.find(tree => tree.id === skillTreeId);
+        const skillTree = this.game.metadata.realmSkills.find(tree => tree.id === skillTreeId);
         if (!skillTree) {
             console.warn(`Skill tree ${skillTreeId} not found`);
             return false;
@@ -58,12 +58,12 @@ class SkillTreeSystem {
 
     // 升级技能树
     upgradeSkillTree(skillTreeId) {
-        if (!this.game.metadata?.skillTrees) {
-            console.warn('skillTrees not found in metadata');
+        if (!this.game.metadata?.realmSkills) {
+            console.warn('realmSkills not found in metadata');
             return false;
         }
 
-        const skillTree = this.game.metadata.skillTrees.find(tree => tree.id === skillTreeId);
+        const skillTree = this.game.metadata.realmSkills.find(tree => tree.id === skillTreeId);
         if (!skillTree) {
             console.warn(`Skill tree ${skillTreeId} not found`);
             return false;
@@ -130,7 +130,7 @@ class SkillTreeSystem {
             return null;
         }
 
-        const skillTree = this.game.metadata.skillTrees.find(tree => tree.id === equippedSkillId);
+        const skillTree = this.game.metadata.realmSkills.find(tree => tree.id === equippedSkillId);
         if (!skillTree) {
             console.warn(`Skill tree ${equippedSkillId} not found`);
             return null;
@@ -147,13 +147,22 @@ class SkillTreeSystem {
             return null;
         }
 
+        const realmName = this.game.metadata.realmConfig?.[skillTree.realmRequired]?.name || '未知境界';
+
         return {
             ...skillData,
+            // 添加displayName（支持level重载baseDisplayName）
+            displayName: skillData.displayName !== undefined ? skillData.displayName : (skillTree.baseDisplayName || skillData.name),
+            // 资源继承（向后兼容level覆盖）
+            imageId: skillData.imageId !== undefined ? skillData.imageId : skillTree.baseImageId,
+            soundUrl: skillData.soundUrl !== undefined ? skillData.soundUrl : skillTree.baseSoundUrl,
+            effectColor: skillData.effectColor !== undefined ? skillData.effectColor : skillTree.baseEffectColor,
             skillTreeId: equippedSkillId,
             skillTreeName: skillTree.name,
             level: skillLevel,
             type: skillTree.type,
-            realmRequired: skillTree.realmRequired
+            realmRequired: skillTree.realmRequired,
+            realmName: realmName
         };
     }
 
@@ -161,7 +170,7 @@ class SkillTreeSystem {
     getAvailableSkillsByType(skillType) {
         const currentRealm = this.game.gameState.player.realm.currentRealm;
 
-        return this.game.metadata.skillTrees.filter(tree => {
+        return this.game.metadata.realmSkills.filter(tree => {
             // 检查类型
             if (tree.type !== skillType) return false;
 
@@ -176,14 +185,22 @@ class SkillTreeSystem {
         }).map(tree => {
             const level = this.game.gameState.player.skills.levels[tree.id];
             const skillData = tree.levels[level - 1];
+            const realmName = this.game.metadata.realmConfig?.[tree.realmRequired]?.name || '未知境界';
+
             return {
                 ...skillData,
+                // 添加displayName（支持level重载baseDisplayName）
+                displayName: skillData.displayName !== undefined ? skillData.displayName : (tree.baseDisplayName || skillData.name),
+                // 资源继承（向后兼容level覆盖）
+                imageId: skillData.imageId !== undefined ? skillData.imageId : tree.baseImageId,
+                soundUrl: skillData.soundUrl !== undefined ? skillData.soundUrl : tree.baseSoundUrl,
+                effectColor: skillData.effectColor !== undefined ? skillData.effectColor : tree.baseEffectColor,
                 skillTreeId: tree.id,
                 skillTreeName: tree.name,
                 level: level,
                 type: tree.type,
                 realmRequired: tree.realmRequired,
-                realmName: this.game.metadata.realmConfig?.[tree.realmRequired]?.name || '未知境界'
+                realmName: realmName
             };
         });
     }
@@ -198,7 +215,7 @@ class SkillTreeSystem {
         const currentRealm = this.game.gameState.player.realm.currentRealm;
         const currentStage = this.game.gameState.player.realm.currentStage;
 
-        return this.game.metadata.skillTrees.filter(tree => {
+        return this.game.metadata.realmSkills.filter(tree => {
             // 检查境界要求
             if (tree.realmRequired > currentRealm) return false;
 
@@ -239,11 +256,11 @@ class SkillTreeSystem {
         }
 
         // 为每种类型学习一个默认技能（武者境的第一个技能）
-        if (this.game.metadata.skillTrees) {
+        if (this.game.metadata.realmSkills) {
             const skillTypes = ['attack', 'defense', 'recovery', 'special'];
 
             skillTypes.forEach(type => {
-                const skillsOfType = this.game.metadata.skillTrees.filter(
+                const skillsOfType = this.game.metadata.realmSkills.filter(
                     tree => tree.realmRequired === 0 && tree.type === type
                 );
 
@@ -265,9 +282,9 @@ class SkillTreeSystem {
     }
 }
 
-// 导出技能树系统
+// 导出境界技能系统
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = SkillTreeSystem;
+    module.exports = RealmSkillSystem;
 } else {
-    window.SkillTreeSystem = SkillTreeSystem;
+    window.RealmSkillSystem = RealmSkillSystem;
 }

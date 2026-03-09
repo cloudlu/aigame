@@ -120,22 +120,315 @@ const gameMetadata = {
             image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20frost%20giant%2C%20cute%20style%2C%20winter%20theme%2C%20simple%20background&size=512x512"
         },
         {
-            name: "妖狐",
-            baseHp: 40,
-            baseAttack: 10,
-            baseDefense: 3,
-            baseSpeed: 14,
-            baseAccuracy: 92,
-            baseDodge: 20,
-            expMultiplier: 1.2,
-            resourceMultiplier: 1.1,
+            name: "妖狐王",
+            baseHp: 650,
+            baseAttack: 60,
+            baseDefense: 18,
+            baseSpeed: 16,
+            baseAccuracy: 96,
+            baseDodge: 28,
+            expMultiplier: 2.3,
+            resourceMultiplier: 1.55,
             icon: "fa-cat",
-            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20fox%20spirit%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20fox%20king%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        // 海滩地图敌人 (Realm 1)
+        {
+            name: "蟹将",
+            baseHp: 60,
+            baseAttack: 10,
+            baseDefense: 6,
+            baseSpeed: 6,
+            baseAccuracy: 88,
+            baseDodge: 8,
+            expMultiplier: 1.6,
+            resourceMultiplier: 1.25,
+            icon: "fa-grip-lines",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20crab%20general%2C%20chinese%20mythology%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "虾兵",
+            baseHp: 50,
+            baseAttack: 9,
+            baseDefense: 5,
+            baseSpeed: 8,
+            baseAccuracy: 90,
+            baseDodge: 10,
+            expMultiplier: 1.5,
+            resourceMultiplier: 1.2,
+            icon: "fa-shrimp",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20shrimp%20soldier%2C%20chinese%20mythology%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "贝壳精",
+            baseHp: 60,
+            baseAttack: 10,
+            baseDefense: 6,
+            baseSpeed: 5,
+            baseAccuracy: 85,
+            baseDodge: 6,
+            expMultiplier: 1.5,
+            resourceMultiplier: 1.2,
+            icon: "fa-circle",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20shell%20spirit%2C%20chinese%20mythology%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "海马精",
+            baseHp: 90,
+            baseAttack: 16,
+            baseDefense: 7,
+            baseSpeed: 9,
+            baseAccuracy: 92,
+            baseDodge: 14,
+            expMultiplier: 2.0,
+            resourceMultiplier: 1.4,
+            icon: "fa-horse",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20seahorse%20spirit%2C%20chinese%20mythology%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        // 平原地图敌人 (Realm 2)
+        {
+            name: "草原狮",
+            baseHp: 80,
+            baseAttack: 18,
+            baseDefense: 8,
+            baseSpeed: 10,
+            baseAccuracy: 92,
+            baseDodge: 12,
+            expMultiplier: 2.0,
+            resourceMultiplier: 1.4,
+            icon: "fa-cat",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20grassland%20lion%2C%20chinese%20mythology%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "花豹",
+            baseHp: 100,
+            baseAttack: 19,
+            baseDefense: 7,
+            baseSpeed: 14,
+            baseAccuracy: 94,
+            baseDodge: 18,
+            expMultiplier: 2.2,
+            resourceMultiplier: 1.5,
+            icon: "fa-paw",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20leopard%2C%20chinese%20mythology%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "草原之王",
+            baseHp: 250,
+            baseAttack: 36,
+            baseDefense: 12,
+            baseSpeed: 11,
+            baseAccuracy: 95,
+            baseDodge: 15,
+            expMultiplier: 3.5,
+            resourceMultiplier: 2.5,
+            icon: "fa-crown",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20king%20of%20grassland%2C%20chinese%20mythology%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        // 峡谷地图敌人 (Realm 3)
+        {
+            name: "峡谷之风",
+            baseHp: 130,
+            baseAttack: 25,
+            baseDefense: 6,
+            baseSpeed: 18,
+            baseAccuracy: 93,
+            baseDodge: 20,
+            expMultiplier: 2.4,
+            resourceMultiplier: 1.6,
+            icon: "fa-wind",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20canyon%20wind%20spirit%2C%20chinese%20mythology%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "秃鹫",
+            baseHp: 130,
+            baseAttack: 22,
+            baseDefense: 7,
+            baseSpeed: 13,
+            baseAccuracy: 90,
+            baseDodge: 14,
+            expMultiplier: 2.3,
+            resourceMultiplier: 1.55,
+            icon: "fa-dove",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20vulture%2C%20chinese%20mythology%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "岩蛇",
+            baseHp: 140,
+            baseAttack: 24,
+            baseDefense: 9,
+            baseSpeed: 9,
+            baseAccuracy: 88,
+            baseDodge: 10,
+            expMultiplier: 2.5,
+            resourceMultiplier: 1.7,
+            icon: "fa-strikethrough",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20rock%20snake%2C%20chinese%20mythology%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "峡谷领主",
+            baseHp: 320,
+            baseAttack: 49,
+            baseDefense: 18,
+            baseSpeed: 12,
+            baseAccuracy: 95,
+            baseDodge: 16,
+            expMultiplier: 4.0,
+            resourceMultiplier: 3.0,
+            icon: "fa-chess-king",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20canyon%20lord%2C%20chinese%20mythology%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        // 沙漠地图敌人 (Realm 3)
+        {
+            name: "沙暴魔",
+            baseHp: 200,
+            baseAttack: 34,
+            baseDefense: 12,
+            baseSpeed: 16,
+            baseAccuracy: 88,
+            baseDodge: 18,
+            expMultiplier: 3.2,
+            resourceMultiplier: 2.2,
+            icon: "fa-tornado",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20sandstorm%20demon%2C%20chinese%20mythology%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "仙人掌精",
+            baseHp: 200,
+            baseAttack: 28,
+            baseDefense: 12,
+            baseSpeed: 7,
+            baseAccuracy: 85,
+            baseDodge: 8,
+            expMultiplier: 2.8,
+            resourceMultiplier: 1.9,
+            icon: "fa-tree",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20cactus%20spirit%2C%20chinese%20mythology%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "沙漠之王",
+            baseHp: 325,
+            baseAttack: 52,
+            baseDefense: 17,
+            baseSpeed: 13,
+            baseAccuracy: 94,
+            baseDodge: 17,
+            expMultiplier: 4.2,
+            resourceMultiplier: 3.2,
+            icon: "fa-crown",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20king%20of%20desert%2C%20chinese%20mythology%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        // 湖泊地图敌人 (Realm 4)
+        {
+            name: "鲤鱼精",
+            baseHp: 150,
+            baseAttack: 24,
+            baseDefense: 8,
+            baseSpeed: 10,
+            baseAccuracy: 90,
+            baseDodge: 12,
+            expMultiplier: 2.6,
+            resourceMultiplier: 1.8,
+            icon: "fa-fish",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20carp%20spirit%2C%20chinese%20mythology%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "淡水鲛人",
+            baseHp: 280,
+            baseAttack: 44,
+            baseDefense: 16,
+            baseSpeed: 11,
+            baseAccuracy: 92,
+            baseDodge: 16,
+            expMultiplier: 3.8,
+            resourceMultiplier: 2.6,
+            icon: "fa-swimmer",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20mermaid%2C%20chinese%20mythology%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "湖妖",
+            baseHp: 320,
+            baseAttack: 48,
+            baseDefense: 20,
+            baseSpeed: 12,
+            baseAccuracy: 93,
+            baseDodge: 18,
+            expMultiplier: 4.2,
+            resourceMultiplier: 2.9,
+            icon: "fa-water",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20lake%20demon%2C%20chinese%20mythology%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "湖怪",
+            baseHp: 500,
+            baseAttack: 68,
+            baseDefense: 29,
+            baseSpeed: 10,
+            baseAccuracy: 90,
+            baseDodge: 12,
+            expMultiplier: 5.5,
+            resourceMultiplier: 4.0,
+            icon: "fa-dragon",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20lake%20monster%2C%20chinese%20mythology%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "湖龙王",
+            baseHp: 580,
+            baseAttack: 76,
+            baseDefense: 33,
+            baseSpeed: 13,
+            baseAccuracy: 96,
+            baseDodge: 20,
+            expMultiplier: 6.5,
+            resourceMultiplier: 5.0,
+            icon: "fa-crown",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20lake%20dragon%20king%2C%20chinese%20mythology%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        // 洞穴地图敌人 (Realm 5)
+        {
+            name: "暗影蝙蝠",
+            baseHp: 370,
+            baseAttack: 54,
+            baseDefense: 17,
+            baseSpeed: 18,
+            baseAccuracy: 94,
+            baseDodge: 24,
+            expMultiplier: 4.5,
+            resourceMultiplier: 3.2,
+            icon: "fa-moon",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20shadow%20bat%2C%20chinese%20mythology%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "地下蠕虫",
+            baseHp: 490,
+            baseAttack: 67,
+            baseDefense: 27,
+            baseSpeed: 8,
+            baseAccuracy: 86,
+            baseDodge: 10,
+            expMultiplier: 5.8,
+            resourceMultiplier: 4.2,
+            icon: "fa-worm",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20underground%20worm%2C%20chinese%20mythology%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        // 仙境地图敌人 (Realm 5)
+        {
+            name: "云兽",
+            baseHp: 430,
+            baseAttack: 63,
+            baseDefense: 24,
+            baseSpeed: 16,
+            baseAccuracy: 95,
+            baseDodge: 22,
+            expMultiplier: 5.2,
+            resourceMultiplier: 3.8,
+            icon: "fa-cloud",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20cloud%20beast%2C%20chinese%20mythology%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
         },
         {
             name: "山精",
-            baseHp: 80,
-            baseAttack: 15,
+            baseHp: 60,
+            baseAttack: 14,
             baseDefense: 5,
             baseSpeed: 7,
             baseAccuracy: 88,
@@ -147,24 +440,24 @@ const gameMetadata = {
         },
         {
             name: "水怪",
-            baseHp: 70,
-            baseAttack: 14,
-            baseDefense: 4,
-            baseSpeed: 9,
+            baseHp: 150,
+            baseAttack: 24,
+            baseDefense: 8,
+            baseSpeed: 10,
             baseAccuracy: 90,
             baseDodge: 12,
-            expMultiplier: 1.6,
-            resourceMultiplier: 1.25,
+            expMultiplier: 1.7,
+            resourceMultiplier: 1.28,
             icon: "fa-tint",
             image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20water%20monster%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
         },
         {
             name: "火灵",
-            baseHp: 50,
-            baseAttack: 20,
-            baseDefense: 2,
-            baseSpeed: 15,
-            baseAccuracy: 94,
+            baseHp: 200,
+            baseAttack: 28,
+            baseDefense: 6,
+            baseSpeed: 11,
+            baseAccuracy: 90,
             baseDodge: 18,
             expMultiplier: 1.4,
             resourceMultiplier: 1.15,
@@ -173,22 +466,22 @@ const gameMetadata = {
         },
         {
             name: "土妖",
-            baseHp: 120,
-            baseAttack: 16,
-            baseDefense: 8,
-            baseSpeed: 5,
-            baseAccuracy: 85,
-            baseDodge: 4,
-            expMultiplier: 2.2,
-            resourceMultiplier: 1.6,
+            baseHp: 850,
+            baseAttack: 68,
+            baseDefense: 32,
+            baseSpeed: 7,
+            baseAccuracy: 86,
+            baseDodge: 6,
+            expMultiplier: 2.3,
+            resourceMultiplier: 1.65,
             icon: "fa-mountain",
             image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20earth%20demon%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
         },
         {
             name: "风魔",
-            baseHp: 60,
-            baseAttack: 18,
-            baseDefense: 3,
+            baseHp: 360,
+            baseAttack: 48,
+            baseDefense: 10,
             baseSpeed: 16,
             baseAccuracy: 93,
             baseDodge: 22,
@@ -199,9 +492,9 @@ const gameMetadata = {
         },
         {
             name: "雷兽",
-            baseHp: 90,
-            baseAttack: 22,
-            baseDefense: 4,
+            baseHp: 580,
+            baseAttack: 66,
+            baseDefense: 16,
             baseSpeed: 13,
             baseAccuracy: 92,
             baseDodge: 15,
@@ -212,9 +505,9 @@ const gameMetadata = {
         },
         {
             name: "山妖",
-            baseHp: 75,
-            baseAttack: 14,
-            baseDefense: 5,
+            baseHp: 40,
+            baseAttack: 10,
+            baseDefense: 3,
             baseSpeed: 8,
             baseAccuracy: 89,
             baseDodge: 10,
@@ -225,9 +518,9 @@ const gameMetadata = {
         },
         {
             name: "岩怪",
-            baseHp: 100,
-            baseAttack: 12,
-            baseDefense: 8,
+            baseHp: 680,
+            baseAttack: 48,
+            baseDefense: 24,
             baseSpeed: 4,
             baseAccuracy: 85,
             baseDodge: 3,
@@ -238,9 +531,9 @@ const gameMetadata = {
         },
         {
             name: "神雕",
-            baseHp: 60,
-            baseAttack: 16,
-            baseDefense: 4,
+            baseHp: 45,
+            baseAttack: 11,
+            baseDefense: 3,
             baseSpeed: 18,
             baseAccuracy: 94,
             baseDodge: 25,
@@ -251,9 +544,9 @@ const gameMetadata = {
         },
         {
             name: "石精",
-            baseHp: 90,
-            baseAttack: 13,
-            baseDefense: 7,
+            baseHp: 600,
+            baseAttack: 52,
+            baseDefense: 20,
             baseSpeed: 5,
             baseAccuracy: 87,
             baseDodge: 5,
@@ -264,9 +557,9 @@ const gameMetadata = {
         },
         {
             name: "山魈",
-            baseHp: 85,
-            baseAttack: 15,
-            baseDefense: 5,
+            baseHp: 50,
+            baseAttack: 11,
+            baseDefense: 4,
             baseSpeed: 10,
             baseAccuracy: 90,
             baseDodge: 12,
@@ -277,9 +570,9 @@ const gameMetadata = {
         },
         {
             name: "树精",
-            baseHp: 95,
-            baseAttack: 12,
-            baseDefense: 6,
+            baseHp: 280,
+            baseAttack: 28,
+            baseDefense: 12,
             baseSpeed: 6,
             baseAccuracy: 88,
             baseDodge: 8,
@@ -290,9 +583,9 @@ const gameMetadata = {
         },
         {
             name: "花妖",
-            baseHp: 55,
-            baseAttack: 14,
-            baseDefense: 3,
+            baseHp: 200,
+            baseAttack: 30,
+            baseDefense: 8,
             baseSpeed: 12,
             baseAccuracy: 91,
             baseDodge: 18,
@@ -303,9 +596,9 @@ const gameMetadata = {
         },
         {
             name: "狐仙",
-            baseHp: 45,
-            baseAttack: 18,
-            baseDefense: 2,
+            baseHp: 250,
+            baseAttack: 32,
+            baseDefense: 9,
             baseSpeed: 15,
             baseAccuracy: 95,
             baseDodge: 22,
@@ -316,9 +609,9 @@ const gameMetadata = {
         },
         {
             name: "鹿灵",
-            baseHp: 65,
-            baseAttack: 13,
-            baseDefense: 4,
+            baseHp: 400,
+            baseAttack: 42,
+            baseDefense: 12,
             baseSpeed: 14,
             baseAccuracy: 92,
             baseDodge: 20,
@@ -329,9 +622,9 @@ const gameMetadata = {
         },
         {
             name: "木怪",
-            baseHp: 80,
-            baseAttack: 11,
-            baseDefense: 6,
+            baseHp: 550,
+            baseAttack: 48,
+            baseDefense: 18,
             baseSpeed: 7,
             baseAccuracy: 87,
             baseDodge: 7,
@@ -341,26 +634,78 @@ const gameMetadata = {
             image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20wood%20monster%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
         },
         {
+            name: "藤蔓怪",
+            baseHp: 180,
+            baseAttack: 26,
+            baseDefense: 12,
+            baseSpeed: 8,
+            baseAccuracy: 88,
+            baseDodge: 10,
+            expMultiplier: 1.6,
+            resourceMultiplier: 1.2,
+            icon: "fa-leaf",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20vine%20monster%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "森林蜘蛛",
+            baseHp: 160,
+            baseAttack: 32,
+            baseDefense: 8,
+            baseSpeed: 12,
+            baseAccuracy: 92,
+            baseDodge: 18,
+            expMultiplier: 1.5,
+            resourceMultiplier: 1.15,
+            icon: "fa-spider",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20forest%20spider%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "花仙子",
+            baseHp: 130,
+            baseAttack: 28,
+            baseDefense: 6,
+            baseSpeed: 14,
+            baseAccuracy: 94,
+            baseDodge: 22,
+            expMultiplier: 1.45,
+            resourceMultiplier: 1.1,
+            icon: "fa-seedling",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20flower%20fairy%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "森林守护者",
+            baseHp: 520,
+            baseAttack: 42,
+            baseDefense: 24,
+            baseSpeed: 9,
+            baseAccuracy: 90,
+            baseDodge: 12,
+            expMultiplier: 2.0,
+            resourceMultiplier: 1.5,
+            icon: "fa-tree-alt",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20forest%20guardian%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
             name: "蛟蛇",
-            baseHp: 85,
-            baseAttack: 16,
-            baseDefense: 4,
-            baseSpeed: 11,
+            baseHp: 180,
+            baseAttack: 28,
+            baseDefense: 12,
+            baseSpeed: 13,
             baseAccuracy: 91,
-            baseDodge: 15,
-            expMultiplier: 1.75,
-            resourceMultiplier: 1.3,
+            baseDodge: 16,
+            expMultiplier: 1.95,
+            resourceMultiplier: 1.38,
             icon: "fa-dragon",
-            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20water%20serpent%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20flood%20dragon%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
         },
         {
             name: "龟妖",
-            baseHp: 110,
-            baseAttack: 10,
-            baseDefense: 9,
-            baseSpeed: 3,
-            baseAccuracy: 85,
-            baseDodge: 2,
+            baseHp: 220,
+            baseAttack: 20,
+            baseDefense: 18,
+            baseSpeed: 5,
+            baseAccuracy: 87,
+            baseDodge: 3,
             expMultiplier: 2.0,
             resourceMultiplier: 1.4,
             icon: "fa-tint",
@@ -368,53 +713,53 @@ const gameMetadata = {
         },
         {
             name: "鱼精",
-            baseHp: 40,
-            baseAttack: 12,
-            baseDefense: 2,
-            baseSpeed: 13,
-            baseAccuracy: 90,
-            baseDodge: 18,
-            expMultiplier: 1.3,
-            resourceMultiplier: 1.1,
+            baseHp: 120,
+            baseAttack: 22,
+            baseDefense: 6,
+            baseSpeed: 14,
+            baseAccuracy: 91,
+            baseDodge: 20,
+            expMultiplier: 1.5,
+            resourceMultiplier: 1.2,
             icon: "fa-tint",
             image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20fish%20spirit%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
         },
         {
             name: "水仙",
-            baseHp: 50,
-            baseAttack: 15,
-            baseDefense: 3,
-            baseSpeed: 12,
-            baseAccuracy: 92,
-            baseDodge: 15,
-            expMultiplier: 1.5,
-            resourceMultiplier: 1.15,
+            baseHp: 480,
+            baseAttack: 55,
+            baseDefense: 18,
+            baseSpeed: 14,
+            baseAccuracy: 94,
+            baseDodge: 18,
+            expMultiplier: 1.7,
+            resourceMultiplier: 1.25,
             icon: "fa-tint",
             image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20water%20fairy%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
         },
         {
             name: "沙妖",
-            baseHp: 70,
-            baseAttack: 14,
-            baseDefense: 5,
-            baseSpeed: 9,
+            baseHp: 180,
+            baseAttack: 32,
+            baseDefense: 15,
+            baseSpeed: 10,
             baseAccuracy: 89,
             baseDodge: 10,
-            expMultiplier: 1.6,
-            resourceMultiplier: 1.25,
+            expMultiplier: 1.65,
+            resourceMultiplier: 1.28,
             icon: "fa-mountain",
             image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20sand%20demon%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
         },
         {
             name: "蝎精",
-            baseHp: 65,
-            baseAttack: 17,
-            baseDefense: 3,
+            baseHp: 190,
+            baseAttack: 32,
+            baseDefense: 14,
             baseSpeed: 11,
             baseAccuracy: 92,
             baseDodge: 12,
-            expMultiplier: 1.65,
-            resourceMultiplier: 1.25,
+            expMultiplier: 1.75,
+            resourceMultiplier: 1.3,
             icon: "fa-bug",
             image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20scorpion%20demon%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
         },
@@ -433,9 +778,9 @@ const gameMetadata = {
         },
         {
             name: "沙漠巨蜥",
-            baseHp: 95,
-            baseAttack: 15,
-            baseDefense: 6,
+            baseHp: 210,
+            baseAttack: 30,
+            baseDefense: 16,
             baseSpeed: 8,
             baseAccuracy: 88,
             baseDodge: 8,
@@ -459,9 +804,9 @@ const gameMetadata = {
         },
         {
             name: "洞穴蝙蝠",
-            baseHp: 35,
-            baseAttack: 12,
-            baseDefense: 2,
+            baseHp: 380,
+            baseAttack: 52,
+            baseDefense: 10,
             baseSpeed: 19,
             baseAccuracy: 94,
             baseDodge: 25,
@@ -472,9 +817,9 @@ const gameMetadata = {
         },
         {
             name: "蜘蛛精",
-            baseHp: 55,
-            baseAttack: 14,
-            baseDefense: 3,
+            baseHp: 450,
+            baseAttack: 56,
+            baseDefense: 12,
             baseSpeed: 10,
             baseAccuracy: 91,
             baseDodge: 15,
@@ -485,9 +830,9 @@ const gameMetadata = {
         },
         {
             name: "蚯蚓怪",
-            baseHp: 70,
-            baseAttack: 10,
-            baseDefense: 5,
+            baseHp: 600,
+            baseAttack: 48,
+            baseDefense: 18,
             baseSpeed: 6,
             baseAccuracy: 86,
             baseDodge: 6,
@@ -498,9 +843,9 @@ const gameMetadata = {
         },
         {
             name: "洞穴幽灵",
-            baseHp: 45,
-            baseAttack: 16,
-            baseDefense: 2,
+            baseHp: 400,
+            baseAttack: 60,
+            baseDefense: 10,
             baseSpeed: 14,
             baseAccuracy: 93,
             baseDodge: 20,
@@ -511,35 +856,35 @@ const gameMetadata = {
         },
         {
             name: "熔岩巨兽",
-            baseHp: 120,
-            baseAttack: 18,
-            baseDefense: 7,
-            baseSpeed: 4,
+            baseHp: 420,
+            baseAttack: 38,
+            baseDefense: 18,
+            baseSpeed: 6,
             baseAccuracy: 85,
-            baseDodge: 3,
-            expMultiplier: 2.2,
-            resourceMultiplier: 1.6,
+            baseDodge: 5,
+            expMultiplier: 1.85,
+            resourceMultiplier: 1.4,
             icon: "fa-fire",
             image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20lava%20beast%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
         },
         {
             name: "凤凰",
-            baseHp: 85,
-            baseAttack: 20,
-            baseDefense: 4,
+            baseHp: 620,
+            baseAttack: 65,
+            baseDefense: 15,
             baseSpeed: 17,
             baseAccuracy: 95,
             baseDodge: 22,
-            expMultiplier: 1.9,
-            resourceMultiplier: 1.4,
+            expMultiplier: 2.0,
+            resourceMultiplier: 1.45,
             icon: "fa-fire",
             image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20phoenix%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
         },
         {
             name: "火凤凰",
-            baseHp: 95,
-            baseAttack: 22,
-            baseDefense: 5,
+            baseHp: 550,
+            baseAttack: 68,
+            baseDefense: 16,
             baseSpeed: 18,
             baseAccuracy: 96,
             baseDodge: 25,
@@ -549,23 +894,62 @@ const gameMetadata = {
             image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20fire%20phoenix%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
         },
         {
-            name: "仙鹤",
-            baseHp: 60,
-            baseAttack: 14,
-            baseDefense: 4,
-            baseSpeed: 20,
-            baseAccuracy: 94,
-            baseDodge: 28,
+            name: "熔岩史莱姆",
+            baseHp: 180,
+            baseAttack: 24,
+            baseDefense: 10,
+            baseSpeed: 6,
+            baseAccuracy: 88,
+            baseDodge: 5,
+            expMultiplier: 1.35,
+            resourceMultiplier: 1.15,
+            icon: "fa-circle",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20lava%20slime%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "火焰精",
+            baseHp: 320,
+            baseAttack: 38,
+            baseDefense: 10,
+            baseSpeed: 12,
+            baseAccuracy: 90,
+            baseDodge: 15,
             expMultiplier: 1.6,
-            resourceMultiplier: 1.2,
+            resourceMultiplier: 1.25,
+            icon: "fa-fire-alt",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20fire%20spirit%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "火山领主",
+            baseHp: 720,
+            baseAttack: 70,
+            baseDefense: 28,
+            baseSpeed: 8,
+            baseAccuracy: 88,
+            baseDodge: 8,
+            expMultiplier: 2.5,
+            resourceMultiplier: 1.75,
+            icon: "fa-volcano",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20volcano%20lord%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "仙鹤",
+            baseHp: 280,
+            baseAttack: 38,
+            baseDefense: 8,
+            baseSpeed: 18,
+            baseAccuracy: 94,
+            baseDodge: 26,
+            expMultiplier: 1.65,
+            resourceMultiplier: 1.25,
             icon: "fa-dove",
             image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20celestial%20crane%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
         },
         {
             name: "麒麟",
-            baseHp: 110,
-            baseAttack: 19,
-            baseDefense: 7,
+            baseHp: 620,
+            baseAttack: 60,
+            baseDefense: 18,
             baseSpeed: 12,
             baseAccuracy: 92,
             baseDodge: 15,
@@ -576,9 +960,9 @@ const gameMetadata = {
         },
         {
             name: "龙王",
-            baseHp: 130,
-            baseAttack: 21,
-            baseDefense: 8,
+            baseHp: 720,
+            baseAttack: 72,
+            baseDefense: 28,
             baseSpeed: 10,
             baseAccuracy: 93,
             baseDodge: 12,
@@ -588,10 +972,75 @@ const gameMetadata = {
             image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20dragon%20king%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
         },
         {
+            name: "风神",
+            baseHp: 420,
+            baseAttack: 60,
+            baseDefense: 14,
+            baseSpeed: 18,
+            baseAccuracy: 96,
+            baseDodge: 28,
+            expMultiplier: 2.0,
+            resourceMultiplier: 1.45,
+            icon: "fa-wind",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20wind%20god%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "天将",
+            baseHp: 480,
+            baseAttack: 64,
+            baseDefense: 20,
+            baseSpeed: 14,
+            baseAccuracy: 94,
+            baseDodge: 16,
+            expMultiplier: 2.1,
+            resourceMultiplier: 1.5,
+            icon: "fa-user-shield",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20celestial%20general%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "仙人",
+            baseHp: 450,
+            baseAttack: 62,
+            baseDefense: 14,
+            baseSpeed: 16,
+            baseAccuracy: 95,
+            baseDodge: 24,
+            expMultiplier: 1.95,
+            resourceMultiplier: 1.42,
+            icon: "fa-user-tie",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20immortal%20sage%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "天女",
+            baseHp: 240,
+            baseAttack: 34,
+            baseDefense: 6,
+            baseSpeed: 16,
+            baseAccuracy: 95,
+            baseDodge: 28,
+            expMultiplier: 1.75,
+            resourceMultiplier: 1.3,
+            icon: "fa-feather-alt",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20celestial%20maiden%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "元始天尊",
+            baseHp: 880,
+            baseAttack: 82,
+            baseDefense: 35,
+            baseSpeed: 12,
+            baseAccuracy: 97,
+            baseDodge: 18,
+            expMultiplier: 2.8,
+            resourceMultiplier: 1.95,
+            icon: "fa-crown",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20primordial%20celestial%20lord%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
             name: "海妖",
-            baseHp: 75,
-            baseAttack: 16,
-            baseDefense: 4,
+            baseHp: 420,
+            baseAttack: 48,
+            baseDefense: 14,
             baseSpeed: 11,
             baseAccuracy: 90,
             baseDodge: 15,
@@ -602,9 +1051,9 @@ const gameMetadata = {
         },
         {
             name: "海怪",
-            baseHp: 105,
-            baseAttack: 15,
-            baseDefense: 6,
+            baseHp: 680,
+            baseAttack: 62,
+            baseDefense: 24,
             baseSpeed: 7,
             baseAccuracy: 88,
             baseDodge: 8,
@@ -615,9 +1064,9 @@ const gameMetadata = {
         },
         {
             name: "鲛人",
-            baseHp: 65,
-            baseAttack: 17,
-            baseDefense: 3,
+            baseHp: 380,
+            baseAttack: 42,
+            baseDefense: 12,
             baseSpeed: 13,
             baseAccuracy: 92,
             baseDodge: 18,
@@ -625,21 +1074,151 @@ const gameMetadata = {
             resourceMultiplier: 1.25,
             icon: "fa-user",
             image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20mermaid%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "草原狼",
+            baseHp: 55,
+            baseAttack: 16,
+            baseDefense: 4,
+            baseSpeed: 14,
+            baseAccuracy: 92,
+            baseDodge: 18,
+            expMultiplier: 1.5,
+            resourceMultiplier: 1.2,
+            icon: "fa-wolf-pack",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20grassland%20wolf%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "野牛精",
+            baseHp: 75,
+            baseAttack: 14,
+            baseDefense: 6,
+            baseSpeed: 8,
+            baseAccuracy: 88,
+            baseDodge: 7,
+            expMultiplier: 1.6,
+            resourceMultiplier: 1.25,
+            icon: "fa-cow",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20wild%20bull%20spirit%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "鹰妖",
+            baseHp: 50,
+            baseAttack: 16,
+            baseDefense: 3,
+            baseSpeed: 16,
+            baseAccuracy: 94,
+            baseDodge: 22,
+            expMultiplier: 1.55,
+            resourceMultiplier: 1.2,
+            icon: "fa-dove",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20eagle%20demon%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "草原巨兽",
+            baseHp: 130,
+            baseAttack: 23,
+            baseDefense: 10,
+            baseSpeed: 6,
+            baseAccuracy: 86,
+            baseDodge: 5,
+            expMultiplier: 1.85,
+            resourceMultiplier: 1.35,
+            icon: "fa-paw",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20grassland%20giant%20beast%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "风狼",
+            baseHp: 60,
+            baseAttack: 17,
+            baseDefense: 4,
+            baseSpeed: 15,
+            baseAccuracy: 93,
+            baseDodge: 20,
+            expMultiplier: 1.65,
+            resourceMultiplier: 1.25,
+            icon: "fa-wolf-pack",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20wind%20wolf%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "游侠",
+            baseHp: 65,
+            baseAttack: 18,
+            baseDefense: 5,
+            baseSpeed: 12,
+            baseAccuracy: 95,
+            baseDodge: 15,
+            expMultiplier: 1.7,
+            resourceMultiplier: 1.3,
+            icon: "fa-user",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20wandering%20swordsman%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "峡谷巨鹰",
+            baseHp: 90,
+            baseAttack: 20,
+            baseDefense: 6,
+            baseSpeed: 17,
+            baseAccuracy: 94,
+            baseDodge: 20,
+            expMultiplier: 1.9,
+            resourceMultiplier: 1.4,
+            icon: "fa-dove",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20canyon%20giant%20eagle%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "石巨人",
+            baseHp: 130,
+            baseAttack: 19,
+            baseDefense: 12,
+            baseSpeed: 5,
+            baseAccuracy: 85,
+            baseDodge: 3,
+            expMultiplier: 2.0,
+            resourceMultiplier: 1.45,
+            icon: "fa-mountain",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20stone%20golem%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "峡谷蜥蜴",
+            baseHp: 85,
+            baseAttack: 17,
+            baseDefense: 8,
+            baseSpeed: 11,
+            baseAccuracy: 89,
+            baseDodge: 10,
+            expMultiplier: 1.75,
+            resourceMultiplier: 1.3,
+            icon: "fa-dragon",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20canyon%20lizard%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
+        },
+        {
+            name: "鹰王",
+            baseHp: 100,
+            baseAttack: 22,
+            baseDefense: 7,
+            baseSpeed: 19,
+            baseAccuracy: 95,
+            baseDodge: 23,
+            expMultiplier: 2.05,
+            resourceMultiplier: 1.5,
+            icon: "fa-dove",
+            image: "https://neeko-copilot.bytedance.net/api/text2image?prompt=cartoon%20eagle%20king%2C%20chinese%20xianxia%20style%2C%20cute%20style%2C%20simple%20background&size=512x512"
         }
     ],
     
     // 地图与敌人的映射关系
     mapEnemyMapping: {
-        "xianxia-mountain": ["山妖", "岩怪", "神雕", "石精", "山魈", "山精", "风魔", "雷兽", "麒麟"],
-        "xianxia-beach": ["水怪", "鱼精", "鲛人", "海妖", "海怪", "龙王"],
-        "xianxia-plains": ["草原狼", "野牛精", "鹰妖", "草原巨兽", "风狼", "游侠", "风魔", "雷兽"],
-        "xianxia-canyon": ["峡谷巨鹰", "石巨人", "风魔", "岩怪", "峡谷蜥蜴", "鹰王", "风狼"],
-        "xianxia-desert": ["沙妖", "蝎精", "蛇怪", "沙漠巨蜥", "沙虫", "风魔", "土妖"],
-        "xianxia-lake": ["水怪", "蛟蛇", "龟妖", "鱼精", "水仙", "鲛人", "海妖", "海怪", "龙王"],
-        "xianxia-forest": ["树精", "花妖", "狐仙", "鹿灵", "木怪", "妖狐", "风魔"],
-        "xianxia-volcano": ["火灵", "熔岩巨兽", "凤凰", "火凤凰"],
-        "xianxia-cave": ["洞穴蝙蝠", "蜘蛛精", "蚯蚓怪", "洞穴幽灵", "土妖", "岩怪", "石精"],
-        "xianxia-heaven": ["仙鹤", "麒麟", "凤凰", "火凤凰", "雷兽", "风魔"]
+        "xianxia-mountain": ["雪原狼", "冰原熊", "山妖", "岩怪", "神雕", "石精", "山魈", "山精", "冰霜巨人", "麒麟"],
+        "xianxia-beach": ["鱼精", "蟹将", "虾兵", "鲛人", "贝壳精", "海马精", "海妖", "海怪", "龙王"],
+        "xianxia-plains": ["草原狼", "野牛精", "鹰妖", "草原巨兽", "草原狮", "游侠", "风狼", "花豹", "草原之王"],
+        "xianxia-canyon": ["峡谷巨鹰", "石巨人", "峡谷之风", "岩怪", "峡谷蜥蜴", "鹰王", "秃鹫", "岩蛇", "峡谷领主"],
+        "xianxia-desert": ["沙妖", "蝎精", "蛇怪", "沙漠巨蜥", "沙虫", "沙暴魔", "土妖", "仙人掌精", "沙漠之王"],
+        "xianxia-lake": ["水怪", "蛟蛇", "龟妖", "鲤鱼精", "水仙", "淡水鲛人", "湖妖", "湖怪", "湖龙王"],
+        "xianxia-forest": ["树精", "花妖", "狐仙", "鹿灵", "木怪", "藤蔓怪", "森林蜘蛛", "花仙子", "妖狐王", "森林守护者"],
+        "xianxia-volcano": ["火灵", "熔岩史莱姆", "火焰精", "熔岩巨兽", "火凤凰", "凤凰", "火山领主"],
+        "xianxia-cave": ["洞穴蝙蝠", "蜘蛛精", "蚯蚓怪", "洞穴幽灵", "土妖", "岩怪", "石精", "暗影蝙蝠", "地下蠕虫"],
+        "xianxia-heaven": ["天女", "仙鹤", "云兽", "雷兽", "风神", "天将", "仙人", "元始天尊"]
     },
 
     // 地图境界需求（替代旧的 mapLevelRanges）- 按线性路线配置
@@ -685,54 +1264,47 @@ const gameMetadata = {
     },
     
     // 技能树系统（新的升级系统）
-    skillTrees: [
+    realmSkills: [
         // 武者境 (Realm 0) - 4个技能树
         {
             id: 'powerStrike',
             name: '强力打击系',
             realmRequired: 0,
             type: 'attack',
+            // 统一资源配置
+            baseDisplayName: '重击',
+            baseImageId: 1,
+            baseSoundUrl: 'https://assets.mixkit.co/active_storage/sfx/2569/2569-preview.mp3',
+            baseEffectColor: { r: 1, g: 0.3, b: 0 },
             levels: [
                 {
-                    name: '重击',
+                    name: 'heavyStrike_lv1',
                     description: '凝聚力量，造成1.3倍伤害',
                     stageRequired: 1,
                     energyCost: 12,
-                    damageMultiplier: 1.3,
-                    imageId: 1,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2569/2569-preview.mp3',
-                    effectColor: { r: 1, g: 0.3, b: 0 }
+                    damageMultiplier: 1.3
                 },
                 {
-                    name: '猛击',
+                    name: 'heavyStrike_lv2',
                     description: '全力一击，造成1.5倍伤害',
                     stageRequired: 4,
                     energyCost: 14,
-                    damageMultiplier: 1.5,
-                    imageId: 1,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2569/2569-preview.mp3',
-                    effectColor: { r: 1, g: 0.4, b: 0 }
+                    damageMultiplier: 1.5
                 },
                 {
-                    name: '武者之怒',
-                    description: '爆发武者之怒，造成1.7倍伤害',
+                    name: 'heavyStrike_lv3',
+                    description: '爆发力量，造成1.7倍伤害',
                     stageRequired: 7,
                     energyCost: 16,
-                    damageMultiplier: 1.7,
-                    imageId: 5,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2572/2572-preview.mp3',
-                    effectColor: { r: 1, g: 0.2, b: 0 }
+                    damageMultiplier: 1.7
                 },
                 {
-                    name: '武道极意',
+                    name: 'heavyStrike_lv4',
                     description: '武者境巅峰，造成1.9倍伤害，+5%暴击率',
                     stageRequired: 10,
                     energyCost: 20,
                     damageMultiplier: 1.9,
-                    criticalBonus: 0.05,
-                    imageId: 5,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2572/2572-preview.mp3',
-                    effectColor: { r: 1, g: 0, b: 0 }
+                    criticalBonus: 0.05
                 }
             ]
         },
@@ -741,26 +1313,25 @@ const gameMetadata = {
             name: '铁布衫系',
             realmRequired: 0,
             type: 'defense',
+            // 统一资源配置
+            baseDisplayName: '铁布衫',
+            baseImageId: 2,
+            baseSoundUrl: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3',
+            baseEffectColor: { r: 1, g: 0.8, b: 0 },
             levels: [
                 {
-                    name: '铁布衫',
+                    name: 'ironSkin_lv1',
                     description: '防御姿态，减伤35%',
                     stageRequired: 7,
                     energyCost: 18,
-                    defenseBonus: 0.35,
-                    imageId: 4,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3',
-                    effectColor: { r: 1, g: 0.8, b: 0 }
+                    defenseBonus: 0.35
                 },
                 {
-                    name: '金钟罩',
+                    name: 'ironSkin_lv2',
                     description: '强化防御，减伤45%',
                     stageRequired: 10,
                     energyCost: 25,
-                    defenseBonus: 0.45,
-                    imageId: 4,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3',
-                    effectColor: { r: 1, g: 0.9, b: 0.2 }
+                    defenseBonus: 0.45
                 }
             ]
         },
@@ -769,37 +1340,32 @@ const gameMetadata = {
             name: '耐力恢复系',
             realmRequired: 0,
             type: 'recovery',
+            baseDisplayName: '耐力恢复',
+            baseImageId: 3,
+            baseSoundUrl: 'https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3',
+            baseEffectColor: { r: 0.2, g: 1, b: 0.2 },
             levels: [
                 {
-                    name: '耐力恢复',
+                    name: 'enduranceRecovery_lv1',
                     description: '恢复12%最大HP',
                     stageRequired: 4,
                     energyCost: 18,
-                    healPercentage: 0.12,
-                    imageId: 3,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3',
-                    effectColor: { r: 0.2, g: 1, b: 0.2 }
+                    healPercentage: 0.12
                 },
                 {
-                    name: '生命回复',
+                    name: 'enduranceRecovery_lv2',
                     description: '恢复15%最大HP',
                     stageRequired: 7,
                     energyCost: 22,
-                    healPercentage: 0.15,
-                    imageId: 3,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3',
-                    effectColor: { r: 0.3, g: 1, b: 0.3 }
+                    healPercentage: 0.15
                 },
                 {
-                    name: '气血涌动',
+                    name: 'enduranceRecovery_lv3',
                     description: '恢复18%最大HP，持续恢复3回合',
                     stageRequired: 10,
                     energyCost: 26,
                     healPercentage: 0.18,
-                    hot: { healPercent: 0.03, turns: 3 },
-                    imageId: 3,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3',
-                    effectColor: { r: 0.4, g: 1, b: 0.4 }
+                    hot: { healPercent: 0.03, turns: 3 }
                 }
             ]
         },
@@ -808,29 +1374,27 @@ const gameMetadata = {
             name: '武者直觉系',
             realmRequired: 0,
             type: 'special',
+            baseDisplayName: '武者直觉',
+            baseImageId: 4,
+            baseSoundUrl: 'https://assets.mixkit.co/active_storage/sfx/2573/2573-preview.mp3',
+            baseEffectColor: { r: 0.5, g: 0.8, b: 1 },
             levels: [
                 {
-                    name: '闪避',
+                    name: 'warriorSense_lv1',
                     description: '25%闪避率，持续1回合',
                     stageRequired: 7,
                     energyCost: 10,
                     dodgeBonus: 0.25,
-                    duration: 1,
-                    imageId: 2,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2573/2573-preview.mp3',
-                    effectColor: { r: 0.5, g: 0.8, b: 1 }
+                    duration: 1
                 },
                 {
-                    name: '武者本能',
+                    name: 'warriorSense_lv2',
                     description: '30%闪避率 + 5%暴击率，持续1回合',
                     stageRequired: 10,
                     energyCost: 15,
                     dodgeBonus: 0.3,
                     criticalBonus: 0.05,
-                    duration: 1,
-                    imageId: 2,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2573/2573-preview.mp3',
-                    effectColor: { r: 0.6, g: 0.9, b: 1 }
+                    duration: 1
                 }
             ]
         },
@@ -840,49 +1404,41 @@ const gameMetadata = {
             name: '气刃术系',
             realmRequired: 1,
             type: 'attack',
+            baseDisplayName: '气刃斩',
+            baseImageId: 5,
+            baseSoundUrl: 'https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3',
+            baseEffectColor: { r: 0, g: 0.6, b: 1 },
             levels: [
                 {
-                    name: '气刃术',
-                    description: '凝聚真气，造成2.0倍伤害',
+                    name: 'qiBlade_lv1',
+                    description: '凝聚气刃，造成2.0倍伤害',
                     stageRequired: 1,
                     energyCost: 15,
-                    damageMultiplier: 2.0,
-                    imageId: 6,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3',
-                    effectColor: { r: 0, g: 0.6, b: 1 }
+                    damageMultiplier: 2.0
                 },
                 {
-                    name: '真气刃',
+                    name: 'qiBlade_lv2',
                     description: '强化气刃，造成2.3倍伤害，+5%暴击率',
                     stageRequired: 4,
                     energyCost: 18,
                     damageMultiplier: 2.3,
-                    criticalBonus: 0.05,
-                    imageId: 6,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3',
-                    effectColor: { r: 0, g: 0.7, b: 1 }
+                    criticalBonus: 0.05
                 },
                 {
-                    name: '炎火掌',
-                    description: '火焰掌力，造成2.6倍伤害，额外造成5%敌人最大生命伤害',
+                    name: 'qiBlade_lv3',
+                    description: '气刃爆发，造成2.6倍伤害，额外造成5%敌人最大生命伤害',
                     stageRequired: 7,
                     energyCost: 22,
                     damageMultiplier: 2.6,
-                    extraDamagePercent: 0.05,
-                    imageId: 10,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2578/2578-preview.mp3',
-                    effectColor: { r: 1, g: 0.5, b: 0 }
+                    extraDamagePercent: 0.05
                 },
                 {
-                    name: '烈焰掌',
+                    name: 'qiBlade_lv4',
                     description: '炼气境巅峰，造成3.0倍伤害，额外造成10%敌人最大生命伤害',
                     stageRequired: 10,
                     energyCost: 28,
                     damageMultiplier: 3.0,
-                    extraDamagePercent: 0.1,
-                    imageId: 10,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2578/2578-preview.mp3',
-                    effectColor: { r: 1, g: 0.3, b: 0 }
+                    extraDamagePercent: 0.1
                 }
             ]
         },
@@ -891,51 +1447,43 @@ const gameMetadata = {
             name: '真气盾系',
             realmRequired: 1,
             type: 'defense',
+            baseDisplayName: '真气护盾',
+            baseImageId: 6,
+            baseSoundUrl: 'https://assets.mixkit.co/active_storage/sfx/2575/2575-preview.mp3',
+            baseEffectColor: { r: 1, g: 1, b: 0 },
             levels: [
                 {
-                    name: '护体罡气',
+                    name: 'qiShield_lv1',
                     description: '减伤30%，护盾吸收80点伤害',
                     stageRequired: 1,
                     energyCost: 20,
                     defenseBonus: 0.3,
-                    shield: 80,
-                    imageId: 7,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2575/2575-preview.mp3',
-                    effectColor: { r: 1, g: 1, b: 0 }
+                    shield: 80
                 },
                 {
-                    name: '真气护盾',
+                    name: 'qiShield_lv2',
                     description: '减伤35%，护盾吸收120点伤害',
                     stageRequired: 4,
                     energyCost: 24,
                     defenseBonus: 0.35,
-                    shield: 120,
-                    imageId: 7,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2575/2575-preview.mp3',
-                    effectColor: { r: 0.8, g: 1, b: 0.2 }
+                    shield: 120
                 },
                 {
-                    name: '五行护盾',
+                    name: 'qiShield_lv3',
                     description: '减伤40%，护盾吸收160点伤害',
                     stageRequired: 7,
                     energyCost: 28,
                     defenseBonus: 0.4,
-                    shield: 160,
-                    imageId: 7,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2575/2575-preview.mp3',
-                    effectColor: { r: 0.9, g: 1, b: 0.3 }
+                    shield: 160
                 },
                 {
-                    name: '罡气护体',
+                    name: 'qiShield_lv4',
                     description: '减伤50%，护盾吸收200点伤害，免疫控制',
                     stageRequired: 10,
                     energyCost: 35,
                     defenseBonus: 0.5,
                     shield: 200,
-                    immuneCC: true,
-                    imageId: 7,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2575/2575-preview.mp3',
-                    effectColor: { r: 1, g: 1, b: 0.5 }
+                    immuneCC: true
                 }
             ]
         },
@@ -944,39 +1492,34 @@ const gameMetadata = {
             name: '真气治疗系',
             realmRequired: 1,
             type: 'recovery',
+            baseDisplayName: '回春术',
+            baseImageId: 7,
+            baseSoundUrl: 'https://assets.mixkit.co/active_storage/sfx/2577/2577-preview.mp3',
+            baseEffectColor: { r: 0.5, g: 0.5, b: 1 },
             levels: [
                 {
-                    name: '聚气术',
-                    description: '恢复18点灵力',
+                    name: 'qiHealing_lv1',
+                    description: '灵气回春，恢复18点灵力',
                     stageRequired: 4,
                     energyCost: 5,
-                    energyRecover: 18,
-                    imageId: 9,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2577/2577-preview.mp3',
-                    effectColor: { r: 0.5, g: 0.5, b: 1 }
+                    energyRecover: 18
                 },
                 {
-                    name: '真气治疗',
+                    name: 'qiHealing_lv2',
                     description: '恢复18%HP + 15点灵力',
                     stageRequired: 7,
                     energyCost: 15,
                     healPercentage: 0.18,
-                    energyRecover: 15,
-                    imageId: 9,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2577/2577-preview.mp3',
-                    effectColor: { r: 0.6, g: 0.6, b: 1 }
+                    energyRecover: 15
                 },
                 {
-                    name: '周天运转',
+                    name: 'qiHealing_lv3',
                     description: '恢复22%HP + 20点灵力，清除负面状态',
                     stageRequired: 10,
                     energyCost: 20,
                     healPercentage: 0.22,
                     energyRecover: 20,
-                    purify: true,
-                    imageId: 9,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2577/2577-preview.mp3',
-                    effectColor: { r: 0.7, g: 0.7, b: 1 }
+                    purify: true
                 }
             ]
         },
@@ -985,39 +1528,36 @@ const gameMetadata = {
             name: '真气感知系',
             realmRequired: 1,
             type: 'special',
+            baseDisplayName: '追风步',
+            baseImageId: 8,
+            baseSoundUrl: 'https://assets.mixkit.co/active_storage/sfx/2576/2576-preview.mp3',
+            baseEffectColor: { r: 0.7, g: 0.9, b: 1 },
             levels: [
                 {
-                    name: '追风步',
+                    name: 'qiSense_lv1',
                     description: '20%闪避 + 恢复12灵力',
                     stageRequired: 4,
                     energyCost: 10,
                     dodgeBonus: 0.2,
-                    energyRecover: 12,
-                    imageId: 8,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2576/2576-preview.mp3',
-                    effectColor: { r: 0.7, g: 0.9, b: 1 }
+                    energyRecover: 12
                 },
                 {
-                    name: '冰心诀',
+                    name: 'qiSense_lv2',
                     description: '20%防御 + 15%闪避 + 恢复15灵力',
                     stageRequired: 7,
                     energyCost: 15,
                     defenseBonus: 0.2,
                     dodgeBonus: 0.15,
-                    energyRecover: 15,
-                    imageId: 11,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2579/2579-preview.mp3',
-                    effectColor: { r: 0.7, g: 0.9, b: 1 }
+                    energyRecover: 15
                 },
                 {
-                    name: '真气爆发',
-                    description: '下2次攻击伤害+50%',
+                    name: 'qiSense_lv3',
+                    description: '身法入微，25%闪避 + 恢复20灵力，下2次攻击伤害+50%',
                     stageRequired: 10,
                     energyCost: 30,
-                    damageBuff: { bonus: 0.5, turns: 2 },
-                    imageId: 12,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2580/2580-preview.mp3',
-                    effectColor: { r: 0.8, g: 0.2, b: 1 }
+                    dodgeBonus: 0.25,
+                    energyRecover: 20,
+                    damageBuff: { bonus: 0.5, turns: 2 }
                 }
             ]
         },
@@ -1027,50 +1567,42 @@ const gameMetadata = {
             name: '筑基斩系',
             realmRequired: 2,
             type: 'attack',
+            baseDisplayName: '玄剑诀',
+            baseImageId: 9,
+            baseSoundUrl: 'https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3',
+            baseEffectColor: { r: 0.5, g: 0.8, b: 1 },
             levels: [
                 {
-                    name: '基础剑术',
+                    name: 'foundationSlash_lv1',
                     description: '剑气斩击，造成3.2倍伤害',
                     stageRequired: 1,
                     energyCost: 20,
-                    damageMultiplier: 3.2,
-                    imageId: 13,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3',
-                    effectColor: { r: 0.5, g: 0.8, b: 1 }
+                    damageMultiplier: 3.2
                 },
                 {
-                    name: '剑气纵横',
+                    name: 'foundationSlash_lv2',
                     description: '强化剑气，造成3.6倍伤害，无视15%防御',
                     stageRequired: 4,
                     energyCost: 25,
                     damageMultiplier: 3.6,
-                    armorPenetration: 0.15,
-                    imageId: 13,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3',
-                    effectColor: { r: 0.6, g: 0.8, b: 1 }
+                    armorPenetration: 0.15
                 },
                 {
-                    name: '万剑归宗',
+                    name: 'foundationSlash_lv3',
                     description: '剑气爆发，造成4.0倍伤害，无视25%防御',
                     stageRequired: 7,
                     energyCost: 32,
                     damageMultiplier: 4.0,
-                    armorPenetration: 0.25,
-                    imageId: 13,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3',
-                    effectColor: { r: 0.7, g: 0.9, b: 1 }
+                    armorPenetration: 0.25
                 },
                 {
-                    name: '筑基神剑',
+                    name: 'foundationSlash_lv4',
                     description: '筑基境巅峰，造成4.5倍伤害，无视30%防御，+10%暴击率',
                     stageRequired: 10,
                     energyCost: 40,
                     damageMultiplier: 4.5,
                     armorPenetration: 0.3,
-                    criticalBonus: 0.1,
-                    imageId: 13,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3',
-                    effectColor: { r: 0.8, g: 1, b: 1 }
+                    criticalBonus: 0.1
                 }
             ]
         },
@@ -1079,52 +1611,42 @@ const gameMetadata = {
             name: '筑基甲系',
             realmRequired: 2,
             type: 'defense',
+            baseDisplayName: '灵甲术',
+            baseImageId: 10,
+            baseSoundUrl: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3',
+            baseEffectColor: { r: 0.5, g: 0.8, b: 0.9 },
             levels: [
                 {
-                    name: '筑基护甲',
-                    description: '减伤40%，恢复5%HP',
+                    name: 'foundationArmor_lv1',
+                    description: '灵甲护体，减伤40%，反弹5%伤害',
                     stageRequired: 1,
                     energyCost: 22,
                     defenseBonus: 0.4,
-                    healPercentage: 0.05,
-                    imageId: 14,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3',
-                    effectColor: { r: 0.5, g: 0.8, b: 0.9 }
+                    reflectDamage: 0.05
                 },
                 {
-                    name: '灵力护甲',
-                    description: '减伤45%，恢复8%HP',
+                    name: 'foundationArmor_lv2',
+                    description: '灵甲强化，减伤45%，反弹8%伤害',
                     stageRequired: 4,
                     energyCost: 28,
                     defenseBonus: 0.45,
-                    healPercentage: 0.08,
-                    imageId: 14,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3',
-                    effectColor: { r: 0.6, g: 0.9, b: 1 }
+                    reflectDamage: 0.08
                 },
                 {
-                    name: '玄武护甲',
-                    description: '减伤50%，恢复12%HP，反弹8%伤害',
+                    name: 'foundationArmor_lv3',
+                    description: '灵甲反震，减伤50%，反弹12%伤害',
                     stageRequired: 7,
                     energyCost: 35,
                     defenseBonus: 0.5,
-                    healPercentage: 0.12,
-                    reflectDamage: 0.08,
-                    imageId: 14,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3',
-                    effectColor: { r: 0.7, g: 1, b: 1 }
+                    reflectDamage: 0.12
                 },
                 {
-                    name: '筑基神甲',
-                    description: '减伤60%，恢复15%HP，反弹12%伤害',
+                    name: 'foundationArmor_lv4',
+                    description: '灵甲圆满，减伤60%，反弹15%伤害',
                     stageRequired: 10,
                     energyCost: 45,
                     defenseBonus: 0.6,
-                    healPercentage: 0.15,
-                    reflectDamage: 0.12,
-                    imageId: 14,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3',
-                    effectColor: { r: 0.8, g: 1, b: 0.9 }
+                    reflectDamage: 0.15
                 }
             ]
         },
@@ -1133,52 +1655,44 @@ const gameMetadata = {
             name: '筑基恢复系',
             realmRequired: 2,
             type: 'recovery',
+            baseDisplayName: '春风化雨',
+            baseImageId: 11,
+            baseSoundUrl: 'https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3',
+            baseEffectColor: { r: 0.3, g: 1, b: 0.3 },
             levels: [
                 {
-                    name: '筑基恢复',
+                    name: 'foundationHeal_lv1',
                     description: '恢复28%最大HP',
                     stageRequired: 1,
                     energyCost: 25,
-                    healPercentage: 0.28,
-                    imageId: 15,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3',
-                    effectColor: { r: 0.3, g: 1, b: 0.3 }
+                    healPercentage: 0.28
                 },
                 {
-                    name: '生命之泉',
+                    name: 'foundationHeal_lv2',
                     description: '恢复32%最大HP，持续恢复5回合',
                     stageRequired: 4,
                     energyCost: 30,
                     healPercentage: 0.32,
-                    hot: { healPercent: 0.04, turns: 5 },
-                    imageId: 15,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3',
-                    effectColor: { r: 0.4, g: 1, b: 0.4 }
+                    hot: { healPercent: 0.04, turns: 5 }
                 },
                 {
-                    name: '灵丹妙药',
+                    name: 'foundationHeal_lv3',
                     description: '恢复38%最大HP，持续恢复5回合，清除负面状态',
                     stageRequired: 7,
                     energyCost: 36,
                     healPercentage: 0.38,
                     hot: { healPercent: 0.05, turns: 5 },
-                    purify: true,
-                    imageId: 15,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3',
-                    effectColor: { r: 0.5, g: 1, b: 0.5 }
+                    purify: true
                 },
                 {
-                    name: '筑基涅槃',
+                    name: 'foundationHeal_lv4',
                     description: '恢复45%最大HP，持续恢复8回合，清除负面状态，+10%防御',
                     stageRequired: 10,
                     energyCost: 42,
                     healPercentage: 0.45,
                     hot: { healPercent: 0.06, turns: 8 },
                     purify: true,
-                    defenseBonus: 0.1,
-                    imageId: 15,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3',
-                    effectColor: { r: 0.6, g: 1, b: 0.6 }
+                    defenseBonus: 0.1
                 }
             ]
         },
@@ -1187,53 +1701,45 @@ const gameMetadata = {
             name: '筑基术系',
             realmRequired: 2,
             type: 'special',
+            baseDisplayName: '分身术',
+            baseImageId: 12,
+            baseSoundUrl: 'https://assets.mixkit.co/active_storage/sfx/2580/2580-preview.mp3',
+            baseEffectColor: { r: 0.8, g: 0.8, b: 1 },
             levels: [
                 {
-                    name: '分身术',
-                    description: '召唤分身，下次攻击伤害+30%',
+                    name: 'foundationArt_lv1',
+                    description: '化身千万，下次攻击伤害+30%',
                     stageRequired: 1,
                     energyCost: 25,
-                    damageBuff: { bonus: 0.3, turns: 1 },
-                    imageId: 16,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2580/2580-preview.mp3',
-                    effectColor: { r: 0.8, g: 0.8, b: 1 }
+                    damageBuff: { bonus: 0.3, turns: 1 }
                 },
                 {
-                    name: '筑基领域',
+                    name: 'foundationArt_lv2',
                     description: '25%防御 + 20%闪避 + 下次攻击伤害+40%',
                     stageRequired: 4,
                     energyCost: 32,
                     defenseBonus: 0.25,
                     dodgeBonus: 0.2,
-                    damageBuff: { bonus: 0.4, turns: 1 },
-                    imageId: 16,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2580/2580-preview.mp3',
-                    effectColor: { r: 0.9, g: 0.9, b: 1 }
+                    damageBuff: { bonus: 0.4, turns: 1 }
                 },
                 {
-                    name: '玄妙之门',
+                    name: 'foundationArt_lv3',
                     description: '30%防御 + 25%闪避 + 下2次攻击伤害+50%',
                     stageRequired: 7,
                     energyCost: 40,
                     defenseBonus: 0.3,
                     dodgeBonus: 0.25,
-                    damageBuff: { bonus: 0.5, turns: 2 },
-                    imageId: 16,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2580/2580-preview.mp3',
-                    effectColor: { r: 1, g: 1, b: 1 }
+                    damageBuff: { bonus: 0.5, turns: 2 }
                 },
                 {
-                    name: '筑基大成',
+                    name: 'foundationArt_lv4',
                     description: '35%防御 + 30%闪避 + 下3次攻击伤害+60%，免疫控制',
                     stageRequired: 10,
                     energyCost: 48,
                     defenseBonus: 0.35,
                     dodgeBonus: 0.3,
                     damageBuff: { bonus: 0.6, turns: 3 },
-                    immuneCC: true,
-                    imageId: 16,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2580/2580-preview.mp3',
-                    effectColor: { r: 1, g: 0.9, b: 1 }
+                    immuneCC: true
                 }
             ]
         },
@@ -1243,51 +1749,43 @@ const gameMetadata = {
             name: '金丹掌系',
             realmRequired: 3,
             type: 'attack',
+            baseDisplayName: '紫焰掌',
+            baseImageId: 13,
+            baseSoundUrl: 'https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3',
+            baseEffectColor: { r: 1, g: 0.8, b: 0 },
             levels: [
                 {
-                    name: '金丹初掌',
+                    name: 'goldenCore_lv1',
                     description: '金丹之力，造成4.8倍伤害',
                     stageRequired: 1,
                     energyCost: 25,
-                    damageMultiplier: 4.8,
-                    imageId: 17,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3',
-                    effectColor: { r: 1, g: 0.8, b: 0 }
+                    damageMultiplier: 4.8
                 },
                 {
-                    name: '金丹掌',
+                    name: 'goldenCore_lv2',
                     description: '强化金丹掌，造成5.3倍伤害，眩晕敌人1回合',
                     stageRequired: 4,
                     energyCost: 32,
                     damageMultiplier: 5.3,
-                    stun: 1,
-                    imageId: 17,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3',
-                    effectColor: { r: 1, g: 0.9, b: 0 }
+                    stun: 1
                 },
                 {
-                    name: '金丹爆发',
+                    name: 'goldenCore_lv3',
                     description: '金丹爆发，造成5.8倍伤害，眩晕1回合，无视20%防御',
                     stageRequired: 7,
                     energyCost: 40,
                     damageMultiplier: 5.8,
                     stun: 1,
-                    armorPenetration: 0.2,
-                    imageId: 17,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3',
-                    effectColor: { r: 1, g: 1, b: 0 }
+                    armorPenetration: 0.2
                 },
                 {
-                    name: '金丹神掌',
+                    name: 'goldenCore_lv4',
                     description: '金丹境巅峰，造成6.5倍伤害，眩晕2回合，无视30%防御',
                     stageRequired: 10,
                     energyCost: 52,
                     damageMultiplier: 6.5,
                     stun: 2,
-                    armorPenetration: 0.3,
-                    imageId: 17,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3',
-                    effectColor: { r: 1, g: 0.9, b: 0.2 }
+                    armorPenetration: 0.3
                 }
             ]
         },
@@ -1296,54 +1794,46 @@ const gameMetadata = {
             name: '金丹甲系',
             realmRequired: 3,
             type: 'defense',
+            baseDisplayName: '金光护体',
+            baseImageId: 14,
+            baseSoundUrl: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3',
+            baseEffectColor: { r: 1, g: 0.9, b: 0.3 },
             levels: [
                 {
-                    name: '金丹护甲',
+                    name: 'goldenArmor_lv1',
                     description: '减伤50%，护盾吸收300点伤害',
                     stageRequired: 1,
                     energyCost: 28,
                     defenseBonus: 0.5,
-                    shield: 300,
-                    imageId: 18,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3',
-                    effectColor: { r: 1, g: 0.9, b: 0.3 }
+                    shield: 300
                 },
                 {
-                    name: '金光护体',
+                    name: 'goldenArmor_lv2',
                     description: '减伤55%，护盾吸收400点伤害，反弹10%伤害',
                     stageRequired: 4,
                     energyCost: 35,
                     defenseBonus: 0.55,
                     shield: 400,
-                    reflectDamage: 0.1,
-                    imageId: 18,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3',
-                    effectColor: { r: 1, g: 0.95, b: 0.4 }
+                    reflectDamage: 0.1
                 },
                 {
-                    name: '不灭金身',
+                    name: 'goldenArmor_lv3',
                     description: '减伤60%，护盾吸收500点伤害，反弹15%伤害',
                     stageRequired: 7,
                     energyCost: 45,
                     defenseBonus: 0.6,
                     shield: 500,
-                    reflectDamage: 0.15,
-                    imageId: 18,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3',
-                    effectColor: { r: 1, g: 1, b: 0.5 }
+                    reflectDamage: 0.15
                 },
                 {
-                    name: '金丹神甲',
+                    name: 'goldenArmor_lv4',
                     description: '减伤70%，护盾吸收600点伤害，反弹20%伤害，免疫控制',
                     stageRequired: 10,
                     energyCost: 55,
                     defenseBonus: 0.7,
                     shield: 600,
                     reflectDamage: 0.2,
-                    immuneCC: true,
-                    imageId: 18,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3',
-                    effectColor: { r: 1, g: 0.95, b: 0.6 }
+                    immuneCC: true
                 }
             ]
         },
@@ -1352,52 +1842,44 @@ const gameMetadata = {
             name: '金丹治疗系',
             realmRequired: 3,
             type: 'recovery',
+            baseDisplayName: '涅槃之光',
+            baseImageId: 15,
+            baseSoundUrl: 'https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3',
+            baseEffectColor: { r: 0.6, g: 1, b: 0.6 },
             levels: [
                 {
-                    name: '金丹恢复',
+                    name: 'goldenHeal_lv1',
                     description: '恢复42%最大HP',
                     stageRequired: 1,
                     energyCost: 30,
-                    healPercentage: 0.42,
-                    imageId: 19,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3',
-                    effectColor: { r: 0.6, g: 1, b: 0.6 }
+                    healPercentage: 0.42
                 },
                 {
-                    name: '金丹之愈',
+                    name: 'goldenHeal_lv2',
                     description: '恢复48%最大HP，恢复30点灵力',
                     stageRequired: 4,
                     energyCost: 36,
                     healPercentage: 0.48,
-                    energyRecover: 30,
-                    imageId: 19,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3',
-                    effectColor: { r: 0.7, g: 1, b: 0.7 }
+                    energyRecover: 30
                 },
                 {
-                    name: '金丹妙药',
+                    name: 'goldenHeal_lv3',
                     description: '恢复55%最大HP，恢复40点灵力，清除负面状态',
                     stageRequired: 7,
                     energyCost: 42,
                     healPercentage: 0.55,
                     energyRecover: 40,
-                    purify: true,
-                    imageId: 19,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3',
-                    effectColor: { r: 0.8, g: 1, b: 0.8 }
+                    purify: true
                 },
                 {
-                    name: '金丹涅槃',
+                    name: 'goldenHeal_lv4',
                     description: '恢复65%最大HP，恢复50点灵力，清除负面状态，+15%防御持续3回合',
                     stageRequired: 10,
                     energyCost: 50,
                     healPercentage: 0.65,
                     energyRecover: 50,
                     purify: true,
-                    defenseBonus: 0.15,
-                    imageId: 19,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3',
-                    effectColor: { r: 0.9, g: 1, b: 0.9 }
+                    defenseBonus: 0.15
                 }
             ]
         },
@@ -1406,44 +1888,39 @@ const gameMetadata = {
             name: '金丹之力系',
             realmRequired: 3,
             type: 'special',
+            baseDisplayName: '丹火焚天',
+            baseImageId: 16,
+            baseSoundUrl: 'https://assets.mixkit.co/active_storage/sfx/2580/2580-preview.mp3',
+            baseEffectColor: { r: 1, g: 0.9, b: 0.5 },
             levels: [
                 {
-                    name: '金丹爆发',
+                    name: 'goldenCorePower_lv1',
                     description: '下2次攻击伤害+60%',
                     stageRequired: 1,
                     energyCost: 35,
-                    damageBuff: { bonus: 0.6, turns: 2 },
-                    imageId: 20,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2580/2580-preview.mp3',
-                    effectColor: { r: 1, g: 0.9, b: 0.5 }
+                    damageBuff: { bonus: 0.6, turns: 2 }
                 },
                 {
-                    name: '金丹领域',
+                    name: 'goldenCorePower_lv2',
                     description: '30%防御 + 30%闪避 + 下2次攻击伤害+70%',
                     stageRequired: 4,
                     energyCost: 42,
                     defenseBonus: 0.3,
                     dodgeBonus: 0.3,
-                    damageBuff: { bonus: 0.7, turns: 2 },
-                    imageId: 20,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2580/2580-preview.mp3',
-                    effectColor: { r: 1, g: 0.95, b: 0.6 }
+                    damageBuff: { bonus: 0.7, turns: 2 }
                 },
                 {
-                    name: '金丹之力',
+                    name: 'goldenCorePower_lv3',
                     description: '35%防御 + 35%闪避 + 下3次攻击伤害+80%，恢复30点灵力',
                     stageRequired: 7,
                     energyCost: 50,
                     defenseBonus: 0.35,
                     dodgeBonus: 0.35,
                     damageBuff: { bonus: 0.8, turns: 3 },
-                    energyRecover: 30,
-                    imageId: 20,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2580/2580-preview.mp3',
-                    effectColor: { r: 1, g: 1, b: 0.7 }
+                    energyRecover: 30
                 },
                 {
-                    name: '金丹大成',
+                    name: 'goldenCorePower_lv4',
                     description: '40%防御 + 40%闪避 + 下4次攻击伤害+100%，恢复40点灵力，免疫控制',
                     stageRequired: 10,
                     energyCost: 60,
@@ -1451,10 +1928,7 @@ const gameMetadata = {
                     dodgeBonus: 0.4,
                     damageBuff: { bonus: 1.0, turns: 4 },
                     energyRecover: 40,
-                    immuneCC: true,
-                    imageId: 20,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2580/2580-preview.mp3',
-                    effectColor: { r: 1, g: 1, b: 0.8 }
+                    immuneCC: true
                 }
             ]
         },
@@ -1464,50 +1938,42 @@ const gameMetadata = {
             name: '元婴击系',
             realmRequired: 4,
             type: 'attack',
+            baseDisplayName: '寂灭一击',
+            baseImageId: 17,
+            baseSoundUrl: 'https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3',
+            baseEffectColor: { r: 0.8, g: 0.2, b: 1 },
             levels: [
                 {
-                    name: '元婴初现',
+                    name: 'infantStrike_lv1',
                     description: '元婴之力，造成6.8倍伤害',
                     stageRequired: 1,
                     energyCost: 35,
-                    damageMultiplier: 6.8,
-                    imageId: 21,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3',
-                    effectColor: { r: 0.8, g: 0.2, b: 1 }
+                    damageMultiplier: 6.8
                 },
                 {
-                    name: '元婴出击',
+                    name: 'infantStrike_lv2',
                     description: '元婴攻击，造成7.5倍伤害，额外造成10%敌人最大生命伤害',
                     stageRequired: 4,
                     energyCost: 42,
                     damageMultiplier: 7.5,
-                    extraDamagePercent: 0.1,
-                    imageId: 21,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3',
-                    effectColor: { r: 0.9, g: 0.3, b: 1 }
+                    extraDamagePercent: 0.1
                 },
                 {
-                    name: '元婴寂灭',
+                    name: 'infantStrike_lv3',
                     description: '元婴寂灭一击，造成8.2倍伤害，对生命低于25%敌人额外2倍伤害',
                     stageRequired: 7,
                     energyCost: 50,
                     damageMultiplier: 8.2,
                     executeMultiplier: 2.0,
-                    executeThreshold: 0.25,
-                    imageId: 21,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3',
-                    effectColor: { r: 1, g: 0.4, b: 1 }
+                    executeThreshold: 0.25
                 },
                 {
-                    name: '元婴灭世',
+                    name: 'infantStrike_lv4',
                     description: '元婴境巅峰，造成9.0倍伤害，斩杀生命低于35%敌人',
                     stageRequired: 10,
                     energyCost: 65,
                     damageMultiplier: 9.0,
-                    executeThreshold: 0.35,
-                    imageId: 21,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3',
-                    effectColor: { r: 1, g: 0.2, b: 0.8 }
+                    executeThreshold: 0.35
                 }
             ]
         },
@@ -1516,34 +1982,32 @@ const gameMetadata = {
             name: '元婴护系',
             realmRequired: 4,
             type: 'defense',
+            baseDisplayName: '五行神护',
+            baseImageId: 18,
+            baseSoundUrl: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3',
+            baseEffectColor: { r: 0.9, g: 0.5, b: 1 },
             levels: [
                 {
-                    name: '元婴护盾',
+                    name: 'infantGuard_lv1',
                     description: '减伤60%，护盾吸收700点伤害，反弹20%伤害',
                     stageRequired: 1,
                     energyCost: 35,
                     defenseBonus: 0.6,
                     shield: 700,
-                    reflectDamage: 0.2,
-                    imageId: 22,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3',
-                    effectColor: { r: 0.9, g: 0.5, b: 1 }
+                    reflectDamage: 0.2
                 },
                 {
-                    name: '元婴神盾',
+                    name: 'infantGuard_lv2',
                     description: '减伤65%，护盾吸收800点伤害，反弹25%伤害，免疫控制',
                     stageRequired: 4,
                     energyCost: 42,
                     defenseBonus: 0.65,
                     shield: 800,
                     reflectDamage: 0.25,
-                    immuneCC: true,
-                    imageId: 22,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3',
-                    effectColor: { r: 0.95, g: 0.6, b: 1 }
+                    immuneCC: true
                 },
                 {
-                    name: '元婴金身',
+                    name: 'infantGuard_lv3',
                     description: '减伤70%，护盾吸收900点伤害，反弹30%伤害，免疫控制，恢复10%HP',
                     stageRequired: 7,
                     energyCost: 50,
@@ -1551,13 +2015,10 @@ const gameMetadata = {
                     shield: 900,
                     reflectDamage: 0.3,
                     immuneCC: true,
-                    healPercentage: 0.1,
-                    imageId: 22,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3',
-                    effectColor: { r: 1, g: 0.7, b: 1 }
+                    healPercentage: 0.1
                 },
                 {
-                    name: '元婴神护',
+                    name: 'infantGuard_lv4',
                     description: '减伤80%，护盾吸收1000点伤害，反弹35%伤害，免疫控制，恢复15%HP',
                     stageRequired: 10,
                     energyCost: 60,
@@ -1565,10 +2026,7 @@ const gameMetadata = {
                     shield: 1000,
                     reflectDamage: 0.35,
                     immuneCC: true,
-                    healPercentage: 0.15,
-                    imageId: 22,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3',
-                    effectColor: { r: 1, g: 0.6, b: 0.9 }
+                    healPercentage: 0.15
                 }
             ]
         },
@@ -1577,45 +2035,40 @@ const gameMetadata = {
             name: '元婴回复系',
             realmRequired: 4,
             type: 'recovery',
+            baseDisplayName: '凤凰涅槃',
+            baseImageId: 19,
+            baseSoundUrl: 'https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3',
+            baseEffectColor: { r: 0.8, g: 1, b: 0.8 },
             levels: [
                 {
-                    name: '元婴回复',
+                    name: 'infantRecovery_lv1',
                     description: '恢复60%最大HP，恢复40点灵力',
                     stageRequired: 1,
                     energyCost: 38,
                     healPercentage: 0.6,
-                    energyRecover: 40,
-                    imageId: 23,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3',
-                    effectColor: { r: 0.8, g: 1, b: 0.8 }
+                    energyRecover: 40
                 },
                 {
-                    name: '元婴之愈',
+                    name: 'infantRecovery_lv2',
                     description: '恢复68%最大HP，恢复50点灵力，清除负面状态',
                     stageRequired: 4,
                     energyCost: 45,
                     healPercentage: 0.68,
                     energyRecover: 50,
-                    purify: true,
-                    imageId: 23,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3',
-                    effectColor: { r: 0.85, g: 1, b: 0.85 }
+                    purify: true
                 },
                 {
-                    name: '元婴涅槃',
+                    name: 'infantRecovery_lv3',
                     description: '恢复78%最大HP，恢复60点灵力，清除负面状态，持续恢复10回合',
                     stageRequired: 7,
                     energyCost: 52,
                     healPercentage: 0.78,
                     energyRecover: 60,
                     purify: true,
-                    hot: { healPercent: 0.08, turns: 10 },
-                    imageId: 23,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3',
-                    effectColor: { r: 0.9, g: 1, b: 0.9 }
+                    hot: { healPercent: 0.08, turns: 10 }
                 },
                 {
-                    name: '元婴重生',
+                    name: 'infantRecovery_lv4',
                     description: '恢复90%最大HP，恢复80点灵力，清除负面状态，持续恢复10回合，+20%防御',
                     stageRequired: 10,
                     energyCost: 60,
@@ -1623,10 +2076,7 @@ const gameMetadata = {
                     energyRecover: 80,
                     purify: true,
                     hot: { healPercent: 0.1, turns: 10 },
-                    defenseBonus: 0.2,
-                    imageId: 23,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3',
-                    effectColor: { r: 0.95, g: 1, b: 0.95 }
+                    defenseBonus: 0.2
                 }
             ]
         },
@@ -1635,34 +2085,32 @@ const gameMetadata = {
             name: '元婴之眼系',
             realmRequired: 4,
             type: 'special',
+            baseDisplayName: '神识感应',
+            baseImageId: 20,
+            baseSoundUrl: 'https://assets.mixkit.co/active_storage/sfx/2580/2580-preview.mp3',
+            baseEffectColor: { r: 0.9, g: 0.8, b: 1 },
             levels: [
                 {
-                    name: '元婴之眼',
+                    name: 'infantVision_lv1',
                     description: '40%闪避 + 15%暴击率 + 下3次攻击伤害+80%',
                     stageRequired: 1,
                     energyCost: 45,
                     dodgeBonus: 0.4,
                     criticalBonus: 0.15,
-                    damageBuff: { bonus: 0.8, turns: 3 },
-                    imageId: 24,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2580/2580-preview.mp3',
-                    effectColor: { r: 0.9, g: 0.8, b: 1 }
+                    damageBuff: { bonus: 0.8, turns: 3 }
                 },
                 {
-                    name: '神识感应',
+                    name: 'infantVision_lv2',
                     description: '45%闪避 + 20%暴击率 + 下3次攻击伤害+90%，恢复40点灵力',
                     stageRequired: 4,
                     energyCost: 52,
                     dodgeBonus: 0.45,
                     criticalBonus: 0.2,
                     damageBuff: { bonus: 0.9, turns: 3 },
-                    energyRecover: 40,
-                    imageId: 24,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2580/2580-preview.mp3',
-                    effectColor: { r: 0.95, g: 0.85, b: 1 }
+                    energyRecover: 40
                 },
                 {
-                    name: '元婴领域',
+                    name: 'infantVision_lv3',
                     description: '50%闪避 + 25%暴击率 + 下4次攻击伤害+100%，恢复50点灵力，免疫控制',
                     stageRequired: 7,
                     energyCost: 60,
@@ -1670,13 +2118,10 @@ const gameMetadata = {
                     criticalBonus: 0.25,
                     damageBuff: { bonus: 1.0, turns: 4 },
                     energyRecover: 50,
-                    immuneCC: true,
-                    imageId: 24,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2580/2580-preview.mp3',
-                    effectColor: { r: 1, g: 0.9, b: 1 }
+                    immuneCC: true
                 },
                 {
-                    name: '元婴大成',
+                    name: 'infantVision_lv4',
                     description: '55%闪避 + 30%暴击率 + 下5次攻击伤害+120%，恢复60点灵力，免疫控制',
                     stageRequired: 10,
                     energyCost: 70,
@@ -1684,10 +2129,7 @@ const gameMetadata = {
                     criticalBonus: 0.3,
                     damageBuff: { bonus: 1.2, turns: 5 },
                     energyRecover: 60,
-                    immuneCC: true,
-                    imageId: 24,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2580/2580-preview.mp3',
-                    effectColor: { r: 1, g: 0.85, b: 0.95 }
+                    immuneCC: true
                 }
             ]
         },
@@ -1697,51 +2139,43 @@ const gameMetadata = {
             name: '化神拳系',
             realmRequired: 5,
             type: 'attack',
+            baseDisplayName: '鸿蒙紫气',
+            baseImageId: 21,
+            baseSoundUrl: 'https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3',
+            baseEffectColor: { r: 1, g: 0.5, b: 0.5 },
             levels: [
                 {
-                    name: '化神一击',
+                    name: 'deityFist_lv1',
                     description: '化神之力，造成9.5倍伤害',
                     stageRequired: 1,
                     energyCost: 45,
-                    damageMultiplier: 9.5,
-                    imageId: 25,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3',
-                    effectColor: { r: 1, g: 0.5, b: 0.5 }
+                    damageMultiplier: 9.5
                 },
                 {
-                    name: '化神拳',
-                    description: '化神拳力，造成10.5倍伤害，无视40%防御',
+                    name: 'deityFist_lv2',
+                    description: '紫气东来，造成10.5倍伤害，无视40%防御',
                     stageRequired: 4,
                     energyCost: 55,
                     damageMultiplier: 10.5,
-                    armorPenetration: 0.4,
-                    imageId: 25,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3',
-                    effectColor: { r: 1, g: 0.6, b: 0.6 }
+                    armorPenetration: 0.4
                 },
                 {
-                    name: '鸿蒙紫气',
+                    name: 'deityFist_lv3',
                     description: '鸿蒙紫气，造成11.5倍伤害，对生命低于20%敌人额外3倍伤害',
                     stageRequired: 7,
                     energyCost: 65,
                     damageMultiplier: 11.5,
                     executeMultiplier: 3.0,
-                    executeThreshold: 0.2,
-                    imageId: 25,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3',
-                    effectColor: { r: 0.8, g: 0.4, b: 1 }
+                    executeThreshold: 0.2
                 },
                 {
-                    name: '天地同寿',
+                    name: 'deityFist_lv4',
                     description: '化神境巅峰，造成13.0倍伤害，必定暴击，无视50%防御',
                     stageRequired: 10,
                     energyCost: 80,
                     damageMultiplier: 13.0,
                     guaranteedCrit: true,
-                    armorPenetration: 0.5,
-                    imageId: 25,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3',
-                    effectColor: { r: 1, g: 0.8, b: 1 }
+                    armorPenetration: 0.5
                 }
             ]
         },
@@ -1750,34 +2184,32 @@ const gameMetadata = {
             name: '神盾系',
             realmRequired: 5,
             type: 'defense',
+            baseDisplayName: '混沌神盾',
+            baseImageId: 22,
+            baseSoundUrl: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3',
+            baseEffectColor: { r: 1, g: 0.9, b: 0.7 },
             levels: [
                 {
-                    name: '神之守护',
+                    name: 'deityShield_lv1',
                     description: '减伤70%，护盾吸收1200点伤害，完全免疫下次攻击',
                     stageRequired: 1,
                     energyCost: 45,
                     defenseBonus: 0.7,
                     shield: 1200,
-                    immuneNextAttack: true,
-                    imageId: 26,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3',
-                    effectColor: { r: 1, g: 0.9, b: 0.7 }
+                    immuneNextAttack: true
                 },
                 {
-                    name: '神盾护体',
+                    name: 'deityShield_lv2',
                     description: '减伤75%，护盾吸收1400点伤害，完全免疫下次攻击，反弹25%伤害',
                     stageRequired: 4,
                     energyCost: 55,
                     defenseBonus: 0.75,
                     shield: 1400,
                     immuneNextAttack: true,
-                    reflectDamage: 0.25,
-                    imageId: 26,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3',
-                    effectColor: { r: 1, g: 0.95, b: 0.8 }
+                    reflectDamage: 0.25
                 },
                 {
-                    name: '不灭神盾',
+                    name: 'deityShield_lv3',
                     description: '减伤80%，护盾吸收1600点伤害，完全免疫下次攻击，反弹30%伤害，恢复15%HP',
                     stageRequired: 7,
                     energyCost: 65,
@@ -1785,13 +2217,10 @@ const gameMetadata = {
                     shield: 1600,
                     immuneNextAttack: true,
                     reflectDamage: 0.3,
-                    healPercentage: 0.15,
-                    imageId: 26,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3',
-                    effectColor: { r: 1, g: 1, b: 0.9 }
+                    healPercentage: 0.15
                 },
                 {
-                    name: '化神神盾',
+                    name: 'deityShield_lv4',
                     description: '减伤90%，护盾吸收2000点伤害，完全免疫下次攻击，反弹40%伤害，恢复20%HP，免疫控制',
                     stageRequired: 10,
                     energyCost: 75,
@@ -1800,10 +2229,7 @@ const gameMetadata = {
                     immuneNextAttack: true,
                     reflectDamage: 0.4,
                     healPercentage: 0.2,
-                    immuneCC: true,
-                    imageId: 26,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3',
-                    effectColor: { r: 1, g: 1, b: 1 }
+                    immuneCC: true
                 }
             ]
         },
@@ -1812,34 +2238,32 @@ const gameMetadata = {
             name: '神佑系',
             realmRequired: 5,
             type: 'recovery',
+            baseDisplayName: '天道神佑',
+            baseImageId: 23,
+            baseSoundUrl: 'https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3',
+            baseEffectColor: { r: 0.95, g: 1, b: 0.95 },
             levels: [
                 {
-                    name: '神佑',
+                    name: 'deityBlessing_lv1',
                     description: '恢复85%最大HP，恢复60点灵力，清除负面状态',
                     stageRequired: 1,
                     energyCost: 48,
                     healPercentage: 0.85,
                     energyRecover: 60,
-                    purify: true,
-                    imageId: 27,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3',
-                    effectColor: { r: 0.95, g: 1, b: 0.95 }
+                    purify: true
                 },
                 {
-                    name: '神之恩赐',
+                    name: 'deityBlessing_lv2',
                     description: '恢复95%最大HP，恢复80点灵力，清除负面状态，持续恢复12回合',
                     stageRequired: 4,
                     energyCost: 55,
                     healPercentage: 0.95,
                     energyRecover: 80,
                     purify: true,
-                    hot: { healPercent: 0.1, turns: 12 },
-                    imageId: 27,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3',
-                    effectColor: { r: 0.97, g: 1, b: 0.97 }
+                    hot: { healPercent: 0.1, turns: 12 }
                 },
                 {
-                    name: '化神涅槃',
+                    name: 'deityBlessing_lv3',
                     description: '恢复110%最大HP，恢复100点灵力，清除负面状态，持续恢复12回合，+25%防御',
                     stageRequired: 7,
                     energyCost: 62,
@@ -1847,13 +2271,10 @@ const gameMetadata = {
                     energyRecover: 100,
                     purify: true,
                     hot: { healPercent: 0.12, turns: 12 },
-                    defenseBonus: 0.25,
-                    imageId: 27,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3',
-                    effectColor: { r: 0.99, g: 1, b: 0.99 }
+                    defenseBonus: 0.25
                 },
                 {
-                    name: '天地造化',
+                    name: 'deityBlessing_lv4',
                     description: '恢复130%最大HP（可超量治疗），恢复120点灵力，清除负面状态，持续恢复15回合，+30%全属性',
                     stageRequired: 10,
                     energyCost: 70,
@@ -1861,10 +2282,7 @@ const gameMetadata = {
                     energyRecover: 120,
                     purify: true,
                     hot: { healPercent: 0.15, turns: 15 },
-                    allStatsBonus: 0.3,
-                    imageId: 27,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3',
-                    effectColor: { r: 1, g: 1, b: 1 }
+                    allStatsBonus: 0.3
                 }
             ]
         },
@@ -1873,34 +2291,32 @@ const gameMetadata = {
             name: '化神形态系',
             realmRequired: 5,
             type: 'special',
+            baseDisplayName: '万象归一',
+            baseImageId: 24,
+            baseSoundUrl: 'https://assets.mixkit.co/active_storage/sfx/2580/2580-preview.mp3',
+            baseEffectColor: { r: 1, g: 0.9, b: 0.9 },
             levels: [
                 {
-                    name: '化神形态',
+                    name: 'deityForm_lv1',
                     description: '50%全属性 + 下4次攻击伤害+100%，免疫控制',
                     stageRequired: 1,
                     energyCost: 60,
                     allStatsBonus: 0.5,
                     damageBuff: { bonus: 1.0, turns: 4 },
-                    immuneCC: true,
-                    imageId: 28,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2580/2580-preview.mp3',
-                    effectColor: { r: 1, g: 0.9, b: 0.9 }
+                    immuneCC: true
                 },
                 {
-                    name: '化神之力',
+                    name: 'deityForm_lv2',
                     description: '60%全属性 + 下5次攻击伤害+120%，免疫控制，恢复60点灵力',
                     stageRequired: 4,
                     energyCost: 70,
                     allStatsBonus: 0.6,
                     damageBuff: { bonus: 1.2, turns: 5 },
                     immuneCC: true,
-                    energyRecover: 60,
-                    imageId: 28,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2580/2580-preview.mp3',
-                    effectColor: { r: 1, g: 0.95, b: 0.95 }
+                    energyRecover: 60
                 },
                 {
-                    name: '化神领域',
+                    name: 'deityForm_lv3',
                     description: '70%全属性 + 下6次攻击伤害+150%，免疫控制，恢复80点灵力，必定暴击',
                     stageRequired: 7,
                     energyCost: 80,
@@ -1908,13 +2324,10 @@ const gameMetadata = {
                     damageBuff: { bonus: 1.5, turns: 6 },
                     immuneCC: true,
                     energyRecover: 80,
-                    guaranteedCrit: true,
-                    imageId: 28,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2580/2580-preview.mp3',
-                    effectColor: { r: 1, g: 1, b: 1 }
+                    guaranteedCrit: true
                 },
                 {
-                    name: '化神大成',
+                    name: 'deityForm_lv4',
                     description: '80%全属性 + 下8次攻击伤害+200%，免疫控制，恢复100点灵力，必定暴击，无视60%防御',
                     stageRequired: 10,
                     energyCost: 90,
@@ -1923,10 +2336,7 @@ const gameMetadata = {
                     immuneCC: true,
                     energyRecover: 100,
                     guaranteedCrit: true,
-                    armorPenetration: 0.6,
-                    imageId: 28,
-                    soundUrl: 'https://assets.mixkit.co/active_storage/sfx/2580/2580-preview.mp3',
-                    effectColor: { r: 1, g: 0.95, b: 1 }
+                    armorPenetration: 0.6
                 }
             ]
         }

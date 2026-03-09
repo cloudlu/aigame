@@ -373,8 +373,8 @@ class EquipmentSystem {
                     
                     // 根据装备品质设置边框颜色
                     const container = element.parentElement;
-                    const rarity = item.rarity || item.rarityDisplayName;
-                    
+                    const rarity = item.rarityDisplayName || item.rarity;
+
                     // 使用getEquipmentColor函数获取边框颜色
                     container.style.borderColor = this.getEquipmentColor(rarity, 'color');
                     

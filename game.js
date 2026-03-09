@@ -1,10 +1,10 @@
-// 导入装备系统
+// 导入系统模块（Node.js环境）
+let EquipmentSystem, RealmSkillSystem;
 if (typeof module !== 'undefined' && module.exports) {
-    const EquipmentSystem = require('./equipment');
-    const SkillTreeSystem = require('./skillTreeSystem');
-} else {
-    // 浏览器环境，EquipmentSystem 和 SkillTreeSystem 已经通过 script 标签加载
+    EquipmentSystem = require('./equipment');
+    RealmSkillSystem = require('./realmSkillSystem');
 }
+// 浏览器环境：EquipmentSystem 和 RealmSkillSystem 已经通过 script 标签加载
 
 // 游戏核心数据结构和状态管理
 class EndlessWinterGame {
@@ -38,8 +38,8 @@ class EndlessWinterGame {
         // 初始化装备系统
         this.equipmentSystem = new EquipmentSystem(this);
 
-        // 初始化技能树系统
-        this.skillTreeSystem = new SkillTreeSystem(this);
+        // 初始化境界技能系统
+        this.realmSkillSystem = new RealmSkillSystem(this);
         
         // 初始化游戏
         this.initGame();
@@ -153,8 +153,8 @@ class EndlessWinterGame {
             // 添加辅助方法
             this.metadata.getSkillById = function(skillId) {
                 // 从技能树系统中查找技能
-                if (this.skillTrees) {
-                    for (let skillTree of this.skillTrees) {
+                if (this.realmSkills) {
+                    for (let skillTree of this.realmSkills) {
                         // 在技能树的等级中查找
                         if (skillTree.levels) {
                             for (let level of skillTree.levels) {
@@ -1775,7 +1775,7 @@ class EndlessWinterGame {
         if (!nodesLayer) return;
 
         // 获取该境界的所有技能树
-        const realmSkillTrees = this.metadata.skillTrees.filter(tree => tree.realmRequired === realmIndex);
+        const realmSkillTrees = this.metadata.realmSkills.filter(tree => tree.realmRequired === realmIndex);
 
         // 按类型分配位置（四个方向）
         const positions = [
@@ -1986,12 +1986,12 @@ class EndlessWinterGame {
 
     // 升级技能
     upgradeSkill(skillTreeId) {
-        if (!this.skillTreeSystem) {
+        if (!this.realmSkillSystem) {
             console.error('技能树系统未初始化');
             return false;
         }
 
-        const success = this.skillTreeSystem.upgradeSkillTree(skillTreeId);
+        const success = this.realmSkillSystem.upgradeSkillTree(skillTreeId);
 
         if (success) {
             // 更新UI
@@ -2639,8 +2639,8 @@ class EndlessWinterGame {
         };
 
         // 4. 初始化技能（使用新的技能树系统）
-        if (this.metadata.skillTrees && this.skillTreeSystem) {
-            this.skillTreeSystem.initializeDefaultSkillTrees();
+        if (this.metadata.realmSkills && this.realmSkillSystem) {
+            this.realmSkillSystem.initializeDefaultSkillTrees();
         }
 
         // 5. 初始化设置（从metadata）
