@@ -187,7 +187,51 @@ class EquipmentSystem {
     refineWeapon() {
         this.refineEquipment('weapon');
     }
-    
+
+    // 脱下装备
+    unequipEquipment(slot = 'weapon') {
+        const item = this.game.gameState.player.equipment[slot];
+        if (!item) {
+            this.game.addBattleLog(`${this.getSlotDisplayName(slot)}槽位没有装备！`);
+            return false;
+        }
+
+        // 检查背包是否有空位
+        if (this.game.gameState.inventory.length >= 50) {
+            this.game.addBattleLog('背包已满，无法脱下装备！');
+            return false;
+        }
+
+        // 保存装备名称用于日志
+        const itemName = item.name;
+
+        // 将装备从装备槽移到背包
+        this.game.gameState.inventory.push(item);
+        this.game.gameState.player.equipment[slot] = null;
+
+        // 更新UI
+        this.game.updateUI();
+
+        // 更新装备显示
+        this.updateCharacterEquipmentDisplayModal();
+
+        // 更新精炼信息
+        this.updateRefineInfoModal(slot);
+
+        // 更新玩家属性
+        this.game.updatePlayerStats();
+
+        // 更新血条显示
+        if (typeof this.game.updateHealthBars === 'function') {
+            this.game.updateHealthBars();
+        }
+
+        // 添加日志
+        this.game.addBattleLog(`脱下了 ${itemName}`);
+
+        return true;
+    }
+
     // 计算分解返还材料
     calculateDisassembleReturns(item) {
         // 确保refineLevel有值
@@ -343,7 +387,7 @@ class EquipmentSystem {
         
         const equipment = this.game.gameState.player.equipment;
         
-        // 装备槽位映射
+        // 装备槽位映射（主界面和弹框)
         const equipmentSlots = {
             'weapon': 'character-weapon',
             'armor': 'character-armor',
@@ -352,151 +396,429 @@ class EquipmentSystem {
             'accessory': 'character-accessory',
             'pants': 'character-pants'
         };
-        
+
+
         // 遍历所有装备槽位
         for (const slot in equipmentSlots) {
             const elementId = equipmentSlots[slot];
             const element = document.getElementById(elementId);
-            
-            if (element) {
-                const item = equipment[slot];
-                
-                if (item) {
-                    // 显示装备
-                    element.style.opacity = '1';
-                    
-                    // 根据装备品质设置颜色
-                    let colorClass = this.getEquipmentColorClass(item);
-                    
-                    element.className = element.className.replace(/quality-\w+/g, '');
-                    element.classList.add(colorClass);
-                    
-                    // 根据装备品质设置边框颜色
-                    const container = element.parentElement;
-                    const rarity = item.rarityDisplayName || item.rarity;
+            // 同时更新弹框内的装备槽
+            const elementModal = document.getElementById(`${elementId}-modal`);
+            const item = equipment[slot];
 
-                    // 使用getEquipmentColor函数获取边框颜色
-                    container.style.borderColor = this.getEquipmentColor(rarity, 'color');
-                    
-                    // 更新装备提示窗口
-                    const tooltip = container.querySelector('.equipment-tooltip');
-                    if (tooltip) {
-                        // 填充装备信息
-                        const nameElement = tooltip.querySelector('.equipment-name');
-                        const levelElement = tooltip.querySelector('.equipment-level');
-                        const qualityElement = tooltip.querySelector('.equipment-quality');
-                        const refineElement = tooltip.querySelector('.equipment-refine');
-                        const statsElement = tooltip.querySelector('.equipment-stats');
-                        const imageElement = tooltip.querySelector('.equipment-image');
-                        
-                        if (nameElement) {
-                            nameElement.textContent = item.name;
-                            // 根据装备品质设置装备名称颜色
-                            nameElement.className = `font-bold ${colorClass}`;
-                        }
-                        if (levelElement) {
-                            levelElement.textContent = item.realmName ? item.realmName : item.level;
-                        }
-                        if (qualityElement) {
-                            qualityElement.textContent = item.rarityDisplayName || '白色';
-                            // 根据装备品质设置品质文本颜色
-                            qualityElement.className = `equipment-quality ${colorClass}`;
-                        }
-                        if (refineElement) {
-                            refineElement.textContent = `+${item.refineLevel || 0}`;
-                        }
-                        if (statsElement) {
-                            const statsDescription = this.getStatsDescription(item.stats);
-                            statsElement.textContent = statsDescription;
-                        }
-                        if (imageElement) {
-                            // 设置装备图片
-                            const equipmentImage = element.src;
-                            imageElement.src = equipmentImage;
-                            imageElement.alt = item.name;
-                            imageElement.style.display = 'block';
-                        }
-                        // 显示图片容器
-                        const imageContainer = tooltip.querySelector('.w-32');
-                        if (imageContainer) {
-                            imageContainer.style.display = 'flex';
-                        }
-                    }
-                    // 绑定鼠标悬停事件
-                    container.addEventListener('mouseenter', () => {
-                        const tooltip = container.querySelector('.equipment-tooltip');
-                        if (tooltip && item) {
-                            tooltip.classList.remove('hidden');
-                        }
-                    });
-                    
-                    container.addEventListener('mouseleave', () => {
-                        const tooltip = container.querySelector('.equipment-tooltip');
-                        if (tooltip) {
-                            tooltip.classList.add('hidden');
-                        }
-                    });
-                } else {
-                    // 隐藏装备
-                    element.style.opacity = '0';
-                    // 清除颜色类
-                    element.className = element.className.replace(/quality-\w+/g, '');
-                    // 移除鼠标悬停事件
-                    const container = element.parentElement;
-                    container.style.borderColor = '#ffffff80'; // 白色半透明
-                    const tooltip = container.querySelector('.equipment-tooltip');
-                    if (tooltip) {
-                        // 确保弹窗保持隐藏
-                        tooltip.classList.add('hidden');
-                    }
-                }
+            // 装备类型图片映射
+            const equipmentImageMap = {
+                'weapon': 'Images/weapon-sword.png',
+                'helmet': 'Images/helmet.png',
+                'armor': 'Images/armor-chestplate.png',
+                'pants': 'Images/pants.png',
+                'boots': 'Images/boots.png',
+                'accessory': 'Images/accessory-necklace.png'
+            };
+
+            // 更新主界面装备槽
+            if (element) {
+                this.updateSingleEquipmentSlot(element, item, slot, equipmentImageMap);
+            }
+            // 更新弹框内装备槽
+            if (elementModal) {
+                this.updateSingleEquipmentSlot(elementModal, item, slot, equipmentImageMap);
             }
         }
     }
-    
+
+
+    // 更新单个装备槽的通用方法
+    updateSingleEquipmentSlot(element, item, slot, imageMap) {
+        if (item) {
+            // 显示装备并设置图片
+            element.style.opacity = '1';
+            element.src = imageMap[slot] || '';
+            element.onerror = function() { this.style.display = 'none'; };
+
+            // 根据装备品质设置边框颜色
+            const container = element.parentElement;
+            if (container) {
+                const rarity = item.rarityDisplayName || item.rarity;
+                container.style.borderColor = this.getEquipmentColor(rarity, 'color');
+            }
+        } else {
+            // 隐藏装备
+            element.style.opacity = '0';
+            element.src = '';
+            const container = element.parentElement;
+            if (container) {
+                container.style.borderColor = 'rgba(74, 158, 255, 0.3)';
+            }
+        }
+    }
+
+    // 更新弹框内的装备槽显示
+    updateCharacterEquipmentDisplayModal() {
+        if (!this.game.gameState.player || !this.game.gameState.player.equipment) {
+            return;
+        }
+
+        const equipment = this.game.gameState.player.equipment;
+
+        // 装备槽位映射（弹框专用）
+        const equipmentSlots = {
+            'helmet': 'character-helmet-modal',
+            'armor': 'character-armor-modal',
+            'weapon': 'character-weapon-modal',
+            'pants': 'character-pants-modal',
+            'boots': 'character-boots-modal',
+            'accessory': 'character-accessory-modal'
+        };
+
+        // 装备类型图片映射
+        const equipmentImageMap = {
+            'weapon': 'Images/weapon-sword.png',
+            'helmet': 'Images/helmet.png',
+            'armor': 'Images/armor-chestplate.png',
+            'pants': 'Images/pants.png',
+            'boots': 'Images/boots.png',
+            'accessory': 'Images/accessory-necklace.png'
+        };
+
+        for (const slot in equipmentSlots) {
+            const elementId = equipmentSlots[slot];
+            const element = document.getElementById(elementId);
+            const item = equipment[slot];
+
+            if (element) {
+                this.updateSingleEquipmentSlot(element, item, slot, equipmentImageMap);
+            }
+        }
+    }
+
     // 更新精炼信息UI
     updateRefineInfo(selectedSlot = 'weapon') {
         const item = this.game.gameState.player.equipment[selectedSlot];
         const refineInfo = document.getElementById('refine-info');
-        
+
+        // 如果主界面的精炼面板不存在，直接返回（新界面设计）
+        if (!refineInfo) {
+            return;
+        }
+
+        // 装备类型图片映射
+        const equipmentImageMap = {
+            'weapon': 'Images/weapon-sword.png',
+            'helmet': 'Images/helmet.png',
+            'armor': 'Images/armor-chestplate.png',
+            'pants': 'Images/pants.png',
+            'boots': 'Images/boots.png',
+            'accessory': 'Images/accessory-necklace.png'
+        };
+
         if (item) {
             // 确保refineLevel有值
             if (item.refineLevel === undefined) {
                 item.refineLevel = 0;
             }
-            
+
             // 显示精炼信息
             refineInfo.classList.remove('hidden');
-            
+
+            // 更新装备图片
+            const refineImage = document.getElementById('refine-equipment-image');
+            const refineIcon = document.getElementById('refine-equipment-icon');
+            if (refineImage && refineIcon) {
+                const imgSrc = equipmentImageMap[selectedSlot] || '';
+                if (imgSrc) {
+                    refineImage.src = imgSrc;
+                    refineImage.style.opacity = '1';
+                    refineImage.style.display = 'block';
+                    refineIcon.style.display = 'none';
+                    refineImage.onerror = function() {
+                        refineImage.style.opacity = '0';
+                        refineIcon.style.display = 'block';
+                    };
+                }
+            }
+
             // 更新装备名称
             const refineWeaponNameElement = document.getElementById('refine-weapon-name');
-            refineWeaponNameElement.textContent = item.name;
-            // 设置装备颜色
-            const colorClass = this.getEquipmentColorClass(item);
-            refineWeaponNameElement.className = `text-sm font-medium ${colorClass}`;
-            
-            // 更新精炼等级
-            document.getElementById('refine-weapon-level').textContent = `+${item.refineLevel}`;
-            
-            // 计算下一级精炼所需材料
-            if (item.refineLevel < 10) {
-                const cost = this.calculateRefineCost(item.refineLevel);
-                document.getElementById('refine-requirements').textContent = 
-                    `灵木: ${cost.spiritWood}, 玄铁: ${cost.blackIron}, 灵石: ${cost.spiritCrystal}`;
-            } else {
-                document.getElementById('refine-requirements').textContent = '已达到最大等级';
+            if (refineWeaponNameElement) {
+                refineWeaponNameElement.textContent = item.name;
+                // 设置装备颜色
+                const colorClass = this.getEquipmentColorClass(item);
+                refineWeaponNameElement.className = `text-xs font-medium ${colorClass}`;
             }
-            
-            // 更新属性提升
-            const bonus = item.refineLevel * 10;
-            document.getElementById('refine-bonus').textContent = `+${bonus}%`;
+
+            // 更新精炼等级
+            const refineWeaponLevelElement = document.getElementById('refine-weapon-level');
+            if (refineWeaponLevelElement) {
+                refineWeaponLevelElement.textContent = `+${item.refineLevel}`;
+            }
+
+            // 计算下一级精炼所需材料
+            const refineRequirementsElement = document.getElementById('refine-requirements');
+            if (refineRequirementsElement) {
+                if (item.refineLevel < 10) {
+                    const cost = this.calculateRefineCost(item.refineLevel);
+                    refineRequirementsElement.textContent =
+                        `木:${cost.spiritWood} 铁:${cost.blackIron} 石:${cost.spiritCrystal}`;
+                } else {
+                    refineRequirementsElement.textContent = '已满级';
+                }
+            }
         } else {
-            // 隐藏精炼信息
-            refineInfo.classList.add('hidden');
+            // 没有装备时隐藏精炼信息
+            if (refineInfo) {
+                refineInfo.classList.add('hidden');
+            }
         }
     }
 
-    // ==================== 装备属性刷新系统 ====================
+    // 更新弹框内的精炼信息
+    updateRefineInfoModal(selectedSlot = 'weapon') {
+        const item = this.game.gameState.player.equipment[selectedSlot];
+        const refineInfoModal = document.getElementById('refine-info-modal');
+
+        // 装备类型图片映射
+        const equipmentImageMap = {
+            'weapon': 'Images/weapon-sword.png',
+            'helmet': 'Images/helmet.png',
+            'armor': 'Images/armor-chestplate.png',
+            'pants': 'Images/pants.png',
+            'boots': 'Images/boots.png',
+            'accessory': 'Images/accessory-necklace.png'
+        };
+
+
+        if (item) {
+            // 确保refineLevel有值
+            if (item.refineLevel === undefined) {
+                item.refineLevel = 0;
+            }
+
+            // 更新装备图片
+            const refineImage = document.getElementById('refine-equipment-image-modal');
+            const refineIcon = document.getElementById('refine-equipment-icon-modal');
+            if (refineImage && refineIcon) {
+                const imgSrc = equipmentImageMap[selectedSlot] || '';
+                if (imgSrc) {
+                    refineImage.src = imgSrc;
+                    refineImage.style.opacity = '1';
+                    refineImage.style.display = 'block';
+                    refineIcon.style.display = 'none';
+                    refineImage.onerror = function() {
+                        refineImage.style.opacity = '0';
+                        refineIcon.style.display = 'block';
+                    };
+                }
+            }
+
+            // 更新装备名称
+            const refineWeaponNameModal = document.getElementById('refine-weapon-name-modal');
+            if (refineWeaponNameModal) {
+                refineWeaponNameModal.textContent = item.name;
+                const colorClass = this.getEquipmentColorClass(item);
+                refineWeaponNameModal.className = `text-sm font-medium ${colorClass}`;
+            }
+
+            // 更新精炼等级
+            const refineWeaponLevelModal = document.getElementById('refine-weapon-level-modal');
+            if (refineWeaponLevelModal) {
+                refineWeaponLevelModal.textContent = `+${item.refineLevel}`;
+            }
+
+            // 计算下一级精炼所需材料
+            if (item.refineLevel < 10) {
+                const cost = this.calculateRefineCost(item.refineLevel);
+                const requirementsModal = document.getElementById('refine-requirements-modal');
+                if (requirementsModal) {
+                    requirementsModal.textContent = `木:${cost.spiritWood} 铁:${cost.blackIron} 石:${cost.spiritCrystal}`;
+                }
+            } else {
+                const requirementsModal = document.getElementById('refine-requirements-modal');
+                if (requirementsModal) {
+                    requirementsModal.textContent = '已满级';
+                }
+            }
+
+            // 更新装备属性详情
+            this.updateRefineEquipmentStats(item);
+        } else {
+            // 没有装备时重置
+            const refineImage = document.getElementById('refine-equipment-image-modal');
+            const refineIcon = document.getElementById('refine-equipment-icon-modal');
+            if (refineImage) refineImage.style.opacity = '0';
+            if (refineIcon) refineIcon.style.display = 'block';
+
+
+            const refineWeaponNameModal = document.getElementById('refine-weapon-name-modal');
+            if (refineWeaponNameModal) {
+                refineWeaponNameModal.textContent = '无';
+                refineWeaponNameModal.className = 'text-sm font-medium text-white';
+            }
+
+            const refineWeaponLevelModal = document.getElementById('refine-weapon-level-modal');
+            if (refineWeaponLevelModal) {
+                refineWeaponLevelModal.textContent = '+0';
+            }
+
+            const requirementsModal = document.getElementById('refine-requirements-modal');
+            if (requirementsModal) {
+                requirementsModal.textContent = '请选择装备';
+            }
+
+            // 隐藏装备属性面板
+            const statsPanel = document.getElementById('refine-equipment-stats-panel');
+            if (statsPanel) {
+                statsPanel.classList.add('hidden');
+            }
+        }
+
+        // 同时更新装备详情面板（已移到精炼区域，不再需要）
+        // this.updateEquipmentDetailPanel(selectedSlot, item, equipmentImageMap);
+    }
+
+    // 更新精炼面板中的装备属性显示（显示原属性和加成）
+    updateRefineEquipmentStats(item) {
+        const statsPanel = document.getElementById('refine-equipment-stats-panel');
+        const statsContainer = document.getElementById('refine-equipment-stats');
+
+        if (!statsPanel || !statsContainer || !item || !item.stats) {
+            if (statsPanel) statsPanel.classList.add('hidden');
+            return;
+        }
+
+        // 显示属性面板
+        statsPanel.classList.remove('hidden');
+
+        const statNames = {
+            attack: '攻击',
+            defense: '防御',
+            hp: '生命',
+            luck: '幸运',
+            speed: '速度',
+            criticalRate: '暴击率',
+            dodgeRate: '闪避率',
+            tenacity: '韧性',
+            accuracy: '命中率',
+            moveSpeed: '移动速度',
+            energyRegen: '灵力回复'
+        };
+
+        const percentageStats = ['criticalRate', 'dodgeRate', 'tenacity', 'accuracy', 'moveSpeed', 'energyRegen'];
+
+        // 格式化属性值
+        const formatValue = (stat, value) => {
+            if (percentageStats.includes(stat)) {
+                return `${(value * 100).toFixed(1)}%`;
+            }
+            return Math.floor(value);
+        };
+
+        // 生成属性HTML
+        const statsHtml = [];
+
+        // 按优先级排序
+        const statOrder = ['attack', 'defense', 'hp', 'luck', 'speed', 'criticalRate', 'dodgeRate', 'tenacity', 'accuracy', 'moveSpeed', 'energyRegen'];
+
+        for (const stat of statOrder) {
+            if (!item.stats[stat]) continue;
+
+            const totalValue = item.stats[stat];
+            const refineLevel = item.refineLevel || 0;
+
+            // 计算基础值（去掉精炼加成）
+            // 精炼加成 = 基础值 * 10% * 精炼等级
+            // 总值 = 基础值 * (1 + 0.1 * 精炼等级)
+            // 基础值 = 总值 / (1 + 0.1 * 精炼等级)
+            const baseValue = totalValue / (1 + 0.1 * refineLevel);
+            const bonusValue = totalValue - baseValue;
+
+            const statName = statNames[stat] || stat;
+            const baseStr = formatValue(stat, baseValue);
+
+            if (refineLevel > 0 && bonusValue > 0) {
+                // 有精炼加成，显示基础+加成
+                const bonusStr = formatValue(stat, bonusValue);
+                statsHtml.push(`
+                    <div class="flex justify-between items-center py-0.5">
+                        <span class="text-light/70">${statName}</span>
+                        <div class="flex items-center gap-1">
+                            <span class="text-light/80">${baseStr}</span>
+                            <span class="text-accent text-xs">+${bonusStr}</span>
+                        </div>
+                    </div>
+                `);
+            } else {
+                // 无精炼加成，只显示基础值
+                statsHtml.push(`
+                    <div class="flex justify-between items-center py-0.5">
+                        <span class="text-light/70">${statName}</span>
+                        <span class="text-light/80">${baseStr}</span>
+                    </div>
+                `);
+            }
+        }
+
+        statsContainer.innerHTML = statsHtml.join('');
+    }
+
+    // 更新装备详情面板
+    updateEquipmentDetailPanel(slot, item, imageMap) {
+        const detailPanel = document.getElementById('equipment-detail-panel');
+        if (!detailPanel) return;
+
+        if (item) {
+            detailPanel.classList.remove('hidden');
+
+            // 更新装备图片
+            const detailImage = document.getElementById('detail-equipment-image');
+            const detailIcon = document.getElementById('detail-equipment-icon');
+            if (detailImage && detailIcon) {
+                const imgSrc = imageMap[slot] || '';
+                if (imgSrc) {
+                    detailImage.src = imgSrc;
+                    detailImage.style.opacity = '1';
+                    detailImage.style.display = 'block';
+                    detailIcon.style.display = 'none';
+                    detailImage.onerror = function() {
+                        detailImage.style.opacity = '0';
+                        detailIcon.style.display = 'block';
+                    };
+                }
+            }
+
+            // 更新装备名称
+            const detailName = document.getElementById('detail-equipment-name');
+            if (detailName) {
+                detailName.textContent = item.name;
+                const colorClass = this.getEquipmentColorClass(item);
+                detailName.className = `text-sm font-bold ${colorClass}`;
+            }
+
+            // 更新等级和精炼
+            const detailLevel = document.getElementById('detail-equipment-level');
+            if (detailLevel) {
+                detailLevel.textContent = item.realmName ? item.realmName : `Lv.${item.level}`;
+            }
+
+            const detailRefine = document.getElementById('detail-equipment-refine');
+            if (detailRefine) {
+                detailRefine.textContent = `+${item.refineLevel || 0}`;
+            }
+
+            // 更新属性列表
+            const detailStats = document.getElementById('detail-equipment-stats');
+            if (detailStats && item.stats) {
+                const statsHtml = this.getStatsDescription(item.stats).split(', ').map(stat =>
+                    `<div class="flex items-center gap-1"><i class="fa fa-circle text-accent text-xs" style="font-size: 4px;"></i>${stat}</div>`
+                ).join('');
+                detailStats.innerHTML = statsHtml;
+            }
+        } else {
+            detailPanel.classList.add('hidden');
+        }
+    }
+
+
 
     // 获取槽位显示名称
     getSlotDisplayName(slot) {

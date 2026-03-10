@@ -3,22 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>登录 - 无尽战斗</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='%231e293b'/%3E%3Ccircle cx='8' cy='8' r='5' fill='%2360a5fa'/%3E%3Cpath d='M8 3v10M3 8h10' stroke='%23ffffff' stroke-width='1' stroke-linecap='round'/%3E%3C/svg%3E">
+    <title>登录 - 无尽修仙</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='%230f0f1a'/%3E%3Ccircle cx='8' cy='8' r='5' fill='%234a9eff'/%3E%3Cpath d='M8 3v10M3 8h10' stroke='%23ffffff' stroke-width='1' stroke-linecap='round'/%3E%3C/svg%3E">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome -->
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    <!-- 统一的 Tailwind 配置 -->
+    <!-- Font Awesome 6 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- 统一的 Tailwind 配置 - 水墨仙侠风格 -->
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        primary: '#1e40af',
+                        // 主色调 - 仙气青
+                        primary: '#4a9eff',
                         secondary: '#3b82f6',
                         accent: '#60a5fa',
-                        dark: '#1e293b',
+                        // 金色系 - 境界/重要信息
+                        gold: '#ffd700',
+                        'gold-dark': '#b8860b',
+                        // 灵气色 - 灵力/能量
+                        spirit: '#7c3aed',
+                        'spirit-light': '#a78bfa',
+                        // 生命色
+                        life: '#10b981',
+                        // 背景色 - 深邃水墨
+                        dark: '#0f0f1a',
+                        'dark-card': 'rgba(20, 20, 35, 0.9)',
                         light: '#f1f5f9',
                         success: '#10b981',
                         danger: '#ef4444',
@@ -48,8 +59,8 @@
     </style>
     <style>
         body {
-            background-color: #1e293b;
-            background-image: 
+            background-color: #0f0f1a;
+            background-image:
                 linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
                 url('Images/login.png');
             background-size: cover;
@@ -67,147 +78,189 @@
         }
         .login-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(96, 165, 250, 0.2);
-        }
-        .btn-primary {
-            transition: all 0.3s ease;
-        }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+            box-shadow: 0 10px 40px rgba(74, 158, 255, 0.3);
         }
         .form-input {
             transition: all 0.3s ease;
         }
         .form-input:focus {
-            border-color: #60a5fa;
-            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+            border-color: #4a9eff;
+            box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.2);
         }
         .tab-button {
             transition: all 0.3s ease;
         }
         .tab-button.active {
-            border-bottom: 2px solid #60a5fa;
-            color: #60a5fa;
+            border-bottom: 2px solid #4a9eff;
+            color: #4a9eff;
+        }
+        .btn-login {
+            background: linear-gradient(135deg, #4a9eff, #3b82f6);
+            transition: all 0.3s ease;
+        }
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(74, 158, 255, 0.4);
+        }
+        .btn-register {
+            background: linear-gradient(135deg, #7c3aed, #a78bfa);
+            transition: all 0.3s ease;
+        }
+        .btn-register:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4);
+        }
+        .logo-icon {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
         }
     </style>
 </head>
 <body class="font-game text-light">
     <div class="login-container px-4">
-        <div class="login-card bg-glass border-glass rounded-xl p-8 max-w-md w-full shadow-xl">
+        <div class="login-card bg-dark-card/95 border border-primary/30 backdrop-blur-sm rounded-xl p-8 max-w-md w-full shadow-2xl">
             <!-- 游戏标题 -->
             <div class="text-center mb-8">
-                <h1 class="text-3xl font-bold text-accent text-shadow">无尽战斗</h1>
-                <p class="text-light/70 mt-2">在修仙世界中生存，战胜敌人</p>
+                <div class="flex items-center justify-center gap-3 mb-3">
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-spirit flex items-center justify-center shadow-lg shadow-primary/30 logo-icon">
+                        <span class="text-white font-bold text-xl">仙</span>
+                    </div>
+                    <h1 class="text-3xl font-bold bg-gradient-to-r from-primary to-spirit-light bg-clip-text text-transparent">无尽修仙</h1>
+                </div>
+                <p class="text-light/60 text-sm">在修仙世界中生存，战胜敌人</p>
             </div>
-            
+
             <!-- 标签切换 -->
-            <div class="flex border-b border-glass mb-6">
-                <button id="login-tab" class="tab-button active flex-1 py-2 text-center font-medium">登录</button>
-                <button id="register-tab" class="tab-button flex-1 py-2 text-center font-medium text-light/70">注册</button>
+            <div class="flex border-b border-primary/20 mb-6">
+                <button id="login-tab" class="tab-button active flex-1 py-2.5 text-center font-medium flex items-center justify-center gap-2">
+                    <i class="fa fa-sign-in"></i> 登录
+                </button>
+                <button id="register-tab" class="tab-button flex-1 py-2.5 text-center font-medium text-light/50 flex items-center justify-center gap-2">
+                    <i class="fa fa-user-plus"></i> 注册
+                </button>
             </div>
-            
+
             <!-- 登录表单 -->
             <div id="login-form" class="space-y-4">
                 <div>
-                    <label for="login-username" class="block text-sm font-medium text-light/90 mb-1">用户名</label>
-                    <input type="text" id="login-username" class="form-input w-full bg-dark/50 border border-glass rounded-lg px-4 py-2 text-light focus:outline-none">
+                    <label for="login-username" class="block text-sm font-medium text-light/80 mb-1.5 flex items-center gap-2">
+                        <i class="fa fa-user text-primary text-xs"></i> 用户名
+                    </label>
+                    <input type="text" id="login-username" class="form-input w-full bg-dark/50 border border-primary/30 rounded-lg px-4 py-2.5 text-light placeholder-light/30 focus:outline-none" placeholder="请输入用户名">
                 </div>
                 <div>
-                    <label for="login-password" class="block text-sm font-medium text-light/90 mb-1">密码</label>
-                    <input type="password" id="login-password" class="form-input w-full bg-dark/50 border border-glass rounded-lg px-4 py-2 text-light focus:outline-none">
+                    <label for="login-password" class="block text-sm font-medium text-light/80 mb-1.5 flex items-center gap-2">
+                        <i class="fa fa-lock text-primary text-xs"></i> 密码
+                    </label>
+                    <input type="password" id="login-password" class="form-input w-full bg-dark/50 border border-primary/30 rounded-lg px-4 py-2.5 text-light placeholder-light/30 focus:outline-none" placeholder="请输入密码">
                 </div>
-                <button id="login-submit" class="btn-primary w-full bg-primary hover:bg-primary/80 text-white font-medium py-2 px-4 rounded-lg shadow-md">
-                    登录
+                <button id="login-submit" class="btn-login w-full text-white font-medium py-3 px-4 rounded-lg shadow-lg flex items-center justify-center gap-2">
+                    <i class="fa fa-sign-in"></i> 登录游戏
                 </button>
             </div>
-            
+
             <!-- 注册表单 -->
             <div id="register-form" class="space-y-4 hidden">
                 <div>
-                    <label for="register-username" class="block text-sm font-medium text-light/90 mb-1">用户名</label>
-                    <input type="text" id="register-username" class="form-input w-full bg-dark/50 border border-glass rounded-lg px-4 py-2 text-light focus:outline-none">
+                    <label for="register-username" class="block text-sm font-medium text-light/80 mb-1.5 flex items-center gap-2">
+                        <i class="fa fa-user text-spirit text-xs"></i> 用户名
+                    </label>
+                    <input type="text" id="register-username" class="form-input w-full bg-dark/50 border border-primary/30 rounded-lg px-4 py-2.5 text-light placeholder-light/30 focus:outline-none" placeholder="请输入用户名">
                 </div>
                 <div>
-                    <label for="register-password" class="block text-sm font-medium text-light/90 mb-1">密码</label>
-                    <input type="password" id="register-password" class="form-input w-full bg-dark/50 border border-glass rounded-lg px-4 py-2 text-light focus:outline-none">
+                    <label for="register-password" class="block text-sm font-medium text-light/80 mb-1.5 flex items-center gap-2">
+                        <i class="fa fa-lock text-spirit text-xs"></i> 密码
+                    </label>
+                    <input type="password" id="register-password" class="form-input w-full bg-dark/50 border border-primary/30 rounded-lg px-4 py-2.5 text-light placeholder-light/30 focus:outline-none" placeholder="请输入密码">
                 </div>
                 <div>
-                    <label for="register-confirm-password" class="block text-sm font-medium text-light/90 mb-1">确认密码</label>
-                    <input type="password" id="register-confirm-password" class="form-input w-full bg-dark/50 border border-glass rounded-lg px-4 py-2 text-light focus:outline-none">
+                    <label for="register-confirm-password" class="block text-sm font-medium text-light/80 mb-1.5 flex items-center gap-2">
+                        <i class="fa fa-check-circle text-spirit text-xs"></i> 确认密码
+                    </label>
+                    <input type="password" id="register-confirm-password" class="form-input w-full bg-dark/50 border border-primary/30 rounded-lg px-4 py-2.5 text-light placeholder-light/30 focus:outline-none" placeholder="请再次输入密码">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-light/90 mb-1">性别</label>
-                    <div class="flex space-x-4">
-                        <label class="flex items-center">
-                            <input type="radio" name="gender" value="男" class="mr-2 accent-accent" checked>
+                    <label class="block text-sm font-medium text-light/80 mb-1.5 flex items-center gap-2">
+                        <i class="fa fa-venus-mars text-spirit text-xs"></i> 性别
+                    </label>
+                    <div class="flex gap-4">
+                        <label class="flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg border border-primary/30 hover:border-primary/50 transition-colors">
+                            <input type="radio" name="gender" value="男" class="accent-primary w-4 h-4" checked>
+                            <i class="fa fa-mars text-blue-400"></i>
                             <span>男</span>
                         </label>
-                        <label class="flex items-center">
-                            <input type="radio" name="gender" value="女" class="mr-2 accent-accent">
+                        <label class="flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg border border-primary/30 hover:border-primary/50 transition-colors">
+                            <input type="radio" name="gender" value="女" class="accent-primary w-4 h-4">
+                            <i class="fa fa-venus text-pink-400"></i>
                             <span>女</span>
                         </label>
                     </div>
                 </div>
-                <button id="register-submit" class="btn-primary w-full bg-secondary hover:bg-secondary/80 text-white font-medium py-2 px-4 rounded-lg shadow-md">
-                    注册
+                <button id="register-submit" class="btn-register w-full text-white font-medium py-3 px-4 rounded-lg shadow-lg flex items-center justify-center gap-2">
+                    <i class="fa fa-user-plus"></i> 创建角色
                 </button>
             </div>
-            
+
             <!-- 错误信息 -->
-            <div id="error-message" class="mt-4 p-3 bg-danger/20 border border-danger/30 rounded-lg text-danger text-sm hidden"></div>
-            
+            <div id="error-message" class="mt-4 p-3 bg-danger/20 border border-danger/30 rounded-lg text-danger text-sm hidden flex items-center gap-2">
+                <i class="fa fa-exclamation-circle"></i>
+                <span id="error-text"></span>
+            </div>
+
             <!-- 版权信息 -->
-            <div class="mt-8 text-center text-light/60 text-sm">
-                <p>© 2026 无尽战斗 - 修仙游戏</p>
+            <div class="mt-8 text-center text-light/40 text-xs">
+                <p>© 2026 无尽修仙 - 修仙游戏</p>
             </div>
         </div>
     </div>
-    
+
     <script>
         // 标签切换
         document.getElementById('login-tab').addEventListener('click', function() {
             document.getElementById('login-tab').classList.add('active');
-            document.getElementById('login-tab').classList.remove('text-light/70');
+            document.getElementById('login-tab').classList.remove('text-light/50');
             document.getElementById('register-tab').classList.remove('active');
-            document.getElementById('register-tab').classList.add('text-light/70');
+            document.getElementById('register-tab').classList.add('text-light/50');
             document.getElementById('login-form').classList.remove('hidden');
             document.getElementById('register-form').classList.add('hidden');
             document.getElementById('error-message').classList.add('hidden');
         });
-        
+
         document.getElementById('register-tab').addEventListener('click', function() {
             document.getElementById('register-tab').classList.add('active');
-            document.getElementById('register-tab').classList.remove('text-light/70');
+            document.getElementById('register-tab').classList.remove('text-light/50');
             document.getElementById('login-tab').classList.remove('active');
-            document.getElementById('login-tab').classList.add('text-light/70');
+            document.getElementById('login-tab').classList.add('text-light/50');
             document.getElementById('register-form').classList.remove('hidden');
             document.getElementById('login-form').classList.add('hidden');
             document.getElementById('error-message').classList.add('hidden');
         });
-        
+
         // 显示错误信息
         function showError(message) {
             const errorElement = document.getElementById('error-message');
-            errorElement.textContent = message;
+            document.getElementById('error-text').textContent = message;
             errorElement.classList.remove('hidden');
         }
-        
+
         // 隐藏错误信息
         function hideError() {
             document.getElementById('error-message').classList.add('hidden');
         }
-        
+
         // 登录功能
         async function login() {
             const username = document.getElementById('login-username').value;
             const password = document.getElementById('login-password').value;
-            
+
             if (!username || !password) {
                 showError('请输入用户名和密码');
                 return;
             }
-            
+
             try {
                 const response = await fetch('http://localhost:3002/api/login', {
                     method: 'POST',
@@ -216,14 +269,14 @@
                     },
                     body: JSON.stringify({ username, password })
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     // 保存token和用户信息到localStorage
                     localStorage.setItem('endlessWinterToken', result.token);
                     localStorage.setItem('endlessWinterUser', JSON.stringify(result.user));
-                    
+
                     // 跳转到游戏页面
                     window.location.href = 'index.html';
                 } else {
@@ -234,24 +287,24 @@
                 showError('登录失败，请稍后重试');
             }
         }
-        
+
         // 注册功能
         async function register() {
             const username = document.getElementById('register-username').value;
             const password = document.getElementById('register-password').value;
             const confirmPassword = document.getElementById('register-confirm-password').value;
             const gender = document.querySelector('input[name="gender"]:checked').value;
-            
+
             if (!username || !password || !confirmPassword) {
                 showError('请填写所有字段');
                 return;
             }
-            
+
             if (password !== confirmPassword) {
                 showError('密码确认不一致');
                 return;
             }
-            
+
             try {
                 const response = await fetch('http://localhost:3002/api/register', {
                     method: 'POST',
@@ -260,14 +313,14 @@
                     },
                     body: JSON.stringify({ username, password, gender })
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     // 保存token和用户信息到localStorage
                     localStorage.setItem('endlessWinterToken', result.token);
                     localStorage.setItem('endlessWinterUser', JSON.stringify(result.user));
-                    
+
                     // 跳转到游戏页面
                     window.location.href = 'index.html';
                 } else {
@@ -278,45 +331,45 @@
                 showError('注册失败，请稍后重试');
             }
         }
-        
+
         // 绑定登录事件
         document.getElementById('login-submit').addEventListener('click', login);
-        
+
         // 登录表单回车键
         document.getElementById('login-username').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 document.getElementById('login-password').focus();
             }
         });
-        
+
         document.getElementById('login-password').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 login();
             }
         });
-        
+
         // 绑定注册事件
         document.getElementById('register-submit').addEventListener('click', register);
-        
+
         // 注册表单回车键
         document.getElementById('register-username').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 document.getElementById('register-password').focus();
             }
         });
-        
+
         document.getElementById('register-password').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 document.getElementById('register-confirm-password').focus();
             }
         });
-        
+
         document.getElementById('register-confirm-password').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 register();
             }
         });
-        
+
         // 检查是否已登录
         window.onload = function() {
             // 强制清除可能的残留登录状态（针对退出登录的情况）
@@ -324,7 +377,7 @@
                 localStorage.removeItem('endlessWinterToken');
                 localStorage.removeItem('endlessWinterUser');
             }
-            
+
             // 检查是否已经登录
             const token = localStorage.getItem('endlessWinterToken');
             if (token) {

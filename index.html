@@ -7,21 +7,32 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='%231e293b'/%3E%3Ccircle cx='8' cy='8' r='5' fill='%2360a5fa'/%3E%3Cpath d='M8 3v10M3 8h10' stroke='%23ffffff' stroke-width='1' stroke-linecap='round'/%3E%3C/svg%3E">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome -->
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- Font Awesome 6 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <!-- Babylon.js (本地副本) -->
     <script src="lib/babylon.js"></script>
     <script src="lib/babylonjs.loaders.min.js"></script>
-    <!-- 统一的 Tailwind 配置 -->
+    <!-- 统一的 Tailwind 配置 - 水墨仙侠风格 -->
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        primary: '#1e40af',
+                        // 主色调 - 仙气青
+                        primary: '#4a9eff',
                         secondary: '#3b82f6',
                         accent: '#60a5fa',
-                        dark: '#1e293b',
+                        // 金色系 - 境界/重要信息
+                        gold: '#ffd700',
+                        'gold-dark': '#b8860b',
+                        // 灵气色 - 灵力/能量
+                        spirit: '#7c3aed',
+                        'spirit-light': '#a78bfa',
+                        // 生命色
+                        life: '#10b981',
+                        // 背景色 - 深邃水墨
+                        dark: '#0f0f1a',
+                        'dark-card': 'rgba(20, 20, 35, 0.9)',
                         light: '#f1f5f9',
                         success: '#10b981',
                         danger: '#ef4444',
@@ -78,13 +89,15 @@
     </style>
     <style>
         body {
-            background-color: #1e293b;
-            background-image: 
-                linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
-                url('https://images.unsplash.com/photo-1513639777669-90a1b58e7e9c?w=1920&h=1080&auto=format&fit=crop');
+            background-color: #0f0f1a;
+            background-image:
+                radial-gradient(ellipse at 20% 80%, rgba(74, 158, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(124, 58, 237, 0.08) 0%, transparent 50%),
+                linear-gradient(180deg, #0f0f1a 0%, #1a1a2e 50%, #0f0f1a 100%);
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
+            color-scheme: dark;
         }
         .game-container {
             min-height: 100vh;
@@ -327,711 +340,239 @@
         }
     </style>
 </head>
-<body class="font-game text-light">
-    <div class="game-container flex flex-col">
-        <!-- 顶部导航栏 -->
-        <nav class="bg-dark/80 border-b border-glass py-2 px-4 flex justify-between items-center">
-            <div class="flex items-center">
-                <h1 class="text-xl font-bold text-accent">无尽战斗</h1>
-            </div>
-            <div class="flex items-center space-x-3">
-                <span class="text-sm text-light/90">
-                    <i class="fa fa-user mr-1 text-accent"></i> <span id="current-user-nav">Guest</span>
-                </span>
-                <button id="logout-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="退出当前账号">
-                    <i class="fa fa-sign-out text-accent"></i>
-                </button>
-                <div class="relative">
-                    <button id="settings-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="游戏设置选项">
-                        <i class="fa fa-cog text-accent"></i>
-                    </button>
-                    <div id="settings-dropdown" class="hidden absolute top-full right-0 mt-1 bg-dark/90 border border-glass rounded-lg p-2 min-w-[250px] z-50">
-                        <!-- 自动战斗设置 -->
-                        <div class="w-full text-left px-3 py-2 text-sm rounded">
-                            <div class="font-medium text-white mb-2 flex items-center">
-                                <i class="fa fa-bolt mr-2 text-yellow-500"></i> 自动战斗设置
-                            </div>
-                            <div class="space-y-1">
-                                <div class="flex items-center">
-                                    <input type="checkbox" id="auto-battle-green" class="mr-2 accent-accent" checked>
-                                    <label for="auto-battle-green" class="text-sm text-green-500">绿色（较弱）</label>
-                                </div>
-                                <div class="flex items-center">
-                                    <input type="checkbox" id="auto-battle-yellow" class="mr-2 accent-accent" checked>
-                                    <label for="auto-battle-yellow" class="text-sm text-yellow-500">黄色（相当）</label>
-                                </div>
-                                <div class="flex items-center">
-                                    <input type="checkbox" id="auto-battle-red" class="mr-2 accent-accent" checked>
-                                    <label for="auto-battle-red" class="text-sm text-red-500">红色（较强）</label>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- 自动收集资源设置 -->
-                        <div class="w-full text-left px-3 py-2 text-sm rounded">
-                            <div class="font-medium text-white mb-2 flex items-center">
-                                <i class="fa fa-collection mr-2 text-blue-500"></i> 自动收集设置
-                            </div>
-                            <div class="space-y-1">
-                                <div class="flex items-center">
-                                    <input type="checkbox" id="auto-collect-spiritWood" class="mr-2 accent-accent" checked>
-                                    <label for="auto-collect-spiritWood" class="text-sm text-light/90">灵木</label>
-                                </div>
-                                <div class="flex items-center mb-1">
-                                    <input type="checkbox" id="auto-collect-blackIron" class="mr-2 accent-accent" checked>
-                                    <label for="auto-collect-blackIron" class="text-sm text-light/90">玄铁</label>
-                                </div>
-                                <div class="flex items-center mb-1">
-                                    <input type="checkbox" id="auto-collect-spiritCrystal" class="mr-2 accent-accent" checked>
-                                    <label for="auto-collect-spiritCrystal" class="text-sm text-light/90">灵石</label>
-                                </div>
-                            </div>
-                        </div> 
-                        <button id="delete-account-btn" class="w-full text-left px-3 py-2 text-sm hover:bg-danger/20 rounded flex items-center">
-                            <i class="fa fa-trash mr-2"></i> 注销账号
-                        </button>
+<body class="font-game text-light overflow-x-hidden">
+    <div class="game-container flex flex-col min-h-screen">
+        <!-- 顶部导航栏（合并版） -->
+        <nav class="bg-gradient-to-r from-dark via-[#1a1a2e] to-dark border-b border-primary/30 py-2 px-4">
+            <div class="flex items-center gap-3 flex-wrap">
+                <!-- Logo -->
+                <div class="flex items-center gap-2 shrink-0">
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-spirit flex items-center justify-center shadow-lg shadow-primary/30">
+                        <span class="text-white font-bold">仙</span>
                     </div>
+                    <span class="text-lg font-bold text-primary hidden sm:block">无尽修仙</span>
+                </div>
+
+                <!-- 分隔线 -->
+                <div class="h-6 w-px bg-primary/20"></div>
+
+                <!-- 头像 + 名字（点击打开人物详情） -->
+                <div class="flex items-center gap-2 cursor-pointer hover:bg-white/5 rounded-lg p-1 transition-colors shrink-0" id="character-info-trigger">
+                    <div class="relative w-8 h-8 rounded-full overflow-hidden border-2 border-gold bg-gradient-to-br from-primary/50 to-spirit/50">
+                        <img id="character-avatar" src="Images/default-character.png" alt="头像" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="w-full h-full items-center justify-center" style="display: none;">
+                            <i class="fa fa-user text-sm text-primary"></i>
+                        </div>
+                    </div>
+                    <span class="text-sm font-medium text-white hidden md:block" id="survivor-name">修仙者</span>
+                    <i class="fa fa-chevron-down text-light/30 text-xs hidden md:block"></i>
+                </div>
+
+                <!-- 分隔线 -->
+                <div class="h-6 w-px bg-primary/20 hidden md:block"></div>
+
+                <!-- 血条 + 灵力条（两行） -->
+                <div class="flex flex-col gap-1 shrink-0 text-xs">
+                    <div class="flex items-center gap-1">
+                        <span class="text-red-400 w-4">血</span>
+                        <div class="w-20 h-2 bg-black/40 rounded overflow-hidden">
+                            <div id="hp-bar" class="h-full bg-gradient-to-r from-red-600 to-life transition-all duration-300" style="width: 100%"></div>
+                        </div>
+                        <span id="hp-display" class="text-white w-14">100/100</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <span class="text-spirit-light w-4">灵</span>
+                        <div class="w-20 h-2 bg-black/40 rounded overflow-hidden">
+                            <div id="energy-bar" class="h-full bg-gradient-to-r from-spirit to-spirit-light transition-all duration-300" style="width: 100%"></div>
+                        </div>
+                        <span id="energy-display" class="text-white w-14">100/100</span>
+                    </div>
+                </div>
+
+                <!-- 分隔线 -->
+                <div class="h-6 w-px bg-primary/20 hidden lg:block"></div>
+
+                <!-- 资源显示 -->
+                <div class="flex items-center gap-3 text-xs flex-wrap">
+                    <div class="flex items-center gap-1">
+                        <i class="fa fa-tree text-green-400"></i>
+                        <span class="text-light/70 hidden sm:inline">灵木:</span>
+                        <span id="spiritWood" class="text-white font-medium">0</span>
+                        <span id="spiritWood-rate" class="text-light/50 hidden xl:inline">+0/秒</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <i class="fa fa-gem text-gray-400"></i>
+                        <span class="text-light/70 hidden sm:inline">玄铁:</span>
+                        <span id="blackIron" class="text-white font-medium">0</span>
+                        <span id="blackIron-rate" class="text-light/50 hidden xl:inline">+0/秒</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <i class="fa fa-diamond text-cyan-400"></i>
+                        <span class="text-light/70 hidden sm:inline">灵石:</span>
+                        <span id="spiritCrystal" class="text-white font-medium">0</span>
+                        <span id="spiritCrystal-rate" class="text-light/50 hidden xl:inline">+0/秒</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <i class="fa fa-star text-gold"></i>
+                        <span class="text-light/70 hidden sm:inline">突破石:</span>
+                        <span id="breakthrough-stones" class="text-gold font-medium">0</span>
+                    </div>
+                </div>
+
+                <!-- 弹性空间 -->
+                <div class="flex-1"></div>
+
+                <!-- 境界徽章 -->
+                <div id="realm-badge" class="px-3 py-1 rounded-full bg-gradient-to-r from-gold-dark to-gold text-black font-bold shadow-lg shadow-gold/30 flex items-center gap-1 shrink-0">
+                    <i class="fa fa-star text-gold-dark text-xs"></i>
+                    <span id="nav-realm-name" class="text-sm">武者期</span>
+                    <span id="nav-realm-stage" class="text-xs opacity-80">· 初期</span>
+                    <span id="nav-realm-level" class="text-xs opacity-60">（1阶）</span>
+                    <span id="realm-display" class="hidden">武者期 · 初期</span>
+                </div>
+
+                <!-- 功能按钮 -->
+                <div class="flex items-center gap-1">
+                    <button id="collect-resources-btn" class="px-2 py-1 rounded-lg bg-gradient-to-r from-green-600 to-green-500 text-white text-xs font-medium hover:opacity-80 transition-opacity flex items-center gap-1" data-tooltip="采集资源">
+                        <i class="fa fa-leaf"></i><span class="hidden sm:inline"> 采集</span>
+                    </button>
+                    <button id="shop-btn" class="px-2 py-1 rounded-lg bg-gradient-to-r from-yellow-600 to-yellow-500 text-white text-xs font-medium hover:opacity-80 transition-opacity flex items-center gap-1" data-tooltip="商店">
+                        <i class="fa fa-store"></i><span class="hidden sm:inline"> 商店</span>
+                    </button>
+                    <button id="skill-tree-btn" class="px-2 py-1 rounded-lg bg-gradient-to-r from-spirit to-primary text-white text-xs font-medium hover:opacity-80 transition-opacity flex items-center gap-1" data-tooltip="技能树">
+                        <i class="fa fa-star"></i><span class="hidden sm:inline"> 技能</span>
+                    </button>
+                    <button id="open-inventory-btn" class="px-2 py-1 rounded-lg bg-gradient-to-r from-primary to-spirit text-white text-xs font-medium hover:opacity-80 transition-opacity flex items-center gap-1" data-tooltip="背包">
+                        <i class="fa fa-backpack"></i><span class="hidden sm:inline"> 背包</span>
+                    </button>
+                    <!-- 分隔线 -->
+                    <div class="h-5 w-px bg-primary/20 mx-1"></div>
+                    <button id="auto-battle-btn" class="px-2 py-1 rounded-lg bg-gradient-to-r from-red-600 to-orange-500 text-white text-xs font-medium hover:opacity-80 transition-opacity flex items-center gap-1" data-tooltip="自动战斗">
+                        <i class="fa fa-bolt"></i><span class="hidden md:inline"> 自动</span>
+                    </button>
+                    <button id="refresh-enemy-btn" class="px-2 py-1 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-500 text-white text-xs font-medium hover:opacity-80 transition-opacity flex items-center gap-1" data-tooltip="刷新敌人">
+                        <i class="fa fa-refresh"></i><span class="hidden lg:inline"> 刷新</span>
+                    </button>
+                    <button id="travel-map-btn" class="px-2 py-1 rounded-lg bg-gradient-to-r from-purple-600 to-pink-500 text-white text-xs font-medium hover:opacity-80 transition-opacity flex items-center gap-1" data-tooltip="世界地图">
+                        <i class="fa fa-globe"></i><span class="hidden lg:inline"> 地图</span>
+                    </button>
+                </div>
+
+                <!-- 分隔线 -->
+                <div class="h-6 w-px bg-primary/20"></div>
+
+                <!-- 用户信息 -->
+                <div class="flex items-center gap-2 shrink-0">
+                    <span class="text-spirit-light text-sm flex items-center gap-1">
+                        <i class="fa fa-user"></i>
+                        <span id="current-user-nav" class="hidden md:inline">Guest</span>
+                    </span>
+                    <button id="logout-btn" class="px-2 py-1 rounded-lg bg-gradient-to-r from-gray-600 to-gray-500 text-white text-xs font-medium hover:opacity-80 transition-opacity flex items-center gap-1" data-tooltip="退出登录">
+                        <i class="fa fa-sign-out"></i>
+                    </button>
+                    <button id="delete-account-nav-btn" class="w-7 h-7 rounded-full bg-dark-card border border-primary/30 flex items-center justify-center hover:border-danger transition-colors" data-tooltip="注销账号">
+                        <i class="fa fa-trash text-danger text-xs"></i>
+                    </button>
                 </div>
             </div>
         </nav>
 
-        <!-- 探索日志区域 -->
-        <div id="battle-log" class="bg-dark/80 border-b border-glass py-2 px-4 overflow-hidden">
-            <div class="h-24 overflow-y-auto">
-                <p class="text-light/70">探索日志...</p>
-            </div>
-        </div>
-
         <!-- 游戏主内容 -->
         <main class="flex-grow p-4 md:p-6">
-            <!-- 人物属性和探索地图区域 -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-                <!-- 人物信息 -->
-                <div class="md:col-span-1 character-card bg-glass border-glass rounded-lg p-4 hover:shadow-xl hover:shadow-accent/10 transition-all">
-                    <div class="flex items-center mb-4">
-                        <div class="w-20 h-20 rounded-full bg-primary/30 flex items-center justify-center mr-4 border-2 border-accent/50 overflow-hidden shadow-lg shadow-primary/20">
-                            <div class="w-full h-full flex items-center justify-center text-3xl text-accent animate-pulse">
-                                <i class="fa fa-user"></i>
-                            </div>
-                        </div>
-                        <div>
-                            <h2 class="text-xl font-bold text-white">修仙者: <span id="survivor-name" class="text-accent">Guest</span></h2>
-                            <div class="flex flex-col mt-1">
-                                <div class="flex items-center mb-1">
-                                    <span class="text-sm bg-primary/30 px-2 py-1 rounded shadow-md">等级 <span id="level" class="text-accent">1</span></span>
-                                    <button id="breakthrough-btn" class="ml-2 text-xs bg-accent/30 hover:bg-accent/50 text-accent px-2 py-1 rounded shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors" disabled>突破</button>
-                                    <button id="skill-tree-btn" class="ml-2 text-xs bg-purple/30 hover:bg-purple/50 text-purple px-2 py-1 rounded shadow-md transition-colors" data-tooltip="打开技能树界面">技能</button>
-                                </div>
-                                <div class="w-full bg-dark/50 rounded-full h-1.5">
-                                    <div id="exp-bar" class="bg-accent h-1.5 rounded-full" style="width: 0%"></div>
-                                </div>
-                                <div class="flex justify-between text-xs text-light/60 mt-1">
-                                    <span>经验: <span id="exp">0</span>/<span id="max-exp">100</span></span>
-                                    <span id="breakthrough-stones">突破石: 0</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 md:grid-cols-6 gap-3 mb-4">
-                        <div class="bg-dark/30 rounded p-2 text-center hover:bg-dark/40 transition-colors shadow-md">
-                            <p class="text-xs text-light/60">攻击</p>
-                            <p class="text-lg font-bold text-white attribute-value" id="attack" data-tooltip="攻击力: 影响普通攻击和特殊技的伤害">10</p>
-                        </div>
-                        <div class="bg-dark/30 rounded p-2 text-center hover:bg-dark/40 transition-colors shadow-md">
-                            <p class="text-xs text-light/60">防御</p>
-                            <p class="text-lg font-bold text-white attribute-value" id="defense" data-tooltip="防御力: 减少受到的敌人伤害">5</p>
-                        </div>
-                        <div class="bg-dark/30 rounded p-2 text-center hover:bg-dark/40 transition-colors shadow-md">
-                            <p class="text-xs text-light/60">生命</p>
-                            <p class="text-lg font-bold text-white attribute-value" id="hp" data-tooltip="生命值恢复: +0/秒">100</p>
-                        </div>
-                        <div class="bg-dark/30 rounded p-2 text-center hover:bg-dark/40 transition-colors shadow-md">
-                            <p class="text-xs text-light/60">幸运</p>
-                            <p class="text-lg font-bold text-white attribute-value" id="luck" data-tooltip="幸运值: 提高装备掉落概率和暴击率">2</p>
-                        </div>
-                        <div class="bg-dark/30 rounded p-2 text-center hover:bg-dark/40 transition-colors shadow-md">
-                            <p class="text-xs text-light/60">速度</p>
-                            <p class="text-lg font-bold text-white attribute-value" id="speed" data-tooltip="速度: 影响战斗中的行动顺序和闪避率">10</p>
-                        </div>
-                        <div class="bg-dark/30 rounded p-2 text-center hover:bg-dark/40 transition-colors shadow-md">
-                            <p class="text-xs text-light/60">灵力</p>
-                            <p class="text-lg font-bold text-white attribute-value" id="energy" data-tooltip="灵力恢复: +2/秒">100</p>
-                        </div>
-                    </div>
-                    
-                    <!-- 装备栏 -->
-                    <div class="mt-6 mb-6">
-                        <h3 class="font-bold text-sm mb-3 text-light/90">装备预览</h3>
-                        <div class="flex justify-center">
-                            <div class="relative w-96 h-96 flex items-center justify-center">
-                                <!-- 左侧装备正方形 -->
-                                <div class="absolute left-0 top-0 w-10 h-10 rounded bg-dark/50 border-2 border-white/50 flex items-center justify-center equipment-slot-container">
-                                    <!-- 头盔 -->
-                                    <img id="character-helmet" src="Images/helmet.png" alt="头盔" class="w-8 h-8 object-contain opacity-0 transition-opacity equipment-slot" data-slot="helmet">
-                                    <!-- 装备提示窗口 -->
-                                    <div class="equipment-tooltip hidden absolute left-full ml-2 bg-dark/90 border border-white/50 rounded p-3 w-64 z-50 shadow-lg">
-                                        <div class="flex items-center mb-3">
-                                            <div class="w-32 h-50 bg-dark/50 rounded flex items-center justify-center mr-3">
-                                                <img class="equipment-image w-full h-full object-cover" src="" alt="装备图片">
-                                            </div>
-                                            <div class="flex-1">
-                                                <h4 class="font-bold text-white equipment-name"></h4>
-                                                <p class="text-xs text-light/70">等级: <span class="equipment-level"></span></p>
-                                                <p class="text-xs text-light/70">品质: <span class="equipment-quality"></span></p>
-                                                <p class="text-xs text-light/70">精炼: <span class="equipment-refine"></span></p>
-                                                <p class="text-xs text-light/70">属性: <span class="equipment-stats"></span></p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="absolute left-0 w-10 h-10 rounded bg-dark/50 border-2 border-white/50 flex items-center justify-center equipment-slot-container">
-                                    <!-- 护甲 -->
-                                    <img id="character-armor" src="Images/armor-chestplate.png" alt="护甲" class="w-8 h-8 object-contain opacity-0 transition-opacity equipment-slot" data-slot="armor">
-                                    <!-- 装备提示窗口 -->
-                                    <div class="equipment-tooltip hidden absolute left-full ml-2 bg-dark/90 border border-white/50 rounded p-3 w-64 z-50 shadow-lg">
-                                        <div class="flex items-center mb-3">
-                                            <div class="w-32 h-50 bg-dark/50 rounded flex items-center justify-center mr-3">
-                                                <img class="equipment-image w-full h-full object-cover" src="" alt="装备图片">
-                                            </div>
-                                            <div class="flex-1">
-                                                <h4 class="font-bold text-white equipment-name"></h4>
-                                                <p class="text-xs text-light/70">等级: <span class="equipment-level"></span></p>
-                                                <p class="text-xs text-light/70">品质: <span class="equipment-quality"></span></p>
-                                                <p class="text-xs text-light/70">精炼: <span class="equipment-refine"></span></p>
-                                                <p class="text-xs text-light/70">属性: <span class="equipment-stats"></span></p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="absolute left-0 bottom-0 w-10 h-10 rounded bg-dark/50 border-2 border-white/50 flex items-center justify-center equipment-slot-container">
-                                    <!-- 武器 -->
-                                    <img id="character-weapon" src="Images/weapon-sword.png" alt="武器" class="w-8 h-8 object-contain opacity-0 transition-opacity equipment-slot" data-slot="weapon">
-                                    <!-- 装备提示窗口 -->
-                                    <div class="equipment-tooltip hidden absolute left-full ml-2 bg-dark/90 border border-white/50 rounded p-3 w-64 z-50 shadow-lg">
-                                        <div class="flex items-center mb-3">
-                                             <div class="w-32 h-50 bg-dark/50 rounded flex items-center justify-center mr-3">
-                                                <img class="equipment-image w-full h-full object-cover" src="" alt="装备图片">
-                                            </div>
-                                            <div class="flex-1">
-                                                <h4 class="font-bold text-white equipment-name"></h4>
-                                                <p class="text-xs text-light/70">等级: <span class="equipment-level"></span></p>
-                                                <p class="text-xs text-light/70">品质: <span class="equipment-quality"></span></p>
-                                                <p class="text-xs text-light/70">精炼: <span class="equipment-refine"></span></p>
-                                                <p class="text-xs text-light/70">属性: <span class="equipment-stats"></span></p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- 人物图形 -->
-                                <div class="w-64 h-full flex items-center justify-center">
-                                    <!-- 人物身体 -->
-                                    <img id="character-body" src="Images/default-character.png" alt="人物身体" class="w-full h-full object-cover">
-                                </div>
-                                
-                                <!-- 右侧装备正方形 -->
-                                <div class="absolute right-0 top-0 w-10 h-10 rounded bg-dark/50 border-2 border-white/50 flex items-center justify-center equipment-slot-container">
-                                    <!-- 饰品 -->
-                                    <img id="character-accessory" src="Images/accessory-necklace.png" alt="饰品" class="w-8 h-8 object-contain opacity-0 transition-opacity equipment-slot" data-slot="accessory">
-                                    <!-- 装备提示窗口 -->
-                                    <div class="equipment-tooltip hidden absolute right-full mr-2 bg-dark/90 border border-white/50 rounded p-3 w-64 z-50 shadow-lg">
-                                        <div class="flex items-center mb-3">
-                                             <div class="w-32 h-50 bg-dark/50 rounded flex items-center justify-center mr-3">
-                                                <img class="equipment-image w-full h-full object-cover" src="" alt="装备图片">
-                                            </div>
-                                            <div class="flex-1">
-                                                <h4 class="font-bold text-white equipment-name"></h4>
-                                                <p class="text-xs text-light/70">等级: <span class="equipment-level"></span></p>
-                                                <p class="text-xs text-light/70">品质: <span class="equipment-quality"></span></p>
-                                                <p class="text-xs text-light/70">精炼: <span class="equipment-refine"></span></p>
-                                                <p class="text-xs text-light/70">属性: <span class="equipment-stats"></span></p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="absolute right-0 w-10 h-10 rounded bg-dark/50 border-2 border-white/50 flex items-center justify-center equipment-slot-container">
-                                    <!-- 裤子 -->
-                                    <img id="character-pants" src="Images/pants.png" alt="裤子" class="w-8 h-8 object-contain opacity-0 transition-opacity equipment-slot" data-slot="pants">
-                                    <!-- 装备提示窗口 -->
-                                    <div class="equipment-tooltip hidden absolute right-full mr-2 bg-dark/90 border border-white/50 rounded p-3 w-64 z-50 shadow-lg">
-                                        <div class="flex items-center mb-3">
-                                             <div class="w-32 h-50 bg-dark/50 rounded flex items-center justify-center mr-3">
-                                                <img class="equipment-image w-full h-full object-cover" src="" alt="装备图片">
-                                            </div>
-                                            <div class="flex-1">
-                                                <h4 class="font-bold text-white equipment-name"></h4>
-                                                <p class="text-xs text-light/70">等级: <span class="equipment-level"></span></p>
-                                                <p class="text-xs text-light/70">品质: <span class="equipment-quality"></span></p>
-                                                <p class="text-xs text-light/70">精炼: <span class="equipment-refine"></span></p>
-                                                <p class="text-xs text-light/70">属性: <span class="equipment-stats"></span></p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="absolute right-0 bottom-0 w-10 h-10 rounded bg-dark/50 border-2 border-white/50 flex items-center justify-center equipment-slot-container">
-                                    <!-- 靴子 -->
-                                    <img id="character-boots" src="Images/boots.png" alt="靴子" class="w-8 h-8 object-contain opacity-0 transition-opacity equipment-slot" data-slot="boots">
-                                    <!-- 装备提示窗口 -->
-                                    <div class="equipment-tooltip hidden absolute right-full mr-2 bg-dark/90 border border-white/50 rounded p-3 w-64 z-50 shadow-lg">
-                                        <div class="flex items-center mb-3">
-                                             <div class="w-32 h-50 bg-dark/50 rounded flex items-center justify-center mr-3">
-                                                <img class="equipment-image w-full h-full object-cover" src="" alt="装备图片">
-                                            </div>
-                                            <div class="flex-1">
-                                                <h4 class="font-bold text-white equipment-name"></h4>
-                                                <p class="text-xs text-light/70">等级: <span class="equipment-level"></span></p>
-                                                <p class="text-xs text-light/70">品质: <span class="equipment-quality"></span></p>
-                                                <p class="text-xs text-light/70">精炼: <span class="equipment-refine"></span></p>
-                                                <p class="text-xs text-light/70">属性: <span class="equipment-stats"></span></p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- 装备管理 -->
-                    <div class="mt-4 space-y-2">
-                        <div class="grid grid-cols-5 gap-2 justify-items-center">
-                                <button id="auto-equip-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="一键装备最好的装备">
-                                    <i class="fa fa-shield text-accent"></i>
-                                </button>
-                                <button id="unequip-item-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="卸下当前装备">
-                                    <i class="fa fa-minus text-accent"></i>
-                                </button>
-                                <button id="open-inventory-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="打开背包查看物品">
-                                    <i class="fa fa-briefcase text-accent"></i>
-                                </button>
-                                <button id="refine-weapon-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="精炼当前装备">
-                                    <i class="fa fa-star text-accent"></i>
-                                </button>
-                                <button id="refresh-equipment-btn" class="btn-primary w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="刷新装备属性">
-                                    <i class="fa fa-random text-accent"></i>
-                                </button>
-                            </div>
-                    </div>
-                    
-                    <!-- 装备精炼信息 -->
-                    <div id="refine-info" class="mt-4 bg-dark/30 rounded-lg p-3 hidden">
-                        <h3 class="font-bold text-sm mb-2 text-light/90">装备精炼</h3>
-                        <div class="space-y-2">
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-light/80">当前装备:</span>
-                                <span id="refine-weapon-name" class="text-sm font-medium text-white">无</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-light/80">精炼等级:</span>
-                                <span id="refine-weapon-level" class="text-sm font-medium text-accent">+0</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-light/80">精炼需求:</span>
-                                <div id="refine-requirements" class="text-sm text-light/70">
-                                    木材: 0, 铁矿: 0, 水晶: 0
-                                </div>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-light/80">属性提升:</span>
-                                <span id="refine-bonus" class="text-sm font-medium text-success">+0%</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 装备刷新信息 -->
-                    <div id="refresh-info" class="mt-4 bg-dark/30 rounded-lg p-3 hidden">
-                        <h3 class="font-bold text-sm mb-2 text-light/90">装备属性刷新</h3>
-                        <div class="space-y-2">
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-light/80">当前装备:</span>
-                                <span id="refresh-equipment-name" class="text-sm font-medium text-white">无</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-light/80">精炼等级:</span>
-                                <span id="refresh-equipment-level" class="text-sm font-medium text-accent">+0</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-light/80">刷新需求:</span>
-                                <div id="refresh-requirements" class="text-sm text-light/70">
-                                    灵木: 0, 玄铁: 0, 灵石: 0
-                                </div>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-light/80">当前属性:</span>
-                                <span id="refresh-current-stats" class="text-sm text-light/70">无</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-light/80">刷新说明:</span>
-                                <span class="text-xs text-light/60">重新随机属性，保留精炼</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 装备合成信息 -->
-                    <div id="craft-info" class="mt-4 bg-dark/30 rounded-lg p-3 hidden">
-                        <h3 class="font-bold text-sm mb-2 text-light/90">装备合成</h3>
-                        <div class="space-y-2">
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-light/80">可合成装备:</span>
-                                <span id="craft-available" class="text-sm font-medium text-white">无</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-light/80">合成需求:</span>
-                                <div id="craft-requirements" class="text-sm text-light/70">
-                                    3个同等级装备
-                                </div>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-light/80">合成结果:</span>
-                                <span id="craft-result" class="text-sm font-medium text-accent">+1级装备</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-light/80">合成说明:</span>
-                                <span class="text-xs text-light/60">3个同等级装备合成1个高1级装备</span>
-                            </div>
-                        </div>
-                    </div>
+            <!-- 主游戏区域 - 探索地图 -->
+            <div class="bg-dark-card rounded-xl p-4 border border-primary/30 backdrop-blur-sm shadow-xl shadow-black/50 min-h-[600px]">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-lg text-light/90 flex items-center gap-2">
+                        <i class="fa fa-map text-primary"></i> 探索地图
+                    </h3>
                 </div>
 
-                <!-- 探索地图区域 -->
-                <div class="md:col-span-3">
-                    <div class="bg-glass border-glass rounded-lg p-4 hover:shadow-xl hover:shadow-accent/10 transition-all">
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="text-xl font-bold text-white">探索地图</h2>
-                            <div class="flex space-x-2">
-                                <button id="auto-battle-btn" class="btn-primary bg-secondary hover:bg-secondary/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="自动进行战斗，消耗灵力">
-                                    <i class="fa fa-bolt text-white"></i>
-                                </button>
-                                <button id="auto-collect-btn" class="btn-primary bg-secondary hover:bg-secondary/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all" data-tooltip="自动收集资源，消耗灵力">
-                                    <i class="fa fa-leaf text-green-400"></i>
-                                </button>
-                                <button id="refresh-enemy-btn" class="btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="刷新当前地图敌人">
-                                    <i class="fa fa-refresh text-white"></i>
-                                </button>
-                                <button id="travel-map-btn" class="btn-primary bg-purple-600 hover:bg-purple-500 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" data-tooltip="地图移动">
-                                    <i class="fa fa-map text-white"></i>
-                                </button>
+                <!-- 敌人信息面板 -->
+                <div id="enemy-info-panel" class="enemy-card bg-danger/20 border border-danger/30 rounded-lg p-3 hover:shadow-lg hover:shadow-danger/20 transition-all mb-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div id="enemy-icon" class="w-14 h-14 rounded-full bg-danger/30 flex items-center justify-center mr-3 shadow-md shadow-danger/20">
+                                <i class="fa fa-question text-xl text-gray-500"></i>
                             </div>
-                        </div>
-                        <!-- 敌人信息面板 - 放在3D场景容器之外 -->
-                        <div id="enemy-info-panel" class="enemy-card bg-danger/20 border border-danger/30 rounded-lg p-3 hover:shadow-lg hover:shadow-danger/20 transition-all mb-4" style="position: relative; z-index: 99999; transform: translateZ(100px);">
-                            <div class="flex items-center justify-between">
+                            <div>
+                                <h3 id="enemy-name" class="font-bold text-white"></h3>
                                 <div class="flex items-center">
-                                    <div id="enemy-icon" class="w-14 h-14 rounded-full bg-danger/30 flex items-center justify-center mr-3 shadow-md shadow-danger/20">
-                                        <i class="fa fa-question text-xl text-gray-500"></i>
-                                    </div>
-                                    <div>
-                                        <h3 id="enemy-name" class="font-bold text-white"></h3>
-                                        <div class="flex items-center">
-                                            <p class="text-sm text-light/70">等级 <span id="enemy-level" class="text-accent"></span></p>
-                                            <span id="enemy-elite-badge" class="ml-2 text-xs bg-yellow-500 text-black px-1.5 py-0.5 rounded hidden font-bold">精英</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="text-right">
-                                    <p class="font-bold text-white">HP: <span id="enemy-hp" class="text-danger"></span>/<span id="enemy-max-hp"></span></p>
-                                    <div class="flex flex-wrap gap-3 mt-1">
-                                        <p class="text-sm text-light/70">攻击: <span id="enemy-attack"></span></p>
-                                        <p class="text-sm text-light/70">防御: <span id="enemy-defense"></span></p>
-                                        <p class="text-sm text-light/70">速度: <span id="enemy-speed"></span></p>
-                                        <p class="text-sm text-light/70">幸运: <span id="enemy-luck"></span></p>
-                                    </div>
+                                    <p class="text-sm text-light/70">等级 <span id="enemy-level" class="text-accent"></span></p>
+                                    <span id="enemy-elite-badge" class="ml-2 text-xs bg-yellow-500 text-black px-1.5 py-0.5 rounded hidden font-bold">精英</span>
                                 </div>
                             </div>
-                            <!-- 装备掉率信息 -->
-                            <div class="mt-3 pt-3 border-t border-dark/50">
-                                <p class="text-xs text-light/70 mb-1">装备掉率:</p>
-                                <div id="enemy-drop-rates" class="flex flex-wrap gap-2">
-                                    <!-- 掉率信息将由JavaScript动态生成 -->
-                                </div>
-                            </div>
-                            <!-- 攻击按钮和技能 -->
-                            <div class="mt-3 pt-3 border-t border-dark/50 flex justify-between items-center">
-                                <!-- 确定攻击按钮 -->
-                                <button id="confirm-attack-btn" class="btn-primary bg-primary hover:bg-primary/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all hidden" data-tooltip="确定攻击，进入战斗模式">
-                                        <i class="fa fa-play text-white"></i>
-                                    </button>
-                            </div>
                         </div>
-                        
-                        <!-- 3D探索场景 -->
-                        <div id="battle-area" class="bg-dark/50 border border-glass rounded-lg p-3 hover:shadow-lg hover:shadow-danger/20 transition-all" style="height: 500px; width: 100%; position: relative; z-index: 1; overflow: hidden;">
-                            <!-- 3D场景将由JavaScript动态生成 -->
-                            <div id="current-map-label" style="color: white; position: absolute; top: 10px; left: 10px; z-index: 2; background: rgba(0,0,0,0.5); padding: 4px 8px; border-radius: 4px; font-size: 14px;">
-                                <i class="fa fa-map-marker-alt text-accent mr-1"></i>
-                                <span id="current-map-name">仙侠山峰</span>
-                            </div>
-                            <canvas id="map-canvas" style="width: 100%; height: 100%; display: block; position: absolute; top: 0; left: 0; z-index: 1;"></canvas>
-                        </div>
-                        
-                        <!-- 小地图 -->
-                        <div id="mini-map" class="bg-dark/50 border border-glass rounded-lg p-4 hover:shadow-lg hover:shadow-accent/10 transition-all" style="height: 150px; position: relative; z-index: 99999; transform: translateZ(100px);">
-                            <!-- 地图背景 -->
-                            <div id="map-background" class="absolute inset-0 rounded-lg overflow-hidden z-0 opacity-30">
-                                <img src="" alt="地图背景" class="w-full h-full object-cover">
-                            </div>
-                            <div id="map-grid" class="grid grid-cols-5 gap-1 h-full relative z-10">
-                                <!-- 地图格子将由JavaScript动态生成 -->
-                            </div>
-                            <!-- 玩家位置 -->
-                            <div id="player-position" class="absolute w-8 h-8 rounded-full bg-accent/50 flex items-center justify-center shadow-lg shadow-accent/30 animate-pulse z-10" style="top: 50%; left: 50%; transform: translate(-50%, -50%);">
-                                <i class="fa fa-user text-white text-sm"></i>
+                        <div class="text-right">
+                            <p class="font-bold text-white">HP: <span id="enemy-hp" class="text-danger"></span>/<span id="enemy-max-hp"></span></p>
+                            <div class="flex flex-wrap gap-3 mt-1">
+                                <p class="text-sm text-light/70">攻击: <span id="enemy-attack"></span></p>
+                                <p class="text-sm text-light/70">防御: <span id="enemy-defense"></span></p>
+                                <p class="text-sm text-light/70">速度: <span id="enemy-speed"></span></p>
+                                <p class="text-sm text-light/70">幸运: <span id="enemy-luck"></span></p>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- 资源栏 -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div class="resource-bar bg-glass border-glass rounded-lg p-3 flex items-center justify-between hover:shadow-lg hover:shadow-accent/10 transition-all">
-                    <div class="flex items-center">
-                        <div class="resource-icon w-10 h-10 rounded-full bg-secondary/30 mr-3 flex items-center justify-center animate-pulse">
-                            <i class="fa fa-wood text-accent text-lg"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-sm font-medium text-light/90">灵木</h3>
-                            <p class="text-lg font-bold text-white" id="spiritWood">0</p>
+                    <!-- 装备掉率信息 -->
+                    <div class="mt-3 pt-3 border-t border-dark/50">
+                        <p class="text-xs text-light/70 mb-1">装备掉率:</p>
+                        <div id="enemy-drop-rates" class="flex flex-wrap gap-2">
+                            <!-- 掉率信息将由JavaScript动态生成 -->
                         </div>
                     </div>
-                    <div class="text-right">
-                        <p class="text-xs text-light/60">产量</p>
-                        <p class="text-xs text-success flex items-center" id="spiritWood-rate">
-                            <i class="fa fa-arrow-up mr-1"></i> +1/秒
-                        </p>
-                    </div>
-                </div>
-                <div class="resource-bar bg-glass border-glass rounded-lg p-3 flex items-center justify-between hover:shadow-lg hover:shadow-accent/10 transition-all">
-                    <div class="flex items-center">
-                        <div class="resource-icon w-10 h-10 rounded-full bg-secondary/30 mr-3 flex items-center justify-center animate-pulse">
-                            <i class="fa fa-iron text-accent text-lg"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-sm font-medium text-light/90">玄铁</h3>
-                            <p class="text-lg font-bold text-white" id="blackIron">0</p>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-xs text-light/60">产量</p>
-                        <p class="text-xs text-success flex items-center" id="blackIron-rate">
-                            <i class="fa fa-arrow-up mr-1"></i> +0.5/秒
-                        </p>
-                    </div>
-                </div>
-                <div class="resource-bar bg-glass border-glass rounded-lg p-3 flex items-center justify-between hover:shadow-lg hover:shadow-accent/10 transition-all">
-                    <div class="flex items-center">
-                        <div class="resource-icon w-10 h-10 rounded-full bg-secondary/30 mr-3 flex items-center justify-center animate-pulse">
-                            <i class="fa fa-gem text-accent text-lg"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-sm font-medium text-light/90">灵石</h3>
-                            <p class="text-lg font-bold text-white" id="spiritCrystal">0</p>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-xs text-light/60">产量</p>
-                        <p class="text-xs text-success flex items-center" id="spiritCrystal-rate">
-                            <i class="fa fa-arrow-up mr-1"></i> +0.2/秒
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 挂机和功能区域 -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <!-- 自动挂机 -->
-                <div class="bg-glass border-glass rounded-lg p-4 hover:shadow-lg hover:shadow-accent/10 transition-all">
-                    <div class="flex items-center justify-between mb-3">
-                        <h3 class="font-bold flex items-center text-white">
-                            <i class="fa fa-moon-o mr-2 text-accent animate-pulse"></i> 自动挂机
-                        </h3>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="auto挂机" class="sr-only peer">
-                            <div class="w-12 h-6 bg-dark/50 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary shadow-md"></div>
-                        </label>
-                    </div>
-                    <p class="text-xs text-light/60 mb-3">启用后将自动收集资源和战斗</p>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div class="bg-dark/30 rounded p-2 text-center hover:bg-dark/40 transition-colors border border-dark/50">
-                            <p class="text-xs text-light/60">挂机时间</p>
-                            <p class="font-bold text-white" id="afk-time">00:00:00</p>
-                        </div>
-                        <div class="bg-dark/30 rounded p-2 text-center hover:bg-dark/40 transition-colors border border-dark/50">
-                            <p class="text-xs text-light/60">已收集资源</p>
-                            <p class="font-bold text-white" id="collected-resources">0</p>
-                        </div>
+                    <!-- 攻击按钮 -->
+                    <div class="mt-3 pt-3 border-t border-dark/50 flex justify-between items-center">
+                        <button id="confirm-attack-btn" class="btn-primary bg-primary hover:bg-primary/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all hidden" data-tooltip="确定攻击，进入战斗模式">
+                            <i class="fa fa-play text-white"></i>
+                        </button>
                     </div>
                 </div>
 
-                <!-- 资源收集 -->
-                <div class="bg-glass border-glass rounded-lg p-4 hover:shadow-lg hover:shadow-accent/10 transition-all">
-                    <h3 class="font-bold flex items-center mb-3 text-white">
-                        <i class="fa fa-collection mr-2 text-accent animate-pulse"></i> 资源收集
-                    </h3>
-                    <div class="space-y-4">
-                        <div class="bg-dark/30 rounded p-3 hover:bg-dark/40 transition-colors border border-dark/50 shadow-sm">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-sm text-light/90 flex items-center">
-                                    <i class="fa fa-wood text-accent mr-2"></i> 灵木收集
-                                </span>
-                                <button id="collect-spiritWood" class="btn-primary bg-secondary/70 hover:bg-secondary w-8 h-8 rounded flex items-center justify-center overflow-hidden shadow-sm transition-all" data-tooltip="收集灵木资源，消耗5点灵力">
-                                    <img src="Images/collect-wood-button.png" alt="收集灵木" class="w-full h-full object-cover">
-                                </button>
-                            </div>
-                            <div class="w-full bg-dark/50 rounded-full h-2 overflow-hidden">
-                                <div id="spiritWood-progress" class="bg-accent h-full rounded-full transition-all duration-500" style="width: 0%"></div>
-                            </div>
-                        </div>
-                        <div class="bg-dark/30 rounded p-3 hover:bg-dark/40 transition-colors border border-dark/50 shadow-sm">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-sm text-light/90 flex items-center">
-                                    <i class="fa fa-iron text-accent mr-2"></i> 玄铁收集
-                                </span>
-                                <button id="collect-blackIron" class="btn-primary bg-secondary/70 hover:bg-secondary w-8 h-8 rounded flex items-center justify-center overflow-hidden shadow-sm transition-all" data-tooltip="收集玄铁资源，消耗5点灵力">
-                                    <img src="Images/collect-iron-button.png" alt="收集玄铁" class="w-full h-full object-cover">
-                                </button>
-                            </div>
-                            <div class="w-full bg-dark/50 rounded-full h-2 overflow-hidden">
-                                <div id="blackIron-progress" class="bg-accent h-full rounded-full transition-all duration-500" style="width: 0%"></div>
-                            </div>
-                        </div>
-                        <div class="bg-dark/30 rounded p-3 hover:bg-dark/40 transition-colors border border-dark/50 shadow-sm">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-sm text-light/90 flex items-center">
-                                    <i class="fa fa-gem text-accent mr-2"></i> 灵石收集
-                                </span>
-                                <button id="collect-spiritCrystal" class="btn-primary bg-secondary/70 hover:bg-secondary w-8 h-8 rounded flex items-center justify-center overflow-hidden shadow-sm transition-all" data-tooltip="收集灵石资源，消耗5点灵力">
-                                    <img src="Images/collect-crystal-button.png" alt="收集灵石" class="w-full h-full object-cover">
-                                </button>
-                            </div>
-                            <div class="w-full bg-dark/50 rounded-full h-2 overflow-hidden">
-                                <div id="spiritCrystal-progress" class="bg-accent h-full rounded-full transition-all duration-500" style="width: 0%"></div>
-                            </div>
-                        </div>
+                <!-- 3D探索场景 -->
+                <div id="battle-area" class="bg-dark/50 border border-glass rounded-lg overflow-hidden" style="height: 400px; width: 100%; position: relative; z-index: 1;">
+                    <div id="current-map-label" style="color: white; position: absolute; top: 10px; left: 10px; z-index: 2; background: rgba(0,0,0,0.5); padding: 4px 8px; border-radius: 4px; font-size: 14px;">
+                        <i class="fa fa-map-marker-alt text-accent mr-1"></i>
+                        <span id="current-map-name">仙侠山峰</span>
                     </div>
+                    <canvas id="map-canvas" style="width: 100%; height: 100%; display: block; position: absolute; top: 0; left: 0; z-index: 1;"></canvas>
                 </div>
 
-                <!-- 商店 -->
-                <div class="bg-glass border-glass rounded-lg p-4 hover:shadow-lg hover:shadow-accent/10 transition-all">
-                    <h3 class="font-bold flex items-center mb-3 text-white">
-                        <i class="fa fa-shopping-cart mr-2 text-accent animate-pulse"></i> 商店
-                    </h3>
-                    <div class="space-y-3 max-h-96 overflow-y-auto pr-2">
-                        <div class="bg-dark/30 rounded p-3 hover:bg-dark/40 transition-colors border border-dark/50 shadow-sm">
-                            <div class="flex justify-between items-center">
-                                <div>
-                                    <h4 class="font-medium text-white">生命药水</h4>
-                                    <p class="text-xs text-light/60">恢复50%最大生命值</p>
-                                </div>
-                                <div class="text-right">
-                                    <p class="font-bold text-accent flex items-center">
-                                        <i class="fa fa-wood mr-1"></i> 50 <span class="text-xs text-light/60 ml-1">灵木</span>
-                                    </p>
-                                    <button id="buy-health-potion" class="btn-primary bg-primary hover:bg-primary/80 w-8 h-8 rounded flex items-center justify-center overflow-hidden mt-1 transition-all shadow-sm" data-tooltip="购买生命药水，恢复50%最大生命值">
-                                        <img src="Images/health-potion.jpg" alt="购买生命药水" class="w-full h-full object-cover">
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="bg-dark/30 rounded p-3 hover:bg-dark/40 transition-colors border border-dark/50 shadow-sm">
-                            <div class="flex justify-between items-center">
-                                <div>
-                                    <h4 class="font-medium text-white">灵力药水</h4>
-                                    <p class="text-xs text-light/60">恢复满灵力</p>
-                                </div>
-                                <div class="text-right">
-                                    <p class="font-bold text-accent flex items-center">
-                                        <i class="fa fa-wood mr-1"></i> 30 <span class="text-xs text-light/60 ml-1">灵木</span>
-                                    </p>
-                                    <button id="buy-energy-potion" class="btn-primary bg-primary hover:bg-primary/80 w-8 h-8 rounded flex items-center justify-center overflow-hidden mt-1 transition-all shadow-sm" data-tooltip="购买灵力药水，恢复满灵力">
-                                        <img src="Images/energy-potion.jpg" alt="购买灵力药水" class="w-full h-full object-cover">
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="bg-dark/30 rounded p-3 hover:bg-dark/40 transition-colors border border-dark/50 shadow-sm">
-                            <div class="flex justify-between items-center">
-                                <div>
-                                    <h4 class="font-medium text-white">攻击药水</h4>
-                                    <p class="text-xs text-light/60">临时提升20%攻击力</p>
-                                </div>
-                                <div class="text-right">
-                                    <p class="font-bold text-accent flex items-center">
-                                        <i class="fa fa-wood mr-1"></i> 40 <span class="text-xs text-light/60 ml-1">灵木</span>
-                                    </p>
-                                    <button id="buy-attack-potion" class="btn-primary bg-primary hover:bg-primary/80 w-8 h-8 rounded flex items-center justify-center overflow-hidden mt-1 transition-all shadow-sm" data-tooltip="购买攻击药水，临时提升20%攻击力">
-                                        <img src="Images/attack-potion.jpg" alt="购买攻击药水" class="w-full h-full object-cover">
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="bg-dark/30 rounded p-3 hover:bg-dark/40 transition-colors border border-dark/50 shadow-sm">
-                            <div class="flex justify-between items-center">
-                                <div>
-                                    <h4 class="font-medium text-white">防御药水</h4>
-                                    <p class="text-xs text-light/60">临时提升20%防御力</p>
-                                </div>
-                                <div class="text-right">
-                                    <p class="font-bold text-accent flex items-center">
-                                        <i class="fa fa-wood mr-1"></i> 40 <span class="text-xs text-light/60 ml-1">灵木</span>
-                                    </p>
-                                    <button id="buy-defense-potion" class="btn-primary bg-primary hover:bg-primary/80 w-8 h-8 rounded flex items-center justify-center overflow-hidden mt-1 transition-all shadow-sm" data-tooltip="购买防御药水，临时提升20%防御力">
-                                        <img src="Images/defense-potion.jpg" alt="购买防御药水" class="w-full h-full object-cover">
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="bg-dark/30 rounded p-3 hover:bg-dark/40 transition-colors border border-dark/50 shadow-sm">
-                            <div class="flex justify-between items-center">
-                                <div>
-                                    <h4 class="font-medium text-white">速度药水</h4>
-                                    <p class="text-xs text-light/60">临时提升20%速度</p>
-                                </div>
-                                <div class="text-right">
-                                    <p class="font-bold text-accent flex items-center">
-                                        <i class="fa fa-wood mr-1"></i> 40 <span class="text-xs text-light/60 ml-1">灵木</span>
-                                    </p>
-                                    <button id="buy-speed-potion" class="btn-primary bg-primary hover:bg-primary/80 w-8 h-8 rounded flex items-center justify-center overflow-hidden mt-1 transition-all shadow-sm" data-tooltip="购买速度药水，临时提升20%速度">
-                                        <img src="Images/speed-potion.jpg" alt="购买速度药水" class="w-full h-full object-cover">
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="bg-dark/30 rounded p-3 hover:bg-dark/40 transition-colors border border-dark/50 shadow-sm">
-                            <div class="flex justify-between items-center">
-                                <div>
-                                    <h4 class="font-medium text-white">幸运药水</h4>
-                                    <p class="text-xs text-light/60">临时提升20%幸运</p>
-                                </div>
-                                <div class="text-right">
-                                    <p class="font-bold text-accent flex items-center">
-                                        <i class="fa fa-wood mr-1"></i> 40 <span class="text-xs text-light/60 ml-1">灵木</span>
-                                    </p>
-                                    <button id="buy-luck-potion" class="btn-primary bg-primary hover:bg-primary/80 w-8 h-8 rounded flex items-center justify-center overflow-hidden mt-1 transition-all shadow-sm" data-tooltip="购买幸运药水，临时提升20%幸运">
-                                        <img src="Images/lucky-potion.jpg" alt="购买幸运药水" class="w-full h-full object-cover">
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="bg-dark/30 rounded p-3 hover:bg-dark/40 transition-colors border border-dark/50 shadow-sm">
-                            <div class="flex justify-between items-center">
-                                <div>
-                                    <h4 class="font-medium text-white">白色装备箱</h4>
-                                    <p class="text-xs text-light/60">随机获得一件对应境界的白色装备</p>
-                                </div>
-                                <div class="text-right">
-                                    <p class="font-bold text-accent flex items-center">
-                                        <i class="fa fa-wood mr-1"></i> 100 <span class="text-xs text-light/60 ml-1">灵木</span>
-                                    </p>
-                                    <button id="buy-white-equipment-box" class="btn-primary bg-primary hover:bg-primary/80 w-8 h-8 rounded flex items-center justify-center overflow-hidden mt-1 transition-all shadow-sm" data-tooltip="购买白色装备箱，随机获得一件对应境界的白色装备">
-                                        <img src="Images/white-box.jpg" alt="购买白色装备箱" class="w-full h-full object-cover">
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                <!-- 小地图 -->
+                <div id="mini-map" class="mt-4 bg-dark/50 border border-glass rounded-lg p-4 hover:shadow-lg hover:shadow-accent/10 transition-all" style="height: 150px; position: relative;">
+                    <!-- 地图背景 -->
+                    <div id="map-background" class="absolute inset-0 rounded-lg overflow-hidden z-0 opacity-30">
+                        <img src="" alt="地图背景" class="w-full h-full object-cover">
+                    </div>
+                    <div id="map-grid" class="grid grid-cols-5 gap-1 h-full relative z-10">
+                        <!-- 地图格子将由JavaScript动态生成 -->
+                    </div>
+                    <!-- 玩家位置 -->
+                    <div id="player-position" class="absolute w-8 h-8 rounded-full bg-accent/50 flex items-center justify-center shadow-lg shadow-accent/30 animate-pulse z-10" style="top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                        <i class="fa fa-user text-white text-sm"></i>
                     </div>
                 </div>
             </div>
         </main>
+
+        <!-- 悬浮战斗日志窗口 -->
+        <div id="battle-log-window" class="fixed bottom-4 right-4 w-96 max-w-[calc(100vw-2rem)] bg-dark-card/95 backdrop-blur-sm rounded-xl border border-primary/30 shadow-2xl z-40 transition-all duration-300">
+            <!-- 标题栏 -->
+            <div class="flex items-center justify-between p-3 border-b border-primary/20 cursor-move">
+                <h3 class="font-bold text-sm text-light/90 flex items-center gap-2">
+                    <i class="fa fa-scroll text-accent"></i> 战斗日志
+                </h3>
+                <button id="toggle-battle-log-btn" class="text-light/60 hover:text-white transition-colors w-6 h-6 flex items-center justify-center rounded hover:bg-white/10">
+                    <i class="fa fa-minus text-xs"></i>
+                </button>
+            </div>
+            <!-- 日志内容 -->
+            <div id="battle-log-content" class="p-3 max-h-64 overflow-y-auto text-sm space-y-1 text-light/80">
+                <p class="text-light/50">欢迎来到修仙世界...</p>
+            </div>
+            <!-- 最小化状态：只显示最后一条 -->
+            <div id="battle-log-minimized" class="hidden p-3 text-sm text-light/80">
+                <p id="last-log-message" class="text-light/70 truncate">欢迎来到修仙世界...</p>
+            </div>
+        </div>
 
         <!-- 游戏底部 -->
         <footer class="py-3 px-6 border-t border-glass text-center text-sm text-light/50">
@@ -1078,149 +619,757 @@
         <source src="https://assets.mixkit.co/active_storage/sfx/2567/2567-preview.mp3" type="audio/mpeg">
       </audio>
 
-    <!-- 背包模态框 -->
-    <div id="inventory-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
-        <div class="bg-gray-900 rounded-lg p-4 max-w-6xl w-full max-h-[80vh] overflow-y-auto">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-white">背包</h2>
-                <button id="close-inventory" class="text-white hover:text-gray-300">
+    <!-- 人物详情弹框 -->
+    <div id="character-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
+        <div class="bg-dark-card rounded-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-primary/30 backdrop-blur-sm shadow-2xl">
+            <!-- 标题栏 -->
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fa fa-user text-primary"></i> 人物详情
+                </h2>
+                <button id="close-character-modal" class="text-light/60 hover:text-white transition-colors">
                     <i class="fa fa-times text-xl"></i>
                 </button>
             </div>
-            
-            <div class="flex flex-col md:flex-row gap-4">
-                <!-- 左侧：背包物品 -->
-                <div class="flex-1">
-                    <!-- Tab切换按钮 -->
-                    <div class="flex border-b border-dark/50 mb-4">
-                        <button id="tab-equipment" class="px-4 py-2 text-sm font-medium text-accent border-b-2 border-accent">装备</button>
-                        <button id="tab-consumables" class="px-4 py-2 text-sm font-medium text-light/60 hover:text-light">消耗品</button>
+
+            <!-- 弹框内容 - 三列布局 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- 左侧：人物立绘 + 境界信息 -->
+                <div class="md:col-span-1">
+                    <!-- 人物立绘 - 更大更长 -->
+                    <div class="relative w-full aspect-[3/4] rounded-xl overflow-hidden border-2 border-primary/30 bg-gradient-to-b from-spirit/10 to-primary/10 shadow-xl mb-4">
+                        <img id="character-body-modal" src="Images/default-character.png" alt="立绘" class="w-full h-full object-cover object-top" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="absolute inset-0 items-center justify-center bg-dark/50" style="display: none;">
+                            <i class="fa fa-user text-6xl text-primary/30"></i>
+                        </div>
+                        <div class="absolute inset-0 bg-gradient-to-t from-dark/80 via-transparent to-transparent pointer-events-none"></div>
+                        <!-- 境界标签 -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-dark/90 to-transparent">
+                            <div class="text-lg font-bold text-gold" id="realm-display-modal">武者期 · 初期</div>
+                            <div class="text-sm text-light/70">
+                                <span id="realm-stage-modal">1</span>阶 · Lv.<span id="level-modal">1</span>
+                            </div>
+                            <div class="text-xs text-light/60 mt-0.5">
+                                <span id="exp-modal">0</span>/<span id="max-exp-modal">100</span> EXP
+                            </div>
+                            <div class="mt-1 h-1.5 bg-black/40 rounded-full overflow-hidden">
+                                <div id="exp-bar-modal" class="h-full bg-gradient-to-r from-primary to-spirit" style="width: 0%"></div>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <!-- 装备物品区域 -->
-                    <div id="inventory-equipment" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-1 mb-4">
-                        <!-- 装备将通过 JavaScript 动态添加 -->
+
+                    <!-- 功能按钮 -->
+                    <div class="space-y-2">
+                        <button id="breakthrough-btn-modal" class="w-full px-4 py-2.5 rounded-lg bg-gradient-to-r from-gold-dark to-gold text-black font-medium hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity flex items-center justify-center gap-2" disabled>
+                            <i class="fa fa-arrow-up"></i> 境界突破
+                        </button>
+                        <button id="auto-equip-btn-modal" class="w-full px-4 py-2.5 rounded-lg border border-gold/50 text-gold hover:bg-gold/10 transition-colors flex items-center justify-center gap-2">
+                            <i class="fa fa-magic"></i> 自动装备最佳
+                        </button>
                     </div>
-                    
-                    <!-- 消耗品物品区域 -->
-                    <div id="inventory-consumables" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-1 mb-4 hidden">
-                        <!-- 消耗品将通过 JavaScript 动态添加 -->
+
+                    <!-- 拥有资源 -->
+                    <div class="mt-3 p-3 bg-black/30 rounded-lg border border-primary/20">
+                        <div class="text-xs font-medium text-light/70 mb-2 flex items-center gap-1">
+                            <i class="fa fa-box text-accent"></i> 拥有资源
+                        </div>
+                        <div class="space-y-1.5 text-xs">
+                            <div class="flex justify-between items-center">
+                                <span class="text-light/60">灵木:</span>
+                                <span class="text-light/90 font-medium"><span id="spirit-wood-modal">0</span></span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-light/60">玄铁:</span>
+                                <span class="text-light/90 font-medium"><span id="black-iron-modal">0</span></span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-light/60">灵石:</span>
+                                <span class="text-light/90 font-medium"><span id="spirit-crystal-modal">0</span></span>
+                            </div>
+                            <div class="flex justify-between items-center pt-1.5 border-t border-primary/20">
+                                <span class="text-light/60">突破石:</span>
+                                <span id="breakthrough-stones-modal" class="text-gold font-medium">0</span>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <div id="item-details" class="bg-dark/50 rounded p-4 hidden">
-                        <h3 class="font-bold text-white mb-2" id="selected-item-name">物品名称</h3>
-                        <div class="text-sm text-light/70 mb-4" id="selected-item-info">物品信息</div>
-                        <div class="flex space-x-2" id="item-actions">
-                            <button id="use-equip-item" class="bg-primary hover:bg-primary/80 text-white px-4 py-2 rounded text-sm transition-colors flex items-center">
-                                <i class="fa fa-check mr-2"></i> 使用/装备
+
+                    <!-- 突破需求提示 -->
+                    <div id="breakthrough-requirement-modal" class="text-center text-xs text-light/50">
+                        等级达到上限并拥有足够突破石可突破
+                    </div>
+                </div>
+
+                <!-- 中间：属性 + 装备 -->
+                <div class="md:col-span-1 space-y-4">
+                    <!-- 6属性 -->
+                    <div>
+                        <h3 class="text-sm font-bold text-light/90 mb-2 flex items-center gap-2">
+                            <i class="fa fa-chart-line text-accent"></i> 基础属性
+                        </h3>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="bg-black/30 rounded-lg p-2.5 border border-red-500/30 hover:border-red-500/60 transition-colors">
+                                <div class="text-xs text-red-400">攻击</div>
+                                <div class="text-lg font-bold text-white" id="attack-modal">10</div>
+                            </div>
+                            <div class="bg-black/30 rounded-lg p-2.5 border border-blue-500/30 hover:border-blue-500/60 transition-colors">
+                                <div class="text-xs text-blue-400">防御</div>
+                                <div class="text-lg font-bold text-white" id="defense-modal">5</div>
+                            </div>
+                            <div class="bg-black/30 rounded-lg p-2.5 border border-green-500/30 hover:border-green-500/60 transition-colors">
+                                <div class="text-xs text-green-400">生命</div>
+                                <div class="text-lg font-bold text-white" id="max-hp-attr-modal">100</div>
+                            </div>
+                            <div class="bg-black/30 rounded-lg p-2.5 border border-cyan-500/30 hover:border-cyan-500/60 transition-colors">
+                                <div class="text-xs text-cyan-400">速度</div>
+                                <div class="text-lg font-bold text-white" id="speed-modal">10</div>
+                            </div>
+                            <div class="bg-black/30 rounded-lg p-2.5 border border-yellow-500/30 hover:border-yellow-500/60 transition-colors">
+                                <div class="text-xs text-yellow-400">幸运</div>
+                                <div class="text-lg font-bold text-white" id="luck-modal">2</div>
+                            </div>
+                            <div class="bg-black/30 rounded-lg p-2.5 border border-purple-500/30 hover:border-purple-500/60 transition-colors">
+                                <div class="text-xs text-purple-400">暴击率</div>
+                                <div class="text-lg font-bold text-white"><span id="critical-rate-modal">5</span>%</div>
+                            </div>
+                            <div class="bg-black/30 rounded-lg p-2.5 border border-orange-500/30 hover:border-orange-500/60 transition-colors">
+                                <div class="text-xs text-orange-400">命中</div>
+                                <div class="text-lg font-bold text-white"><span id="accuracy-modal">100</span>%</div>
+                            </div>
+                            <div class="bg-black/30 rounded-lg p-2.5 border border-teal-500/30 hover:border-teal-500/60 transition-colors">
+                                <div class="text-xs text-teal-400">闪避</div>
+                                <div class="text-lg font-bold text-white"><span id="dodge-modal">5</span>%</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 装备槽 -->
+                    <div>
+                        <h3 class="text-sm font-bold text-light/90 mb-2 flex items-center gap-2">
+                            <i class="fa fa-shield-halved text-accent"></i> 装备栏
+                        </h3>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div class="equipment-slot-modal aspect-square bg-black/40 rounded-lg border border-primary/30 flex items-center justify-center hover:border-gold transition-colors cursor-pointer relative group" data-slot="helmet">
+                                <img id="character-helmet-modal" src="" alt="头盔" class="w-8 h-8 object-contain opacity-0">
+                                <i class="fa fa-helmet-safety text-primary/30 absolute group-hover:hidden"></i>
+                            </div>
+                            <div class="equipment-slot-modal aspect-square bg-black/40 rounded-lg border border-primary/30 flex items-center justify-center hover:border-gold transition-colors cursor-pointer relative group" data-slot="armor">
+                                <img id="character-armor-modal" src="" alt="护甲" class="w-8 h-8 object-contain opacity-0">
+                                <i class="fa fa-shield-halved text-primary/30 absolute group-hover:hidden"></i>
+                            </div>
+                            <div class="equipment-slot-modal aspect-square bg-black/40 rounded-lg border border-primary/30 flex items-center justify-center hover:border-gold transition-colors cursor-pointer relative group" data-slot="weapon">
+                                <img id="character-weapon-modal" src="" alt="武器" class="w-8 h-8 object-contain opacity-0">
+                                <i class="fa fa-sword text-primary/30 absolute group-hover:hidden"></i>
+                            </div>
+                            <div class="equipment-slot-modal aspect-square bg-black/40 rounded-lg border border-primary/30 flex items-center justify-center hover:border-gold transition-colors cursor-pointer relative group" data-slot="pants">
+                                <img id="character-pants-modal" src="" alt="裤子" class="w-8 h-8 object-contain opacity-0">
+                                <i class="fa fa-socks text-primary/30 absolute group-hover:hidden"></i>
+                            </div>
+                            <div class="equipment-slot-modal aspect-square bg-black/40 rounded-lg border border-primary/30 flex items-center justify-center hover:border-gold transition-colors cursor-pointer relative group" data-slot="boots">
+                                <img id="character-boots-modal" src="" alt="靴子" class="w-8 h-8 object-contain opacity-0">
+                                <i class="fa fa-shoe-prints text-primary/30 absolute group-hover:hidden"></i>
+                            </div>
+                            <div class="equipment-slot-modal aspect-square bg-black/40 rounded-lg border border-primary/30 flex items-center justify-center hover:border-gold transition-colors cursor-pointer relative group" data-slot="accessory">
+                                <img id="character-accessory-modal" src="" alt="饰品" class="w-8 h-8 object-contain opacity-0">
+                                <i class="fa fa-ring text-primary/30 absolute group-hover:hidden"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧：装备精炼 -->
+                <div class="md:col-span-1">
+                    <h3 class="text-sm font-bold text-light/90 mb-2 flex items-center gap-2">
+                        <i class="fa fa-hammer text-accent"></i> 装备精炼
+                    </h3>
+                    <div class="bg-black/20 rounded-lg p-4 border border-primary/20">
+                        <!-- 装备大图 -->
+                        <div class="flex justify-center mb-4">
+                            <div class="w-24 h-24 rounded-xl border-2 border-primary/30 bg-black/40 flex items-center justify-center overflow-hidden">
+                                <img id="refine-equipment-image-modal" src="" alt="装备" class="w-full h-full object-contain opacity-0">
+                                <i id="refine-equipment-icon-modal" class="fa fa-sword text-4xl text-primary/30"></i>
+                            </div>
+                        </div>
+
+                        <!-- 装备信息 -->
+                        <div class="space-y-2 mb-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-light/60">装备:</span>
+                                <span id="refine-weapon-name-modal" class="text-sm font-medium text-white truncate ml-2">无</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-light/60">等级:</span>
+                                <span id="refine-weapon-level-modal" class="text-sm font-medium text-accent">+0</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-light/60">材料:</span>
+                                <span id="refine-requirements-modal" class="text-xs text-light/70">木:0 铁:0 石:0</span>
+                            </div>
+
+                            <!-- 装备属性详情 -->
+                            <div id="refine-equipment-stats-panel" class="mt-3 pt-3 border-t border-primary/20 hidden">
+                                <div class="text-xs text-light/60 mb-2 font-medium">装备属性</div>
+                                <div id="refine-equipment-stats" class="space-y-1 text-xs">
+                                    <!-- 动态填充属性 -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 功能说明 -->
+                        <div class="mb-3 p-2 bg-black/30 rounded-lg text-xs text-light/50 space-y-1">
+                            <div><i class="fa fa-info-circle text-gold mr-1"></i>精炼：提升装备基础属性+10%/级</div>
+                            <div><i class="fa fa-info-circle text-spirit mr-1"></i>刷新：重新随机属性，保留精炼等级</div>
+                        </div>
+
+                        <!-- 按钮 -->
+                        <div class="space-y-2">
+                            <button id="refine-weapon-btn-modal" class="w-full px-4 py-2 rounded-lg bg-gradient-to-r from-gold-dark to-gold text-black font-medium hover:opacity-80 disabled:opacity-40 transition-opacity flex items-center justify-center gap-2 group relative" title="消耗材料提升装备基础属性10%">
+                                <i class="fa fa-arrow-up"></i> 精炼装备
+                                <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-dark/95 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border border-primary/30 z-10">
+                                    提升装备基础属性+10%/级
+                                    <br>最高精炼至+10
+                                </div>
                             </button>
-                            <button id="disassemble-item" class="bg-secondary hover:bg-secondary/80 text-white px-4 py-2 rounded text-sm transition-colors flex items-center">
-                                <i class="fa fa-cogs mr-2"></i> 分解
-                            </button>
-                            <button id="drop-item" class="bg-danger hover:bg-danger/80 text-white px-4 py-2 rounded text-sm transition-colors flex items-center">
-                                <i class="fa fa-trash mr-2"></i> 丢弃
-                            </button>
-                            <button id="cancel-item" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm transition-colors flex items-center">
-                                <i class="fa fa-times mr-2"></i> 取消
+                            <button id="refresh-equipment-btn-modal" class="w-full px-4 py-2 rounded-lg bg-gradient-to-r from-spirit to-primary text-white font-medium hover:opacity-80 transition-opacity flex items-center justify-center gap-2 group relative" title="重新随机装备属性">
+                                <i class="fa fa-refresh"></i> 刷新属性
+                                <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-dark/95 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border border-primary/30 z-10">
+                                    重新随机属性值
+                                    <br>精炼等级和品质不变
+                                </div>
                             </button>
                         </div>
                     </div>
                 </div>
-                
-                <!-- 右侧：合成装备 -->
-                <div class="w-full md:w-1/3">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-bold text-white">合成装备</h3>
-                        <div class="flex flex-col gap-2">
-                            <button id="auto-add" class="bg-accent hover:bg-accent/80 text-white px-3 py-1 rounded text-sm transition-colors flex items-center justify-center">
-                                <i class="fa fa-plus mr-1"></i> 一键添加
-                            </button>
-                            <button id="auto-craft" class="bg-secondary hover:bg-secondary/80 text-white px-3 py-1 rounded text-sm transition-colors flex items-center justify-center">
-                                <i class="fa fa-magic mr-1"></i> 一键合成
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- 合成界面 -->
-                    <div class="relative w-64 h-64 mx-auto mb-6">
-                        <!-- 连接线 -->
-                        <div class="absolute inset-0 flex items-center justify-center">
-                            <!-- 上方连接线 -->
-                            <div class="w-0.5 h-16 bg-accent/50 absolute left-1/2 top-0"></div>
-                            <!-- 左侧连接线 -->
-                            <div class="w-16 h-0.5 bg-accent/50 absolute left-0 top-1/2"></div>
-                            <!-- 右侧连接线 -->
-                            <div class="w-16 h-0.5 bg-accent/50 absolute right-0 top-1/2"></div>
-                            <!-- 大圆圈 -->
-                            <div class="w-48 h-48 border-2 border-accent/30 rounded-full absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2"></div>
-                        </div>
-                        
-                        <!-- 周围三个圆圈 -->
-                        <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full border-2 border-accent/50 flex items-center justify-center bg-dark/50 hover:bg-dark/70 transition-colors cursor-pointer" craft-data-slot="1">
-                            <div class="text-xs text-light/60">拖放装备</div>
-                        </div>
-                        <div class="absolute top-1/2 left-0 transform -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full border-2 border-accent/50 flex items-center justify-center bg-dark/50 hover:bg-dark/70 transition-colors cursor-pointer" craft-data-slot="2">
-                            <div class="text-xs text-light/60">拖放装备</div>
-                        </div>
-                        <div class="absolute top-1/2 right-0 transform translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full border-2 border-accent/50 flex items-center justify-center bg-dark/50 hover:bg-dark/70 transition-colors cursor-pointer" craft-data-slot="3">
-                            <div class="text-xs text-light/60">拖放装备</div>
-                        </div>
-                        
-                        <!-- 中间圆圈 -->
-                        <div id="craft-result-slot" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-24 rounded-full border-2 border-accent/50 flex items-center justify-center bg-dark/50">
-                            <div class="text-xs text-light/60">合成结果</div>
-                        </div>
-                    </div>
-                    
-                    <!-- 成功率显示 -->
-                    <div class="text-center mb-6">
-                        <p class="text-light/80">合成成功率: <span id="craft-success-rate" class="text-success font-bold">0%</span></p>
-                    </div>
-                    
-                    <!-- 操作按钮 -->
-                    <div class="flex justify-center space-x-4">
-                        <button id="clear-craft" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded text-sm transition-colors flex items-center">
-                            <i class="fa fa-refresh mr-2"></i> 清空
+            </div>
+        </div>
+    </div>
+
+    <!-- 资源采集弹窗 -->
+    <div id="collect-resources-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
+        <div class="bg-dark-card rounded-xl p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto border border-primary/30 backdrop-blur-sm shadow-2xl">
+            <!-- 标题栏 -->
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fa fa-leaf text-green-400"></i> 资源采集
+                </h2>
+                <button id="close-collect-resources-modal" class="text-light/60 hover:text-white transition-colors">
+                    <i class="fa fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <!-- 自动采集设置 -->
+            <div class="mb-6 p-4 rounded-lg bg-gradient-to-r from-primary/10 to-spirit/10 border border-primary/30">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-medium text-white flex items-center gap-2">
+                        <i class="fa fa-cog text-primary"></i> 自动采集设置
+                    </h3>
+                    <button id="modal-toggle-auto-collect-btn" class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-green-600 to-green-500 text-white text-xs font-medium hover:opacity-80 transition-opacity flex items-center gap-1">
+                        <i class="fa fa-play"></i> 开始自动采集
+                    </button>
+                </div>
+                <p class="text-xs text-light/60 mb-3">选择要自动采集的资源类型：</p>
+                <div class="flex flex-wrap gap-3">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="modal-auto-collect-spiritWood" class="accent-green-500 w-4 h-4" checked>
+                        <span class="text-sm text-light/90 flex items-center gap-1">
+                            <i class="fa fa-tree text-green-400"></i> 灵木
+                        </span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="modal-auto-collect-blackIron" class="accent-gray-400 w-4 h-4" checked>
+                        <span class="text-sm text-light/90 flex items-center gap-1">
+                            <i class="fa fa-gem text-gray-400"></i> 玄铁
+                        </span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="modal-auto-collect-spiritCrystal" class="accent-cyan-400 w-4 h-4" checked>
+                        <span class="text-sm text-light/90 flex items-center gap-1">
+                            <i class="fa fa-diamond text-cyan-400"></i> 灵石
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 手动采集 -->
+            <div class="mb-4">
+                <h3 class="font-medium text-white mb-3 flex items-center gap-2">
+                    <i class="fa fa-hand-pointer text-accent"></i> 手动采集
+                </h3>
+                <div class="space-y-3">
+                    <!-- 灵木采集 -->
+                    <div class="relative">
+                        <button id="collect-spiritWood-btn" class="w-full p-4 rounded-lg bg-gradient-to-r from-green-600/20 to-green-500/20 border border-green-500/30 hover:from-green-600/30 hover:to-green-500/30 transition-all flex items-center justify-between relative overflow-hidden">
+                            <div class="flex items-center gap-3 relative z-10">
+                                <i class="fa fa-tree text-2xl text-green-400"></i>
+                                <div class="text-left">
+                                    <div class="font-bold text-white">灵木</div>
+                                    <div class="text-xs text-light/60">基础修仙资源</div>
+                                </div>
+                            </div>
+                            <div class="text-right relative z-10">
+                                <div class="text-sm text-light/60">消耗 5 灵力</div>
+                            </div>
+                            <div id="spiritWood-progress" class="absolute inset-0 bg-green-500/40 transition-all duration-500" style="width: 0%"></div>
                         </button>
-                        <button id="confirm-craft" class="bg-primary hover:bg-primary/80 text-white px-6 py-2 rounded text-sm transition-colors flex items-center">
-                            <i class="fa fa-check mr-2"></i> 合成
+                    </div>
+
+                    <!-- 玄铁采集 -->
+                    <div class="relative">
+                        <button id="collect-blackIron-btn" class="w-full p-4 rounded-lg bg-gradient-to-r from-gray-600/20 to-gray-500/20 border border-gray-500/30 hover:from-gray-600/30 hover:to-gray-500/30 transition-all flex items-center justify-between relative overflow-hidden">
+                            <div class="flex items-center gap-3 relative z-10">
+                                <i class="fa fa-gem text-2xl text-gray-400"></i>
+                                <div class="text-left">
+                                    <div class="font-bold text-white">玄铁</div>
+                                    <div class="text-xs text-light/60">中级修仙资源</div>
+                                </div>
+                            </div>
+                            <div class="text-right relative z-10">
+                                <div class="text-sm text-light/60">消耗 5 灵力</div>
+                            </div>
+                            <div id="blackIron-progress" class="absolute inset-0 bg-gray-500/40 transition-all duration-500" style="width: 0%"></div>
+                        </button>
+                    </div>
+
+                    <!-- 灵石采集 -->
+                    <div class="relative">
+                        <button id="collect-spiritCrystal-btn" class="w-full p-4 rounded-lg bg-gradient-to-r from-cyan-600/20 to-cyan-500/20 border border-cyan-500/30 hover:from-cyan-600/30 hover:to-cyan-500/30 transition-all flex items-center justify-between relative overflow-hidden">
+                            <div class="flex items-center gap-3 relative z-10">
+                                <i class="fa fa-diamond text-2xl text-cyan-400"></i>
+                                <div class="text-left">
+                                    <div class="font-bold text-white">灵石</div>
+                                    <div class="text-xs text-light/60">高级修仙资源</div>
+                                </div>
+                            </div>
+                            <div class="text-right relative z-10">
+                                <div class="text-sm text-light/60">消耗 5 灵力</div>
+                            </div>
+                            <div id="spiritCrystal-progress" class="absolute inset-0 bg-cyan-500/40 transition-all duration-500" style="width: 0%"></div>
                         </button>
                     </div>
                 </div>
             </div>
-            
+
+            <!-- 提示 -->
+            <div class="mt-4 p-3 bg-black/30 rounded-lg text-xs text-light/60">
+                <i class="fa fa-info-circle text-primary mr-1"></i>采集资源需要消耗灵力，自动采集会每2秒收集一次选中的资源
+            </div>
+        </div>
+    </div>
+
+    <!-- 自动战斗配置弹窗 -->
+    <div id="auto-battle-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
+        <div class="bg-dark-card rounded-xl p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto border border-primary/30 backdrop-blur-sm shadow-2xl">
+            <!-- 标题栏 -->
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fa fa-bolt text-gold"></i> 自动战斗配置
+                </h2>
+                <button id="close-auto-battle-modal" class="text-light/60 hover:text-white transition-colors">
+                    <i class="fa fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <!-- 自动战斗设置 -->
+            <div class="mb-6 p-4 rounded-lg bg-gradient-to-r from-gold/10 to-primary/10 border border-gold/30">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-medium text-white flex items-center gap-2">
+                        <i class="fa fa-play-circle text-gold"></i> 自动战斗
+                    </h3>
+                    <button id="modal-toggle-auto-battle-btn" class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-gold-dark to-gold text-black text-xs font-medium hover:opacity-80 transition-opacity flex items-center gap-1">
+                        <i class="fa fa-play"></i> 开始自动战斗
+                    </button>
+                </div>
+                <p class="text-xs text-light/60 mb-3">选择要自动攻击的敌人类型：</p>
+                <div class="space-y-2">
+                    <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-white/5 transition-colors">
+                        <input type="checkbox" id="modal-auto-battle-green" class="accent-green-500 w-4 h-4" checked>
+                        <span class="text-sm text-green-400 flex items-center gap-2">
+                            <i class="fa fa-circle text-green-400 text-xs"></i> 绿色（较弱）
+                        </span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-white/5 transition-colors">
+                        <input type="checkbox" id="modal-auto-battle-yellow" class="accent-yellow-500 w-4 h-4" checked>
+                        <span class="text-sm text-yellow-400 flex items-center gap-2">
+                            <i class="fa fa-circle text-yellow-400 text-xs"></i> 黄色（相当）
+                        </span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-white/5 transition-colors">
+                        <input type="checkbox" id="modal-auto-battle-red" class="accent-red-500 w-4 h-4" checked>
+                        <span class="text-sm text-red-400 flex items-center gap-2">
+                            <i class="fa fa-circle text-red-400 text-xs"></i> 红色（较强）
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 手动攻击 -->
+            <div class="mb-4">
+                <h3 class="font-medium text-white mb-3 flex items-center gap-2">
+                    <i class="fa fa-hand-fist text-accent"></i> 手动攻击
+                </h3>
+                <button id="manual-attack-btn" class="w-full p-4 rounded-lg bg-gradient-to-r from-red-600/20 to-red-500/20 border border-red-500/30 hover:from-red-600/30 hover:to-red-500/30 transition-all flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <i class="fa fa-sword text-2xl text-red-400"></i>
+                        <div class="text-left">
+                            <div class="font-bold text-white">攻击当前敌人</div>
+                            <div class="text-xs text-light/60">消耗 10 灵力</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm text-light/60">进入战斗</div>
+                    </div>
+                </button>
+            </div>
+
+            <!-- 提示 -->
+            <div class="mt-4 p-3 bg-black/30 rounded-lg text-xs text-light/60">
+                <i class="fa fa-info-circle text-gold mr-1"></i>自动战斗会每秒攻击一次符合类型的敌人，消耗10灵力/次
+            </div>
+        </div>
+    </div>
+
+    <!-- 注销账号确认弹窗 -->
+    <div id="delete-account-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
+        <div class="bg-dark-card rounded-xl p-6 max-w-sm w-full mx-4 border border-danger/30 backdrop-blur-sm shadow-2xl">
+            <!-- 标题栏 -->
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fa fa-trash text-danger"></i> 注销账号
+                </h2>
+                <button id="close-delete-account-modal" class="text-light/60 hover:text-white transition-colors">
+                    <i class="fa fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <!-- 警告信息 -->
+            <div class="mb-4 p-4 bg-danger/10 border border-danger/30 rounded-lg">
+                <p class="text-sm text-light/80">
+                    <i class="fa fa-exclamation-triangle text-danger mr-2"></i>
+                    <strong class="text-danger">警告：</strong>注销账号将删除所有游戏数据，此操作不可恢复！
+                </p>
+            </div>
+
+            <!-- 密码验证 -->
+            <div class="mb-4">
+                <label class="block text-sm text-light/70 mb-2">请输入密码确认注销：</label>
+                <input type="password" id="delete-account-password" class="w-full px-4 py-2 bg-black/30 border border-primary/30 rounded-lg text-white focus:outline-none focus:border-danger transition-colors" placeholder="输入密码">
+                <p id="delete-password-error" class="text-xs text-danger mt-1 hidden">密码错误</p>
+            </div>
+
+            <!-- 按钮 -->
+            <div class="flex gap-3">
+                <button id="cancel-delete-account" class="flex-1 px-4 py-2 rounded-lg bg-gradient-to-r from-gray-600 to-gray-500 text-white font-medium hover:opacity-80 transition-opacity">
+                    取消
+                </button>
+                <button id="confirm-delete-account" class="flex-1 px-4 py-2 rounded-lg bg-danger hover:bg-danger/80 text-white font-medium transition-colors">
+                    确认注销
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 商店弹窗 -->
+    <div id="shop-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
+        <div class="bg-dark-card rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-primary/30 backdrop-blur-sm shadow-2xl">
+            <!-- 标题栏 -->
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fa fa-store text-accent"></i> 修仙商店
+                </h2>
+                <button id="close-shop-modal" class="text-light/60 hover:text-white transition-colors">
+                    <i class="fa fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <!-- 商品网格 -->
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-dark/30 rounded p-3 hover:bg-dark/40 transition-colors border border-dark/50 shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <img src="Images/health-potion.jpg" alt="生命药水" class="w-12 h-12 rounded object-cover">
+                        <div class="flex-1">
+                            <h4 class="font-medium text-white">生命药水</h4>
+                            <p class="text-xs text-light/60">恢复50%生命</p>
+                            <p class="font-bold text-accent text-xs mt-1">
+                                <i class="fa fa-tree mr-1"></i> 20 <span class="text-light/60">灵木</span>
+                            </p>
+                        </div>
+                        <button id="buy-health-potion" class="btn-primary bg-primary hover:bg-primary/80 px-3 py-1 rounded text-xs transition-all shadow-sm">
+                            购买
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-dark/30 rounded p-3 hover:bg-dark/40 transition-colors border border-dark/50 shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <img src="Images/energy-potion.jpg" alt="灵力药水" class="w-12 h-12 rounded object-cover">
+                        <div class="flex-1">
+                            <h4 class="font-medium text-white">灵力药水</h4>
+                            <p class="text-xs text-light/60">恢复50%灵力</p>
+                            <p class="font-bold text-accent text-xs mt-1">
+                                <i class="fa fa-tree mr-1"></i> 20 <span class="text-light/60">灵木</span>
+                            </p>
+                        </div>
+                        <button id="buy-energy-potion" class="btn-primary bg-primary hover:bg-primary/80 px-3 py-1 rounded text-xs transition-all shadow-sm">
+                            购买
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-dark/30 rounded p-3 hover:bg-dark/40 transition-colors border border-dark/50 shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <img src="Images/attack-potion.jpg" alt="攻击药水" class="w-12 h-12 rounded object-cover">
+                        <div class="flex-1">
+                            <h4 class="font-medium text-white">攻击药水</h4>
+                            <p class="text-xs text-light/60">临时提升20%攻击</p>
+                            <p class="font-bold text-accent text-xs mt-1">
+                                <i class="fa fa-tree mr-1"></i> 30 <span class="text-light/60">灵木</span>
+                            </p>
+                        </div>
+                        <button id="buy-attack-potion" class="btn-primary bg-primary hover:bg-primary/80 px-3 py-1 rounded text-xs transition-all shadow-sm">
+                            购买
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-dark/30 rounded p-3 hover:bg-dark/40 transition-colors border border-dark/50 shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <img src="Images/defense-potion.jpg" alt="防御药水" class="w-12 h-12 rounded object-cover">
+                        <div class="flex-1">
+                            <h4 class="font-medium text-white">防御药水</h4>
+                            <p class="text-xs text-light/60">临时提升20%防御</p>
+                            <p class="font-bold text-accent text-xs mt-1">
+                                <i class="fa fa-tree mr-1"></i> 30 <span class="text-light/60">灵木</span>
+                            </p>
+                        </div>
+                        <button id="buy-defense-potion" class="btn-primary bg-primary hover:bg-primary/80 px-3 py-1 rounded text-xs transition-all shadow-sm">
+                            购买
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-dark/30 rounded p-3 hover:bg-dark/40 transition-colors border border-dark/50 shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <img src="Images/speed-potion.jpg" alt="速度药水" class="w-12 h-12 rounded object-cover">
+                        <div class="flex-1">
+                            <h4 class="font-medium text-white">速度药水</h4>
+                            <p class="text-xs text-light/60">临时提升20%速度</p>
+                            <p class="font-bold text-accent text-xs mt-1">
+                                <i class="fa fa-tree mr-1"></i> 30 <span class="text-light/60">灵木</span>
+                            </p>
+                        </div>
+                        <button id="buy-speed-potion" class="btn-primary bg-primary hover:bg-primary/80 px-3 py-1 rounded text-xs transition-all shadow-sm">
+                            购买
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-dark/30 rounded p-3 hover:bg-dark/40 transition-colors border border-dark/50 shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <img src="Images/lucky-potion.jpg" alt="幸运药水" class="w-12 h-12 rounded object-cover">
+                        <div class="flex-1">
+                            <h4 class="font-medium text-white">幸运药水</h4>
+                            <p class="text-xs text-light/60">临时提升20%幸运</p>
+                            <p class="font-bold text-accent text-xs mt-1">
+                                <i class="fa fa-tree mr-1"></i> 40 <span class="text-light/60">灵木</span>
+                            </p>
+                        </div>
+                        <button id="buy-luck-potion" class="btn-primary bg-primary hover:bg-primary/80 px-3 py-1 rounded text-xs transition-all shadow-sm">
+                            购买
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-dark/30 rounded p-3 hover:bg-dark/40 transition-colors border border-dark/50 shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <img src="Images/white-box.jpg" alt="白色装备箱" class="w-12 h-12 rounded object-cover">
+                        <div class="flex-1">
+                            <h4 class="font-medium text-white">白色装备箱</h4>
+                            <p class="text-xs text-light/60">随机白色装备</p>
+                            <p class="font-bold text-accent text-xs mt-1">
+                                <i class="fa fa-tree mr-1"></i> 100 <span class="text-light/60">灵木</span>
+                            </p>
+                        </div>
+                        <button id="buy-white-equipment-box" class="btn-primary bg-primary hover:bg-primary/80 px-3 py-1 rounded text-xs transition-all shadow-sm">
+                            购买
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 背包模态框 -->
+    <div id="inventory-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 hidden">
+        <div class="bg-dark-card rounded-2xl w-11/12 max-w-6xl max-h-[85vh] overflow-hidden border border-primary/30 backdrop-blur-sm shadow-2xl shadow-primary/20 flex flex-col relative">
+            <!-- 背景装饰 -->
+            <div class="absolute inset-0 overflow-hidden pointer-events-none">
+                <div class="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl"></div>
+                <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-accent/10 rounded-full blur-3xl"></div>
+            </div>
+
+            <!-- 标题区域 -->
+            <div class="relative px-6 py-4 border-b border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/30">
+                            <i class="fa fa-backpack text-white"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-light">背包</h2>
+                            <p class="text-xs text-light/50">管理你的装备和物品</p>
+                        </div>
+                    </div>
+                    <button id="close-inventory" class="w-9 h-9 rounded-full bg-dark/50 border border-primary/20 flex items-center justify-center text-light/60 hover:text-white hover:bg-primary/20 hover:border-primary/40 transition-all hover:scale-110">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 主内容 -->
+            <div class="flex-1 overflow-y-auto p-6">
+                <div class="flex flex-col lg:flex-row gap-6">
+                    <!-- 左侧：背包物品 -->
+                    <div class="flex-1">
+                        <!-- Tab切换按钮 -->
+                        <div class="flex gap-1 mb-4 p-1 bg-dark/30 rounded-lg">
+                            <button id="tab-equipment" class="flex-1 px-4 py-2 text-sm font-medium rounded-md bg-gradient-to-r from-primary/20 to-accent/10 text-primary border border-primary/30 flex items-center justify-center gap-2 transition-all">
+                                <i class="fa fa-shield-alt"></i> 装备
+                            </button>
+                            <button id="tab-consumables" class="flex-1 px-4 py-2 text-sm font-medium rounded-md text-light/60 hover:text-light hover:bg-dark/50 flex items-center justify-center gap-2 transition-all">
+                                <i class="fa fa-flask"></i> 消耗品
+                            </button>
+                        </div>
+
+                        <!-- 装备物品区域 -->
+                        <div id="inventory-equipment" class="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2 mb-4">
+                            <!-- 装备将通过 JavaScript 动态添加 -->
+                        </div>
+
+                        <!-- 消耗品物品区域 -->
+                        <div id="inventory-consumables" class="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2 mb-4 hidden">
+                            <!-- 消耗品将通过 JavaScript 动态添加 -->
+                        </div>
+
+                        <div id="item-details" class="bg-dark/50 rounded-xl p-4 border border-primary/20 hidden">
+                            <h3 class="font-bold text-white mb-2 flex items-center gap-2" id="selected-item-name">
+                                <i class="fa fa-cube text-primary"></i> 物品名称
+                            </h3>
+                            <div class="text-sm text-light/70 mb-4" id="selected-item-info">物品信息</div>
+                            <div class="flex flex-wrap gap-2" id="item-actions">
+                                <button id="use-equip-item" class="px-4 py-2 rounded-lg bg-gradient-to-r from-success to-life text-white text-sm font-medium hover:opacity-80 transition-opacity flex items-center gap-2 shadow-lg shadow-success/20">
+                                    <i class="fa fa-check"></i> 使用/装备
+                                </button>
+                                <button id="disassemble-item" class="px-4 py-2 rounded-lg bg-gradient-to-r from-accent to-primary text-white text-sm font-medium hover:opacity-80 transition-opacity flex items-center gap-2 shadow-lg shadow-accent/20">
+                                    <i class="fa fa-cogs"></i> 分解
+                                </button>
+                                <button id="drop-item" class="px-4 py-2 rounded-lg bg-gradient-to-r from-danger to-red-400 text-white text-sm font-medium hover:opacity-80 transition-opacity flex items-center gap-2 shadow-lg shadow-danger/20">
+                                    <i class="fa fa-trash"></i> 丢弃
+                                </button>
+                                <button id="cancel-item" class="px-4 py-2 rounded-lg bg-gradient-to-r from-gray-600 to-gray-500 text-white text-xs font-medium hover:opacity-80 transition-opacity flex items-center gap-1">
+                                    <i class="fa fa-times"></i> 取消
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 右侧：合成装备 -->
+                    <div class="w-full lg:w-80 shrink-0">
+                        <div class="bg-dark/30 rounded-xl p-4 border border-accent/20">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-bold text-light flex items-center gap-2">
+                                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-accent to-spirit flex items-center justify-center">
+                                        <i class="fa fa-magic text-white text-sm"></i>
+                                    </div>
+                                    合成装备
+                                </h3>
+                            </div>
+
+                            <div class="flex gap-2 mb-4">
+                                <button id="auto-add" class="flex-1 px-3 py-2 rounded-lg bg-gradient-to-r from-accent/80 to-primary/80 text-white text-xs font-medium hover:opacity-80 transition-opacity flex items-center justify-center gap-1">
+                                    <i class="fa fa-plus"></i> 一键添加
+                                </button>
+                                <button id="auto-craft" class="flex-1 px-3 py-2 rounded-lg bg-gradient-to-r from-spirit/80 to-accent/80 text-white text-xs font-medium hover:opacity-80 transition-opacity flex items-center justify-center gap-1">
+                                    <i class="fa fa-magic"></i> 一键合成
+                                </button>
+                            </div>
+
+                            <!-- 合成界面 -->
+                            <div class="relative w-56 h-56 mx-auto mb-4">
+                                <!-- 连接线 -->
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <div class="w-44 h-44 border-2 border-accent/30 rounded-full absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2"></div>
+                                    <div class="w-44 h-44 border border-accent/10 rounded-full absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-pulse"></div>
+                                </div>
+
+                                <!-- 周围三个圆圈 -->
+                                <div class="absolute top-[0%] left-1/2 transform -translate-x-1/2 w-16 h-16 rounded-full border-2 border-accent/50 flex items-center justify-center bg-dark/80 hover:bg-accent/20 hover:border-accent transition-all cursor-pointer hover:scale-110" craft-data-slot="1">
+                                    <div class="text-xs text-light/60 text-center">拖放<br>装备</div>
+                                </div>
+                                <div class="absolute top-1/2 left-[0%] transform -translate-y-1/2 w-16 h-16 rounded-full border-2 border-accent/50 flex items-center justify-center bg-dark/80 hover:bg-accent/20 hover:border-accent transition-all cursor-pointer hover:scale-110" craft-data-slot="2">
+                                    <div class="text-xs text-light/60 text-center">拖放<br>装备</div>
+                                </div>
+                                <div class="absolute top-1/2 right-[0%] transform -translate-y-1/2 w-16 h-16 rounded-full border-2 border-accent/50 flex items-center justify-center bg-dark/80 hover:bg-accent/20 hover:border-accent transition-all cursor-pointer hover:scale-110" craft-data-slot="3">
+                                    <div class="text-xs text-light/60 text-center">拖放<br>装备</div>
+                                </div>
+
+                                <!-- 中间圆圈 -->
+                                <div id="craft-result-slot" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full border-2 border-gold/50 flex items-center justify-center bg-gradient-to-br from-gold/10 to-accent/10">
+                                    <div class="text-xs text-gold/80 text-center">合成<br>结果</div>
+                                </div>
+                            </div>
+
+                            <!-- 成功率显示 -->
+                            <div class="text-center mb-4 p-3 bg-dark/50 rounded-lg border border-accent/10">
+                                <p class="text-light/60 text-sm">合成成功率</p>
+                                <p id="craft-success-rate" class="text-2xl font-bold text-success">0%</p>
+                            </div>
+
+                            <!-- 操作按钮 -->
+                            <div class="flex gap-2">
+                                <button id="clear-craft" class="flex-1 px-4 py-2 rounded-lg bg-gradient-to-r from-gray-600 to-gray-500 text-white text-xs font-medium hover:opacity-80 transition-opacity flex items-center justify-center gap-1">
+                                    <i class="fa fa-refresh"></i> 清空
+                                </button>
+                                <button id="confirm-craft" class="flex-1 px-4 py-2 rounded-lg bg-gradient-to-r from-gold-dark to-gold text-black text-xs font-bold hover:opacity-80 transition-opacity flex items-center justify-center gap-1 shadow-lg shadow-gold/30">
+                                    <i class="fa fa-check"></i> 合成
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     
     <!-- 分解提示框 -->
     <div id="disassemble-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center hidden" style="z-index: 60;">
-        <div class="bg-gray-900 rounded-lg p-6 max-w-md w-full">
-            <h3 class="text-xl font-bold text-accent mb-4">分解装备</h3>
+        <div class="bg-dark-card rounded-xl p-6 max-w-md w-full border border-primary/30 backdrop-blur-sm shadow-2xl">
+            <h3 class="text-xl font-bold text-accent mb-4 flex items-center gap-2">
+                <i class="fa fa-cogs"></i> 分解装备
+            </h3>
             <div class="text-light/80 mb-6" id="disassemble-modal-info">
                 <!-- 分解信息将通过 JavaScript 动态添加 -->
             </div>
             <div class="flex justify-center space-x-4">
-                <button id="cancel-disassemble" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded text-sm transition-colors flex items-center">
-                    <i class="fa fa-times mr-2"></i> 取消
+                <button id="cancel-disassemble" class="px-4 py-2 rounded-lg bg-gradient-to-r from-gray-600 to-gray-500 text-white text-sm font-medium hover:opacity-80 transition-opacity flex items-center gap-2">
+                    <i class="fa fa-times"></i> 取消
                 </button>
-                <button id="confirm-disassemble" class="bg-secondary hover:bg-secondary/80 text-white px-6 py-2 rounded text-sm transition-colors flex items-center">
-                    <i class="fa fa-check mr-2"></i> 确认分解
+                <button id="confirm-disassemble" class="px-4 py-2 rounded-lg bg-gradient-to-r from-danger to-red-500 text-white text-sm font-medium hover:opacity-80 transition-opacity flex items-center gap-2">
+                    <i class="fa fa-check"></i> 确认分解
                 </button>
             </div>
         </div>
     </div>
-    
+
     <!-- 右键菜单 -->
-    <div id="context-menu" class="fixed z-[9999] bg-gray-900 border border-dark/50 rounded shadow-lg hidden w-48">
+    <div id="context-menu" class="fixed z-[9999] bg-dark-card border border-primary/30 rounded-lg shadow-xl hidden w-48 backdrop-blur-sm">
         <div class="py-1">
-            <div id="context-use" class="px-4 py-2 text-sm text-white hover:bg-gray-700 cursor-pointer flex items-center">
-                <i class="fa fa-check mr-2"></i> 使用/装备
+            <div id="context-use" class="px-4 py-2 text-sm text-light hover:bg-primary/20 cursor-pointer flex items-center gap-2 transition-colors">
+                <i class="fa fa-check text-success"></i> 使用/装备
             </div>
-            <div id="context-disassemble" class="px-4 py-2 text-sm text-white hover:bg-gray-700 cursor-pointer flex items-center">
-                <i class="fa fa-cogs mr-2"></i> 分解
+            <div id="context-disassemble" class="px-4 py-2 text-sm text-light hover:bg-primary/20 cursor-pointer flex items-center gap-2 transition-colors">
+                <i class="fa fa-cogs text-accent"></i> 分解
             </div>
-            <div id="context-drop" class="px-4 py-2 text-sm text-white hover:bg-gray-700 cursor-pointer flex items-center">
-                <i class="fa fa-trash mr-2"></i> 丢弃
+            <div id="context-drop" class="px-4 py-2 text-sm text-light hover:bg-danger/20 cursor-pointer flex items-center gap-2 transition-colors">
+                <i class="fa fa-trash text-danger"></i> 丢弃
             </div>
         </div>
     </div>
@@ -1267,11 +1416,13 @@
 
     <!-- 3D战斗模态窗口 -->
     <div id="battle-modal" class="fixed inset-0 bg-black flex items-center justify-center z-50 hidden">
-        <div class="bg-gray-900 rounded-lg p-4 w-11/12 h-5/6 flex flex-col border border-red-500/50 shadow-lg shadow-red-500/50">
+        <div class="bg-dark-card rounded-xl p-4 w-11/12 h-5/6 flex flex-col border border-danger/50 shadow-2xl shadow-danger/30">
             <!-- 战斗模态头部 -->
-            <div class="flex justify-between items-center pb-3 border-b border-red-500/30">
-                <h2 class="text-2xl font-bold text-white"><i class="fa fa-shield mr-2 text-red-500"></i>3D战斗场景</h2>
-                <button id="close-battle-modal" class="text-gray-400 hover:text-white transition-colors">
+            <div class="flex justify-between items-center pb-3 border-b border-danger/30">
+                <h2 class="text-2xl font-bold text-light flex items-center gap-2">
+                    <i class="fa fa-shield text-danger"></i> 3D战斗场景
+                </h2>
+                <button id="close-battle-modal" class="text-light/60 hover:text-white transition-colors">
                     <i class="fa fa-times text-2xl"></i>
                 </button>
             </div>
@@ -1287,34 +1438,57 @@
 
     <!-- 技能树模态窗口 -->
     <div id="skill-tree-modal" class="modal hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-        <div class="bg-gray-900 rounded-lg w-11/12 max-w-6xl h-[90vh] overflow-hidden border border-purple/50 shadow-lg shadow-purple/50 flex flex-col">
+        <div class="bg-dark-card rounded-2xl w-11/12 max-w-4xl h-[90vh] overflow-hidden border border-spirit/50 shadow-2xl shadow-spirit/30 flex flex-col relative">
+            <!-- 背景装饰 -->
+            <div class="absolute inset-0 overflow-hidden pointer-events-none">
+                <div class="absolute -top-32 -right-32 w-64 h-64 bg-spirit/15 rounded-full blur-3xl"></div>
+                <div class="absolute -bottom-32 -left-32 w-64 h-64 bg-purple/15 rounded-full blur-3xl"></div>
+            </div>
+
             <!-- 技能树头部 -->
-            <div class="flex justify-between items-center p-4 border-b border-purple/30">
-                <h2 class="text-2xl font-bold text-white">
-                    <i class="fa fa-magic mr-2 text-purple"></i>技能树
-                </h2>
-                <button id="close-skill-tree-modal" class="text-gray-400 hover:text-white transition-colors">
-                    <i class="fa fa-times text-2xl"></i>
-                </button>
+            <div class="relative px-6 py-4 border-b border-spirit/30 bg-gradient-to-r from-spirit/10 to-transparent">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-spirit to-purple flex items-center justify-center shadow-lg shadow-spirit/40 animate-pulse">
+                            <i class="fa fa-magic text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-bold text-light">技能树</h2>
+                            <p class="text-xs text-light/50">修炼功法与技能</p>
+                        </div>
+                    </div>
+                    <button id="close-skill-tree-modal" class="w-10 h-10 rounded-full bg-dark/50 border border-spirit/20 flex items-center justify-center text-light/60 hover:text-white hover:bg-spirit/20 hover:border-spirit/40 transition-all hover:scale-110">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
             </div>
 
             <!-- 当前境界和灵力信息 -->
-            <div class="p-3 bg-dark/30 border-b border-purple/20">
+            <div class="relative p-4 bg-dark/30 border-b border-spirit/20">
                 <div class="flex justify-between items-center">
-                    <div>
-                        <span class="text-sm text-light/60">当前境界：</span>
-                        <span id="skill-tree-realm" class="text-accent font-bold">武者</span>
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-2">
+                            <i class="fa fa-star text-gold"></i>
+                            <span class="text-sm text-light/60">境界：</span>
+                            <span id="skill-tree-realm" class="text-gold font-bold">武者期</span>
+                        </div>
+                        <div class="h-4 w-px bg-primary/20"></div>
+                        <div class="flex items-center gap-2">
+                            <i class="fa fa-bolt text-spirit-light"></i>
+                            <span class="text-sm text-light/60">灵力：</span>
+                            <span id="skill-tree-energy" class="text-spirit font-bold">100/100</span>
+                        </div>
                     </div>
-                    <div>
-                        <span class="text-sm text-light/60">当前灵力：</span>
-                        <span id="skill-tree-energy" class="text-purple font-bold">100/100</span>
+                    <div class="flex items-center gap-2 text-sm">
+                        <span class="text-light/40">技能点：</span>
+                        <span id="skill-points" class="text-accent font-bold">0</span>
                     </div>
                 </div>
             </div>
 
             <!-- 境界选择Tabs -->
-            <div class="border-b border-purple/20 bg-dark/20">
-                <div id="skill-realm-tabs" class="flex px-4 pt-2">
+            <div class="relative border-b border-spirit/20 bg-dark/20">
+                <div id="skill-realm-tabs" class="flex px-4 pt-2 gap-1">
                     <!-- Tabs将在这里动态生成 -->
                 </div>
             </div>
@@ -1322,43 +1496,49 @@
             <!-- 主内容区域：左侧技能树 + 右侧详情 -->
             <div class="flex-1 flex overflow-hidden">
                 <!-- 左侧：技能树容器 -->
-                <div id="skill-tree-container" class="flex-1 relative overflow-hidden border-r border-purple/20">
+                <div id="skill-tree-container" class="flex-1 relative overflow-auto border-r border-spirit/20 bg-gradient-to-br from-dark/50 to-spirit/5">
                     <!-- 技能树背景图片和节点将在这里动态生成 -->
                 </div>
 
                 <!-- 右侧：技能详情面板 -->
-                <div id="skill-detail-panel" class="w-80 bg-dark/95 border-l border-purple/30 p-4 overflow-y-auto">
+                <div id="skill-detail-panel" class="w-80 bg-dark/95 border-l border-spirit/30 p-4 overflow-y-auto">
                     <!-- 默认提示 -->
                     <div id="skill-detail-placeholder" class="h-full flex flex-col items-center justify-center text-light/40">
-                        <i class="fa fa-hand-pointer text-4xl mb-3"></i>
+                        <div class="w-16 h-16 rounded-full bg-spirit/10 flex items-center justify-center mb-4">
+                            <i class="fa fa-hand-pointer text-2xl"></i>
+                        </div>
                         <p class="text-sm text-center">点击左侧技能节点<br>查看详情</p>
                     </div>
 
                     <!-- 技能详情内容（初始隐藏） -->
                     <div id="skill-detail-content" class="hidden">
                         <!-- 头部：技能名称 + 等级 -->
-                        <div class="flex items-center gap-2 mb-3 pb-3 border-b border-purple/20">
-                            <i class="fa fa-magic text-purple"></i>
-                            <h3 id="skill-detail-name" class="text-lg font-bold text-white flex-1"></h3>
-                            <span id="skill-detail-level" class="px-2 py-1 bg-purple/20 text-purple text-sm rounded-full font-semibold"></span>
-                        </div>
-
-                        <!-- 类型标签 -->
-                        <div class="mb-3">
-                            <span id="skill-detail-type" class="text-xs text-light/50"></span>
+                        <div class="flex items-center gap-2 mb-4 pb-3 border-b border-spirit/20">
+                            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-spirit to-purple flex items-center justify-center">
+                                <i class="fa fa-magic text-white"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h3 id="skill-detail-name" class="text-lg font-bold text-light"></h3>
+                                <span id="skill-detail-type" class="text-xs text-light/50"></span>
+                            </div>
+                            <span id="skill-detail-level" class="px-3 py-1 bg-gradient-to-r from-spirit/30 to-purple/30 text-spirit-light text-sm rounded-full font-bold border border-spirit/30"></span>
                         </div>
 
                         <!-- 描述 -->
-                        <p id="skill-detail-desc" class="text-sm text-light/70 mb-4 leading-relaxed"></p>
+                        <p id="skill-detail-desc" class="text-sm text-light/70 mb-4 leading-relaxed bg-dark/30 p-3 rounded-lg border border-spirit/10"></p>
 
                         <!-- 属性区域 -->
                         <div id="skill-detail-stats" class="flex flex-wrap gap-2 mb-4"></div>
 
                         <!-- 升级区域 -->
-                        <div class="pt-3 border-t border-purple/20">
-                            <div id="skill-upgrade-cost" class="text-sm text-light/60 mb-3"></div>
-                            <button id="skill-upgrade-btn" class="w-full px-4 py-2 bg-gradient-to-r from-purple/40 to-purple/60 hover:from-purple/50 hover:to-purple/70 text-white text-sm rounded-lg transition-all font-semibold shadow-sm hover:shadow-md hover:shadow-purple/30">
-                                升级技能
+                        <div class="pt-4 border-t border-spirit/20">
+                            <div id="skill-upgrade-cost" class="text-sm text-light/60 mb-3 flex items-center gap-2">
+                                <i class="fa fa-bolt text-spirit-light"></i>
+                                <span>升级消耗：</span>
+                                <span id="upgrade-cost-value" class="text-spirit font-bold">0</span>
+                            </div>
+                            <button id="skill-upgrade-btn" class="w-full px-4 py-3 bg-gradient-to-r from-spirit to-purple hover:from-spirit/80 hover:to-purple/80 text-white text-sm rounded-xl transition-all font-bold shadow-lg shadow-spirit/30 hover:shadow-spirit/50 hover:scale-[1.02] flex items-center justify-center gap-2">
+                                <i class="fa fa-arrow-up"></i> 升级技能
                             </button>
                         </div>
                     </div>

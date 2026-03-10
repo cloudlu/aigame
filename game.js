@@ -561,25 +561,25 @@ class EndlessWinterGame {
                 z-index: 10;
             }
             .map-node-abs.unlocked {
-                background: linear-gradient(135deg, rgba(30, 64, 175, 0.92), rgba(59, 130, 246, 0.92));
+                background: linear-gradient(135deg, rgba(74, 158, 255, 0.95), rgba(59, 130, 246, 0.95));
                 border: 3px solid #60a5fa;
                 color: white;
-                box-shadow: 0 0 18px rgba(59, 130, 246, 0.6);
+                box-shadow: 0 0 18px rgba(74, 158, 255, 0.6);
             }
             .map-node-abs.unlocked:hover {
                 transform: translate(-50%, -50%) scale(1.25);
-                box-shadow: 0 0 35px rgba(59, 130, 246, 1);
+                box-shadow: 0 0 35px rgba(74, 158, 255, 1);
                 z-index: 20;
             }
             .map-node-abs.current {
-                background: linear-gradient(135deg, rgba(5, 150, 105, 0.95), rgba(16, 185, 129, 0.95));
+                background: linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.95));
                 border: 4px solid #34d399;
                 animation: pulse-glow 2s infinite;
                 box-shadow: 0 0 30px rgba(16, 185, 129, 0.9);
             }
             .map-node-abs.locked {
-                background: rgba(55, 65, 81, 0.85);
-                border: 3px solid #4b5563;
+                background: rgba(30, 30, 50, 0.9);
+                border: 3px solid rgba(74, 158, 255, 0.3);
                 color: #9ca3af;
                 cursor: not-allowed;
             }
@@ -650,7 +650,25 @@ class EndlessWinterGame {
         });
 
         html += '</div>';
-        html += '<p class="text-center text-sm text-gray-400 mt-3">💡 点击节点移动 | 消耗 10 灵力 | 📍=当前位置</p>';
+        html += `
+        <div class="text-center mt-4 p-3 rounded-lg bg-dark/50 border border-primary/10">
+            <p class="text-sm text-light/70 flex items-center justify-center gap-4 flex-wrap">
+                <span class="flex items-center gap-1.5">
+                    <i class="fa fa-mouse-pointer text-primary text-xs"></i>
+                    <span>点击节点移动</span>
+                </span>
+                <span class="w-px h-4 bg-primary/30"></span>
+                <span class="flex items-center gap-1.5">
+                    <i class="fa fa-bolt text-spirit text-xs"></i>
+                    <span>消耗 10 灵力</span>
+                </span>
+                <span class="w-px h-4 bg-primary/30"></span>
+                <span class="flex items-center gap-1.5">
+                    <i class="fa fa-map-marker text-life text-xs"></i>
+                    <span>当前位置</span>
+                </span>
+            </p>
+        </div>`;
 
         // 显示在模态框中
         this.showSimpleMapModal(html);
@@ -663,11 +681,21 @@ class EndlessWinterGame {
         modal.id = 'temp-map-modal';
         modal.className = 'fixed inset-0 bg-black/85 flex items-center justify-center z-50';
         modal.innerHTML = `
-            <div class="relative bg-gray-900/98 rounded-xl p-5 w-[95vw] max-w-5xl mx-4 max-h-[90vh] overflow-auto border border-gray-600 shadow-2xl">
+            <div class="relative bg-dark-card rounded-xl p-5 w-[95vw] max-w-5xl mx-4 max-h-[90vh] overflow-auto border border-primary/30 backdrop-blur-sm shadow-2xl">
+                <!-- 装饰性背景 -->
+                <div class="absolute top-0 right-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="absolute bottom-0 left-0 w-64 h-64 bg-spirit/5 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-accent/3 rounded-full blur-3xl pointer-events-none"></div>
+
                 <!-- 标题 -->
                 <div class="text-center mb-4 relative z-10">
-                    <h2 class="text-2xl font-bold text-white">🗺️ 修仙世界</h2>
-                    <p class="text-sm text-gray-400">沿着灵脉探索各个神秘区域</p>
+                    <div class="flex items-center justify-center gap-3 mb-2">
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/40">
+                            <i class="fa fa-globe text-white text-lg"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold bg-gradient-to-r from-primary to-spirit-light bg-clip-text text-transparent">修仙世界</h2>
+                    </div>
+                    <p class="text-sm text-light/60">沿着灵脉探索各个神秘区域</p>
                 </div>
                 <!-- 内容区域 -->
                 <div class="relative z-10">
@@ -675,8 +703,8 @@ class EndlessWinterGame {
                 </div>
                 <!-- 关闭按钮 -->
                 <button onclick="document.getElementById('temp-map-modal').remove()"
-                    class="relative z-10 mt-4 w-full bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors">
-                    关闭地图
+                    class="relative z-10 mt-4 w-full px-4 py-2.5 rounded-lg bg-gradient-to-r from-gray-600 to-gray-500 text-white font-medium hover:opacity-80 transition-all hover:shadow-lg hover:shadow-gray-500/30 flex items-center justify-center gap-2">
+                    <i class="fa fa-times"></i> 关闭地图
                 </button>
             </div>
         `;
@@ -764,14 +792,31 @@ class EndlessWinterGame {
         }
         
         // 更新资源显示
+        const energyDisplayElement = document.getElementById('energy-display');
+        if (energyDisplayElement) {
+            const energyCurrent = Math.floor(this.gameState.player.energy || 0);
+            const energyMax = this.gameState.player.maxEnergy || 100;
+            energyDisplayElement.textContent = `${energyCurrent}/${energyMax}`;
+        }
+
+        // 保留旧的 energy 元素兼容性
         const energyElement = document.getElementById('energy');
         if (energyElement) {
             const energyCurrent = Math.floor(this.gameState.player.energy || 0);
-            const energyMax = this.gameState.player.maxEnergy || 100;
-            energyElement.textContent = `${energyCurrent}/${energyMax}`;
-            // 使用元数据中的回复速率，如果没有则使用默认值2
-            const energyRegenRate = this.metadata.player?.regenRates?.energy || 2;
-            energyElement.setAttribute('data-tooltip', `灵力恢复: +${energyRegenRate}/秒`);
+            energyElement.textContent = energyCurrent;
+        }
+
+        // 新增：更新灵力进度条（新UI）
+        const energyBarElement = document.getElementById('energy-bar');
+        if (energyBarElement) {
+            const energyPercentage = (this.gameState.player.energy / this.gameState.player.maxEnergy) * 100;
+            energyBarElement.style.width = `${Math.min(energyPercentage, 100)}%`;
+        }
+
+        // 新增：更新max-energy显示
+        const maxEnergyElement = document.getElementById('max-energy');
+        if (maxEnergyElement) {
+            maxEnergyElement.textContent = this.gameState.player.maxEnergy || 100;
         }
         const spiritWoodElement = document.getElementById('spiritWood');
         if (spiritWoodElement) {
@@ -779,7 +824,8 @@ class EndlessWinterGame {
         }
         const spiritWoodRateElement = document.getElementById('spiritWood-rate');
         if (spiritWoodRateElement) {
-            spiritWoodRateElement.textContent = `+${this.gameState.resources.spiritWoodRate || 0}/秒`;
+            const rate = this.gameState.resources.spiritWoodRate || 0;
+            spiritWoodRateElement.textContent = `+${rate.toFixed(1)}/秒`;
         }
         const blackIronElement = document.getElementById('blackIron');
         if (blackIronElement) {
@@ -787,7 +833,8 @@ class EndlessWinterGame {
         }
         const blackIronRateElement = document.getElementById('blackIron-rate');
         if (blackIronRateElement) {
-            blackIronRateElement.textContent = `+${this.gameState.resources.blackIronRate || 0}/秒`;
+            const rate = this.gameState.resources.blackIronRate || 0;
+            blackIronRateElement.textContent = `+${rate.toFixed(1)}/秒`;
         }
         const spiritCrystalElement = document.getElementById('spiritCrystal');
         if (spiritCrystalElement) {
@@ -795,7 +842,8 @@ class EndlessWinterGame {
         }
         const spiritCrystalRateElement = document.getElementById('spiritCrystal-rate');
         if (spiritCrystalRateElement) {
-            spiritCrystalRateElement.textContent = `+${this.gameState.resources.spiritCrystalRate || 0}/秒`;
+            const rate = this.gameState.resources.spiritCrystalRate || 0;
+            spiritCrystalRateElement.textContent = `+${rate.toFixed(1)}/秒`;
         }
         
         // 计算装备效果
@@ -844,7 +892,7 @@ class EndlessWinterGame {
             // 更新突破石显示
             const breakthroughStonesElement = document.getElementById('breakthrough-stones');
             if (breakthroughStonesElement) {
-                breakthroughStonesElement.textContent = `突破石: ${this.gameState.resources.breakthroughStones || 0}`;
+                breakthroughStonesElement.textContent = `${this.gameState.resources.breakthroughStones || 0}`;
             }
             // 更新突破按钮状态
             const breakthroughBtnElement = document.getElementById('breakthrough-btn');
@@ -887,12 +935,64 @@ class EndlessWinterGame {
                     defenseElement.textContent = Math.floor(finalDefense);
                 }
             }
+            const hpDisplayElement = document.getElementById('hp-display');
+            const maxHp = this.gameState.player.maxHp + this.gameState.player.equipmentEffects.hp + realmBonus.hp;
+            if (hpDisplayElement) {
+                hpDisplayElement.textContent = `${Math.floor(finalHp)}/${Math.floor(maxHp)}`;
+            }
+
+            // 保留旧的 hp 元素兼容性（某些地方可能还在使用）
             const hpElement = document.getElementById('hp');
             if (hpElement) {
-                const maxHp = this.gameState.player.maxHp + this.gameState.player.equipmentEffects.hp + realmBonus.hp;
-                hpElement.textContent = `${Math.floor(finalHp)}/${Math.floor(maxHp)}`;
-                // 更新生命值恢复提示（每秒钟恢复1%最大生命值）
-                hpElement.setAttribute('data-tooltip', `生命值恢复: +${Math.floor(maxHp * 0.01)}/秒`);
+                hpElement.textContent = Math.floor(finalHp);
+            }
+
+            // 新增：更新HP进度条
+            const hpBarElement = document.getElementById('hp-bar');
+            if (hpBarElement) {
+                const hpPercentage = (finalHp / maxHp) * 100;
+                hpBarElement.style.width = `${Math.min(hpPercentage, 100)}%`;
+            }
+
+            // 新增：更新max-hp显示
+            const maxHpElement = document.getElementById('max-hp');
+            if (maxHpElement) {
+                maxHpElement.textContent = Math.floor(maxHp);
+            }
+
+            // 新增：更新属性面板的max-hp-attr显示
+            const maxHpAttrElement = document.getElementById('max-hp-attr');
+            if (maxHpAttrElement) {
+                maxHpAttrElement.textContent = Math.floor(maxHp);
+            }
+
+            // 新增：更新导航栏境界显示
+            if (this.metadata.realmConfig) {
+                const realm = this.gameState.player.realm;
+                const realmName = this.metadata.realmConfig[realm.currentRealm].name;
+                const stageConfig = this.metadata.realmConfig[realm.currentRealm].stages[realm.currentStage - 1];
+                const stageName = stageConfig.name;
+
+                // 更新导航栏境界
+                const navRealmName = document.getElementById('nav-realm-name');
+                if (navRealmName) {
+                    navRealmName.textContent = `${realmName}期`;
+                }
+                const navRealmStage = document.getElementById('nav-realm-stage');
+                if (navRealmStage) {
+                    navRealmStage.textContent = `· ${stageName}`;
+                }
+                // 更新境界阶数
+                const navRealmLevel = document.getElementById('nav-realm-level');
+                if (navRealmLevel) {
+                    navRealmLevel.textContent = `（${realm.currentStage}阶）`;
+                }
+
+                // 更新人物面板境界显示
+                const realmDisplay = document.getElementById('realm-display');
+                if (realmDisplay) {
+                    realmDisplay.textContent = `${realmName}期 · ${stageName}`;
+                }
             }
             const luckElement = document.getElementById('luck');
             if (luckElement) {
@@ -914,7 +1014,14 @@ class EndlessWinterGame {
                     speedElement.textContent = Math.floor(finalSpeed);
                 }
             }
-        
+
+            // 更新暴击率显示
+            const criticalRateElement = document.getElementById('critical-rate');
+            if (criticalRateElement) {
+                const criticalRate = (this.gameState.player.criticalRate || 5) + (this.gameState.player.equipmentEffects.criticalRate || 0);
+                criticalRateElement.textContent = Math.floor(criticalRate);
+            }
+
         // 更新装备栏显示
         for (const slot in this.gameState.player.equipment) {
             const item = this.gameState.player.equipment[slot];
@@ -1078,23 +1185,83 @@ class EndlessWinterGame {
         bindEvent('#close-battle-modal', 'click', () => {
             this.closeBattleModal();
         });
-        
+
         // 攻击按钮
         bindEvent('#attack-btn', 'click', () => {
             this.attackEnemy();
         });
-        
-        // 自动战斗按钮
+
+        // 自动战斗按钮 - 打开配置弹窗
         bindEvent('#auto-battle-btn', 'click', () => {
+            this.openAutoBattleModal();
+        });
+
+        // 自动战斗配置弹窗
+        bindEvent('#close-auto-battle-modal', 'click', () => {
+            this.closeAutoBattleModal();
+        });
+
+        // 点击弹窗外部关闭
+        const autoBattleModal = document.getElementById('auto-battle-modal');
+        if (autoBattleModal) {
+            autoBattleModal.addEventListener('click', (e) => {
+                if (e.target === autoBattleModal) {
+                    this.closeAutoBattleModal();
+                }
+            });
+        }
+
+        // 弹窗内的自动战斗目标颜色设置
+        bindEvent('#modal-auto-battle-green', 'change', () => {
+            this.updateAutoBattleTargetColorsFromModal();
+        });
+        bindEvent('#modal-auto-battle-yellow', 'change', () => {
+            this.updateAutoBattleTargetColorsFromModal();
+        });
+        bindEvent('#modal-auto-battle-red', 'change', () => {
+            this.updateAutoBattleTargetColorsFromModal();
+        });
+
+        // 弹窗内的开始/停止自动战斗按钮
+        bindEvent('#modal-toggle-auto-battle-btn', 'click', () => {
             this.toggleAutoBattle();
         });
-        
-        // 自动收集资源按钮
-        bindEvent('#auto-collect-btn', 'click', () => {
-            this.toggleAutoCollect();
+
+        // 手动攻击按钮
+        bindEvent('#manual-attack-btn', 'click', () => {
+            this.attackEnemy();
+            this.closeAutoBattleModal();
         });
-        
-        // 自动战斗目标颜色设置
+
+        // 注销账号按钮（导航栏）
+        bindEvent('#delete-account-nav-btn', 'click', () => {
+            this.openDeleteAccountModal();
+        });
+
+        // 注销账号弹窗
+        bindEvent('#close-delete-account-modal', 'click', () => {
+            this.closeDeleteAccountModal();
+        });
+
+        bindEvent('#cancel-delete-account', 'click', () => {
+            this.closeDeleteAccountModal();
+        });
+
+        bindEvent('#confirm-delete-account', 'click', () => {
+            this.confirmDeleteAccount();
+        });
+
+        // 点击弹窗外部关闭
+        const deleteAccountModal = document.getElementById('delete-account-modal');
+        if (deleteAccountModal) {
+            deleteAccountModal.addEventListener('click', (e) => {
+                if (e.target === deleteAccountModal) {
+                    this.closeDeleteAccountModal();
+                }
+            });
+        }
+
+        // 自动战斗目标颜色设置（导航栏 - 保留兼容性）
         bindEvent('#auto-battle-green', 'change', () => {
             this.updateAutoBattleTargetColors();
         });
@@ -1104,40 +1271,88 @@ class EndlessWinterGame {
         bindEvent('#auto-battle-red', 'change', () => {
             this.updateAutoBattleTargetColors();
         });
-        
-        // 自动收集资源类型设置
-        bindEvent('#auto-collect-spiritWood', 'change', () => {
-            this.updateAutoCollectResourceTypes();
-        });
-        bindEvent('#auto-collect-blackIron', 'change', () => {
-            this.updateAutoCollectResourceTypes();
-        });
-        bindEvent('#auto-collect-spiritCrystal', 'change', () => {
-            this.updateAutoCollectResourceTypes();
-        });
-        
+
         // 自动挂机开关
         bindEvent('#auto挂机', 'change', (e) => {
             this.toggleAutoPlay(e.target.checked);
         });
-        
-        // 资源收集按钮
-        bindEvent('#collect-spiritWood', 'click', () => {
+
+        // 资源采集弹窗
+        bindEvent('#collect-resources-btn', 'click', () => {
+            this.openCollectResourcesModal();
+        });
+
+        bindEvent('#close-collect-resources-modal', 'click', () => {
+            this.closeCollectResourcesModal();
+        });
+
+        // 点击弹窗外部关闭
+        const collectModal = document.getElementById('collect-resources-modal');
+        if (collectModal) {
+            collectModal.addEventListener('click', (e) => {
+                if (e.target === collectModal) {
+                    this.closeCollectResourcesModal();
+                }
+            });
+        }
+
+        // 弹窗内的自动采集设置
+        bindEvent('#modal-auto-collect-spiritWood', 'change', () => {
+            this.updateAutoCollectResourceTypes();
+        });
+        bindEvent('#modal-auto-collect-blackIron', 'change', () => {
+            this.updateAutoCollectResourceTypes();
+        });
+        bindEvent('#modal-auto-collect-spiritCrystal', 'change', () => {
+            this.updateAutoCollectResourceTypes();
+        });
+
+        // 弹窗内的开始/停止自动采集按钮
+        bindEvent('#modal-toggle-auto-collect-btn', 'click', () => {
+            this.toggleAutoCollect();
+        });
+
+        // 手动采集按钮
+        bindEvent('#collect-spiritWood-btn', 'click', () => {
             this.collectResource('spiritWood');
         });
-        
-        bindEvent('#collect-blackIron', 'click', () => {
+
+        bindEvent('#collect-blackIron-btn', 'click', () => {
             this.collectResource('blackIron');
         });
-        
-        bindEvent('#collect-spiritCrystal', 'click', () => {
+
+        bindEvent('#collect-spiritCrystal-btn', 'click', () => {
             this.collectResource('spiritCrystal');
         });
-        
+
+        // 商店弹窗
+        bindEvent('#shop-btn', 'click', () => {
+            this.openShopModal();
+        });
+
+        bindEvent('#close-shop-modal', 'click', () => {
+            this.closeShopModal();
+        });
+
+        // 点击商店弹窗外部关闭
+        const shopModal = document.getElementById('shop-modal');
+        if (shopModal) {
+            shopModal.addEventListener('click', (e) => {
+                if (e.target === shopModal) {
+                    this.closeShopModal();
+                }
+            });
+        }
+
         // 用户相关按钮
         
         bindEvent('#logout-btn', 'click', () => {
             this.logout();
+        });
+
+        // 悬浮战斗日志窗口最小化/展开
+        bindEvent('#toggle-battle-log-btn', 'click', () => {
+            this.toggleBattleLogWindow();
         });
         
         // 装备相关按钮
@@ -1183,6 +1398,72 @@ class EndlessWinterGame {
                 }
             });
         }
+
+        // 打开人物详情弹框
+        bindEvent('#character-info-trigger', 'click', () => {
+            this.openCharacterModal();
+        });
+
+        // 关闭人物详情弹框
+        bindEvent('#close-character-modal', 'click', () => {
+            this.closeCharacterModal();
+        });
+
+        // 点击人物弹框外部关闭
+        const characterModal = document.getElementById('character-modal');
+        if (characterModal) {
+            characterModal.addEventListener('click', (e) => {
+                if (e.target === characterModal) {
+                    this.closeCharacterModal();
+                }
+            });
+        }
+
+        // 人物弹框内的装备槽点击
+        document.querySelectorAll('.equipment-slot-modal').forEach(slot => {
+            slot.addEventListener('click', () => {
+                const selectedSlot = slot.dataset.slot;
+                this.selectedRefineSlot = selectedSlot;
+                // 更新精炼信息
+                this.equipmentSystem.updateRefineInfoModal(selectedSlot);
+                // 更新选中样式
+                document.querySelectorAll('.equipment-slot-modal').forEach(s => {
+                    s.classList.remove('border-accent', 'border-gold');
+                    s.classList.add('border-primary/30');
+                });
+                slot.classList.remove('border-primary/30');
+                slot.classList.add('border-gold');
+            });
+
+            // 双击装备槽脱下装备
+            slot.addEventListener('dblclick', () => {
+                const selectedSlot = slot.dataset.slot;
+                this.equipmentSystem.unequipEquipment(selectedSlot);
+            });
+        });
+
+        // 人物弹框内的精炼按钮
+        bindEvent('#refine-weapon-btn-modal', 'click', () => {
+            const slot = this.selectedRefineSlot || 'weapon';
+            this.equipmentSystem.refineEquipment(slot);
+            this.equipmentSystem.updateRefineInfoModal(slot);
+        });
+
+        // 人物弹框内的刷新按钮
+        bindEvent('#refresh-equipment-btn-modal', 'click', () => {
+            const slot = this.selectedRefineSlot || 'weapon';
+            this.equipmentSystem.previewRefreshStats(slot);
+        });
+
+        // 人物弹框内的突破按钮
+        bindEvent('#breakthrough-btn-modal', 'click', () => {
+            this.breakthrough();
+        });
+
+        // 人物弹框内的自动装备按钮
+        bindEvent('#auto-equip-btn-modal', 'click', () => {
+            this.autoEquip();
+        });
 
         // 关闭技能详情面板
         bindEvent('#close-skill-detail', 'click', () => {
@@ -1302,25 +1583,7 @@ class EndlessWinterGame {
         bindEvent('#delete-account-btn', 'click', () => {
             this.deleteAccount();
         });
-        
-        // 设置按钮下拉菜单
-        bindEvent('#settings-btn', 'click', () => {
-            console.log('点击设置按钮');
-            const dropdown = document.getElementById('settings-dropdown');
-            if (dropdown) {
-                dropdown.classList.toggle('hidden');
-            }
-        });
-        
-        // 点击其他地方关闭下拉菜单
-        document.addEventListener('click', (e) => {
-            const settingsBtn = document.getElementById('settings-btn');
-            const dropdown = document.getElementById('settings-dropdown');
-            if (settingsBtn && dropdown && !settingsBtn.contains(e.target) && !dropdown.contains(e.target)) {
-                dropdown.classList.add('hidden');
-            }
-        });
-        
+
         // 刷新敌人按钮
         bindEvent('#refresh-enemy-btn', 'click', () => {
             // 不再随机切换地图，只刷新当前地图的敌人
@@ -1510,15 +1773,26 @@ class EndlessWinterGame {
     // 根据性别更新人物形象
     updateCharacterBodyImage() {
         const characterBodyElement = document.getElementById('character-body');
-        if (characterBodyElement) {
-            const timestamp = new Date().getTime();
-            if (this.gameState.user.loggedIn && this.gameState.user.gender) {
-                if (this.gameState.user.gender === '男') {
-                    characterBodyElement.src = `Images/male-character-${this.gameState.player.realm.currentRealm + 1}.png?${timestamp}`;
-                } else if (this.gameState.user.gender === '女') {
-                    characterBodyElement.src = `Images/female-character-${this.gameState.player.realm.currentRealm + 1}.png?${timestamp}`;
-                }
+        const characterAvatarElement = document.getElementById('character-avatar');
+        const timestamp = new Date().getTime();
+
+        let imageSrc = 'Images/default-character.png';
+        if (this.gameState.user.loggedIn && this.gameState.user.gender) {
+            if (this.gameState.user.gender === '男') {
+                imageSrc = `Images/male-character-${this.gameState.player.realm.currentRealm + 1}.png?${timestamp}`;
+            } else if (this.gameState.user.gender === '女') {
+                imageSrc = `Images/female-character-${this.gameState.player.realm.currentRealm + 1}.png?${timestamp}`;
             }
+        }
+
+        // 更新人物立绘
+        if (characterBodyElement) {
+            characterBodyElement.src = imageSrc;
+        }
+
+        // 更新头像
+        if (characterAvatarElement) {
+            characterAvatarElement.src = imageSrc;
         }
     }
     
@@ -1685,6 +1959,208 @@ class EndlessWinterGame {
         }
     }
 
+    // 打开人物详情弹框
+    openCharacterModal() {
+        const modal = document.getElementById('character-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            // 更新弹框内的数据
+            this.updateCharacterModal();
+        }
+    }
+
+    // 关闭人物详情弹框
+    closeCharacterModal() {
+        const modal = document.getElementById('character-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+    }
+
+    // 更新人物详情弹框内容
+    updateCharacterModal() {
+        if (!this.gameState.player) return;
+
+        // 更新境界显示
+        if (this.metadata.realmConfig) {
+            const realm = this.gameState.player.realm;
+            const realmName = this.metadata.realmConfig[realm.currentRealm].name;
+            const stageConfig = this.metadata.realmConfig[realm.currentRealm].stages[realm.currentStage - 1];
+            const stageName = stageConfig.name;
+
+            const realmDisplay = document.getElementById('realm-display-modal');
+            if (realmDisplay) {
+                realmDisplay.textContent = `${realmName}期 · ${stageName}`;
+            }
+
+            // 更新阶数显示
+            const realmStageModal = document.getElementById('realm-stage-modal');
+            if (realmStageModal) {
+                realmStageModal.textContent = realm.currentStage;
+            }
+
+            // 更新突破需求提示
+            const breakthroughRequirement = document.getElementById('breakthrough-requirement-modal');
+            if (breakthroughRequirement && stageConfig) {
+                const hasEnoughLevel = realm.currentLevel >= stageConfig.levelCap;
+                const currentStones = this.gameState.resources.breakthroughStones || 0;
+                const requiredStones = stageConfig.breakthroughStones;
+                const hasEnoughStones = currentStones >= requiredStones;
+
+                if (hasEnoughLevel && hasEnoughStones) {
+                    breakthroughRequirement.textContent = '✓ 已满足突破条件，点击突破';
+                    breakthroughRequirement.className = 'text-center text-xs text-green-400';
+                } else if (!hasEnoughLevel) {
+                    breakthroughRequirement.textContent = `需要达到 Lv.${stageConfig.levelCap} 才能突破`;
+                    breakthroughRequirement.className = 'text-center text-xs text-light/50';
+                } else {
+                    breakthroughRequirement.textContent = `突破需要 ${requiredStones} 个突破石（当前 ${currentStones}）`;
+                    breakthroughRequirement.className = 'text-center text-xs text-yellow-400';
+                }
+            }
+        }
+
+        // 更新等级（使用境界等级）
+        const levelModal = document.getElementById('level-modal');
+        if (levelModal && this.gameState.player.realm) {
+            levelModal.textContent = this.gameState.player.realm.currentLevel || 1;
+        }
+
+        // 更新经验
+        const expModal = document.getElementById('exp-modal');
+        const maxExpModal = document.getElementById('max-exp-modal');
+        const expBarModal = document.getElementById('exp-bar-modal');
+        if (expModal && maxExpModal) {
+            expModal.textContent = Math.floor(this.gameState.player.exp);
+            maxExpModal.textContent = Math.floor(this.gameState.player.maxExp);
+            if (expBarModal) {
+                const expPercent = (this.gameState.player.exp / this.gameState.player.maxExp) * 100;
+                expBarModal.style.width = `${expPercent}%`;
+            }
+        }
+
+        // 更新资源显示
+        const spiritWoodModal = document.getElementById('spirit-wood-modal');
+        const blackIronModal = document.getElementById('black-iron-modal');
+        const spiritCrystalModal = document.getElementById('spirit-crystal-modal');
+        const stonesModal = document.getElementById('breakthrough-stones-modal');
+
+        if (spiritWoodModal) {
+            spiritWoodModal.textContent = Math.floor(this.gameState.resources.spiritWood || 0);
+        }
+        if (blackIronModal) {
+            blackIronModal.textContent = Math.floor(this.gameState.resources.blackIron || 0);
+        }
+        if (spiritCrystalModal) {
+            spiritCrystalModal.textContent = Math.floor(this.gameState.resources.spiritCrystal || 0);
+        }
+        if (stonesModal) {
+            stonesModal.textContent = Math.floor(this.gameState.resources.breakthroughStones || 0);
+        }
+
+        // 更新属性
+        this.equipmentSystem.calculateEquipmentEffects();
+        let realmBonus = { attack: 0, defense: 0, hp: 0, luck: 0, speed: 0 };
+        if (this.metadata.realmConfig) {
+            realmBonus = this.calculateRealmBonus();
+        }
+
+        const finalAttack = this.gameState.player.attack + this.gameState.player.equipmentEffects.attack + realmBonus.attack;
+        const finalDefense = this.gameState.player.defense + this.gameState.player.equipmentEffects.defense + realmBonus.defense;
+        const finalHp = this.gameState.player.hp + this.gameState.player.equipmentEffects.hp + realmBonus.hp;
+        const finalLuck = this.gameState.player.luck + this.gameState.player.equipmentEffects.luck + realmBonus.luck;
+        const finalSpeed = this.gameState.player.speed + (this.gameState.player.equipmentEffects.speed || 0) + (realmBonus.speed || 0);
+
+        const attackModalEl = document.getElementById('attack-modal');
+        if (attackModalEl) {
+            const baseAttack = this.gameState.player.baseAttack || (this.gameState.player.attack - this.gameState.player.equipmentEffects.attack);
+            if (this.gameState.player.tempAttack) {
+                attackModalEl.innerHTML = `${Math.floor(baseAttack + this.gameState.player.equipmentEffects.attack)}<span class="text-yellow-400 ml-1">→ ${Math.floor(finalAttack)}</span>`;
+            } else {
+                attackModalEl.textContent = Math.floor(finalAttack);
+            }
+        }
+
+        const defenseModalEl = document.getElementById('defense-modal');
+        if (defenseModalEl) {
+            const baseDefense = this.gameState.player.baseDefense || (this.gameState.player.defense - this.gameState.player.equipmentEffects.defense);
+            if (this.gameState.player.tempDefense) {
+                defenseModalEl.innerHTML = `${Math.floor(baseDefense + this.gameState.player.equipmentEffects.defense)}<span class="text-yellow-400 ml-1">→ ${Math.floor(finalDefense)}</span>`;
+            } else {
+                defenseModalEl.textContent = Math.floor(finalDefense);
+            }
+        }
+
+        const maxHpAttrModal = document.getElementById('max-hp-attr-modal');
+        if (maxHpAttrModal) {
+            const maxHp = this.gameState.player.maxHp + this.gameState.player.equipmentEffects.hp + realmBonus.hp;
+            maxHpAttrModal.textContent = Math.floor(maxHp);
+        }
+
+        const speedModalEl = document.getElementById('speed-modal');
+        if (speedModalEl) {
+            if (this.gameState.player.tempSpeed) {
+                speedModalEl.innerHTML = `${Math.floor(this.gameState.player.speed)}<span class="text-yellow-400 ml-1">→ ${Math.floor(finalSpeed)}</span>`;
+            } else {
+                speedModalEl.textContent = Math.floor(finalSpeed);
+            }
+        }
+
+        const luckModalEl = document.getElementById('luck-modal');
+        if (luckModalEl) {
+            if (this.gameState.player.tempLuck) {
+                luckModalEl.innerHTML = `${Math.floor(this.gameState.player.luck)}<span class="text-yellow-400 ml-1">→ ${Math.floor(finalLuck)}</span>`;
+            } else {
+                luckModalEl.textContent = Math.floor(finalLuck);
+            }
+        }
+
+        const criticalRateModal = document.getElementById('critical-rate-modal');
+        if (criticalRateModal) {
+            const criticalRate = (this.gameState.player.criticalRate || 5) + (this.gameState.player.equipmentEffects.criticalRate || 0);
+            criticalRateModal.textContent = Math.floor(criticalRate);
+        }
+
+        // 更新命中和闪避
+        const accuracyModal = document.getElementById('accuracy-modal');
+        if (accuracyModal) {
+            const accuracy = (this.gameState.player.accuracy || 100) + (this.gameState.player.equipmentEffects.accuracy || 0);
+            accuracyModal.textContent = Math.floor(accuracy);
+        }
+
+        const dodgeModal = document.getElementById('dodge-modal');
+        if (dodgeModal) {
+            const dodge = (this.gameState.player.dodge || 5) + (this.gameState.player.equipmentEffects.dodgeRate || 0);
+            dodgeModal.textContent = Math.floor(dodge);
+        }
+
+        // 更新人物立绘
+        this.updateCharacterBodyImageModal();
+
+        // 更新装备显示
+        this.equipmentSystem.updateCharacterEquipmentDisplayModal();
+
+        // 更新精炼信息
+        this.equipmentSystem.updateRefineInfoModal(this.selectedRefineSlot || 'weapon');
+    }
+
+    // 更新弹框内人物立绘
+    updateCharacterBodyImageModal() {
+        const characterBodyModal = document.getElementById('character-body-modal');
+        if (characterBodyModal) {
+            const timestamp = new Date().getTime();
+            let imageSrc = 'Images/default-character.png';
+            if (this.gameState.user.loggedIn && this.gameState.user.gender) {
+                if (this.gameState.user.gender === '男') {
+                    imageSrc = `Images/male-character-${this.gameState.player.realm.currentRealm + 1}.png?${timestamp}`;
+                } else if (this.gameState.user.gender === '女') {
+                    imageSrc = `Images/female-character-${this.gameState.player.realm.currentRealm + 1}.png?${timestamp}`;
+                }
+            }
+            characterBodyModal.src = imageSrc;
+        }
+    }
+
     // 更新技能树模态窗口内容
     updateSkillTreeModal() {
         // 更新顶部信息
@@ -1818,7 +2294,7 @@ class EndlessWinterGame {
                             : 'border-light/20 bg-dark/50'
                     } ${canUpgrade.canUpgrade ? 'ring-2 ring-yellow/50 ring-offset-2 ring-offset-dark' : ''}">
                         ${isUnlocked
-                            ? `<img src="Images/skill-${skillTree.levels[currentLevel - 1]?.imageId || 1}.jpg"
+                            ? `<img src="Images/skill-${skillTree.baseImageId || 1}.jpg"
                                     alt="${skillTree.name}"
                                     class="w-full h-full rounded-full object-cover"
                                     onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\\'fa fa-magic text-4xl text-purple\\'></i>'">`
@@ -1998,38 +2474,265 @@ class EndlessWinterGame {
 
     // 根据稀有度和类型获取装备颜色
 
+    // 打开自动战斗配置弹窗
+    openAutoBattleModal() {
+        const modal = document.getElementById('auto-battle-modal');
+        if (modal) {
+            this.syncAutoBattleSettingsToModal();
+            modal.classList.remove('hidden');
+        }
+    }
+
+    // 关闭自动战斗配置弹窗
+    closeAutoBattleModal() {
+        const modal = document.getElementById('auto-battle-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+    }
+
+    // 同步自动战斗设置到弹窗
+    syncAutoBattleSettingsToModal() {
+        const settings = this.gameState.settings.autoBattleSettings;
+
+        // 同步复选框状态
+        const modalGreen = document.getElementById('modal-auto-battle-green');
+        const modalYellow = document.getElementById('modal-auto-battle-yellow');
+        const modalRed = document.getElementById('modal-auto-battle-red');
+
+        if (modalGreen) {
+            modalGreen.checked = settings.targetColors.includes('green');
+        }
+        if (modalYellow) {
+            modalYellow.checked = settings.targetColors.includes('yellow');
+        }
+        if (modalRed) {
+            modalRed.checked = settings.targetColors.includes('red');
+        }
+
+        // 同步按钮状态
+        const modalBtn = document.getElementById('modal-toggle-auto-battle-btn');
+        if (modalBtn) {
+            if (settings.enabled) {
+                modalBtn.innerHTML = '<i class="fa fa-pause"></i> 停止自动战斗';
+                modalBtn.classList.remove('from-green-600', 'to-green-500');
+                modalBtn.classList.add('from-red-600', 'to-red-500');
+            } else {
+                modalBtn.innerHTML = '<i class="fa fa-play"></i> 开始自动战斗';
+                modalBtn.classList.remove('from-red-600', 'to-red-500');
+                modalBtn.classList.add('from-green-600', 'to-green-500');
+            }
+        }
+    }
+
     // 切换自动战斗
     toggleAutoBattle() {
         this.gameState.settings.autoBattleSettings.enabled = !this.gameState.settings.autoBattleSettings.enabled;
         const btn = document.getElementById('auto-battle-btn');
-        
+        const modalBtn = document.getElementById('modal-toggle-auto-battle-btn');
+
         if (this.gameState.settings.autoBattleSettings.enabled) {
-            btn.innerHTML = '<i class="fa fa-pause mr-1"></i> 停止自动战斗';
-            btn.setAttribute('data-tooltip', '停止自动战斗');
+            if (btn) {
+                btn.innerHTML = '<i class="fa fa-pause mr-1"></i> 停止自动战斗';
+                btn.setAttribute('data-tooltip', '停止自动战斗');
+            }
+            if (modalBtn) {
+                modalBtn.innerHTML = '<i class="fa fa-pause"></i> 停止自动战斗';
+                modalBtn.classList.remove('from-green-600', 'to-green-500');
+                modalBtn.classList.add('from-red-600', 'to-red-500');
+            }
             this.startAutoBattle();
         } else {
-            btn.innerHTML = '<img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=auto%20battle%20button%20winter%20theme%20green%20crystal%20style%20clean%20minimal&image_size=square" alt="自动战斗" class="w-full h-full object-cover">';
-            btn.setAttribute('data-tooltip', '自动进行战斗，消耗灵力');
+            if (btn) {
+                btn.innerHTML = '<img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=auto%20battle%20button%20winter%20theme%20green%20crystal%20style%20clean%20minimal&image_size=square" alt="自动战斗" class="w-full h-full object-cover">';
+                btn.setAttribute('data-tooltip', '自动进行战斗，消耗灵力');
+            }
+            if (modalBtn) {
+                modalBtn.innerHTML = '<i class="fa fa-play"></i> 开始自动战斗';
+                modalBtn.classList.remove('from-red-600', 'to-red-500');
+                modalBtn.classList.add('from-green-600', 'to-green-500');
+            }
             this.stopAutoBattle();
         }
+    }
+
+    // 更新自动战斗目标颜色（从弹窗读取）
+    updateAutoBattleTargetColorsFromModal() {
+        const targetColors = [];
+
+        const modalGreen = document.getElementById('modal-auto-battle-green');
+        const modalYellow = document.getElementById('modal-auto-battle-yellow');
+        const modalRed = document.getElementById('modal-auto-battle-red');
+
+        if (modalGreen && modalGreen.checked) {
+            targetColors.push('green');
+        }
+        if (modalYellow && modalYellow.checked) {
+            targetColors.push('yellow');
+        }
+        if (modalRed && modalRed.checked) {
+            targetColors.push('red');
+        }
+
+        // 同步到导航栏中的复选框（如果存在）
+        const navGreen = document.getElementById('auto-battle-green');
+        const navYellow = document.getElementById('auto-battle-yellow');
+        const navRed = document.getElementById('auto-battle-red');
+
+        if (navGreen) navGreen.checked = targetColors.includes('green');
+        if (navYellow) navYellow.checked = targetColors.includes('yellow');
+        if (navRed) navRed.checked = targetColors.includes('red');
+
+        this.gameState.settings.autoBattleSettings.targetColors = targetColors;
+    }
+
+    // 打开注销账号弹窗
+    openDeleteAccountModal() {
+        const modal = document.getElementById('delete-account-modal');
+        if (modal) {
+            // 清空密码输入
+            const passwordInput = document.getElementById('delete-account-password');
+            if (passwordInput) {
+                passwordInput.value = '';
+            }
+            // 隐藏错误提示
+            const errorMsg = document.getElementById('delete-password-error');
+            if (errorMsg) {
+                errorMsg.classList.add('hidden');
+            }
+            modal.classList.remove('hidden');
+        }
+    }
+
+    // 关闭注销账号弹窗
+    closeDeleteAccountModal() {
+        const modal = document.getElementById('delete-account-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+    }
+
+    // 确认注销账号
+    confirmDeleteAccount() {
+        const passwordInput = document.getElementById('delete-account-password');
+        const errorMsg = document.getElementById('delete-password-error');
+
+        if (!passwordInput) return;
+
+        const password = passwordInput.value;
+
+        // 验证密码
+        if (password !== this.gameState.player.password) {
+            if (errorMsg) {
+                errorMsg.classList.remove('hidden');
+            }
+            return;
+        }
+
+        // 密码正确，执行注销
+        this.closeDeleteAccountModal();
+        this.deleteAccount();
     }
     
     // 切换自动收集资源
     toggleAutoCollect() {
         this.gameState.settings.autoCollectSettings.enabled = !this.gameState.settings.autoCollectSettings.enabled;
         const btn = document.getElementById('auto-collect-btn');
-        
+        const modalBtn = document.getElementById('modal-toggle-auto-collect-btn');
+
         if (this.gameState.settings.autoCollectSettings.enabled) {
-            btn.innerHTML = '<i class="fa fa-pause mr-1"></i> 停止自动收集';
-            btn.setAttribute('data-tooltip', '停止自动收集');
+            if (btn) {
+                btn.innerHTML = '<i class="fa fa-pause mr-1"></i> 停止自动收集';
+                btn.setAttribute('data-tooltip', '停止自动收集');
+            }
+            if (modalBtn) {
+                modalBtn.innerHTML = '<i class="fa fa-pause"></i> 停止自动采集';
+                modalBtn.classList.remove('from-green-600', 'to-green-500');
+                modalBtn.classList.add('from-red-600', 'to-red-500');
+            }
             this.startAutoCollect();
         } else {
-            btn.innerHTML = '<img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=auto%20collect%20resources%20button%20winter%20theme%20blue%20crystal%20style%20clean%20minimal&image_size=square" alt="自动收集" class="w-full h-full object-cover">';
-            btn.setAttribute('data-tooltip', '自动收集资源，消耗灵力');
+            if (btn) {
+                btn.innerHTML = '<img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=auto%20collect%20resources%20button%20winter%20theme%20blue%20crystal%20style%20clean%20minimal&image_size=square" alt="自动收集" class="w-full h-full object-cover">';
+                btn.setAttribute('data-tooltip', '自动收集资源，消耗灵力');
+            }
+            if (modalBtn) {
+                modalBtn.innerHTML = '<i class="fa fa-play"></i> 开始自动采集';
+                modalBtn.classList.remove('from-red-600', 'to-red-500');
+                modalBtn.classList.add('from-green-600', 'to-green-500');
+            }
             this.stopAutoCollect();
         }
     }
-    
+
+    // 打开资源采集弹窗
+    openCollectResourcesModal() {
+        const modal = document.getElementById('collect-resources-modal');
+        if (modal) {
+            // 同步当前自动采集设置到弹窗中的复选框
+            this.syncAutoCollectSettingsToModal();
+            modal.classList.remove('hidden');
+        }
+    }
+
+    // 关闭资源采集弹窗
+    closeCollectResourcesModal() {
+        const modal = document.getElementById('collect-resources-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+    }
+
+    // 打开商店弹窗
+    openShopModal() {
+        const modal = document.getElementById('shop-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+        }
+    }
+
+    // 关闭商店弹窗
+    closeShopModal() {
+        const modal = document.getElementById('shop-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+    }
+
+    // 同步自动采集设置到弹窗
+    syncAutoCollectSettingsToModal() {
+        const settings = this.gameState.settings.autoCollectSettings;
+
+        // 同步复选框状态
+        const modalSpiritWood = document.getElementById('modal-auto-collect-spiritWood');
+        const modalBlackIron = document.getElementById('modal-auto-collect-blackIron');
+        const modalSpiritCrystal = document.getElementById('modal-auto-collect-spiritCrystal');
+
+        if (modalSpiritWood) {
+            modalSpiritWood.checked = settings.resourceTypes.includes('spiritWood');
+        }
+        if (modalBlackIron) {
+            modalBlackIron.checked = settings.resourceTypes.includes('blackIron');
+        }
+        if (modalSpiritCrystal) {
+            modalSpiritCrystal.checked = settings.resourceTypes.includes('spiritCrystal');
+        }
+
+        // 同步按钮状态
+        const modalBtn = document.getElementById('modal-toggle-auto-collect-btn');
+        if (modalBtn) {
+            if (settings.enabled) {
+                modalBtn.innerHTML = '<i class="fa fa-pause"></i> 停止自动采集';
+                modalBtn.classList.remove('from-green-600', 'to-green-500');
+                modalBtn.classList.add('from-red-600', 'to-red-500');
+            } else {
+                modalBtn.innerHTML = '<i class="fa fa-play"></i> 开始自动采集';
+                modalBtn.classList.remove('from-red-600', 'to-red-500');
+                modalBtn.classList.add('from-green-600', 'to-green-500');
+            }
+        }
+    }
+
     // 更新自动战斗目标颜色
     updateAutoBattleTargetColors() {
         const targetColors = [];
@@ -2044,19 +2747,26 @@ class EndlessWinterGame {
         }
         this.gameState.settings.autoBattleSettings.targetColors = targetColors;
     }
-    
+
     // 更新自动收集资源类型
     updateAutoCollectResourceTypes() {
         const resourceTypes = [];
-        if (document.getElementById('auto-collect-spiritWood').checked) {
+
+        // 从弹窗中的复选框读取
+        const modalSpiritWood = document.getElementById('modal-auto-collect-spiritWood');
+        const modalBlackIron = document.getElementById('modal-auto-collect-blackIron');
+        const modalSpiritCrystal = document.getElementById('modal-auto-collect-spiritCrystal');
+
+        if (modalSpiritWood && modalSpiritWood.checked) {
             resourceTypes.push('spiritWood');
         }
-        if (document.getElementById('auto-collect-blackIron').checked) {
+        if (modalBlackIron && modalBlackIron.checked) {
             resourceTypes.push('blackIron');
         }
-        if (document.getElementById('auto-collect-spiritCrystal').checked) {
+        if (modalSpiritCrystal && modalSpiritCrystal.checked) {
             resourceTypes.push('spiritCrystal');
         }
+
         this.gameState.settings.autoCollectSettings.resourceTypes = resourceTypes;
     }
     
@@ -2306,6 +3016,59 @@ class EndlessWinterGame {
         if (this.gameState.battle.battleLog.length > 10) {
             this.gameState.battle.battleLog.shift();
         }
+
+        // 更新UI（不影响原有逻辑）
+        this.updateBattleLogUI(message);
+    }
+
+    // 更新战斗日志UI
+    updateBattleLogUI(message) {
+        // 更新悬浮战斗日志窗口
+        const battleLogContent = document.getElementById('battle-log-content');
+        const lastLogMessage = document.getElementById('last-log-message');
+
+        if (battleLogContent) {
+            const logEntry = document.createElement('p');
+            logEntry.textContent = message;
+            logEntry.className = 'text-light/80';
+            battleLogContent.appendChild(logEntry);
+
+            // 限制显示数量
+            while (battleLogContent.children.length > 50) {
+                battleLogContent.removeChild(battleLogContent.firstChild);
+            }
+
+            // 自动滚动到底部
+            battleLogContent.scrollTop = battleLogContent.scrollHeight;
+        }
+
+        // 更新最小化状态的最后一条消息
+        if (lastLogMessage) {
+            lastLogMessage.textContent = message;
+        }
+    }
+
+    // 切换战斗日志窗口的最小化状态
+    toggleBattleLogWindow() {
+        const battleLogContent = document.getElementById('battle-log-content');
+        const battleLogMinimized = document.getElementById('battle-log-minimized');
+        const toggleBtn = document.getElementById('toggle-battle-log-btn');
+
+        if (!battleLogContent || !battleLogMinimized || !toggleBtn) return;
+
+        const isMinimized = battleLogContent.classList.contains('hidden');
+
+        if (isMinimized) {
+            // 展开
+            battleLogContent.classList.remove('hidden');
+            battleLogMinimized.classList.add('hidden');
+            toggleBtn.innerHTML = '<i class="fa fa-minus text-xs"></i>';
+        } else {
+            // 最小化
+            battleLogContent.classList.add('hidden');
+            battleLogMinimized.classList.remove('hidden');
+            toggleBtn.innerHTML = '<i class="fa fa-plus text-xs"></i>';
+        }
     }
 
     // ==================== 模态框工具函数 ====================
@@ -2462,23 +3225,8 @@ class EndlessWinterGame {
 
     // 更新战斗日志UI
     updateBattleLog() {
-        const battleLogContainer = document.getElementById('battle-log');
-        const battleLogElement = battleLogContainer.querySelector('div');
-        battleLogElement.innerHTML = '';
-        
-        if (this.gameState.battle.battleLog.length === 0) {
-            battleLogElement.innerHTML = '<p class="text-light/70">探索日志...</p>';
-            return;
-        }
-        
-        this.gameState.battle.battleLog.forEach(log => {
-            const logElement = document.createElement('p');
-            logElement.textContent = log;
-            battleLogElement.appendChild(logElement);
-        });
-        
-        // 滚动到底部
-        battleLogElement.scrollTop = battleLogElement.scrollHeight;
+        // 悬浮战斗日志窗口会通过 addBattleLog 自动更新，这里不需要额外处理
+        // 保留此方法以保持向后兼容
     }
     
 
@@ -2731,8 +3479,9 @@ class EndlessWinterGame {
         const item = inventory[index];
         
         // 检查是否是装备
-        if (!((item.type === 'equipment' || item.type === 'weapon' || item.type === 'armor' || 
-             item.type === 'helmet' || item.type === 'boots' || item.type === 'accessory') || 
+        if (!((item.type === 'equipment' || item.type === 'weapon' || item.type === 'armor' ||
+             item.type === 'helmet' || item.type === 'boots' || item.type === 'accessory' ||
+             item.type === 'pants') ||
             item.equipmentType)) {
             this.addBattleLog('只能合成装备！');
             return;
@@ -3025,7 +3774,7 @@ class EndlessWinterGame {
 
             if (item.type === 'equipment' || item.type === 'weapon' || item.type === 'armor' ||
                 item.type === 'helmet' || item.type === 'boots' || item.type === 'accessory' ||
-                item.equipmentType) {
+                item.type === 'pants' || item.equipmentType) {
                 const type = item.equipmentType || item.type;
                 const level = item.level || 1;
                 const rarity = item.rarity || 'white';
