@@ -360,7 +360,7 @@ EndlessWinterGame.prototype.initMap3DScene = function() {
     const engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
     const scene = new BABYLON.Scene(engine);
 
-    // 探险场景背景设置
+    // 探险场景背景设置（调整雾效让场景更开阔）
     if (this.metadata.mapBackgrounds.length > 0 && this.gameState.currentBackgroundIndex !== undefined) {
         const currentBackground = this.metadata.mapBackgrounds[this.gameState.currentBackgroundIndex];
         const toHexColor = (color) => {
@@ -373,55 +373,104 @@ EndlessWinterGame.prototype.initMap3DScene = function() {
         scene.clearColor = new BABYLON.Color4.FromHexString(toHexColor(currentBackground.skyColor), 1);
         scene.fogMode = BABYLON.Scene.FOGMODE_LINEAR;
         scene.fogColor = new BABYLON.Color3.FromHexString(toHexColor(currentBackground.fogColor));
-        scene.fogStart = currentBackground.fogNear;
-        scene.fogEnd = currentBackground.fogFar;
+
+        // 扩大雾效范围，让场景看起来更开阔
+        const originalFogNear = currentBackground.fogNear || 10;
+        const originalFogFar = currentBackground.fogFar || 50;
+        scene.fogStart = originalFogNear * 2; // 雾从更远的地方开始
+        scene.fogEnd = originalFogFar * 1.5; // 雾延伸到更远的地方
     } else {
         scene.clearColor = new BABYLON.Color4(0.537, 0.808, 0.922, 1);
         scene.fogMode = BABYLON.Scene.FOGMODE_LINEAR;
         scene.fogColor = new BABYLON.Color3(0.537, 0.808, 0.922);
-        scene.fogStart = 10;
-        scene.fogEnd = 50;
+        scene.fogStart = 30; // 从更远的地方开始
+        scene.fogEnd = 100; // 延伸到更远的地方
     }
 
     // 创建相机（观察相机 - 适合跟随玩家）
-    const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 10, new BABYLON.Vector3(0, -1, 0), scene);
+    const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 3, 15, new BABYLON.Vector3(0, -1, 0), scene);
     camera.attachControl(canvas, true);
     camera.minZ = 0.1;
-    camera.maxZ = 1000;
-    camera.fov = 0.7; // 增大视场角，获得更广阔的视野
-    
-    // 限制相机位置
-    camera.upperRadiusLimit = 20;
-    camera.lowerRadiusLimit = 6;
-    
-    // 限制相机旋转角度
-    camera.upperBetaLimit = Math.PI / 2.2; // 限制向上看的角度
-    camera.lowerBetaLimit = Math.PI / 4; // 限制向下看的角度，增加俯视角
-    
+    camera.maxZ = 2000;
+    camera.fov = 0.8; // 增大视场角，获得更广阔的视野
+
+    // 限制相机位置（扩大范围）
+    camera.upperRadiusLimit = 40;
+    camera.lowerRadiusLimit = 8;
+
+    // 限制相机旋转角度（放宽限制）
+    camera.upperBetaLimit = Math.PI / 2.1; // 限制向上看的角度
+    camera.lowerBetaLimit = Math.PI / 6; // 限制向下看的角度，增加俯视角
+
     // 设置相机控制方式
     camera.useAutoRotationBehavior = false; // 禁用自动旋转
-    camera.wheelPrecision = 100; // 鼠标滚轮灵敏度
-    camera.panningSensibility = 100; // 平移灵敏度
-    camera.angularSensibilityX = 800; // 水平旋转灵敏度
-    camera.angularSensibilityY = 800; // 垂直旋转灵敏度
+    camera.wheelPrecision = 50; // 鼠标滚轮灵敏度（提高灵敏度）
+    camera.panningSensibility = 150; // 平移灵敏度
+    camera.angularSensibilityX = 600; // 水平旋转灵敏度（提高灵敏度）
+    camera.angularSensibilityY = 600; // 垂直旋转灵敏度（提高灵敏度）
 
-    // 添加灯光
+    // 添加灯光（优化光照系统）
     const hemisphericLight = new BABYLON.HemisphericLight("hemisphericLight", new BABYLON.Vector3(0, 1, 0), scene);
-    hemisphericLight.intensity = 0.6;
+    hemisphericLight.intensity = 0.5;
+    hemisphericLight.groundColor = new BABYLON.Color3(0.2, 0.2, 0.25);
 
+    // 主方向光（带阴影）
     const dirLight = new BABYLON.DirectionalLight("dirLight", new BABYLON.Vector3(-1, -2, -1), scene);
-    dirLight.intensity = 0.8;
-    dirLight.position = new BABYLON.Vector3(20, 40, 20);
+    dirLight.intensity = 0.9;
+    dirLight.position = new BABYLON.Vector3(30, 50, 30);
 
-    // 添加地面
-    const ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 20, height: 20, subdivisions: 4 }, scene);
+    // 启用阴影生成器（先保存到局部变量，稍后添加到 battle3D 对象）
+    const shadowGenerator = new BABYLON.ShadowGenerator(1024, dirLight);
+    shadowGenerator.useBlurExponentialShadowMap = true;
+    shadowGenerator.blurKernel = 32;
+    shadowGenerator.darkness = 0.3;
+
+    // 添加环境光补充光照
+    const ambientLight = new BABYLON.HemisphericLight("ambientLight", new BABYLON.Vector3(0, -1, 0), scene);
+    ambientLight.intensity = 0.2;
+    ambientLight.diffuse = new BABYLON.Color3(0.6, 0.6, 0.65);
+
+    // 添加地面 - 扩大尺寸并增加细节
+    const ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 60, height: 60, subdivisions: 32 }, scene);
     const groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
-    groundMaterial.diffuseColor = new BABYLON.Color3(0.8, 0.85, 0.9);
-    groundMaterial.specularColor = new BABYLON.Color3(0.1, 0.1, 0.1);
-    groundMaterial.specularPower = 64;
+
+    // 根据地图类型设置不同的地面颜色
+    if (this.metadata.mapBackgrounds.length > 0 && this.gameState.currentBackgroundIndex !== undefined) {
+        const currentBackground = this.metadata.mapBackgrounds[this.gameState.currentBackgroundIndex];
+        const mapType = currentBackground.type;
+
+        // 为不同地图类型设置不同的地面颜色
+        switch(mapType) {
+            case 'snow':
+                groundMaterial.diffuseColor = new BABYLON.Color3(0.95, 0.97, 1.0);
+                groundMaterial.specularColor = new BABYLON.Color3(0.3, 0.3, 0.35);
+                break;
+            case 'forest':
+                groundMaterial.diffuseColor = new BABYLON.Color3(0.3, 0.5, 0.3);
+                groundMaterial.specularColor = new BABYLON.Color3(0.1, 0.15, 0.1);
+                break;
+            case 'desert':
+                groundMaterial.diffuseColor = new BABYLON.Color3(0.9, 0.8, 0.6);
+                groundMaterial.specularColor = new BABYLON.Color3(0.2, 0.18, 0.15);
+                break;
+            case 'mountain':
+                groundMaterial.diffuseColor = new BABYLON.Color3(0.6, 0.55, 0.5);
+                groundMaterial.specularColor = new BABYLON.Color3(0.15, 0.15, 0.15);
+                break;
+            default:
+                groundMaterial.diffuseColor = new BABYLON.Color3(0.7, 0.75, 0.6);
+                groundMaterial.specularColor = new BABYLON.Color3(0.1, 0.1, 0.1);
+        }
+    } else {
+        groundMaterial.diffuseColor = new BABYLON.Color3(0.7, 0.75, 0.6);
+        groundMaterial.specularColor = new BABYLON.Color3(0.1, 0.1, 0.1);
+    }
+
+    groundMaterial.specularPower = 32;
     ground.material = groundMaterial;
     ground.position.y = -1.5;
     ground.isPickable = true;
+    ground.receiveShadows = true;
 
     // 用于跟踪鼠标点击和拖动的变量
     let isDragging = false;
@@ -484,7 +533,8 @@ EndlessWinterGame.prototype.initMap3DScene = function() {
         enemyDefeated: false,
         battleEffects: [],
         fireEffects: [],
-        enemies: []
+        enemies: [],
+        shadowGenerator: shadowGenerator // 添加阴影生成器
     };
     console.log('初始化 battle3D 对象成功');
     
@@ -1417,50 +1467,123 @@ EndlessWinterGame.prototype.createPreGeneratedEnemies = function() {
     }
 };
 
-// 创建树木（探险场景）
+// 创建装饰元素（树木、岩石、草丛等）
 EndlessWinterGame.prototype.createTrees = function() {
     if (!this.battle3D || !this.battle3D.scene) return;
 
-    // 树干材质
-    const trunkMaterial = new BABYLON.StandardMaterial("trunkMaterial", this.battle3D.scene);
+    const scene = this.battle3D.scene;
+
+    // 根据地图类型调整装饰
+    const mapType = this.metadata.mapBackgrounds[this.gameState.currentBackgroundIndex]?.type || 'default';
+
+    // ===== 树木材质 =====
+    const trunkMaterial = new BABYLON.StandardMaterial("trunkMaterial", scene);
     trunkMaterial.diffuseColor = new BABYLON.Color3(0.545, 0.271, 0.075);
     trunkMaterial.specularColor = new BABYLON.Color3(0.067, 0.067, 0.067);
     trunkMaterial.specularPower = 10;
 
-    // 树叶材质
-    const leavesMaterial = new BABYLON.StandardMaterial("leavesMaterial", this.battle3D.scene);
+    const leavesMaterial = new BABYLON.StandardMaterial("leavesMaterial", scene);
     leavesMaterial.diffuseColor = new BABYLON.Color3(0.133, 0.545, 0.133);
     leavesMaterial.specularColor = new BABYLON.Color3(0.067, 0.067, 0.067);
     leavesMaterial.specularPower = 20;
 
-    // 创建几棵树，放在远处
-    for (let i = 0; i < 3; i++) {
+    // 雪地地图用白雪覆盖的树
+    if (mapType === 'snow') {
+        leavesMaterial.diffuseColor = new BABYLON.Color3(0.9, 0.95, 0.98);
+    }
+
+    // ===== 创建树木（增加到15-20棵）=====
+    const treeCount = 15 + Math.floor(Math.random() * 6);
+    for (let i = 0; i < treeCount; i++) {
         let x, z;
         do {
-            x = (Math.random() - 0.5) * 12;
-            z = (Math.random() - 0.5) * 12;
-        } while (Math.abs(x) < 3 && Math.abs(z) < 3);
+            x = (Math.random() - 0.5) * 50;
+            z = (Math.random() - 0.5) * 50;
+        } while (Math.sqrt(x * x + z * z) < 4);
 
-        const trunkHeight = 1 + Math.random() * 0.5;
-        const trunkRadius = 0.15 + Math.random() * 0.05;
-        const leavesSize = 0.8 + Math.random() * 0.3;
+        const trunkHeight = 1.2 + Math.random() * 0.8;
+        const trunkRadius = 0.12 + Math.random() * 0.08;
+        const leavesSize = 0.9 + Math.random() * 0.5;
 
         // 创建树干
-        const trunk = BABYLON.MeshBuilder.CreateCylinder("trunk", {
+        const trunk = BABYLON.MeshBuilder.CreateCylinder("trunk" + i, {
             diameter: trunkRadius * 2,
             height: trunkHeight,
             tessellation: 8
-        }, this.battle3D.scene);
+        }, scene);
         trunk.material = trunkMaterial;
         trunk.position.set(x, -1.5 + trunkHeight / 2, z);
 
-        // 创建树叶
-        const leaves = BABYLON.MeshBuilder.CreateSphere("leaves", {
+        // 创建树叶（使用多个球体增加层次感）
+        const leaves1 = BABYLON.MeshBuilder.CreateSphere("leaves1_" + i, {
             diameter: leavesSize * 2,
             segments: 8
-        }, this.battle3D.scene);
-        leaves.material = leavesMaterial;
-        leaves.position.set(x, -1.5 + trunkHeight + leavesSize / 2, z);
+        }, scene);
+        leaves1.material = leavesMaterial;
+        leaves1.position.set(x, -1.5 + trunkHeight + leavesSize * 0.3, z);
+
+        const leaves2 = BABYLON.MeshBuilder.CreateSphere("leaves2_" + i, {
+            diameter: leavesSize * 1.5,
+            segments: 8
+        }, scene);
+        leaves2.material = leavesMaterial;
+        leaves2.position.set(x + leavesSize * 0.3, -1.5 + trunkHeight + leavesSize * 0.6, z);
+    }
+
+    // ===== 创建岩石 =====
+    const rockMaterial = new BABYLON.StandardMaterial("rockMaterial", scene);
+    rockMaterial.diffuseColor = new BABYLON.Color3(0.5, 0.5, 0.55);
+    rockMaterial.specularColor = new BABYLON.Color3(0.15, 0.15, 0.15);
+    rockMaterial.specularPower = 8;
+
+    const rockCount = 10 + Math.floor(Math.random() * 5);
+    for (let i = 0; i < rockCount; i++) {
+        let x, z;
+        do {
+            x = (Math.random() - 0.5) * 50;
+            z = (Math.random() - 0.5) * 50;
+        } while (Math.sqrt(x * x + z * z) < 3);
+
+        const rockSize = 0.3 + Math.random() * 0.6;
+        const rock = BABYLON.MeshBuilder.CreateBox("rock" + i, {
+            width: rockSize,
+            height: rockSize * 0.6,
+            depth: rockSize * 0.8
+        }, scene);
+        rock.material = rockMaterial;
+        rock.position.set(x, -1.5 + rockSize * 0.3, z);
+        rock.rotation.y = Math.random() * Math.PI * 2;
+        rock.rotation.x = (Math.random() - 0.5) * 0.3;
+        rock.rotation.z = (Math.random() - 0.5) * 0.3;
+    }
+
+    // ===== 创建草丛（非雪地地图）=====
+    if (mapType !== 'snow' && mapType !== 'desert') {
+        const grassMaterial = new BABYLON.StandardMaterial("grassMaterial", scene);
+        grassMaterial.diffuseColor = new BABYLON.Color3(0.2, 0.6, 0.2);
+        grassMaterial.specularColor = new BABYLON.Color3(0.05, 0.1, 0.05);
+        grassMaterial.specularPower = 16;
+
+        const grassCount = 20 + Math.floor(Math.random() * 10);
+        for (let i = 0; i < grassCount; i++) {
+            let x, z;
+            do {
+                x = (Math.random() - 0.5) * 50;
+                z = (Math.random() - 0.5) * 50;
+            } while (Math.sqrt(x * x + z * z) < 2);
+
+            // 创建草丛（用细长的圆柱体）
+            const grass = BABYLON.MeshBuilder.CreateCylinder("grass" + i, {
+                diameterTop: 0.02,
+                diameterBottom: 0.08,
+                height: 0.4 + Math.random() * 0.3,
+                tessellation: 4
+            }, scene);
+            grass.material = grassMaterial;
+            grass.position.set(x, -1.5 + 0.2, z);
+            grass.rotation.x = (Math.random() - 0.5) * 0.4;
+            grass.rotation.z = (Math.random() - 0.5) * 0.4;
+        }
     }
 };
 
