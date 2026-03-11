@@ -816,7 +816,7 @@ class EndlessWinterGame {
         const energyCurrent = this.gameState.player.energy || 0;
         const energyMax = this.gameState.player.maxEnergy || 100;
         this.updateProgressBar('energy', energyCurrent, energyMax);  // 主页面
-        this.updateProgressBar('energy-bar-modal', energyCurrent, energyMax, { bar: '', display: '-display' });  // 人物面板（特殊ID结构）
+        this.updateProgressBar('energy', energyCurrent, energyMax, { bar: '-bar-modal', display: '-display-modal' });  // 人物面板
 
         // 保留旧的 energy 元素兼容性
         const energyElement = document.getElementById('energy');
@@ -960,7 +960,7 @@ class EndlessWinterGame {
 
             // 更新血条（使用统一函数更新主页面和人物面板）
             this.updateProgressBar('hp', finalHp, maxHp);  // 主页面
-            this.updateProgressBar('hp-bar-modal', finalHp, maxHp, { bar: '', display: '-display' });  // 人物面板（特殊ID结构）
+            this.updateProgressBar('hp', finalHp, maxHp, { bar: '-bar-modal', display: '-display-modal' });  // 人物面板
 
             // 新增：更新max-hp显示
             const maxHpElement = document.getElementById('max-hp');
@@ -1774,11 +1774,13 @@ class EndlessWinterGame {
     
     // 触发升级动画
     triggerLevelUpAnimation() {
-        const levelElement = document.getElementById('level');
-        levelElement.classList.add('level-up-animation');
-        setTimeout(() => {
-            levelElement.classList.remove('level-up-animation');
-        }, 1000);
+        const levelElement = document.getElementById('level-modal');
+        if (levelElement) {
+            levelElement.classList.add('level-up-animation');
+            setTimeout(() => {
+                levelElement.classList.remove('level-up-animation');
+            }, 1000);
+        }
     }
     
     // 根据性别更新人物形象

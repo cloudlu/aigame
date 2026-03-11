@@ -545,31 +545,27 @@
         </main>
 
         <!-- 敌人信息面板 - 固定在视口底部左侧 -->
-        <div id="enemy-info-panel" class="fixed bottom-4 left-4 z-50 bg-black/90 backdrop-blur-md border-2 border-danger/50 rounded-lg p-3 transition-all" style="width: 420px; max-width: calc(100vw - 2rem);">
-            <div class="flex items-center justify-between gap-3">
-                <div class="flex items-center gap-3">
-                    <div id="enemy-icon" class="w-10 h-10 rounded-full bg-danger/30 flex items-center justify-center shadow-md shadow-danger/20 shrink-0 border border-danger/30">
-                        <i class="fa fa-question text-base text-gray-400"></i>
-                    </div>
-                    <div class="min-w-0">
-                        <div class="flex items-center gap-2">
-                            <h3 id="enemy-name" class="font-bold text-white text-base truncate">等待敌人...</h3>
-                            <span id="enemy-elite-badge" class="text-xs bg-yellow-500 text-black px-1.5 py-0.5 rounded hidden font-bold shrink-0">精英</span>
-                        </div>
-                        <p class="text-sm text-light/80">Lv.<span id="enemy-level" class="text-accent font-bold">?</span> HP:<span id="enemy-hp" class="text-danger font-bold">?</span>/<span id="enemy-max-hp">?</span></p>
-                    </div>
+        <div id="enemy-info-panel" class="fixed bottom-4 left-4 z-50 bg-black/90 backdrop-blur-md border-2 border-danger/50 rounded-lg p-3 transition-all overflow-hidden" style="width: 420px; max-width: calc(100vw - 2rem);">
+            <div class="flex items-center gap-3">
+                <div id="enemy-icon" class="w-10 h-10 rounded-full bg-danger/30 flex items-center justify-center shadow-md shadow-danger/20 shrink-0 border border-danger/30">
+                    <i class="fa fa-question text-base text-gray-400"></i>
                 </div>
-                <div class="flex items-center gap-4 shrink-0">
-                    <div class="text-sm text-light/70 flex gap-3">
+                <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2">
+                        <h3 id="enemy-name" class="font-bold text-white text-base truncate">等待敌人...</h3>
+                        <span id="enemy-elite-badge" class="text-xs bg-yellow-500 text-black px-1.5 py-0.5 rounded hidden font-bold shrink-0">精英</span>
+                    </div>
+                    <p class="text-sm text-light/80">Lv.<span id="enemy-level" class="text-accent font-bold">?</span> HP:<span id="enemy-hp" class="text-danger font-bold">?</span>/<span id="enemy-max-hp">?</span></p>
+                    <div class="text-xs text-light/70 flex gap-2 mt-0.5">
                         <span>攻:<span id="enemy-attack" class="text-white font-medium">?</span></span>
                         <span>防:<span id="enemy-defense" class="text-white font-medium">?</span></span>
                         <span>速:<span id="enemy-speed" class="text-white font-medium">?</span></span>
                         <span>运:<span id="enemy-luck" class="text-white font-medium">?</span></span>
                     </div>
-                    <button id="confirm-attack-btn" class="btn-primary bg-primary hover:bg-primary/80 w-9 h-9 rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all hidden shrink-0" data-tooltip="攻击">
-                        <i class="fa fa-play text-white text-sm"></i>
-                    </button>
                 </div>
+                <button id="confirm-attack-btn" class="btn-primary bg-primary hover:bg-primary/80 w-10 h-10 rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all hidden shrink-0" data-tooltip="攻击">
+                    <i class="fa fa-play text-white text-sm"></i>
+                </button>
             </div>
             <!-- 装备掉率信息 -->
             <div id="enemy-drop-rates" class="flex flex-wrap gap-1 mt-2 pt-2 border-t border-white/20 text-xs">
@@ -731,14 +727,6 @@
                             <i class="fa fa-chart-line text-accent"></i> 基础属性
                         </h3>
                         <div class="grid grid-cols-2 gap-2">
-                            <div class="bg-black/30 rounded-lg p-2.5 border border-red-500/30 hover:border-red-500/60 transition-colors">
-                                <div class="text-xs text-red-400">攻击</div>
-                                <div class="text-lg font-bold text-white" id="attack-modal">10</div>
-                            </div>
-                            <div class="bg-black/30 rounded-lg p-2.5 border border-blue-500/30 hover:border-blue-500/60 transition-colors">
-                                <div class="text-xs text-blue-400">防御</div>
-                                <div class="text-lg font-bold text-white" id="defense-modal">5</div>
-                            </div>
                             <!-- 生命条（跨两列） -->
                             <div class="col-span-2 bg-black/30 rounded-lg p-2.5 border border-green-500/30 hover:border-green-500/60 transition-colors">
                                 <div class="flex items-center gap-2">
@@ -758,6 +746,14 @@
                                     </div>
                                     <span id="energy-display-modal" class="text-xs text-white w-16 text-right">100/100</span>
                                 </div>
+                            </div>
+                            <div class="bg-black/30 rounded-lg p-2.5 border border-red-500/30 hover:border-red-500/60 transition-colors">
+                                <div class="text-xs text-red-400">攻击</div>
+                                <div class="text-lg font-bold text-white" id="attack-modal">10</div>
+                            </div>
+                            <div class="bg-black/30 rounded-lg p-2.5 border border-blue-500/30 hover:border-blue-500/60 transition-colors">
+                                <div class="text-xs text-blue-400">防御</div>
+                                <div class="text-lg font-bold text-white" id="defense-modal">5</div>
                             </div>
                             <div class="bg-black/30 rounded-lg p-2.5 border border-cyan-500/30 hover:border-cyan-500/60 transition-colors">
                                 <div class="text-xs text-cyan-400">速度</div>

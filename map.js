@@ -662,7 +662,8 @@ EndlessWinterGame.prototype.createEnemyIcon = function(enemyInfo) {
         e.stopPropagation();
         try {
             const info = JSON.parse(enemyIcon.dataset.enemyInfo);
-            this.showAttackConfirmation(info);
+            // 移动玩家到敌人附近，到达后显示攻击确认
+            this.movePlayerToEnemy(info);
         } catch (error) {
             console.error('解析敌人信息失败:', error);
         }
@@ -1077,72 +1078,130 @@ EndlessWinterGame.prototype.handleMouseClick = function() {
     const pickResult = this.battle3D.scene.pick(this.battle3D.scene.pointerX, this.battle3D.scene.pointerY);
 
     if (pickResult.hit && pickResult.pickedPoint) {
-        const targetPos = pickResult.pickedPoint.clone();
-        const playerPos = this.battle3D.player.position;
-        // 限制目标位置在地图范围内
-        const boundary = 9;
-        targetPos.x = Math.max(-boundary, Math.min(boundary, targetPos.x));
-        targetPos.z = Math.max(-boundary, Math.min(boundary, targetPos.z));
+        this.movePlayerTo(pickResult.pickedPoint);
+    }
+};
 
-        // 计算移动距离
-        const distance = BABYLON.Vector3.Distance(playerPos, new BABYLON.Vector3(targetPos.x, playerPos.y, targetPos.z));
+// 移动玩家到指定位置（通用移动函数）
+EndlessWinterGame.prototype.movePlayerTo = function(targetPos, onArrival) {
+    if (!this.battle3D || !this.battle3D.player) return;
 
-        // 如果距离大于0.1，开始平滑移动
-        if (distance > 0.1) {
-            // 移动速度
-            const moveSpeed = 2.0; // 单位/秒
-            // 计算移动时间
-            const moveTime = distance / moveSpeed;
+    const playerPos = this.battle3D.player.position;
 
-            // 创建动画
-            const animation = new BABYLON.Animation(
-                "moveAnimation",
-                "position",
-                60, // 帧率
-                BABYLON.Animation.ANIMATIONTYPE_VECTOR3,
-                BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
-            );
+    // 限制目标位置在地图范围内
+    const boundary = 9;
+    targetPos.x = Math.max(-boundary, Math.min(boundary, targetPos.x));
+    targetPos.z = Math.max(-boundary, Math.min(boundary, targetPos.z));
 
-            // 动画关键帧
-            const keyframes = [
-                { frame: 0, value: playerPos.clone() },
-                { frame: moveTime * 60, value: new BABYLON.Vector3(targetPos.x, playerPos.y, targetPos.z) }
-            ];
+    // 计算移动距离
+    const distance = BABYLON.Vector3.Distance(playerPos, new BABYLON.Vector3(targetPos.x, playerPos.y, targetPos.z));
 
-            animation.setKeys(keyframes);
+    // 如果距离大于0.1，开始平滑移动
+    if (distance > 0.1) {
+        // 移动速度
+        const moveSpeed = 2.0; // 单位/秒
+        // 计算移动时间
+        const moveTime = distance / moveSpeed;
 
-            // 应用动画
-            this.battle3D.player.animations = [];
-            this.battle3D.player.animations.push(animation);
+        // 创建动画
+        const animation = new BABYLON.Animation(
+            "moveAnimation",
+            "position",
+            60, // 帧率
+            BABYLON.Animation.ANIMATIONTYPE_VECTOR3,
+            BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
+        );
 
-            // 开始动画
-            this.battle3D.scene.beginAnimation(this.battle3D.player, 0, moveTime * 60, false, 1);
+        // 动画关键帧
+        const keyframes = [
+            { frame: 0, value: playerPos.clone() },
+            { frame: moveTime * 60, value: new BABYLON.Vector3(targetPos.x, playerPos.y, targetPos.z) }
+        ];
 
-            // 摄像机跟随玩家
-            const followCamera = () => {
-                if (this.battle3D && this.battle3D.player && this.battle3D.camera) {
-                    this.battle3D.camera.setTarget(this.battle3D.player.position);
-                }
-            };
+        animation.setKeys(keyframes);
 
-            // 每帧更新摄像机位置
-            const animationInterval = setInterval(followCamera, 16); // 约60fps
+        // 应用动画
+        this.battle3D.player.animations = [];
+        this.battle3D.player.animations.push(animation);
 
-            // 设置移动状态
-            this.isMoving = true;
-            
-            // 动画结束后清理
-            setTimeout(() => {
-                clearInterval(animationInterval);
-                this.isMoving = false;
-            }, moveTime * 1000);
-        } else {
-            // 距离太近，直接设置位置
-            const newPlayerPos = new BABYLON.Vector3(targetPos.x, playerPos.y, targetPos.z);
-            this.battle3D.player.position = newPlayerPos;
-            this.battle3D.camera.setTarget(newPlayerPos);
+        // 开始动画
+        this.battle3D.scene.beginAnimation(this.battle3D.player, 0, moveTime * 60, false, 1);
+
+        // 摄像机跟随玩家
+        const followCamera = () => {
+            if (this.battle3D && this.battle3D.player && this.battle3D.camera) {
+                this.battle3D.camera.setTarget(this.battle3D.player.position);
+            }
+        };
+
+        // 每帧更新摄像机位置
+        const animationInterval = setInterval(followCamera, 16); // 约60fps
+
+        // 设置移动状态
+        this.isMoving = true;
+
+        // 动画结束后清理
+        setTimeout(() => {
+            clearInterval(animationInterval);
+            this.isMoving = false;
+            // 执行到达回调
+            if (typeof onArrival === 'function') {
+                onArrival();
+            }
+        }, moveTime * 1000);
+    } else {
+        // 距离太近，直接设置位置
+        const newPlayerPos = new BABYLON.Vector3(targetPos.x, playerPos.y, targetPos.z);
+        this.battle3D.player.position = newPlayerPos;
+        this.battle3D.camera.setTarget(newPlayerPos);
+        // 执行到达回调
+        if (typeof onArrival === 'function') {
+            onArrival();
         }
     }
+};
+
+// 移动玩家到敌人附近（用于点击2D小地图敌人时）
+EndlessWinterGame.prototype.movePlayerToEnemy = function(enemyInfo) {
+    if (!this.battle3D || !this.battle3D.player) {
+        // 如果3D场景不存在，直接显示敌人信息
+        this.showAttackConfirmation(enemyInfo);
+        return;
+    }
+
+    if (this.gameState.battle.inBattle) {
+        // 如果正在战斗，直接显示敌人信息
+        this.showAttackConfirmation(enemyInfo);
+        return;
+    }
+
+    // 获取敌人的3D位置
+    const enemyPos = enemyInfo.position;
+    if (!enemyPos) {
+        // 如果没有位置信息，直接显示敌人信息
+        this.showAttackConfirmation(enemyInfo);
+        return;
+    }
+
+    // 计算敌人附近的位置（在敌人旁边约1单位距离）
+    const playerPos = this.battle3D.player.position;
+    const direction = new BABYLON.Vector3(
+        playerPos.x - enemyPos.x,
+        0,
+        playerPos.z - enemyPos.z
+    );
+    direction.normalize();
+
+    // 目标位置在敌人旁边
+    const targetPos = {
+        x: enemyPos.x + direction.x * 0.8,
+        z: enemyPos.z + direction.z * 0.8
+    };
+
+    // 移动玩家到敌人附近，到达后显示敌人信息
+    this.movePlayerTo(targetPos, () => {
+        this.showAttackConfirmation(enemyInfo);
+    });
 };
 
 // 更新地图背景

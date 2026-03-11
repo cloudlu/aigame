@@ -4,8 +4,8 @@
 
 本文档详细记录了《无尽战斗》游戏的平衡性设计，包括玩家属性成长、敌人属性生成、战斗伤害计算。
 
-**最后更新**: 2026-03-08
-**版本**: v2.0
+**最后更新**: 2026-03-11
+**版本**: v2.1
 **维护者**: 游戏平衡团队
 
 ---
@@ -470,15 +470,22 @@ const finalDefense = Math.floor((baseDefense + (enemyLevel - 1) * baseDefense * 
 ## ⚔️ 战斗伤害计算
 
 ### 伤害公式
-来源：[combatlogic.js:32-33](combatlogic.js#L32-L33)
+来源：[combatlogic.js:31-37](combatlogic.js#L31-L37)
 
 ```javascript
-// 基础伤害计算
+// 玩家伤害：攻击力 - 敌人防御（最低1点）
 playerDamage = Math.max(1, finalAttack - enemyDefense)
-enemyDamage = Math.max(1, enemyAttack - finalDefense)
 
-// 最小伤害为1
+// 敌人伤害：保底20%攻击力，或攻击力-防御（取较大值）
+// v2.1 更新：解决高防御玩家"只掉1血"的问题
+enemyMinDamage = Math.floor(enemyAttack * 0.2)
+enemyDamage = Math.max(enemyMinDamage, enemyAttack - finalDefense)
 ```
+
+**设计说明**：
+- 玩家伤害：经典减法公式，最低1点
+- 敌人伤害：当防御 ≥ 攻击时，保底造成20%攻击力的伤害
+- 这样既防止了"0伤害"或"1伤害"的极端情况，又不会过度破坏原有平衡
 
 ### 命中率计算
 来源：[combatlogic.js:36-37](combatlogic.js#L36-L37)
@@ -580,6 +587,28 @@ energyRecovery = 15       // 固定15点灵力
 ---
 
 ## 📈 平衡性调整历史
+
+### v2.1 - 2026-03-11 敌人伤害公式优化
+
+**问题描述**：
+- ❌ 高防御玩家面对低攻击敌人时只掉1点血
+- ❌ 普通敌人和精英敌人对高防御玩家毫无威胁
+- ❌ 只有Boss能造成有效伤害
+
+**调整内容**：
+
+1. **敌人伤害公式优化**
+   ```diff
+   - enemyDamage = Math.max(1, enemyAttack - playerDefense)
+   + enemyMinDamage = Math.floor(enemyAttack * 0.2)
+   + enemyDamage = Math.max(enemyMinDamage, enemyAttack - playerDefense)
+   ```
+
+**调整效果**：
+- ✅ 敌人至少造成20%攻击力的伤害
+- ✅ 防止"只掉1血"的极端情况
+- ✅ 保持原有平衡框架，最小改动
+- ⚠️ 高防御玩家会受到略多伤害，但仍可控
 
 ### v2.0 - 2026-03-08 地图专属敌人系统
 
@@ -979,14 +1008,12 @@ HP
 
 ---
 
-**文档版本**: v2.0
-**最后更新**: 2026-03-08
+**文档版本**: v2.1
+**最后更新**: 2026-03-11
 **主要更新**:
+- 优化敌人伤害公式，防止"只掉1血"问题
+- 敌人保底造成20%攻击力的伤害
 - 新增地图专属敌人系统（34个新敌人）
-- 解决跨地图敌人冲突问题
-- 完善所有10个地图的敌人配置
-- 新手地图从0%绿色提升到60%绿色
-- 总敌人数量达到88个
 
 **下次审核**: 2026-04-08
 

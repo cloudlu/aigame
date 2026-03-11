@@ -29,8 +29,11 @@ EndlessWinterGame.prototype.attackEnemy = function() {
     const enemyDodge = this.gameState.enemy.dodge || 10;
 
     // 计算伤害
+    // 玩家伤害：攻击力 - 敌人防御
     const playerDamage = Math.max(1, finalAttack - this.gameState.enemy.defense);
-    const enemyDamage = Math.max(1, this.gameState.enemy.attack - finalDefense);
+    // 敌人伤害：保底20%攻击力，或攻击力-防御（取较大值）
+    const enemyMinDamage = Math.floor(this.gameState.enemy.attack * 0.2);
+    const enemyDamage = Math.max(enemyMinDamage, this.gameState.enemy.attack - finalDefense);
 
     // 玩家攻击命中判断
     const playerHitChance = Math.min(95, finalAccuracy - enemyDodge);
@@ -186,6 +189,9 @@ EndlessWinterGame.prototype.useSkill = function(skillType = 'attack') {
         return;
     }
 
+    // 获取技能显示名称（优先使用baseDisplayName，否则使用name）
+    const skillDisplayName = skillTree.baseDisplayName || skill.name || '未知技能';
+
     // 确保有足够的灵力
     if (this.gameState.player.energy < skill.energyCost) {
         this.addBattleLog(`灵力不足！需要${skill.energyCost}灵力`);
@@ -238,20 +244,20 @@ EndlessWinterGame.prototype.useSkill = function(skillType = 'attack') {
                     const ignoredDefense = Math.floor(this.gameState.enemy.defense * skill.ignoreDefense);
                     playerDamage += ignoredDefense;
                 }
-                this.addBattleLog(`你使用了${skill.displayName}，对${this.gameState.enemy.name}造成了${playerDamage}点伤害！`);
+                this.addBattleLog(`你使用了${skillDisplayName}，对${this.gameState.enemy.name}造成了${playerDamage}点伤害！`);
             } else {
-                this.addBattleLog(`你的${skill.displayName}被${this.gameState.enemy.name}闪避了！`);
+                this.addBattleLog(`你的${skillDisplayName}被${this.gameState.enemy.name}闪避了！`);
                 this.showDodge(this.battle3D.enemy, '闪避！');
             }
         } else if (skill.defenseBonus) {
             // 防御姿态
             this.gameState.player.defenseActive = true;
             this.gameState.player.defenseBonusValue = skill.defenseBonus;
-            this.addBattleLog(`你使用了${skill.displayName}，防御姿态已激活！下次受到的伤害减少${Math.floor(skill.defenseBonus * 100)}%！`);
+            this.addBattleLog(`你使用了${skillDisplayName}，防御姿态已激活！下次受到的伤害减少${Math.floor(skill.defenseBonus * 100)}%！`);
         } else if (skill.healPercentage) {
             const healAmount = Math.floor(this.gameState.player.maxHp * skill.healPercentage);
             this.gameState.player.hp = Math.min(this.gameState.player.hp + healAmount, this.gameState.player.maxHp);
-            this.addBattleLog(`你使用了${skill.displayName}，恢复了${healAmount}点生命值！`);
+            this.addBattleLog(`你使用了${skillDisplayName}，恢复了${healAmount}点生命值！`);
             this.showDamage(this.battle3D.player, healAmount, 'green');
         } else if (skill.criticalMultiplier) {
             // 技能攻击命中判断
@@ -262,20 +268,20 @@ EndlessWinterGame.prototype.useSkill = function(skillType = 'attack') {
                 // 幸运一击
                 if (Math.random() < skill.criticalChance) {
                     playerDamage = Math.max(1, Math.floor(finalAttack * skill.criticalMultiplier) - this.gameState.enemy.defense);
-                    this.addBattleLog(`你使用了${skill.displayName}，触发了暴击！对${this.gameState.enemy.name}造成了${playerDamage}点伤害！`);
+                    this.addBattleLog(`你使用了${skillDisplayName}，触发了暴击！对${this.gameState.enemy.name}造成了${playerDamage}点伤害！`);
                 } else {
                     playerDamage = Math.max(1, finalAttack - this.gameState.enemy.defense);
-                    this.addBattleLog(`你使用了${skill.displayName}，但没有触发暴击，对${this.gameState.enemy.name}造成了${playerDamage}点伤害！`);
+                    this.addBattleLog(`你使用了${skillDisplayName}，但没有触发暴击，对${this.gameState.enemy.name}造成了${playerDamage}点伤害！`);
                 }
             } else {
-                this.addBattleLog(`你的${skill.displayName}被${this.gameState.enemy.name}闪避了！`);
+                this.addBattleLog(`你的${skillDisplayName}被${this.gameState.enemy.name}闪避了！`);
                 this.showDodge(this.battle3D.enemy, '闪避！');
             }
         } else if (skill.dodgeBonus) {
             // 闪避技能
             this.gameState.player.dodgeActive = true;
             this.gameState.player.dodgeBonus = skill.dodgeBonus;
-            this.addBattleLog(`你使用了${skill.displayName}，提高了闪避率！`);
+            this.addBattleLog(`你使用了${skillDisplayName}，提高了闪避率！`);
         }
 
         // 新增：灵力恢复
@@ -350,7 +356,9 @@ EndlessWinterGame.prototype.useSkill = function(skillType = 'attack') {
         if (!skill.defenseBonus && !skill.healPercentage && !skill.dodgeBonus) {
             this.playEnemyAttackAnimation();
 
-            let finalEnemyDamage = Math.max(1, this.gameState.enemy.attack - finalDefense);
+            // 使用与普通攻击相同的伤害公式：保底20%
+            const enemyMinDamage = Math.floor(this.gameState.enemy.attack * 0.2);
+            let finalEnemyDamage = Math.max(enemyMinDamage, this.gameState.enemy.attack - finalDefense);
 
             // 敌人攻击命中判断
             let enemyHitChance = Math.min(95, enemyAccuracy - finalDodge);
