@@ -188,8 +188,23 @@ EndlessWinterGame.prototype.showEnemyInfo = function(enemyInfo) {
 
 };
 
-// 清空敌人信息并隐藏攻击按钮
+// 敌人信息区默认状态配置（统一管理，避免重复代码）
+EndlessWinterGame.prototype.ENEMY_INFO_DEFAULTS = {
+    name: '等待敌人...',
+    level: '?',
+    hp: '?',
+    maxHp: '?',
+    attack: '?',
+    defense: '?',
+    speed: '?',
+    luck: '?',
+    icon: 'fa fa-question text-base text-gray-400'
+};
+
+// 清空敌人信息并隐藏攻击按钮（恢复到默认状态）
 EndlessWinterGame.prototype.clearEnemyInfo = function() {
+    const defaults = this.ENEMY_INFO_DEFAULTS;
+
     const enemyName = document.getElementById('enemy-name');
     const enemyLevel = document.getElementById('enemy-level');
     const enemyHp = document.getElementById('enemy-hp');
@@ -201,22 +216,21 @@ EndlessWinterGame.prototype.clearEnemyInfo = function() {
     const confirmBtn = document.getElementById('confirm-attack-btn');
     const enemyEliteBadge = document.getElementById('enemy-elite-badge');
 
-    if (enemyName) enemyName.textContent = '';
-    if (enemyLevel) enemyLevel.textContent = '';
-    if (enemyHp) enemyHp.textContent = '';
-    if (enemyMaxHp) enemyMaxHp.textContent = '';
-    if (enemyAttack) enemyAttack.textContent = '';
-    if (enemyDefense) enemyDefense.textContent = '';
-    if (enemySpeed) enemySpeed.textContent = '';
-    if (enemyLuck) enemyLuck.textContent = '';
+    // 恢复到默认状态
+    if (enemyName) enemyName.textContent = defaults.name;
+    if (enemyLevel) enemyLevel.textContent = defaults.level;
+    if (enemyHp) enemyHp.textContent = defaults.hp;
+    if (enemyMaxHp) enemyMaxHp.textContent = defaults.maxHp;
+    if (enemyAttack) enemyAttack.textContent = defaults.attack;
+    if (enemyDefense) enemyDefense.textContent = defaults.defense;
+    if (enemySpeed) enemySpeed.textContent = defaults.speed;
+    if (enemyLuck) enemyLuck.textContent = defaults.luck;
     if (enemyEliteBadge) enemyEliteBadge.classList.add('hidden');
-    
-    if (enemyEliteBadge) {
-        enemyEliteBadge.classList.add('hidden');
-    }
-    
+
     const enemyIconElement = document.querySelector('#enemy-icon i');
-    enemyIconElement.className = 'fa fa-question text-xl text-gray-500';
+    if (enemyIconElement) {
+        enemyIconElement.className = defaults.icon;
+    }
 
     const enemyInfoElement = document.getElementById('enemy-info-panel');
     if (enemyInfoElement) {
@@ -776,14 +790,20 @@ EndlessWinterGame.prototype.checkSceneMonsterCollision = function() {
     if (!this.gameState.sceneMonsters || this.gameState.sceneMonsters.length === 0) {
         console.warn('checkSceneMonsterCollision: sceneMonsters 为空');
         this.gameState.battle.inBattle = false;
+        this.clearEnemyInfo();
         this.gameState.enemy = null;
         return;
     }
 
     const playerPos = this.battle3D.player.position;
-    let enemyEncountered = false;
+    const COLLISION_THRESHOLD = 0.5;  // 碰撞距离（触发攻击确认）
+    const DETECTION_RANGE = 2.0;      // 敌人感知范围（显示敌人信息）
 
-    // 遍历所有场景怪物
+    let nearestEnemy = null;
+    let nearestDistance = Infinity;
+    let enemyInCollision = false;
+
+    // 遍历所有场景怪物，找到最近的敌人
     for (let i = 0; i < this.gameState.sceneMonsters.length; i++) {
         const monster = this.gameState.sceneMonsters[i];
         const distance = Math.sqrt(
@@ -791,46 +811,51 @@ EndlessWinterGame.prototype.checkSceneMonsterCollision = function() {
             Math.pow(playerPos.z - monster.position.z, 2)
         );
 
-        // 碰撞检测阈值（0.5单位）
-        if (distance < 0.5) {
-            this.showAttackConfirmation(monster);
-            enemyEncountered = true;
-            break;
+        // 记录最近的敌人
+        if (distance < nearestDistance) {
+            nearestDistance = distance;
+            nearestEnemy = monster;
+        }
+
+        // 检查是否有碰撞（在攻击范围内）
+        if (distance < COLLISION_THRESHOLD) {
+            enemyInCollision = true;
         }
     }
 
-    // 只有当没有通过点击2D地图选择敌人时，才清空敌人信息
-    // 检查是否有敌人信息显示（通过检查敌人名称是否为空）
-    const enemyName = document.getElementById('enemy-name');
-    const hasEnemyInfo = enemyName && enemyName.textContent.trim() !== '';
-    
-    // 检查是否是通过点击2D地图选择的敌人（通过检查是否有攻击按钮事件）
-    const confirmBtn = document.getElementById('confirm-attack-btn');
-    const hasAttackHandler = confirmBtn && typeof confirmBtn.onclick === 'function';
-    
-    console.log('checkSceneMonsterCollision - 状态检查:', {
-        enemyEncountered,
-        hasEnemyInfo,
-        hasAttackHandler,
-        enemyName: enemyName ? enemyName.textContent : 'N/A',
-        confirmBtn: confirmBtn ? '存在' : '不存在'
-    });
-    
-    // 只有当没有敌人碰撞，且没有敌人信息显示，且没有攻击按钮事件时，才清空敌人信息
-    // 这样可以确保点击2D地图选择的敌人信息不会被清空
-    if (!enemyEncountered && !hasEnemyInfo && !hasAttackHandler) {
-        console.log('清空敌人信息：没有敌人碰撞，且没有敌人信息显示，且没有攻击按钮事件');
+    // 如果最近的敌人在感知范围内，显示敌人信息
+    if (nearestDistance < DETECTION_RANGE && nearestEnemy) {
+        // 只有当敌人信息发生变化时才更新
+        const currentEnemyName = this.gameState.enemy?.name;
+        const currentEnemyLevel = this.gameState.enemy?.level;
+        if (currentEnemyName !== nearestEnemy.name || currentEnemyLevel !== nearestEnemy.level) {
+            this.showAttackConfirmation(nearestEnemy);
+        }
+
+        // 如果在碰撞范围内，显示攻击按钮
+        const confirmBtn = document.getElementById('confirm-attack-btn');
+        if (confirmBtn && enemyInCollision) {
+            confirmBtn.classList.remove('hidden');
+        }
+    } else {
+        // 玩家离开了所有敌人的感知范围，清除敌人信息
+        console.log('玩家离开敌人感知范围，清除敌人信息');
         this.gameState.battle.inBattle = false;
         this.clearEnemyInfo();
         this.gameState.enemy = null;
-    } else if (!enemyEncountered && hasEnemyInfo && hasAttackHandler) {
-        console.log('保留敌人信息：没有敌人碰撞，但有敌人信息显示且有攻击按钮事件（可能是通过点击2D地图选择的敌人）');
     }
 };
 
 // 恢复地图场景（从战斗退出时调用）
 EndlessWinterGame.prototype.restoreMapScene = function() {
     console.log('恢复地图场景...');
+
+    // 显示敌人信息面板（退出战斗场景时）
+    const enemyInfoPanel = document.getElementById('enemy-info-panel');
+    if (enemyInfoPanel) {
+        enemyInfoPanel.classList.remove('hidden');
+    }
+
     // 清理旧引擎
     if (this.battle3D && this.battle3D.engine) {
         try {

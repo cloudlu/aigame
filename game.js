@@ -767,7 +767,28 @@ class EndlessWinterGame {
         const isAdmin = this.gameState.user.role === 'admin';
         console.debug("新功能，待开发！");
     }
-    
+
+    // 可复用的条形更新函数（统一更新条形和文本显示）
+    // elementPrefix: 元素ID前缀，如 'hp' 或 'energy'
+    // current: 当前值
+    // max: 最大值
+    // suffixes: { bar: '-bar', display: '-display' } 后缀配置（可选，使用默认值）
+    updateProgressBar(elementPrefix, current, max, suffixes = { bar: '-bar', display: '-display' }) {
+        const percentage = max > 0 ? (current / max) * 100 : 0;
+
+        // 更新条形宽度
+        const barElement = document.getElementById(elementPrefix + suffixes.bar);
+        if (barElement) {
+            barElement.style.width = `${Math.min(percentage, 100)}%`;
+        }
+
+        // 更新文本显示
+        const displayElement = document.getElementById(elementPrefix + suffixes.display);
+        if (displayElement) {
+            displayElement.textContent = `${Math.floor(current)}/${Math.floor(max)}`;
+        }
+    }
+
     // 更新UI显示
     updateUI() {
         // 确保gameState和resources对象存在
@@ -791,32 +812,22 @@ class EndlessWinterGame {
             };
         }
         
-        // 更新资源显示
-        const energyDisplayElement = document.getElementById('energy-display');
-        if (energyDisplayElement) {
-            const energyCurrent = Math.floor(this.gameState.player.energy || 0);
-            const energyMax = this.gameState.player.maxEnergy || 100;
-            energyDisplayElement.textContent = `${energyCurrent}/${energyMax}`;
-        }
+        // 更新灵力条（使用统一函数更新主页面和人物面板）
+        const energyCurrent = this.gameState.player.energy || 0;
+        const energyMax = this.gameState.player.maxEnergy || 100;
+        this.updateProgressBar('energy', energyCurrent, energyMax);  // 主页面
+        this.updateProgressBar('energy-bar-modal', energyCurrent, energyMax, { bar: '', display: '-display' });  // 人物面板（特殊ID结构）
 
         // 保留旧的 energy 元素兼容性
         const energyElement = document.getElementById('energy');
         if (energyElement) {
-            const energyCurrent = Math.floor(this.gameState.player.energy || 0);
-            energyElement.textContent = energyCurrent;
-        }
-
-        // 新增：更新灵力进度条（新UI）
-        const energyBarElement = document.getElementById('energy-bar');
-        if (energyBarElement) {
-            const energyPercentage = (this.gameState.player.energy / this.gameState.player.maxEnergy) * 100;
-            energyBarElement.style.width = `${Math.min(energyPercentage, 100)}%`;
+            energyElement.textContent = Math.floor(energyCurrent);
         }
 
         // 新增：更新max-energy显示
         const maxEnergyElement = document.getElementById('max-energy');
         if (maxEnergyElement) {
-            maxEnergyElement.textContent = this.gameState.player.maxEnergy || 100;
+            maxEnergyElement.textContent = energyMax;
         }
         const spiritWoodElement = document.getElementById('spiritWood');
         if (spiritWoodElement) {
@@ -947,23 +958,14 @@ class EndlessWinterGame {
                 hpElement.textContent = Math.floor(finalHp);
             }
 
-            // 新增：更新HP进度条
-            const hpBarElement = document.getElementById('hp-bar');
-            if (hpBarElement) {
-                const hpPercentage = (finalHp / maxHp) * 100;
-                hpBarElement.style.width = `${Math.min(hpPercentage, 100)}%`;
-            }
+            // 更新血条（使用统一函数更新主页面和人物面板）
+            this.updateProgressBar('hp', finalHp, maxHp);  // 主页面
+            this.updateProgressBar('hp-bar-modal', finalHp, maxHp, { bar: '', display: '-display' });  // 人物面板（特殊ID结构）
 
             // 新增：更新max-hp显示
             const maxHpElement = document.getElementById('max-hp');
             if (maxHpElement) {
                 maxHpElement.textContent = Math.floor(maxHp);
-            }
-
-            // 新增：更新属性面板的max-hp-attr显示
-            const maxHpAttrElement = document.getElementById('max-hp-attr');
-            if (maxHpAttrElement) {
-                maxHpAttrElement.textContent = Math.floor(maxHp);
             }
 
             // 新增：更新导航栏境界显示
@@ -1353,6 +1355,15 @@ class EndlessWinterGame {
         // 悬浮战斗日志窗口最小化/展开
         bindEvent('#toggle-battle-log-btn', 'click', () => {
             this.toggleBattleLogWindow();
+        });
+
+        // 小地图弹窗切换
+        bindEvent('#toggle-mini-map-btn', 'click', () => {
+            this.toggleMiniMapPopup();
+        });
+
+        bindEvent('#close-mini-map-btn', 'click', () => {
+            this.toggleMiniMapPopup(false);
         });
         
         // 装备相关按钮
@@ -3068,6 +3079,21 @@ class EndlessWinterGame {
             battleLogContent.classList.add('hidden');
             battleLogMinimized.classList.remove('hidden');
             toggleBtn.innerHTML = '<i class="fa fa-plus text-xs"></i>';
+        }
+    }
+
+    // 切换小地图弹窗显示/隐藏
+    toggleMiniMapPopup(show = null) {
+        const popup = document.getElementById('mini-map-popup');
+        if (!popup) return;
+
+        if (show === null) {
+            // 切换状态
+            popup.classList.toggle('hidden');
+        } else if (show) {
+            popup.classList.remove('hidden');
+        } else {
+            popup.classList.add('hidden');
         }
     }
 

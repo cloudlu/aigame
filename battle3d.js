@@ -8,12 +8,18 @@ EndlessWinterGame.prototype.createBattleScene = function(enemyInfo) {
     // 播放战斗音乐
     this.playSound('battle-music');
 
+    // 隐藏敌人信息面板（进入战斗场景时）
+    const enemyInfoPanel = document.getElementById('enemy-info-panel');
+    if (enemyInfoPanel) {
+        enemyInfoPanel.classList.add('hidden');
+    }
+
     // 显示战斗模态窗口
     const battleModal = document.getElementById('battle-modal');
     if (battleModal) {
         battleModal.classList.remove('hidden');
     }
-    
+
     // 设置战斗状态
     this.gameState.battle.inBattle = true;
 
