@@ -118,6 +118,52 @@ const finalAttack = Math.floor((baseAttack + (enemyLevel - 1) * baseAttack * 0.3
 const finalDefense = Math.floor((baseDefense + (enemyLevel - 1) * baseDefense * 0.3) * (1 + bonus));
 ```
 
+#### 飞行敌人系统
+
+来源：[map.js:838-864](map.js#L838-L864), [sizes.js:97-100](sizes.js#L97-L100)
+
+部分敌人类型（鸟类和幽灵类）会生成在空中，而非地面：
+
+```javascript
+// 飞行敌人高度常量
+BIRD_MIN_HEIGHT: 8,       // 最低飞行高度（相对地面）
+BIRD_MAX_HEIGHT: 25,      // 最高飞行高度（相对地面）
+FLY_COLLISION_THRESHOLD: 5, // 飞行碰撞垂直检测阈值
+
+// 飞行敌人判定 - 通过敌人名称关键词匹配类别
+const category = this.getEnemyCategory(selectedEnemyType.name);
+// BIRD: '雕', '鹰', '鹤', '凤凰', '蝙蝠', '秃鹫', '鸟'
+// GHOST: '幽灵', '暗影', '魂', '鬼', '影', '灵体'
+
+const isFlyingEnemy = category === 'BIRD' || category === 'GHOST';
+const flyHeight = isFlyingEnemy ?
+    SIZES.BIRD_MIN_HEIGHT + Math.random() * (SIZES.BIRD_MAX_HEIGHT - SIZES.BIRD_MIN_HEIGHT) : 0;
+```
+
+**碰撞规则**：
+- 地面玩家不会与空中敌人发生物理碰撞（可以走到空中敌人正下方）
+- 飞行中的玩家需要在相近高度（±5 单位）才能触发碰撞和互动
+- 小地图点击飞行敌人时，玩家移动到敌人下方位置
+
+#### 敌人血条高度系统
+
+来源：[sizes.js:147-155](sizes.js#L147-L155)
+
+血条高度按敌人类别设置，避免与模型重叠：
+
+```javascript
+HEALTH_BAR_Y_HUMANOID: 2.6,   // 人形（山妖、妖魔等）
+HEALTH_BAR_Y_QUAD: 1.5,       // 四足兽（狼、熊、豹等）
+HEALTH_BAR_Y_BIRD: 2.0,       // 飞行类（雕、鹰、鹤等）
+HEALTH_BAR_Y_SERPENT: 0.8,    // 蛇虫类（蛇、蜥蜴等）
+HEALTH_BAR_Y_AQUA: 1.0,       // 水生类（鱼、蟹、龟等）
+HEALTH_BAR_Y_PLANT: 3.2,      // 植物类（树精、花妖等）
+HEALTH_BAR_Y_GOLEM: 3.1,      // 岩石巨人（石怪、岩怪等）
+HEALTH_BAR_Y_GHOST: 1.9,      // 幽灵类（幽灵、暗影等）
+```
+
+**设计原则**：血条Y位置 = 模型最高点 + 0.3~0.7 单位间距
+
 ### 敌人刷新机制
 
 来源：[map.js:19-32](map.js#L19-L32)

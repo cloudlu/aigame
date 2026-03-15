@@ -3,6 +3,34 @@ class EquipmentSystem {
     constructor(game) {
         this.game = game;
     }
+
+    // ==================== 装备槽位辅助方法 ====================
+
+    // 获取槽位配置
+    getSlotConfig(slot) {
+        return this.game.metadata.equipmentSlotConfig?.[slot] || {
+            name: slot, icon: 'fa-box', image: '', fallbackIcon: 'fa-box', order: 99
+        };
+    }
+
+    // 获取所有槽位类型（按order排序）
+    getAllSlotTypes() {
+        const config = this.game.metadata.equipmentSlotConfig || {};
+        return Object.keys(config).sort((a, b) => config[a].order - config[b].order);
+    }
+
+    // 判断是否为装备类型
+    isEquipmentType(type) {
+        return type in (this.game.metadata.equipmentSlotConfig || {});
+    }
+
+    // 获取品质索引 (0=白, 1=蓝, 2=紫, 3=金, 4=彩)
+    getRarityIndex(rarity) {
+        const rarityOrder = ['white', 'blue', 'purple', 'gold', 'rainbow'];
+        return rarityOrder.indexOf(rarity);
+    }
+
+    // ==================== 装备掉落与生成 ====================
     
     // 生成装备掉落
     generateEquipmentDrop() {
@@ -132,7 +160,7 @@ class EquipmentSystem {
     refineEquipment(slot = 'weapon') {
         const item = this.game.gameState.player.equipment[slot];
         if (!item) {
-            this.game.addBattleLog(`没有装备${slot === 'weapon' ? '武器' : slot === 'armor' ? '护甲' : slot === 'helmet' ? '头盔' : slot === 'boots' ? '靴子' : '饰品'}，无法精炼！`);
+            this.game.addBattleLog(`没有装备${this.getSlotDisplayName(slot)}，无法精炼！`);
             return;
         }
         
@@ -143,7 +171,7 @@ class EquipmentSystem {
         
         // 检查是否已达到最大精炼等级
         if (item.refineLevel >= 10) {
-            this.game.addBattleLog(`${slot === 'weapon' ? '武器' : slot === 'armor' ? '护甲' : slot === 'helmet' ? '头盔' : slot === 'boots' ? '靴子' : '饰品'}已达到最大精炼等级+10！`);
+            this.game.addBattleLog(`${this.getSlotDisplayName(slot)}已达到最大精炼等级+10！`);
             return;
         }
         
@@ -179,7 +207,7 @@ class EquipmentSystem {
         }
         
         // 添加日志
-        this.game.addBattleLog(`${slot === 'weapon' ? '武器' : slot === 'armor' ? '护甲' : slot === 'helmet' ? '头盔' : slot === 'boots' ? '靴子' : '饰品'}精炼成功！当前精炼等级：+${item.refineLevel}`);
+        this.game.addBattleLog(`${this.getSlotDisplayName(slot)}精炼成功！当前精炼等级：+${item.refineLevel}`);
         this.game.addBattleLog(`消耗了 ${cost.spiritWood} 灵木，${cost.blackIron} 玄铁，${cost.spiritCrystal} 灵石`);
     }
     
@@ -380,60 +408,38 @@ class EquipmentSystem {
     
     // 更新人物装备显示
     updateCharacterEquipmentDisplay() {
-        // 确保玩家装备存在
-        if (!this.game.gameState.player || !this.game.gameState.player.equipment) {
+        if (!this.game.gameState.player?.equipment) {
             return;
         }
-        
+
         const equipment = this.game.gameState.player.equipment;
-        
-        // 装备槽位映射（主界面和弹框)
-        const equipmentSlots = {
-            'weapon': 'character-weapon',
-            'armor': 'character-armor',
-            'helmet': 'character-helmet',
-            'boots': 'character-boots',
-            'accessory': 'character-accessory',
-            'pants': 'character-pants'
-        };
 
-
-        // 遍历所有装备槽位
-        for (const slot in equipmentSlots) {
-            const elementId = equipmentSlots[slot];
+        // 遍历所有装备槽位（从统一配置获取）
+        for (const slot of this.getAllSlotTypes()) {
+            const config = this.getSlotConfig(slot);
+            const elementId = `character-${slot}`;
             const element = document.getElementById(elementId);
-            // 同时更新弹框内的装备槽
             const elementModal = document.getElementById(`${elementId}-modal`);
             const item = equipment[slot];
 
-            // 装备类型图片映射
-            const equipmentImageMap = {
-                'weapon': 'Images/weapon-sword.png',
-                'helmet': 'Images/helmet.png',
-                'armor': 'Images/armor-chestplate.png',
-                'pants': 'Images/pants.png',
-                'boots': 'Images/boots.png',
-                'accessory': 'Images/accessory-necklace.png'
-            };
-
             // 更新主界面装备槽
             if (element) {
-                this.updateSingleEquipmentSlot(element, item, slot, equipmentImageMap);
+                this.updateSingleEquipmentSlot(element, item, slot, config.image);
             }
             // 更新弹框内装备槽
             if (elementModal) {
-                this.updateSingleEquipmentSlot(elementModal, item, slot, equipmentImageMap);
+                this.updateSingleEquipmentSlot(elementModal, item, slot, config.image);
             }
         }
     }
 
 
     // 更新单个装备槽的通用方法
-    updateSingleEquipmentSlot(element, item, slot, imageMap) {
+    updateSingleEquipmentSlot(element, item, slot, imageUrl) {
         if (item) {
             // 显示装备并设置图片
             element.style.opacity = '1';
-            element.src = imageMap[slot] || '';
+            element.src = imageUrl || '';
             element.onerror = function() { this.style.display = 'none'; };
 
             // 根据装备品质设置边框颜色
@@ -455,39 +461,21 @@ class EquipmentSystem {
 
     // 更新弹框内的装备槽显示
     updateCharacterEquipmentDisplayModal() {
-        if (!this.game.gameState.player || !this.game.gameState.player.equipment) {
+        if (!this.game.gameState.player?.equipment) {
             return;
         }
 
         const equipment = this.game.gameState.player.equipment;
 
-        // 装备槽位映射（弹框专用）
-        const equipmentSlots = {
-            'helmet': 'character-helmet-modal',
-            'armor': 'character-armor-modal',
-            'weapon': 'character-weapon-modal',
-            'pants': 'character-pants-modal',
-            'boots': 'character-boots-modal',
-            'accessory': 'character-accessory-modal'
-        };
-
-        // 装备类型图片映射
-        const equipmentImageMap = {
-            'weapon': 'Images/weapon-sword.png',
-            'helmet': 'Images/helmet.png',
-            'armor': 'Images/armor-chestplate.png',
-            'pants': 'Images/pants.png',
-            'boots': 'Images/boots.png',
-            'accessory': 'Images/accessory-necklace.png'
-        };
-
-        for (const slot in equipmentSlots) {
-            const elementId = equipmentSlots[slot];
+        // 从统一配置获取所有槽位
+        for (const slot of this.getAllSlotTypes()) {
+            const config = this.getSlotConfig(slot);
+            const elementId = `character-${slot}-modal`;
             const element = document.getElementById(elementId);
             const item = equipment[slot];
 
             if (element) {
-                this.updateSingleEquipmentSlot(element, item, slot, equipmentImageMap);
+                this.updateSingleEquipmentSlot(element, item, slot, config.image);
             }
         }
     }
@@ -502,15 +490,8 @@ class EquipmentSystem {
             return;
         }
 
-        // 装备类型图片映射
-        const equipmentImageMap = {
-            'weapon': 'Images/weapon-sword.png',
-            'helmet': 'Images/helmet.png',
-            'armor': 'Images/armor-chestplate.png',
-            'pants': 'Images/pants.png',
-            'boots': 'Images/boots.png',
-            'accessory': 'Images/accessory-necklace.png'
-        };
+        // 从统一配置获取装备图片
+        const equipmentImage = this.getSlotConfig(selectedSlot).image;
 
         if (item) {
             // 确保refineLevel有值
@@ -525,7 +506,7 @@ class EquipmentSystem {
             const refineImage = document.getElementById('refine-equipment-image');
             const refineIcon = document.getElementById('refine-equipment-icon');
             if (refineImage && refineIcon) {
-                const imgSrc = equipmentImageMap[selectedSlot] || '';
+                const imgSrc = equipmentImage || '';
                 if (imgSrc) {
                     refineImage.src = imgSrc;
                     refineImage.style.opacity = '1';
@@ -578,14 +559,8 @@ class EquipmentSystem {
         const refineInfoModal = document.getElementById('refine-info-modal');
 
         // 装备类型图片映射
-        const equipmentImageMap = {
-            'weapon': 'Images/weapon-sword.png',
-            'helmet': 'Images/helmet.png',
-            'armor': 'Images/armor-chestplate.png',
-            'pants': 'Images/pants.png',
-            'boots': 'Images/boots.png',
-            'accessory': 'Images/accessory-necklace.png'
-        };
+        // 从统一配置获取装备图片
+        const equipmentImage = this.getSlotConfig(selectedSlot).image;
 
 
         if (item) {
@@ -598,7 +573,7 @@ class EquipmentSystem {
             const refineImage = document.getElementById('refine-equipment-image-modal');
             const refineIcon = document.getElementById('refine-equipment-icon-modal');
             if (refineImage && refineIcon) {
-                const imgSrc = equipmentImageMap[selectedSlot] || '';
+                const imgSrc = equipmentImage || '';
                 if (imgSrc) {
                     refineImage.src = imgSrc;
                     refineImage.style.opacity = '1';
@@ -673,7 +648,6 @@ class EquipmentSystem {
         }
 
         // 同时更新装备详情面板（已移到精炼区域，不再需要）
-        // this.updateEquipmentDetailPanel(selectedSlot, item, equipmentImageMap);
     }
 
     // 更新精炼面板中的装备属性显示（显示原属性和加成）
@@ -822,15 +796,7 @@ class EquipmentSystem {
 
     // 获取槽位显示名称
     getSlotDisplayName(slot) {
-        const slotNames = {
-            weapon: '武器',
-            armor: '护甲',
-            helmet: '头盔',
-            boots: '靴子',
-            pants: '裤子',
-            accessory: '饰品'
-        };
-        return slotNames[slot] || slot;
+        return this.getSlotConfig(slot).name || slot;
     }
 
     // 计算装备刷新所需材料
@@ -926,10 +892,12 @@ class EquipmentSystem {
             }
         }
 
-        // 生成新名称
-        const prefixIndex = Math.floor(Math.min((rarityInfo ? rarityInfo.multiplier : 1) - 1, template.namePrefixes.length - 1));
+        // 生成新名称（按境界×品质分级）
+        const rarityIdx = this.getRarityIndex(item.rarity);
+        const realmIdx = Math.min(Math.max(0, item.level - 1), (this.game.metadata.equipmentPrefixesByRealm?.length || 1) - 1);
+        const prefixes = this.game.metadata.equipmentPrefixesByRealm?.[realmIdx] || ["", "", "", "", ""];
+        const prefix = prefixes[rarityIdx] || "";
         const suffixIndex = Math.floor(Math.random() * template.nameSuffixes.length);
-        const prefix = template.namePrefixes[prefixIndex] || "";
         const suffix = template.nameSuffixes[suffixIndex] || "装备";
         const newName = prefix + suffix;
 
@@ -1321,7 +1289,7 @@ class EquipmentSystem {
         }
 
         // 装备槽位列表
-        const equipmentSlots = ['weapon', 'armor', 'helmet', 'boots', 'accessory', 'pants'];
+        const equipmentSlots = this.getAllSlotTypes();
         // 品质排序顺序（从低到高）
         const rarityOrder = ['white', 'blue', 'purple', 'gold', 'rainbow'];
         let equippedCount = 0;
@@ -1440,10 +1408,12 @@ class EquipmentSystem {
             }
         }
 
-        // 生成装备名称
-        const prefixIndex = Math.floor(Math.min((rarityInfo ? rarityInfo.multiplier : 1) - 1, template.namePrefixes.length - 1));
+        // 生成装备名称（按境界×品质分级）
+        const rarityIdx = this.getRarityIndex(rarity);
+        const realmIdx = Math.min(Math.max(0, level - 1), (this.game.metadata.equipmentPrefixesByRealm?.length || 1) - 1);
+        const prefixes = this.game.metadata.equipmentPrefixesByRealm?.[realmIdx] || ["", "", "", "", ""];
+        const prefix = prefixes[rarityIdx] || "";
         const suffixIndex = Math.floor(Math.random() * template.nameSuffixes.length);
-        const prefix = template.namePrefixes[prefixIndex] || "";
         const suffix = template.nameSuffixes[suffixIndex] || "装备";
         const name = prefix + suffix;
 
@@ -1473,7 +1443,7 @@ class EquipmentSystem {
         if (!player || !player.equipment) return false;
         
         // 检查各个装备槽位
-        const equipmentSlots = ['weapon', 'armor', 'helmet', 'boots', 'accessory', 'pants'];
+        const equipmentSlots = this.getAllSlotTypes();
         for (const slot of equipmentSlots) {
             const equippedItem = player.equipment[slot];
             if (equippedItem && equippedItem.id === item.id) {
@@ -1485,15 +1455,7 @@ class EquipmentSystem {
     
     // 获取装备图标
     getEquipmentIcon(type) {
-        const icons = {
-            weapon: 'fa-sword',
-            armor: 'fa-shield',
-            helmet: 'fa-hat-wizard',
-            boots: 'fa-boot',
-            accessory: 'fa-gem',
-            pants: 'fa-pants'
-        };
-        return icons[type] || 'fa-box';
+        return this.getSlotConfig(type).fallbackIcon || 'fa-box';
     }
     
     // 获取品质颜色（向后兼容方法）

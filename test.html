@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>2D修仙 · 即时战斗原型</title>
+    <style>
+        body { margin: 0; padding: 0; background: #111; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        canvas { border: 2px solid #444; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <script>
+        const config = {
+            type: Phaser.AUTO,
+            width: 800,
+            height: 600,
+            physics: {
+                default: 'arcade',
+                arcade: { gravity: { y: 0 }, debug: false }
+            },
+            scene: {
+                preload: preload,
+                create: create,
+                update: update
+            }
+        };
+
+        const game = new Phaser.Game(config);
+
+        let player, monster, cursors, attackKey;
+        let playerHealth = 100, monsterHealth = 50;
+        let healthText, monsterHealthText, attackMarker;
+        let playerHitCooldown = false;
+
+        function preload() {
+            this.load.image('block', 'https://labs.phaser.io/assets/sprites/block.png');
+        }
+
+        function create() {
+            // 玩家
+            player = this.physics.add.sprite(400, 300, 'block');
+            player.setTint(0x00aaff);
+            player.setCollideWorldBounds(true);
+
+            // 怪物
+            monster = this.physics.add.sprite(600, 300, 'block');
+            monster.setTint(0xff5500);
+            monster.setCollideWorldBounds(true);
+
+            this.physics.add.collider(player, monster);
+
+            // 键盘
+            cursors = this.input.keyboard.createCursorKeys();
+            attackKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+
+            // 血条
+            healthText = this.add.text(20, 20, `玩家 HP: ${playerHealth}`, { fontSize: '20px', fill: '#fff' });
+            monsterHealthText = this.add.text(20, 50, `怪物 HP: ${monsterHealth}`, { fontSize: '20px', fill: '#fff' });
+
+            // 攻击标记圆
+            attackMarker = this.add.circle(0, 0, 40, 0xffaa00, 0.3);
+            attackMarker.visible = false;
+        }
+
+        function update() {
+            // 玩家移动 (WASD)
+            const speed = 200;
+            player.setVelocity(0);
+
+            if (cursors.left.isDown) player.setVelocityX(-speed);
+            else if (cursors.right.isDown) player.setVelocityX(speed);
+
+            if (cursors.up.isDown) player.setVelocityY(-speed);
+            else if (cursors.down.isDown) player.setVelocityY(speed);
+
+            // 怪物追逐玩家
+            this.physics.moveToObject(monster, player, 100);
+
+            // 攻击 (空格)
+            if (Phaser.Input.Keyboard.JustDown(attackKey)) {
+                const dist = Phaser.Math.Distance.Between(player.x, player.y, monster.x, monster.y);
+                if (dist < 70) {
+                    monsterHealth = Math.max(0, monsterHealth - 20);
+                    monsterHealthText.setText(`怪物 HP: ${monsterHealth}`);
+
+                    // 受击反馈
+                    monster.setTint(0xff0000);
+                    this.time.delayedCall(150, () => {
+                        monster.clearTint();
+                        monster.setTint(0xff5500);
+                    });
+
+                    if (monsterHealth <= 0) {
+                        monster.disableBody(true, true);
+                        monsterHealthText.setText('怪物 HP: 0 (已击败)');
+                    }
+                }
+
+                // 显示攻击范围
+                attackMarker.visible = true;
+                attackMarker.setPosition(player.x, player.y);
+                this.time.delayedCall(200, () => {
+                    attackMarker.visible = false;
+                });
+            }
+
+            // 玩家与怪物碰撞扣血（带冷却）
+            if (this.physics.overlap(player, monster) && !playerHitCooldown) {
+                playerHealth = Math.max(0, playerHealth - 1);
+                healthText.setText(`玩家 HP: ${playerHealth}`);
+                player.setTint(0xff8888);
+                playerHitCooldown = true;
+                this.time.delayedCall(500, () => {
+                    player.clearTint();
+                    player.setTint(0x00aaff);
+                    playerHitCooldown = false;
+                });
+
+                if (playerHealth <= 0) {
+                    player.disableBody(true, true);
+                    healthText.setText('玩家 HP: 0 (战败)');
+                }
+            }
+        }
+    </script>
+</body>
+</html>

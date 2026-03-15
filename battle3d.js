@@ -66,14 +66,14 @@ EndlessWinterGame.prototype.createBattleScene = function(enemyInfo) {
     scene.clearColor = new BABYLON.Color4(0.05, 0.05, 0.05, 1);
 
     // 创建相机
-    const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 6, BABYLON.Vector3.Zero(), scene);
+    const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 3, 10, BABYLON.Vector3.Zero(), scene);
     camera.attachControl(container, false); // 禁用鼠标控制，防止地图移动
-    camera.setPosition(new BABYLON.Vector3(0, 2, 6));
+    camera.setPosition(new BABYLON.Vector3(0, 3, 10));
     // 禁用相机的旋转和移动
-    camera.upperRadiusLimit = 6;
-    camera.lowerRadiusLimit = 6;
-    camera.upperBetaLimit = Math.PI / 2.5;
-    camera.lowerBetaLimit = Math.PI / 2.5;
+    camera.upperRadiusLimit = 10;
+    camera.lowerRadiusLimit = 10;
+    camera.upperBetaLimit = Math.PI / 2;
+    camera.lowerBetaLimit = Math.PI / 2;
     camera.upperAlphaLimit = -Math.PI / 2;
     camera.lowerAlphaLimit = -Math.PI / 2;
 
@@ -119,10 +119,13 @@ EndlessWinterGame.prototype.createBattleScene = function(enemyInfo) {
             playerTooltip.remove();
             playerTooltip = null;
         }
-        
+
         if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERMOVE) {
             const pickResult = scene.pick(scene.pointerX, scene.pointerY);
-            if (pickResult.hit && pickResult.pickedMesh && pickResult.pickedMesh.name === 'player') {
+            // 检查点击的是否是玩家模型的子网格
+            if (pickResult.hit && pickResult.pickedMesh &&
+                (pickResult.pickedMesh.name === 'player' ||
+                 (pickResult.pickedMesh.parent && pickResult.pickedMesh.parent.name === 'player'))) {
                 // 显示玩家信息工具提示
                 playerTooltip = document.createElement('div');
                 playerTooltip.className = 'absolute bg-dark/90 text-white p-2 rounded text-xs z-50 pointer-events-none';
@@ -198,10 +201,16 @@ EndlessWinterGame.prototype.createBattleScene = function(enemyInfo) {
             enemyTooltip.remove();
             enemyTooltip = null;
         }
-        
+
         if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERMOVE) {
             const pickResult = scene.pick(scene.pointerX, scene.pointerY);
-            if (pickResult.hit && pickResult.pickedMesh && pickResult.pickedMesh.name === 'enemy') {
+            // 检查点击的是否是敌人模型的子网格
+            const pickedMesh = pickResult.pickedMesh;
+            const isEnemyMesh = pickedMesh &&
+                (pickedMesh.name === 'enemyBattleGroup' ||
+                 (pickedMesh.parent && pickedMesh.parent.name === 'enemyBattleGroup') ||
+                 (pickedMesh.parent && pickedMesh.parent.parent && pickedMesh.parent.parent.name === 'enemyBattleGroup'));
+            if (pickResult.hit && isEnemyMesh) {
                 // 显示敌人信息工具提示
                 enemyTooltip = document.createElement('div');
                 enemyTooltip.className = 'absolute bg-dark/90 text-white p-2 rounded text-xs z-50 pointer-events-none';
@@ -1065,9 +1074,8 @@ EndlessWinterGame.prototype.animateBattle3D = function() {
     }
 
     if (this.battle3D.enemy) {
-        this.battle3D.enemy.rotation.y += 0.005;
-        const time = Date.now() * 0.003;
-        this.battle3D.enemy.position.y = Math.sin(time + 1) * 0.05;
+        // 战斗场景敌人保持静态面向玩家，不旋转
+        this.battle3D.enemy.rotation.y = Math.PI; // 面向玩家方向
     }
 
     // 火焰动画

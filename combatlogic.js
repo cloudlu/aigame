@@ -572,6 +572,28 @@ EndlessWinterGame.prototype.enemyDefeated = function() {
         }
     }
 
+    // 主线任务进度追踪 - 击杀敌人
+    if (this.trackMainQuestProgress) {
+        const enemy = this.gameState.enemy;
+        this.trackMainQuestProgress('enemy_killed', {
+            name: enemy.name,
+            isBoss: enemy.isBoss || false,
+            isElite: enemy.isElite || false,
+            type: enemy.isBoss ? 'boss' : (enemy.isElite ? 'elite' : 'normal')
+        });
+    }
+
+    // 每日任务进度追踪 - 击杀敌人
+    if (this.trackDailyQuestProgress) {
+        const enemy = this.gameState.enemy;
+        this.trackDailyQuestProgress('enemy_killed', {
+            name: enemy.name,
+            isBoss: enemy.isBoss || false,
+            isElite: enemy.isElite || false,
+            type: enemy.isBoss ? 'boss' : (enemy.isElite ? 'elite' : 'normal')
+        });
+    }
+
     // 检查升级
     this.checkLevelUp();
 

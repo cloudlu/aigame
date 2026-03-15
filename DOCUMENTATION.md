@@ -225,6 +225,7 @@
 ### 游戏系统
 - 技能系统 → SKILL_SYSTEM_DESIGN.md
 - 地图系统 → MAP_SYSTEM_DESIGN.md ⭐
+- 碰撞与移动系统 → CHANGELOG.md#116---2026-03-14 ⭐ NEW
 - 装备系统 → README.md#装备系统
 - 战斗系统 → README.md#战斗系统
 - 资源系统 → README.md#资源系统
@@ -290,14 +291,14 @@
 
 | 文档 | 大小 | 最后更新 |
 |------|------|----------|
-| README.md | 13KB | 2024-03-07 |
+| README.md | 13KB | 2026-03-14 |
 | DEVELOPMENT.md | 2.8KB | 2024-03-07 |
 | SKILL_SYSTEM_DESIGN.md | 41KB | 2024-03-07 |
 | SKILL_SYSTEM_TESTING.md | 8.2KB | 2024-03-06 |
-| MAP_SYSTEM_DESIGN.md | 25KB | 2026-03-08 |
-| BALANCE_DESIGN.md | 16KB | 2024-03-07 |
+| MAP_SYSTEM_DESIGN.md | 25KB | 2026-03-14 |
+| BALANCE_DESIGN.md | 16KB | 2026-03-14 |
 | API.md | 5.5KB | 2024-03-07 |
-| CHANGELOG.md | 2.3KB | 2024-03-07 |
+| CHANGELOG.md | 4KB | 2026-03-14 |
 | CONTRIBUTING.md | 3.2KB | 2024-03-07 |
 
 **总计**: 约117KB的详细文档
@@ -314,6 +315,6 @@
 
 ---
 
-**文档版本**: v1.0  
-**最后更新**: 2024-03-07  
+**文档版本**: v1.1
+**最后更新**: 2026-03-14
 **维护者**: 无尽战斗开发团队

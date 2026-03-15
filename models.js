@@ -160,58 +160,92 @@ EndlessWinterGame.prototype.createPlayerModel = function() {
 EndlessWinterGame.prototype.createEnemyModel = function() {
     if (!this.battle3D || !this.battle3D.scene) return;
 
-    // 创建敌人身体
-    const enemy = BABYLON.MeshBuilder.CreateCylinder("enemy", { diameterTop: 0.8, diameterBottom: 1, height: 0.8, tessellation: 8 }, this.battle3D.scene);
-    const enemyMaterial = new BABYLON.StandardMaterial("enemyMaterial", this.battle3D.scene);
-    enemyMaterial.diffuseColor = new BABYLON.Color3(0.8, 0.2, 0.2);
-    enemyMaterial.specularColor = new BABYLON.Color3(0.5, 0.5, 0.5);
-    enemyMaterial.specularPower = 100;
-    enemy.material = enemyMaterial;
+    const scene = this.battle3D.scene;
+    const enemy = this.gameState.enemy;
+    const enemyName = enemy ? String(enemy.name || '') : '';
+    const isBoss = enemyName.startsWith('BOSS') || (enemy && enemy.isBoss);
+    const isElite = enemyName.startsWith('精英') || (enemy && enemy.isElite);
 
-    // 创建敌人头部
-    const enemyHead = BABYLON.MeshBuilder.CreateSphere("enemyHead", { diameter: 0.6 }, this.battle3D.scene);
-    const enemyHeadMaterial = new BABYLON.StandardMaterial("enemyHeadMaterial", this.battle3D.scene);
-    enemyHeadMaterial.diffuseColor = new BABYLON.Color3(0.9, 0.3, 0.3);
-    enemyHeadMaterial.specularColor = new BABYLON.Color3(0.5, 0.5, 0.5);
-    enemyHeadMaterial.specularPower = 100;
-    enemyHead.material = enemyHeadMaterial;
-    enemyHead.position.y = 0.5;
-    enemyHead.parent = enemy;
+    // 确定缩放倍率
+    const scale = isBoss ? SIZES.ENEMY_SCALE_BOSS : (isElite ? SIZES.ENEMY_SCALE_ELITE : SIZES.ENEMY_SCALE_NORMAL);
 
-    // 创建敌人眼睛
-    const enemyEyeMaterial = new BABYLON.StandardMaterial("enemyEyeMaterial", this.battle3D.scene);
-    enemyEyeMaterial.diffuseColor = new BABYLON.Color3(1, 1, 1);
+    // 识别动物类别
+    const category = this.getEnemyCategory ? this.getEnemyCategory(enemyName) : 'HUMANOID';
 
-    const leftEye = BABYLON.MeshBuilder.CreateSphere("leftEye", { diameter: 0.1 }, this.battle3D.scene);
-    leftEye.material = enemyEyeMaterial;
-    leftEye.position.x = -0.1;
-    leftEye.position.y = 0.6;
-    leftEye.position.z = 0.3;
-    leftEye.parent = enemy;
+    // 根据敌人名称关键词匹配颜色
+    const colorMap = [
+        { keywords: ['狼', '豹', '狮'], r: 0.5, g: 0.5, b: 0.55 },
+        { keywords: ['熊', '牛'], r: 0.45, g: 0.28, b: 0.15 },
+        { keywords: ['蛇', '蜥', '虫', '蠕'], r: 0.25, g: 0.6, b: 0.2 },
+        { keywords: ['火', '熔岩', '凤凰'], r: 0.9, g: 0.3, b: 0.1 },
+        { keywords: ['冰', '雪', '霜'], r: 0.6, g: 0.82, b: 0.95 },
+        { keywords: ['龙', '麒麟'], r: 0.35, g: 0.15, b: 0.55 },
+        { keywords: ['树', '花', '藤', '木'], r: 0.2, g: 0.5, b: 0.15 },
+        { keywords: ['水', '蛟', '鲛', '鱼', '蟹', '虾', '龟'], r: 0.15, g: 0.4, b: 0.7 },
+        { keywords: ['沙', '沙漠'], r: 0.85, g: 0.75, b: 0.55 },
+        { keywords: ['石', '岩', '山'], r: 0.55, g: 0.52, b: 0.48 },
+        { keywords: ['蝙蝠', '幽灵', '暗影', '洞'], r: 0.3, g: 0.2, b: 0.4 },
+        { keywords: ['仙', '天', '云', '鹤'], r: 0.9, g: 0.85, b: 0.95 },
+        { keywords: ['妖', '精', '怪', '魔'], r: 0.6, g: 0.2, b: 0.3 },
+    ];
+    let bodyColor = { r: 0.8, g: 0.2, b: 0.2 };
+    for (const entry of colorMap) {
+        if (entry.keywords.some(kw => enemyName.includes(kw))) {
+            bodyColor = entry;
+            break;
+        }
+    }
 
-    const rightEye = BABYLON.MeshBuilder.CreateSphere("rightEye", { diameter: 0.1 }, this.battle3D.scene);
-    rightEye.material = enemyEyeMaterial;
-    rightEye.position.x = 0.1;
-    rightEye.position.y = 0.6;
-    rightEye.position.z = 0.3;
-    rightEye.parent = enemy;
+    let color;
+    if (isBoss) {
+        color = new BABYLON.Color3(0.8, 0.2, 0.8);
+    } else if (isElite) {
+        color = new BABYLON.Color3(0.9, 0.75, 0.1);
+    } else {
+        color = new BABYLON.Color3(bodyColor.r, bodyColor.g, bodyColor.b);
+    }
 
-    // 创建敌人嘴巴
-    const enemyMouth = BABYLON.MeshBuilder.CreateCylinder("enemyMouth", { diameter: 0.15, height: 0.05, tessellation: 8 }, this.battle3D.scene);
-    const enemyMouthMaterial = new BABYLON.StandardMaterial("enemyMouthMaterial", this.battle3D.scene);
-    enemyMouthMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
-    enemyMouth.material = enemyMouthMaterial;
-    enemyMouth.position.y = 0.4;
-    enemyMouth.position.z = 0.3;
-    enemyMouth.parent = enemy;
+    const material = new BABYLON.StandardMaterial("enemyBattleMaterial_" + Date.now(), scene);
+    material.diffuseColor = color;
+    material.specularColor = new BABYLON.Color3(0.1, 0.1, 0.1);
+    material.specularPower = 32;
+    if (isBoss) {
+        material.emissiveColor = new BABYLON.Color3(0.2, 0.05, 0.2);
+    } else if (isElite) {
+        material.emissiveColor = new BABYLON.Color3(0.15, 0.12, 0.02);
+    }
 
-    // 设置敌人位置（右侧）
-    enemy.position.x = 2;
-    enemy.position.y = 0;
-    enemy.position.z = 0;
+    const enemyGroup = new BABYLON.TransformNode("enemyBattleGroup", scene);
+
+    // 根据动物类别构建外形
+    this.buildEnemyByCategory(enemyGroup, category, material, scene);
+
+    // Boss额外添加角
+    if (isBoss) {
+        const hornMat = new BABYLON.StandardMaterial("battleHornMat", scene);
+        hornMat.diffuseColor = new BABYLON.Color3(0.8, 0.7, 0.3);
+        const horn1 = BABYLON.MeshBuilder.CreateCylinder("battleHorn1", { diameterTop: 0.1, diameterBottom: 0.3, height: 0.8, tessellation: 6 }, scene);
+        horn1.parent = enemyGroup;
+        horn1.position.set(-0.4, 2.2, 0);
+        horn1.rotation.z = -0.3;
+        horn1.material = hornMat;
+        const horn2 = BABYLON.MeshBuilder.CreateCylinder("battleHorn2", { diameterTop: 0.1, diameterBottom: 0.3, height: 0.8, tessellation: 6 }, scene);
+        horn2.parent = enemyGroup;
+        horn2.position.set(0.4, 2.2, 0);
+        horn2.rotation.z = 0.3;
+        horn2.material = hornMat;
+    }
+
+    // 应用类型缩放
+    enemyGroup.scaling.setAll(scale);
+
+    // 设置位置（右侧）
+    enemyGroup.position.x = 2;
+    enemyGroup.position.y = 0;
+    enemyGroup.position.z = 0;
 
     // 存储敌人模型
-    this.battle3D.enemy = enemy;
+    this.battle3D.enemy = enemyGroup;
 };
 
 // 创建血条
@@ -246,21 +280,39 @@ EndlessWinterGame.prototype.createHealthBars = function() {
 
     // 创建敌人血条（红色）
     if (this.battle3D.enemy) {
-        const enemyHealthBar = this.createHealthBar(0xff0000); // 红色血条
+        // 根据敌人类型获取缩放倍率（用于反缩放血条）
+        const enemy = this.gameState.enemy;
+        const isBoss = enemy && (enemy.name.startsWith('BOSS') || enemy.isBoss);
+        const isElite = enemy && (enemy.name.startsWith('精英') || enemy.isElite);
+        const scale = isBoss ? SIZES.ENEMY_SCALE_BOSS : (isElite ? SIZES.ENEMY_SCALE_ELITE : SIZES.ENEMY_SCALE_NORMAL);
+
+        // 根据敌人类别确定血条高度
+        const baseName = enemy && (enemy.baseName || enemy.name.replace(/^(BOSS|精英)/, ''));
+        const category = this.getEnemyCategory ? this.getEnemyCategory(baseName || '') : 'HUMANOID';
+        const healthBarY = SIZES.getHealthBarY(category);
+
+        // 血条反缩放，保持视觉大小一致
+        const enemyHealthBar = this.createHealthBar(0xff0000);
+        enemyHealthBar.scaling.x = 0.5 / scale;
+        enemyHealthBar.scaling.y = 1.0 / scale;
+        enemyHealthBar.scaling.z = 0.5 / scale;
         enemyHealthBar.position.x = 0;
-        enemyHealthBar.position.y = 1.1; // 默认血条位置
+        enemyHealthBar.position.y = healthBarY;
         enemyHealthBar.position.z = 0;
-        enemyHealthBar.isVisible = true; // 确保血条可见
+        enemyHealthBar.isVisible = true;
         enemyHealthBar.parent = this.battle3D.enemy;
         this.battle3D.enemyHealthBar = enemyHealthBar;
 
-        // 创建敌人灵力条（蓝色）
+        // 创建敌人灵力条（蓝色，Boss专用）
         if (this.gameState.enemy && (this.gameState.enemy.isBoss || this.gameState.enemy.energy > 0)) {
-            const enemyEnergyBar = this.createHealthBar(0x0000ff); // 蓝色灵力条
+            const enemyEnergyBar = this.createHealthBar(0x0000ff);
+            enemyEnergyBar.scaling.x = 0.5 / scale;
+            enemyEnergyBar.scaling.y = 1.0 / scale;
+            enemyEnergyBar.scaling.z = 0.5 / scale;
             enemyEnergyBar.position.x = 0;
-            enemyEnergyBar.position.y = 0.95; // 默认灵力条位置，更贴近血条
+            enemyEnergyBar.position.y = healthBarY - 0.15; // 略低于血条
             enemyEnergyBar.position.z = 0;
-            enemyEnergyBar.isVisible = true; // 确保灵力条可见
+            enemyEnergyBar.isVisible = true;
             enemyEnergyBar.parent = this.battle3D.enemy;
             this.battle3D.enemyEnergyBar = enemyEnergyBar;
         }
@@ -333,31 +385,36 @@ EndlessWinterGame.prototype.updateHealthBars = function() {
         this.battle3D.playerEnergyBar.position.x = 0; // 固定位置，从左边开始减少
     }
 
-    // 更新所有敌人血条
+    // 更新所有敌人血条（探险场景）
     if (this.battle3D.enemies && this.battle3D.enemies.length > 0) {
         this.battle3D.enemies.forEach(enemy => {
             if (enemy.healthBar && enemy.info) {
                 const enemyHealthPercent = Math.max(0, enemy.info.hp / enemy.info.maxHp);
-                enemy.healthBar.scaling.x = enemyHealthPercent;
-                enemy.healthBar.position.x = 0; // 固定位置，从左边开始减少
+                // 获取敌人缩放倍率，保持血条反缩放
+                const eScale = String(enemy.info.name || '').startsWith('BOSS') ? SIZES.ENEMY_SCALE_BOSS :
+                              (String(enemy.info.name || '').startsWith('精英') ? SIZES.ENEMY_SCALE_ELITE : SIZES.ENEMY_SCALE_NORMAL);
+                enemy.healthBar.scaling.x = enemyHealthPercent / eScale;
+                enemy.healthBar.position.x = 0;
             }
         });
     }
-    
-    // 更新当前选中敌人的血条（如果有）
+
+    // 更新当前选中敌人的血条（战斗场景）
     if (this.gameState.enemy && this.gameState.enemy.name) {
-        // 更新敌人血条
+        // 获取战斗场景敌人缩放倍率
+        const bScale = String(this.gameState.enemy.name).startsWith('BOSS') ? SIZES.ENEMY_SCALE_BOSS :
+                      (String(this.gameState.enemy.name).startsWith('精英') ? SIZES.ENEMY_SCALE_ELITE : SIZES.ENEMY_SCALE_NORMAL);
+
         if (this.battle3D.enemyHealthBar) {
             const enemyHealthPercent = Math.max(0, this.gameState.enemy.hp / this.gameState.enemy.maxHp);
-            this.battle3D.enemyHealthBar.scaling.x = enemyHealthPercent;
-            this.battle3D.enemyHealthBar.position.x = 0; // 固定位置，从左边开始减少
+            this.battle3D.enemyHealthBar.scaling.x = enemyHealthPercent / bScale;
+            this.battle3D.enemyHealthBar.position.x = 0;
         }
-        
-        // 更新敌人灵力条
+
         if (this.battle3D.enemyEnergyBar) {
             const enemyEnergyPercent = Math.max(0, this.gameState.enemy.energy / (this.gameState.enemy.maxEnergy || 100));
-            this.battle3D.enemyEnergyBar.scaling.x = enemyEnergyPercent;
-            this.battle3D.enemyEnergyBar.position.x = 0; // 固定位置，从左边开始减少
+            this.battle3D.enemyEnergyBar.scaling.x = enemyEnergyPercent / bScale;
+            this.battle3D.enemyEnergyBar.position.x = 0;
         }
     }
 };

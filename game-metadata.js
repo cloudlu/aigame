@@ -15,39 +15,73 @@ const gameMetadata = {
         {
             type: "weapon",
             baseStats: { attack: 5, speed: 1, luck: 0.5, criticalRate: 0.05 },
-            namePrefixes: ["", "玄铁", "龙泉", "青冥", "紫电", "赤霄", "太阴", "纯阳", "玄冰", "炎阳", "流光", "星陨", "龙渊", "凤羽"],
             nameSuffixes: ["剑", "长刀", "战斧", "长矛", "匕首", "大剑", "重剑", "弯刀", "戟", "枪", "棍", "扇", "箫", "琴"]
         },
         {
             type: "armor",
             baseStats: { defense: 3, hp: 5, speed: 0.5, dodgeRate: 0.05 },
-            namePrefixes: ["", "玄铁", "金丝", "锁子", "青铜", "白银", "黄金", "紫金", "玄冰", "炎阳", "流光", "星陨", "龙鳞", "凤羽"],
-            nameSuffixes: ["护甲", "胸甲", "锁甲", "板甲", "皮甲", "鳞甲", "宝甲", "战衣", "道袍", "法衣", "仙袍", "神甲", "圣甲", "天甲"]
+            nameSuffixes: ["护甲", "胸甲", "宝甲", "道袍", "法衣", "仙袍", "神甲", "圣甲", "天甲", "玄甲", "灵铠", "龙鳞甲", "凤羽甲", "金蚕甲"]
         },
         {
             type: "helmet",
             baseStats: { defense: 2, hp: 10, luck: 1, accuracy: 0.1 },
-            namePrefixes: ["", "玄铁", "青铜", "白银", "黄金", "紫金", "凤羽", "龙鳞", "玄冰", "炎阳", "流光", "星陨", "纯阳", "太阴"],
-            nameSuffixes: ["头盔", "头冠", "兜帽", "面具", "战盔", "道冠", "宝冠", "凤冠", "龙冠", "仙冠", "神冠", "圣冠", "天冠", "法冠"]
+            nameSuffixes: ["头盔", "头冠", "道冠", "宝冠", "凤冠", "龙冠", "仙冠", "神冠", "圣冠", "天冠", "法冠", "灵冠", "玄冠", "紫金冠"]
         },
         {
             type: "boots",
             baseStats: { defense: 1, luck: 1, speed: 2, moveSpeed: 0.1 },
-            namePrefixes: ["", "云纹", "风驰", "踏雪", "追星", "逐日", "腾云", "御空", "流光", "星陨", "玄冰", "炎阳", "龙鳞", "凤羽"],
-            nameSuffixes: ["靴子", "战靴", "皮靴", "钢靴", "魔靴", "神靴", "仙靴", "道靴", "法靴", "云靴", "风靴", "火靴", "水靴", "土靴"]
+            nameSuffixes: ["飞履", "云履", "踏风靴", "凌空履", "无痕靴", "追月履", "逐星履", "神行靴", "缩地靴", "御风履", "天行履", "幻影靴", "踏云靴", "凌波履"]
         },
         {
             type: "pants",
             baseStats: { defense: 2, hp: 8, speed: 1, tenacity: 0.05 },
-            namePrefixes: ["", "玄铁", "金丝", "锁子", "青铜", "白银", "黄金", "紫金", "玄冰", "炎阳", "流光", "星陨", "龙鳞", "凤羽"],
-            nameSuffixes: ["长裤", "战裤", "皮裤", "钢裤", "魔裤", "神裤", "仙裤", "道裤", "法裤", "云裤", "风裤", "火裤", "水裤", "土裤"]
+            nameSuffixes: ["护裙", "仙裳", "云裳", "道裙", "灵裙", "战裙", "法裙", "宝裙", "玄裳", "圣裳", "天裳", "龙鳞裙", "凤羽裳", "金蚕裙"]
         },
         {
-            type: "accessory",
+            type: "amulet",
             baseStats: { luck: 2, hp: 5, speed: 1, energyRegen: 0.5 },
-            namePrefixes: ["", "通灵", "如意", "静心", "镇魂", "御魂", "封神", "辟邪", "招财", "纳福", "聚气", "凝神", "悟道", "升仙"],
-            nameSuffixes: ["戒指", "项链", "护符", "徽章", "玉佩", "手串", "宝镜", "手镯", "耳环", "发簪", "腰坠", "脚链", "手链", "项圈"]
+            nameSuffixes: ["灵符", "护身符", "玉佩", "玉璧", "命牌", "灵牌", "护心镜", "平安扣", "祈福牌", "辟邪坠", "养魂玉", "定心珠", "天师符", "镇魂牌"]
+        },
+        {
+            type: "spiritTreasure",
+            baseStats: { luck: 3, hp: 5, energyRegen: 1.2, speed: 1.5 },
+            nameSuffixes: ["灵珠", "仙玉", "宝印", "圣令", "天鼎", "玄鉴", "灵镜", "仙葫", "道钟", "法钵", "宝莲", "圣塔", "神鼎", "天灯"]
+        },
+        {
+            type: "magicArtifact",
+            baseStats: { attack: 4, defense: 2, hp: 5, criticalRate: 0.08 },
+            nameSuffixes: ["法杖", "灵扇", "仙铃", "圣幡", "天钟", "玄塔", "灵灯", "仙炉", "法印", "道符", "宝幡", "圣剑", "神鼎", "天书"]
         }
+    ],
+
+    // 装备槽位统一配置（新增装备只需在此添加一条）
+    equipmentSlotConfig: {
+        weapon:         { name: '武器', icon: 'fa-sword',        image: 'Images/weapon-sword.jpg',       fallbackIcon: 'fa-sword',        order: 1 },
+        helmet:         { name: '头盔', icon: 'fa-hat-wizard',   image: 'Images/helmet.jpg',             fallbackIcon: 'fa-hat-wizard',   order: 2 },
+        armor:          { name: '护甲', icon: 'fa-shield',       image: 'Images/armor-chestplate.jpg',   fallbackIcon: 'fa-shield',       order: 3 },
+        spiritTreasure: { name: '灵宝', icon: 'fa-gem',          image: 'Images/spirit-treasure.jpg',    fallbackIcon: 'fa-gem',          order: 4 },
+        pants:          { name: '下装', icon: 'fa-user',         image: 'Images/pants.jpg',              fallbackIcon: 'fa-user',         order: 5 },
+        boots:          { name: '靴子', icon: 'fa-shoe-prints',  image: 'Images/boots.jpg',              fallbackIcon: 'fa-shoe-prints',  order: 6 },
+        magicArtifact:  { name: '法器', icon: 'fa-wand-sparkles',image: 'Images/magic-artifact.jpg',     fallbackIcon: 'fa-wand-sparkles',order: 7 },
+        amulet:         { name: '护符', icon: 'fa-scroll',       image: 'Images/amulet.jpg',             fallbackIcon: 'fa-scroll',       order: 8 }
+    },
+
+    // 装备前缀按境界×品质分级 [realm][rarityIndex]
+    // rarityIndex: 0=白, 1=蓝, 2=紫, 3=金, 4=彩
+    // 注意：白色品质统一使用朴素材质（铁/铜类），避免与资源名（灵木、玄铁、灵石）冲突
+    equipmentPrefixesByRealm: [
+        // 武者境 (realm 0)
+        ["凡铁", "精钢", "百炼", "青铜", "白银"],
+        // 炼气境 (realm 1)
+        ["青铜", "寒铁", "青玉", "紫玉", "水晶"],
+        // 筑基境 (realm 2)
+        ["精铁", "龙泉", "紫金", "玄冰", "天蚕"],
+        // 金丹境 (realm 3)
+        ["寒铁", "紫霄", "太乙", "天罡", "玄冥"],
+        // 元婴境 (realm 4)
+        ["仙铜", "九天", "混元", "太虚", "两仪"],
+        // 化神境 (realm 5)
+        ["苍铁", "鸿蒙", "混沌", "须弥", "造化"]
     ],
     
     // 装备掉落概率配置（5个品质：白、蓝、紫、金、彩）
@@ -2607,7 +2641,7 @@ const gameMetadata = {
                 "clouds",
                 "ancient temples"
             ],
-            "imageUrl": "Images/map-background-1.png"
+            "imageUrl": "Images/map-background-1.jpg"
         },
         {
             "type": "xianxia-forest",
@@ -2622,7 +2656,7 @@ const gameMetadata = {
                 "magical creatures",
                 "spirit stones"
             ],
-            "imageUrl": "Images/map-background-2.png"
+            "imageUrl": "Images/map-background-2.jpg"
         },
         {
             "type": "xianxia-lake",
@@ -2637,7 +2671,7 @@ const gameMetadata = {
                 "lotus flowers",
                 "water spirits"
             ],
-            "imageUrl": "Images/map-background-3.png"
+            "imageUrl": "Images/map-background-3.jpg"
         },
         {
             "type": "xianxia-desert",
@@ -2652,7 +2686,7 @@ const gameMetadata = {
                 "sand dunes",
                 "mirages"
             ],
-            "imageUrl": "Images/map-background-4.png"
+            "imageUrl": "Images/map-background-4.jpg"
         },
         {
             "type": "xianxia-cave",
@@ -2667,7 +2701,7 @@ const gameMetadata = {
                 "ancient inscriptions",
                 "magical beasts"
             ],
-            "imageUrl": "Images/map-background-5.png"
+            "imageUrl": "Images/map-background-5.jpg"
         },
         {
             "type": "xianxia-heaven",
@@ -2682,7 +2716,7 @@ const gameMetadata = {
                 "celestial palaces",
                 "divine beasts"
             ],
-            "imageUrl": "Images/map-background-6.png"
+            "imageUrl": "Images/map-background-6.jpg"
         },
         {
             "type": "xianxia-volcano",
@@ -2697,7 +2731,7 @@ const gameMetadata = {
                 "fire spirits",
                 "ancient fire temples"
             ],
-            "imageUrl": "Images/map-background-7.png"
+            "imageUrl": "Images/map-background-7.jpg"
         },
         {
             "type": "xianxia-beach",
@@ -2712,7 +2746,7 @@ const gameMetadata = {
                 "magical pearls",
                 "sea spirits"
             ],
-            "imageUrl": "Images/map-background-8.png"
+            "imageUrl": "Images/map-background-8.jpg"
         },
         {
             "type": "xianxia-plains",
@@ -2727,7 +2761,7 @@ const gameMetadata = {
                 "spirit herbs",
                 "wandering cultivators"
             ],
-            "imageUrl": "Images/map-background-9.png"
+            "imageUrl": "Images/map-background-9.jpg"
         },
         {
             "type": "xianxia-canyon",
@@ -2742,9 +2776,1414 @@ const gameMetadata = {
                 "ancient bridges",
                 "wind spirits"
             ],
-            "imageUrl": "Images/map-background-10.png"
+            "imageUrl": "Images/map-background-10.jpg"
         }
-    ]
+    ],
+
+    // ========== 每日任务系统配置 ==========
+    dailyQuestConfig: {
+        // 每日任务模板池 (7种，每天随机选3个不重复)
+        templates: [
+            { id: 'daily_kill_normal', type: 'kill', subType: 'normal', name: '妖兽讨伐', descTemplate: '击败{target}只普通妖兽' },
+            { id: 'daily_kill_elite', type: 'kill', subType: 'elite', name: '精英猎杀', descTemplate: '击败{target}只精英妖兽' },
+            { id: 'daily_kill_boss', type: 'kill_boss', name: 'Boss 挑战', descTemplate: '击败{target}只Boss' },
+            { id: 'daily_collect_wood', type: 'collect', resource: 'spiritWood', name: '灵木收集', descTemplate: '收集{target}个灵木' },
+            { id: 'daily_collect_iron', type: 'collect', resource: 'blackIron', name: '玄铁收集', descTemplate: '收集{target}个玄铁' },
+            { id: 'daily_collect_crystal', type: 'collect', resource: 'spiritCrystal', name: '灵石收集', descTemplate: '收集{target}个灵石' },
+            { id: 'daily_visit_map', type: 'visit_map', name: '地图探索', descTemplate: '前往指定地图探索' }
+        ],
+        questsPerDay: 3,
+        // 基础数值
+        baseValues: { kill: 10, collect: 12, boss: 1, exp: 60, gold: 30, activity: 10 },
+        // 连续完成奖励
+        streakRewards: [
+            { days: 3, bonusPercent: 0.5, extraActivity: 30, title: '小有成就' },
+            { days: 5, bonusPercent: 0.8, extraActivity: 60, title: '初窥门径' },
+            { days: 7, bonusPercent: 1.0, extraActivity: 100, title: '七日修炼' },
+            { days: 14, bonusPercent: 1.5, extraActivity: 200, title: '半月精进' },
+            { days: 30, bonusPercent: 2.0, extraActivity: 500, title: '一月大成' }
+        ]
+    },
+
+    // ========== 主线任务模板系统配置 ==========
+    // 使用模板动态生成每个等级的任务，替代静态定义
+    questTemplateConfig: {
+        // 境界主题配置 - 每个境界的地图、Boss、资源等
+        realmThemes: [
+            {   // 武者境 (realm 0)
+                name: '武者',
+                maps: ['xianxia-mountain'],
+                bossPool: ['冰霜巨人'],
+                primaryResource: 'spiritWood',
+                secondaryResource: 'blackIron',
+                crystalUnlockStage: 5,
+                companion: '师尊',
+                realmGoal: '突破武者境的极限'
+            },
+            {   // 炼气境 (realm 1)
+                name: '炼气',
+                maps: ['xianxia-mountain', 'xianxia-beach'],
+                bossPool: ['龙王', '海怪'],
+                primaryResource: 'spiritWood',
+                secondaryResource: 'blackIron',
+                crystalUnlockStage: 1,
+                companion: '师兄',
+                realmGoal: '筑基凝真，踏入修仙正途'
+            },
+            {   // 筑基境 (realm 2)
+                name: '筑基',
+                maps: ['xianxia-beach', 'xianxia-plains'],
+                bossPool: ['草原之王'],
+                primaryResource: 'blackIron',
+                secondaryResource: 'spiritWood',
+                crystalUnlockStage: 1,
+                companion: '弟子',
+                realmGoal: '结成金丹，大道可期'
+            },
+            {   // 金丹境 (realm 3)
+                name: '金丹',
+                maps: ['xianxia-canyon', 'xianxia-desert'],
+                bossPool: ['峡谷领主', '沙漠之王'],
+                primaryResource: 'spiritCrystal',
+                secondaryResource: 'blackIron',
+                crystalUnlockStage: 1,
+                companion: '长老',
+                realmGoal: '元婴出世，神通无量'
+            },
+            {   // 元婴境 (realm 4)
+                name: '元婴',
+                maps: ['xianxia-lake', 'xianxia-forest', 'xianxia-volcano'],
+                bossPool: ['湖龙王', '妖狐王', '火山领主'],
+                primaryResource: 'spiritCrystal',
+                secondaryResource: 'blackIron',
+                crystalUnlockStage: 1,
+                companion: '故友',
+                realmGoal: '化神超脱，打破寒冬枷锁'
+            },
+            {   // 化神境 (realm 5)
+                name: '化神',
+                maps: ['xianxia-cave', 'xianxia-heaven'],
+                bossPool: ['地下蠕虫', '麒麟', '元始天尊'],
+                primaryResource: 'spiritCrystal',
+                secondaryResource: 'blackIron',
+                crystalUnlockStage: 1,
+                companion: '天道之音',
+                realmGoal: '飞升成仙，打破世界枷锁'
+            }
+        ],
+
+        // 阶段乘数 (stage 1-10)
+        stageMultiplier: [1.0, 1.3, 1.6, 2.0, 2.4, 2.8, 3.3, 3.8, 4.3, 5.0],
+
+        // 境界乘数
+        realmMultiplier: [1.0, 1.5, 2.2, 3.2, 4.5, 6.5],
+
+        // 基础数值
+        scalingBase: {
+            baseKill: 5,        // 基础击杀数
+            baseCollect: 8,     // 基础收集数
+            baseExp: 80,        // 基础经验奖励
+            baseGold: 40        // 基础灵石奖励
+        },
+
+        // 资源名称映射
+        resourceNames: {
+            spiritWood: '灵木',
+            blackIron: '玄铁',
+            spiritCrystal: '灵石'
+        },
+
+        // 地图名称映射
+        mapNames: {
+            'xianxia-mountain': '仙侠山峰',
+            'xianxia-beach': '仙侠海滩',
+            'xianxia-plains': '仙侠平原',
+            'xianxia-canyon': '仙侠峡谷',
+            'xianxia-desert': '仙侠沙漠',
+            'xianxia-lake': '仙侠湖泊',
+            'xianxia-forest': '仙侠森林',
+            'xianxia-volcano': '仙侠火山',
+            'xianxia-cave': '仙侠洞穴',
+            'xianxia-heaven': '仙侠仙境'
+        },
+
+        // 日志叙事文字模板
+        narrativeTemplates: {
+            kill_normal: [
+                '你在{stageName}的修炼渐入佳境，今日又消灭了一批妖兽。',
+                '战斗之余，你抬头望向远方——{realmGoal}。',
+                '妖兽纷纷倒下，{companion}对你的成长感到欣慰。',
+                '今日的战斗让你对{realmName}境的灵力运用更加纯熟。',
+                '这些妖兽虽弱，但每一次战斗都是修炼的一部分。'
+            ],
+            kill_elite: [
+                '精英妖兽的实力不容小觑，但你已今非昔比！',
+                '击败精英怪物后，你感到{realmName}的灵力更加精纯了。',
+                '{companion}看着你击败精英的身影，默默点了点头。',
+                '精英级别的战斗考验着你的应变能力，你应对自如。',
+                '又一只精英怪物倒下了，你的实力稳步提升。'
+            ],
+            collect_wood: [
+                '灵木散发着淡淡的光芒，这些修炼资源对你大有裨益。',
+                '收集灵木的过程中，你感悟到了木属性灵力的奥妙。',
+                '充足的灵木是修炼的基础，你的储备越来越丰富了。',
+                '{companion}教你辨别灵木的品质，收获颇丰。'
+            ],
+            collect_iron: [
+                '沉甸甸的玄铁是锻造法宝的上好材料。',
+                '你将玄铁小心收好，这些资源足够修炼一阵了。',
+                '玄铁中蕴含着大地之力，对修炼大有帮助。',
+                '{companion}指点你寻找玄铁矿脉，效率提升不少。'
+            ],
+            collect_crystal: [
+                '灵石中蕴含着精纯的灵力，{realmName}功法正需要此物。',
+                '每一颗灵石都在你手中闪烁着光芒，前路越来越清晰。',
+                '高纯度的灵石是修仙者的硬通货，这些收获非常可观。',
+                '{companion}看到你收集的灵石，露出赞许的目光。'
+            ],
+            visit_map: [
+                '{mapName}的景色令人叹为观止，也许这里藏着什么机缘...',
+                '踏入{mapName}，一股熟悉的灵力波动扑面而来。',
+                '在{mapName}中探索，你发现了一些有价值的线索。',
+                '{companion}带你来到{mapName}，这里的灵气果然浓郁。'
+            ],
+            reach_level: [
+                '修为精进，你离{nextGoal}又近了一步。',
+                '{companion}为你指引了接下来的修炼方向。',
+                '灵力在体内缓缓流动，你感到{realmName}的境界正在巩固。',
+                '这一级的突破虽然不大，但稳扎稳打才是正道。'
+            ]
+        }
+    },
+
+    // ========== 主线任务系统配置 (旧版静态定义，保留兼容) ==========
+    // 6 个境界 × 10 个任务 = 60 个主线任务
+    mainStoryQuests: {
+        // === 武者境 (realm 0) ===
+        // 任务分布：前期(1-4) → 突破中期(5) → 中期(6) → 突破后期(7) → 后期(8-9) → 巅峰(10)
+        0: [
+            {
+                id: 'warrior_awaken',
+                name: '觉醒之路',
+                description: '村民被妖兽袭击，挺身而出保护村庄',
+                objectives: [
+                    { type: 'kill', subType: 'normal', target: 5 }
+                ],
+                rewards: { exp: 80, gold: 40 },
+                rewardItems: [{ type: 'equipment', slot: 'weapon', rarity: 'white' }],
+                storyTrigger: 'realm0_Q1',
+                nextQuest: 1
+            },
+            {
+                id: 'warrior_seek_master',
+                name: '拜师学艺',
+                description: '在山峰地区收集修炼资源，为入门做准备',
+                objectives: [
+                    { type: 'collect', resource: 'spiritWood', target: 8 }
+                ],
+                rewards: { exp: 100, gold: 60 },
+                storyTrigger: 'realm0_Q2',
+                nextQuest: 2
+            },
+            {
+                id: 'warrior_train',
+                name: '基础修炼',
+                description: '完成门派的基础修炼任务，提升修为',
+                objectives: [
+                    { type: 'reach_level', target: 5 }
+                ],
+                rewards: { exp: 130, gold: 80 },
+                rewardItems: [{ type: 'equipment', slot: 'armor', rarity: 'white' }],
+                storyTrigger: 'realm0_Q3',
+                nextQuest: 3
+            },
+            {
+                id: 'warrior_first_battle',
+                name: '首次实战',
+                description: '前往山峰地图，击败15只妖兽积累经验',
+                objectives: [
+                    { type: 'kill', subType: 'normal', target: 15 }
+                ],
+                rewards: { exp: 150, gold: 100, skillPoints: 1 },
+                storyTrigger: 'realm0_Q4',
+                nextQuest: 4
+            },
+            {
+                id: 'warrior_challenge_elite',
+                name: '突破中期',
+                description: '修炼有成，突破到武者中期',
+                objectives: [
+                    { type: 'reach_stage', target: 4 }
+                ],
+                rewards: { exp: 180, gold: 120 },
+                storyTrigger: 'realm0_Q5',
+                nextQuest: 5
+            },
+            {
+                id: 'warrior_resource',
+                name: '资源储备',
+                description: '收集大量修炼资源，巩固中期修为',
+                objectives: [
+                    { type: 'collect', resource: 'spiritWood', target: 15 },
+                    { type: 'collect', resource: 'blackIron', target: 10 }
+                ],
+                rewards: { exp: 210, gold: 150 },
+                storyTrigger: 'realm0_Q6',
+                nextQuest: 6
+            },
+            {
+                id: 'warrior_advance',
+                name: '突破后期',
+                description: '修为精进，突破到武者后期',
+                objectives: [
+                    { type: 'reach_stage', target: 7 }
+                ],
+                rewards: { exp: 240, gold: 180, skillPoints: 1 },
+                storyTrigger: 'realm0_Q7',
+                nextQuest: 7
+            },
+            {
+                id: 'warrior_hunt',
+                name: '战斗历练',
+                description: '在山峰地区战斗历练，击杀30只妖兽',
+                objectives: [
+                    { type: 'kill', subType: 'normal', target: 30 }
+                ],
+                rewards: { exp: 260, gold: 200 },
+                storyTrigger: 'realm0_Q8',
+                nextQuest: 8
+            },
+            {
+                id: 'warrior_elite_hunter',
+                name: '精英猎手',
+                description: '击杀精英妖兽，证明自己的实力',
+                objectives: [
+                    { type: 'kill', subType: 'elite', target: 5 }
+                ],
+                rewards: { exp: 280, gold: 250 },
+                storyTrigger: 'realm0_Q9',
+                nextQuest: 9
+            },
+            {
+                id: 'warrior_peak',
+                name: '武者巅峰',
+                description: '挑战山峰地图的BOSS冰霜巨人',
+                objectives: [
+                    { type: 'kill_boss', targetBoss: '冰霜巨人' }
+                ],
+                rewards: { exp: 300, gold: 300, skillPoints: 2 },
+                storyTrigger: 'realm0_Q10',
+                isFinalQuest: true
+            }
+        ],
+
+        // === 炼气境 (realm 1) ===
+        1: [
+            {
+                id: 'qi_sect_mission',
+                name: '门派任务',
+                description: '完成门派分配的任务，收集资源',
+                objectives: [
+                    { type: 'collect', resource: 'spiritWood', target: 15 },
+                    { type: 'collect', resource: 'blackIron', target: 10 }
+                ],
+                rewards: { exp: 150, gold: 100 },
+                storyTrigger: 'realm1_Q1',
+                nextQuest: 1
+            },
+            {
+                id: 'qi_beach_explore',
+                name: '海滩探索',
+                description: '前往海滩地图，探索新的区域',
+                objectives: [
+                    { type: 'visit_map', targetMap: 'xianxia-beach' }
+                ],
+                rewards: { exp: 180, gold: 120 },
+                storyTrigger: 'realm1_Q2',
+                nextQuest: 2
+            },
+            {
+                id: 'qi_cultivation',
+                name: '修炼提升',
+                description: '在海滩修炼，提升到5级',
+                objectives: [
+                    { type: 'reach_level', target: 5 }
+                ],
+                rewards: { exp: 220, gold: 160 },
+                storyTrigger: 'realm1_Q3',
+                nextQuest: 3
+            },
+            {
+                id: 'qi_beach_battle',
+                name: '海滩战斗',
+                description: '在海滩地图击败15只妖兽',
+                objectives: [
+                    { type: 'kill', subType: 'normal', target: 15 }
+                ],
+                rewards: { exp: 260, gold: 200, skillPoints: 1 },
+                storyTrigger: 'realm1_Q4',
+                nextQuest: 4
+            },
+            {
+                id: 'qi_secret_realm',
+                name: '秘境挑战',
+                description: '进入炼气境秘境，击败秘境守卫龙王',
+                objectives: [
+                    { type: 'kill_boss', targetBoss: '龙王' }
+                ],
+                rewards: { exp: 300, gold: 250 },
+                storyTrigger: 'realm1_Q5',
+                nextQuest: 5
+            },
+            {
+                id: 'qi_crystal',
+                name: '灵石猎人',
+                description: '收集灵石，修炼炼气功法',
+                objectives: [
+                    { type: 'collect', resource: 'spiritCrystal', target: 15 }
+                ],
+                rewards: { exp: 350, gold: 280 },
+                storyTrigger: 'realm1_Q6',
+                nextQuest: 6
+            },
+            {
+                id: 'qi_compete',
+                name: '同门切磋',
+                description: '与弟子们切磋，击败精英怪物',
+                objectives: [
+                    { type: 'kill', subType: 'elite', target: 5 }
+                ],
+                rewards: { exp: 400, gold: 320, skillPoints: 2 },
+                storyTrigger: 'realm1_Q7',
+                nextQuest: 7
+            },
+            {
+                id: 'qi_advance',
+                name: '深入修炼',
+                description: '深入修炼，达到当前阶段的巅峰',
+                objectives: [
+                    { type: 'reach_level', target: 10 }
+                ],
+                rewards: { exp: 450, gold: 370 },
+                storyTrigger: 'realm1_Q8',
+                nextQuest: 8
+            },
+            {
+                id: 'qi_hunt',
+                name: '战斗提升',
+                description: '在海滩地区战斗提升，击杀30只妖兽',
+                objectives: [
+                    { type: 'kill', subType: 'normal', target: 30 }
+                ],
+                rewards: { exp: 500, gold: 410 },
+                storyTrigger: 'realm1_Q9',
+                nextQuest: 9
+            },
+            {
+                id: 'qi_peak',
+                name: '炼气巅峰',
+                description: '挑战海滩地图的BOSS海怪',
+                objectives: [
+                    { type: 'kill_boss', targetBoss: '海怪' }
+                ],
+                rewards: { exp: 550, gold: 450, skillPoints: 2 },
+                storyTrigger: 'realm1_Q10',
+                isFinalQuest: true
+            }
+        ],
+
+        // === 筑基境 (realm 2) ===
+        2: [
+            {
+                id: 'foundation_establish',
+                name: '开山立派',
+                description: '在门派中建立自己的势力，收集资源',
+                objectives: [
+                    { type: 'collect', resource: 'spiritWood', target: 20 },
+                    { type: 'collect', resource: 'blackIron', target: 15 }
+                ],
+                rewards: { exp: 250, gold: 200 },
+                storyTrigger: 'realm2_Q1',
+                nextQuest: 1
+            },
+            {
+                id: 'foundation_plains',
+                name: '平原探索',
+                description: '前往平原地图，探索新的区域',
+                objectives: [
+                    { type: 'visit_map', targetMap: 'xianxia-plains' }
+                ],
+                rewards: { exp: 300, gold: 240 },
+                storyTrigger: 'realm2_Q2',
+                nextQuest: 2
+            },
+            {
+                id: 'foundation_cultivate',
+                name: '修炼突破',
+                description: '在平原修炼，提升到5级',
+                objectives: [
+                    { type: 'reach_level', target: 5 }
+                ],
+                rewards: { exp: 350, gold: 290 },
+                storyTrigger: 'realm2_Q3',
+                nextQuest: 3
+            },
+            {
+                id: 'foundation_resource',
+                name: '资源争夺',
+                description: '参与门派资源分配，收集灵石',
+                objectives: [
+                    { type: 'collect', resource: 'spiritCrystal', target: 20 }
+                ],
+                rewards: { exp: 400, gold: 340, skillPoints: 1 },
+                storyTrigger: 'realm2_Q4',
+                nextQuest: 4
+            },
+            {
+                id: 'foundation_battle',
+                name: '平原战斗',
+                description: '在平原地图击败20只妖兽',
+                objectives: [
+                    { type: 'kill', subType: 'normal', target: 20 }
+                ],
+                rewards: { exp: 450, gold: 390 },
+                storyTrigger: 'realm2_Q5',
+                nextQuest: 5
+            },
+            {
+                id: 'foundation_challenge',
+                name: '秘境挑战',
+                description: '挑战平原秘境中的精英怪物',
+                objectives: [
+                    { type: 'kill', subType: 'elite', target: 3 }
+                ],
+                rewards: { exp: 500, gold: 430 },
+                storyTrigger: 'realm2_Q6',
+                nextQuest: 6
+            },
+            {
+                id: 'foundation_elite',
+                name: '精英猎手',
+                description: '击杀精英妖兽，证明筑基实力',
+                objectives: [
+                    { type: 'kill', subType: 'elite', target: 8 }
+                ],
+                rewards: { exp: 560, gold: 480, skillPoints: 2 },
+                storyTrigger: 'realm2_Q7',
+                nextQuest: 7
+            },
+            {
+                id: 'foundation_advance',
+                name: '深入修炼',
+                description: '深入修炼，达到当前阶段的巅峰',
+                objectives: [
+                    { type: 'reach_level', target: 10 }
+                ],
+                rewards: { exp: 620, gold: 530 },
+                storyTrigger: 'realm2_Q8',
+                nextQuest: 8
+            },
+            {
+                id: 'foundation_hunt',
+                name: '战斗历练',
+                description: '在平原地区战斗历练，击杀40只妖兽',
+                objectives: [
+                    { type: 'kill', subType: 'normal', target: 40 }
+                ],
+                rewards: { exp: 700, gold: 610 },
+                storyTrigger: 'realm2_Q9',
+                nextQuest: 9
+            },
+            {
+                id: 'foundation_peak',
+                name: '筑基巅峰',
+                description: '挑战平原地图的BOSS草原之王',
+                objectives: [
+                    { type: 'kill_boss', targetBoss: '草原之王' }
+                ],
+                rewards: { exp: 800, gold: 700, skillPoints: 3 },
+                storyTrigger: 'realm2_Q10',
+                isFinalQuest: true
+            }
+        ],
+
+        // === 金丹境 (realm 3) ===
+        3: [
+            {
+                id: 'golden_status',
+                name: '门派地位',
+                description: '在门派中获得更高地位，击杀妖兽立功',
+                objectives: [
+                    { type: 'kill', subType: 'normal', target: 20 }
+                ],
+                rewards: { exp: 400, gold: 300 },
+                storyTrigger: 'realm3_Q1',
+                nextQuest: 1
+            },
+            {
+                id: 'golden_canyon',
+                name: '峡谷探索',
+                description: '前往峡谷地图，探索新的区域',
+                objectives: [
+                    { type: 'visit_map', targetMap: 'xianxia-canyon' }
+                ],
+                rewards: { exp: 470, gold: 360 },
+                storyTrigger: 'realm3_Q2',
+                nextQuest: 2
+            },
+            {
+                id: 'golden_desert',
+                name: '沙漠寻宝',
+                description: '前往沙漠地图，寻找传说中的宝物',
+                objectives: [
+                    { type: 'visit_map', targetMap: 'xianxia-desert' }
+                ],
+                rewards: { exp: 540, gold: 410 },
+                storyTrigger: 'realm3_Q3',
+                nextQuest: 3
+            },
+            {
+                id: 'golden_collect',
+                name: '收集灵石',
+                description: '收集大量灵石，修炼金丹功法',
+                objectives: [
+                    { type: 'collect', resource: 'spiritCrystal', target: 25 }
+                ],
+                rewards: { exp: 600, gold: 460, skillPoints: 2 },
+                storyTrigger: 'realm3_Q4',
+                nextQuest: 4
+            },
+            {
+                id: 'golden_evil',
+                name: '对抗邪修',
+                description: '与邪恶修士战斗，保护正道',
+                objectives: [
+                    { type: 'kill', subType: 'elite', target: 5 }
+                ],
+                rewards: { exp: 660, gold: 510 },
+                storyTrigger: 'realm3_Q5',
+                nextQuest: 5
+            },
+            {
+                id: 'golden_battle',
+                name: '深入战斗',
+                description: '在峡谷和沙漠地区深入战斗',
+                objectives: [
+                    { type: 'kill', subType: 'normal', target: 30 }
+                ],
+                rewards: { exp: 720, gold: 560 },
+                storyTrigger: 'realm3_Q6',
+                nextQuest: 6
+            },
+            {
+                id: 'golden_elite',
+                name: '精英挑战',
+                description: '挑战强大的精英修士',
+                objectives: [
+                    { type: 'kill', subType: 'elite', target: 10 }
+                ],
+                rewards: { exp: 780, gold: 620, skillPoints: 2 },
+                storyTrigger: 'realm3_Q7',
+                nextQuest: 7
+            },
+            {
+                id: 'golden_advance',
+                name: '修炼突破',
+                description: '深入修炼，达到当前阶段的巅峰',
+                objectives: [
+                    { type: 'reach_level', target: 10 }
+                ],
+                rewards: { exp: 850, gold: 700 },
+                storyTrigger: 'realm3_Q8',
+                nextQuest: 8
+            },
+            {
+                id: 'golden_boss',
+                name: '秘境守卫',
+                description: '击败秘境中的守卫BOSS',
+                objectives: [
+                    { type: 'kill', subType: 'boss', target: 2 }
+                ],
+                rewards: { exp: 950, gold: 820 },
+                storyTrigger: 'realm3_Q9',
+                nextQuest: 9
+            },
+            {
+                id: 'golden_peak',
+                name: '金丹巅峰',
+                description: '挑战峡谷或沙漠地图的BOSS峡谷领主',
+                objectives: [
+                    { type: 'kill_boss', targetBoss: '峡谷领主' }
+                ],
+                rewards: { exp: 1050, gold: 950, skillPoints: 3 },
+                storyTrigger: 'realm3_Q10',
+                isFinalQuest: true
+            }
+        ],
+
+        // === 元婴境 (realm 4) ===
+        4: [
+            {
+                id: 'nascent_explore',
+                name: '探索世界',
+                description: '离开门派，探索湖泊和森林',
+                objectives: [
+                    { type: 'visit_map', targetMap: 'xianxia-lake' },
+                    { type: 'visit_map', targetMap: 'xianxia-forest' }
+                ],
+                rewards: { exp: 600, gold: 400 },
+                storyTrigger: 'realm4_Q1',
+                nextQuest: 1
+            },
+            {
+                id: 'nascent_volcano',
+                name: '火山探索',
+                description: '前往火山地图，探索新的区域',
+                objectives: [
+                    { type: 'visit_map', targetMap: 'xianxia-volcano' }
+                ],
+                rewards: { exp: 680, gold: 460 },
+                storyTrigger: 'realm4_Q2',
+                nextQuest: 2
+            },
+            {
+                id: 'nascent_collect',
+                name: '资源储备',
+                description: '收集大量资源，为元婴突破做准备',
+                objectives: [
+                    { type: 'collect', resource: 'spiritCrystal', target: 30 },
+                    { type: 'collect', resource: 'blackIron', target: 25 }
+                ],
+                rewards: { exp: 750, gold: 520 },
+                storyTrigger: 'realm4_Q3',
+                nextQuest: 3
+            },
+            {
+                id: 'nascent_demon',
+                name: '对抗大妖',
+                description: '与强大的妖兽战斗，击败湖龙王',
+                objectives: [
+                    { type: 'kill_boss', targetBoss: '湖龙王' }
+                ],
+                rewards: { exp: 830, gold: 580, skillPoints: 2 },
+                storyTrigger: 'realm4_Q4',
+                nextQuest: 4
+            },
+            {
+                id: 'nascent_battle',
+                name: '战斗提升',
+                description: '在各地图战斗提升实力',
+                objectives: [
+                    { type: 'kill', subType: 'normal', target: 30 }
+                ],
+                rewards: { exp: 900, gold: 650 },
+                storyTrigger: 'realm4_Q5',
+                nextQuest: 5
+            },
+            {
+                id: 'nascent_elite',
+                name: '精英猎手',
+                description: '击杀大量精英怪物，证明元婴实力',
+                objectives: [
+                    { type: 'kill', subType: 'elite', target: 12 }
+                ],
+                rewards: { exp: 970, gold: 720 },
+                storyTrigger: 'realm4_Q6',
+                nextQuest: 6
+            },
+            {
+                id: 'nascent_trial',
+                name: '天道考验',
+                description: '面对突破化神的天道考验',
+                objectives: [
+                    { type: 'kill', subType: 'boss', target: 3 }
+                ],
+                rewards: { exp: 1050, gold: 800, skillPoints: 3 },
+                storyTrigger: 'realm4_Q7',
+                nextQuest: 7
+            },
+            {
+                id: 'nascent_advance',
+                name: '深入修炼',
+                description: '深入修炼，达到当前阶段的巅峰',
+                objectives: [
+                    { type: 'reach_level', target: 10 }
+                ],
+                rewards: { exp: 1120, gold: 880 },
+                storyTrigger: 'realm4_Q8',
+                nextQuest: 8
+            },
+            {
+                id: 'nascent_hunt',
+                name: '战斗历练',
+                description: '在各地区战斗历练，击杀50只妖兽',
+                objectives: [
+                    { type: 'kill', subType: 'normal', target: 50 }
+                ],
+                rewards: { exp: 1200, gold: 1050 },
+                storyTrigger: 'realm4_Q9',
+                nextQuest: 9
+            },
+            {
+                id: 'nascent_peak',
+                name: '元婴巅峰',
+                description: '挑战火山地图的BOSS火山领主',
+                objectives: [
+                    { type: 'kill_boss', targetBoss: '火山领主' }
+                ],
+                rewards: { exp: 1300, gold: 1200, skillPoints: 3 },
+                storyTrigger: 'realm4_Q10',
+                isFinalQuest: true
+            }
+        ],
+
+        // === 化神境 (realm 5) ===
+        5: [
+            {
+                id: 'deity_truth',
+                name: '世界真相',
+                description: '发现永恒寒冬的真相，探索洞穴和仙境',
+                objectives: [
+                    { type: 'visit_map', targetMap: 'xianxia-cave' },
+                    { type: 'visit_map', targetMap: 'xianxia-heaven' }
+                ],
+                rewards: { exp: 800, gold: 500 },
+                storyTrigger: 'realm5_Q1',
+                nextQuest: 1
+            },
+            {
+                id: 'deity_collect',
+                name: '探索收集',
+                description: '收集大量灵石，修炼化神功法',
+                objectives: [
+                    { type: 'collect', resource: 'spiritCrystal', target: 40 }
+                ],
+                rewards: { exp: 880, gold: 570 },
+                storyTrigger: 'realm5_Q2',
+                nextQuest: 2
+            },
+            {
+                id: 'deity_heaven',
+                name: '对抗天道',
+                description: '与控制世界的力量对抗，击败地下蠕虫',
+                objectives: [
+                    { type: 'kill_boss', targetBoss: '地下蠕虫' }
+                ],
+                rewards: { exp: 960, gold: 650 },
+                storyTrigger: 'realm5_Q3',
+                nextQuest: 3
+            },
+            {
+                id: 'deity_challenge',
+                name: '终极挑战',
+                description: '面对最终的敌人，击败精英怪物',
+                objectives: [
+                    { type: 'kill', subType: 'elite', target: 5 }
+                ],
+                rewards: { exp: 1050, gold: 740, skillPoints: 2 },
+                storyTrigger: 'realm5_Q4',
+                nextQuest: 4
+            },
+            {
+                id: 'deity_battle',
+                name: '战斗提升',
+                description: '在各地图战斗提升实力',
+                objectives: [
+                    { type: 'kill', subType: 'normal', target: 40 }
+                ],
+                rewards: { exp: 1120, gold: 820 },
+                storyTrigger: 'realm5_Q5',
+                nextQuest: 5
+            },
+            {
+                id: 'deity_boss',
+                name: '深入战斗',
+                description: '击败多个BOSS，积累战斗经验',
+                objectives: [
+                    { type: 'kill', subType: 'boss', target: 5 }
+                ],
+                rewards: { exp: 1200, gold: 910 },
+                storyTrigger: 'realm5_Q6',
+                nextQuest: 6
+            },
+            {
+                id: 'deity_advance',
+                name: '修炼巅峰',
+                description: '深入修炼，达到当前阶段的巅峰',
+                objectives: [
+                    { type: 'reach_level', target: 10 }
+                ],
+                rewards: { exp: 1280, gold: 1010, skillPoints: 3 },
+                storyTrigger: 'realm5_Q7',
+                nextQuest: 7
+            },
+            {
+                id: 'deity_lock',
+                name: '突破枷锁',
+                description: '打破世界的束缚，击败麒麟',
+                objectives: [
+                    { type: 'kill_boss', targetBoss: '麒麟' }
+                ],
+                rewards: { exp: 1400, gold: 1200 },
+                storyTrigger: 'realm5_Q8',
+                nextQuest: 8
+            },
+            {
+                id: 'deity_elite',
+                name: '精英挑战',
+                description: '击败最强的精英怪物，证明化神实力',
+                objectives: [
+                    { type: 'kill', subType: 'elite', target: 8 }
+                ],
+                rewards: { exp: 1480, gold: 1350 },
+                storyTrigger: 'realm5_Q9',
+                nextQuest: 9
+            },
+            {
+                id: 'deity_ascending',
+                name: '飞升',
+                description: '成功飞升，击败元始天尊，成为真正的仙',
+                objectives: [
+                    { type: 'kill_boss', targetBoss: '元始天尊' }
+                ],
+                rewards: { exp: 1550, gold: 1450, skillPoints: 4 },
+                storyTrigger: 'realm5_Q10',
+                isFinalQuest: true
+            }
+        ]
+    },
+
+    // ========== 主线剧情场景配置 ==========
+    storyScenes: {
+        scenes: {
+            // ===== 武者卷 =====
+            '0_chapter_start': {
+                chapter: 0,
+                title: '第一卷 · 武者之路',
+                pages: [
+                    { text: '在遥远的极北之地，一个被永恒寒冬笼罩的世界里，修仙者们为了突破境界、追求永生而不断奋斗。', speaker: '旁白' },
+                    { text: '你是一个普通山村少年，今天村庄突然传来警报——妖兽来袭！', speaker: '旁白' },
+                    { text: '快！保护村民们！拿起你的武器，击退这些妖兽！', speaker: '村长' }
+                ]
+            },
+            'awaken_complete': {
+                chapter: 0,
+                title: '觉醒',
+                pages: [
+                    { text: '你成功击退了妖兽！但你体内突然涌出一股奇异的力量...', speaker: '旁白' },
+                    { text: '这是...修仙者的灵力！想不到在这偏远山村竟然有修仙资质出众之人。', speaker: '神秘旅者' },
+                    { text: '少年，你可愿随我修仙问道？前方的路虽然艰险，但也许能打破这永恒寒冬的诅咒。', speaker: '神秘旅者' }
+                ]
+            },
+            'seek_master_complete': {
+                chapter: 0,
+                title: '拜师',
+                pages: [
+                    { text: '你来到了山顶的门派，云雾缭绕中，一座古朴的大殿矗立眼前。', speaker: '旁白' },
+                    { text: '入门弟子先从基础功法修炼起，等到武者初期修炼有成，便可下山历练。', speaker: '师尊' }
+                ]
+            },
+            'train_complete': {
+                chapter: 0,
+                title: '初窥门径',
+                pages: [
+                    { text: '经过刻苦修炼，你终于掌握了基础功法的精髓！', speaker: '旁白' },
+                    { text: '不错，根基已稳。是时候下山历练一番了，记住：实战才是最好的老师。', speaker: '师尊' }
+                ]
+            },
+            'first_battle_complete': {
+                chapter: 0,
+                title: '实战归来',
+                pages: [
+                    { text: '战斗归来，你浑身是伤，但眼神愈发坚定。', speaker: '旁白' },
+                    { text: '你已经有了武者的资格。但要真正突破武者巅峰，你需要不断历练，最终击败冰霜巨人！', speaker: '师尊' }
+                ]
+            },
+            'warrior_peak_complete': {
+                chapter: 0,
+                title: '武者巅峰',
+                pages: [
+                    { text: '冰霜巨人倒下了！你感到体内灵力涌动，武者境已达巅峰！', speaker: '旁白' },
+                    { text: '你已经准备好突破到炼气境了。当你准备好时，前往角色面板进行突破。', speaker: '师尊' }
+                ]
+            },
+
+            // ===== 炼气卷 =====
+            '1_chapter_start': {
+                chapter: 1,
+                title: '第二卷 · 炼气有成',
+                pages: [
+                    { text: '一股强大的灵力在你体内爆发，你的修为突破了武者境的桎梏！', speaker: '旁白' },
+                    { text: '恭喜你踏入了炼气境，更广阔的修仙世界正在等待你探索。', speaker: '师尊' }
+                ]
+            },
+            'sect_mission_complete': {
+                chapter: 1,
+                title: '门派贡献',
+                pages: [
+                    { text: '你完成了门派分配的任务，获得了资源和声望。', speaker: '旁白' },
+                    { text: '很好，你已经证明了自己的价值。接下来前往海滩秘境探索，炼气境的路还很长。', speaker: '师尊' }
+                ]
+            },
+            'beach_explore_complete': {
+                chapter: 1,
+                title: '海滩初探',
+                pages: [
+                    { text: '你来到了海滩，海浪拍打着礁石，远处有强大的气息。', speaker: '旁白' }
+                ]
+            },
+            'secret_realm_complete': {
+                chapter: 1,
+                title: '秘境之战',
+                pages: [
+                    { text: '你击败了秘境守卫，获得了珍贵的宝物！', speaker: '旁白' }
+                ]
+            },
+            'compete_complete': {
+                chapter: 1,
+                title: '同门切磋',
+                pages: [
+                    { text: '你与同门弟子切磋武艺，实力大增！', speaker: '旁白' },
+                    { text: '你的进步很快，炼气境的路已经走了一半。继续修炼，突破大圆满就在前方。', speaker: '师尊' }
+                ]
+            },
+            'qi_peak_complete': {
+                chapter: 1,
+                title: '炼气巅峰',
+                pages: [
+                    { text: '你击败了海滩的BOSS，炼气境已达到巅峰！', speaker: '旁白' },
+                    { text: '你已经准备好突破到筑基境了。', speaker: '师尊' }
+                ]
+            },
+
+            // ===== 筑基卷 =====
+            '2_chapter_start': {
+                chapter: 2,
+                title: '第三卷 · 筑基求真',
+                pages: [
+                    { text: '你的修为再次突破，踏入了筑基境！', speaker: '旁白' }
+                ]
+            },
+            'foundation_establish_complete': {
+                chapter: 2,
+                title: '开山立派',
+                pages: [
+                    { text: '你收集了足够的资源，开始在门派中建立自己的势力。', speaker: '旁白' }
+                ]
+            },
+            'foundation_plains_complete': {
+                chapter: 2,
+                title: '平原探索',
+                pages: [
+                    { text: '你来到了广阔的平原，风中带着青草的芬芳。', speaker: '旁白' }
+                ]
+            },
+            'foundation_resource_complete': {
+                chapter: 2,
+                title: '资源充足',
+                pages: [
+                    { text: '你收集了大量的灵石，修为更加稳固！', speaker: '旁白' }
+                ]
+            },
+            'foundation_challenge_complete': {
+                chapter: 2,
+                title: '秘境挑战',
+                pages: [
+                    { text: '你击败了秘境守卫，获得了珍贵的传承！', speaker: '旁白' }
+                ]
+            },
+            'foundation_peak_complete': {
+                chapter: 2,
+                title: '筑基巅峰',
+                pages: [
+                    { text: '你的筑基境已达到巅峰，是时候冲击金丹境了！', speaker: '旁白' }
+                ]
+            },
+
+            // ===== 金丹卷 =====
+            '3_chapter_start': {
+                chapter: 3,
+                title: '第四卷 · 金丹大道',
+                pages: [
+                    { text: '金丹已成，大道可期！你踏入了金丹境！', speaker: '旁白' }
+                ]
+            },
+            'golden_sect_status_complete': {
+                chapter: 3,
+                title: '门派地位',
+                pages: [
+                    { text: '你在门派中的地位越来越高，获得了更多的资源和支持。', speaker: '旁白' }
+                ]
+            },
+            'golden_canyon_complete': {
+                chapter: 3,
+                title: '峡谷探索',
+                pages: [
+                    { text: '你来到了险峻的峡谷，四周是悬崖峭壁。', speaker: '旁白' }
+                ]
+            },
+            'golden_desert_complete': {
+                chapter: 3,
+                title: '沙漠寻宝',
+                pages: [
+                    { text: '你穿越了茫茫沙漠，发现了传说中的遗迹！', speaker: '旁白' }
+                ]
+            },
+            'golden_evil_complete': {
+                chapter: 3,
+                title: '正道守护',
+                pages: [
+                    { text: '你击败了邪恶修士，保护了正道的尊严！', speaker: '旁白' }
+                ]
+            },
+            'golden_peak_complete': {
+                chapter: 3,
+                title: '金丹巅峰',
+                pages: [
+                    { text: '你的金丹境已达到巅峰，元婴境就在眼前！', speaker: '旁白' }
+                ]
+            },
+
+            // ===== 元婴卷 =====
+            '4_chapter_start': {
+                chapter: 4,
+                title: '第五卷 · 元婴无双',
+                pages: [
+                    { text: '元婴出世，神通无量！你踏入了元婴境！', speaker: '旁白' }
+                ]
+            },
+            'nascent_explore_complete': {
+                chapter: 4,
+                title: '探索世界',
+                pages: [
+                    { text: '你离开了门派，开始探索这个广阔的世界。', speaker: '旁白' }
+                ]
+            },
+            'nascent_volcano_complete': {
+                chapter: 4,
+                title: '火山探索',
+                pages: [
+                    { text: '你来到了炽热的火山，岩浆在脚下流淌。', speaker: '旁白' }
+                ]
+            },
+            'nascent_demon_complete': {
+                chapter: 4,
+                title: '斩妖除魔',
+                pages: [
+                    { text: '你击败了强大的妖兽，保护了人类的安宁！', speaker: '旁白' }
+                ]
+            },
+            'nascent_trial_complete': {
+                chapter: 4,
+                title: '天道考验',
+                pages: [
+                    { text: '你通过了天道的考验，距离化神只有一步之遥！', speaker: '旁白' }
+                ]
+            },
+            'nascent_peak_complete': {
+                chapter: 4,
+                title: '元婴巅峰',
+                pages: [
+                    { text: '你的元婴境已达到巅峰，化神境的门槛已经打开！', speaker: '旁白' }
+                ]
+            },
+
+            // ===== 化神卷 =====
+            '5_chapter_start': {
+                chapter: 5,
+                title: '第六卷 · 化神超脱',
+                pages: [
+                    { text: '化神已成，超脱凡俗！你踏入了化神境！', speaker: '旁白' }
+                ]
+            },
+            'deity_truth_complete': {
+                chapter: 5,
+                title: '世界真相',
+                pages: [
+                    { text: '你发现了永恒寒冬的真相——这是一个被古老封印笼罩的世界！', speaker: '旁白' }
+                ]
+            },
+            'deity_heaven_complete': {
+                chapter: 5,
+                title: '对抗天道',
+                pages: [
+                    { text: '你击败了天道的使者，向着自由迈出了重要一步！', speaker: '旁白' }
+                ]
+            },
+            'deity_challenge_complete': {
+                chapter: 5,
+                title: '终极挑战',
+                pages: [
+                    { text: '你击败了最终守护者，只剩下最后一步了！', speaker: '旁白' }
+                ]
+            },
+            'deity_lock_complete': {
+                chapter: 5,
+                title: '突破枷锁',
+                pages: [
+                    { text: '你打破了世界的束缚，天空裂开一道金光！', speaker: '旁白' }
+                ]
+            },
+
+            // ===== 飞升结局 =====
+            'final_ascending': {
+                chapter: 5,
+                title: '飞升',
+                pages: [
+                    { text: '你击败了元始天尊，打破了永恒寒冬的枷锁，天空裂开一道金光...', speaker: '旁白' },
+                    { text: '无尽的修仙之路，终于迎来了终点...或者说，新的起点。', speaker: '旁白' },
+                    { text: '恭喜你飞升成功！感谢你的旅途！', speaker: '旁白' },
+                    { text: '【游戏通关】你已完成了无尽战斗的全部主线内容！', speaker: '系统' }
+                ]
+            },
+
+            // ===== 境界突破剧情 =====
+            'realm_breakthrough_1': {
+                chapter: 1,
+                title: '突破！炼气境',
+                pages: [
+                    { text: '恭喜你突破到炼气境！新的冒险正在等待你。', speaker: '旁白' }
+                ]
+            },
+            'realm_breakthrough_2': {
+                chapter: 2,
+                title: '突破！筑基境',
+                pages: [
+                    { text: '恭喜你突破到筑基境！你的修为更加深厚了。', speaker: '旁白' }
+                ]
+            },
+            'realm_breakthrough_3': {
+                chapter: 3,
+                title: '突破！金丹境',
+                pages: [
+                    { text: '恭喜你突破到金丹境！金丹已成，大道可期！', speaker: '旁白' }
+                ]
+            },
+            'realm_breakthrough_4': {
+                chapter: 4,
+                title: '突破！元婴境',
+                pages: [
+                    { text: '恭喜你突破到元婴境！元婴出世，神通无量！', speaker: '旁白' }
+                ]
+            },
+            'realm_breakthrough_5': {
+                chapter: 5,
+                title: '突破！化神境',
+                pages: [
+                    { text: '恭喜你突破到化神境！你已经是这个世界最强大的存在之一！', speaker: '旁白' }
+                ]
+            },
+
+            // ===== 模板系统：阶段转换里程碑剧情 =====
+            // 初期→中期 (stage 4 第1级触发)
+            'r0_stage_4_start': { chapter: 0, title: '武者·踏入中期', pages: [
+                { text: '经过初期的磨练，你的身体越来越强健。师尊点了点头，"是时候面对更强的对手了。"', speaker: '师尊' },
+                { text: '山峰深处的妖兽更加凶猛，但你已经有了足够的实力。中期修炼，正式开始！', speaker: '旁白' }
+            ]},
+            'r1_stage_4_start': { chapter: 1, title: '炼气·踏入中期', pages: [
+                { text: '炼气前期的修炼已告一段落，你体内的灵力流转更加顺畅。', speaker: '旁白' },
+                { text: '"海滩深处的妖兽越来越强，正好拿来磨砺你的灵力。"师兄递给你一瓶丹药。', speaker: '师兄' }
+            ]},
+            'r2_stage_4_start': { chapter: 2, title: '筑基·踏入中期', pages: [
+                { text: '筑基的基础已经稳固，你可以感受到灵力在经脉中奔涌。', speaker: '旁白' },
+                { text: '弟子来报："师尊，平原深处发现了大量妖兽活动，需要您前去查看！"', speaker: '弟子' }
+            ]},
+            'r3_stage_4_start': { chapter: 3, title: '金丹·踏入中期', pages: [
+                { text: '金丹前期的修炼让你的内丹更加凝实，金光隐隐透体而出。', speaker: '旁白' },
+                { text: '长老捋了捋胡须："金丹中期是修炼的关键节点，峡谷和沙漠中的机缘不可错过。"', speaker: '长老' }
+            ]},
+            'r4_stage_4_start': { chapter: 4, title: '元婴·踏入中期', pages: [
+                { text: '元婴前期的探索让你对这个世界有了更深的了解。', speaker: '旁白' },
+                { text: '故友传讯："你在湖泊和森林的探索引起了某些势力的注意，小心行事。"', speaker: '故友' }
+            ]},
+            'r5_stage_4_start': { chapter: 5, title: '化神·踏入中期', pages: [
+                { text: '化神前期的修炼让你感受到了天道的力量。', speaker: '旁白' },
+                { text: '一个声音在你脑海中回荡："你已经触碰到了世界真相的边缘，继续前进..."', speaker: '天道之音' }
+            ]},
+
+            // 中期→后期 (stage 7 第1级触发)
+            'r0_stage_7_start': { chapter: 0, title: '武者·踏入后期', pages: [
+                { text: '中期的战斗让你脱胎换骨，肌肉中蕴含着惊人的力量。', speaker: '旁白' },
+                { text: '"你的进步超出了我的预期。"师尊露出欣慰的笑容，"武者巅峰就在前方！"', speaker: '师尊' }
+            ]},
+            'r1_stage_7_start': { chapter: 1, title: '炼气·踏入后期', pages: [
+                { text: '灵力在体内运转自如，你已经可以操控灵力进行各种攻击。', speaker: '旁白' },
+                { text: '"后期的修炼需要更多的灵石支持。"师兄为你指点了几个灵石丰富的地点。', speaker: '师兄' }
+            ]},
+            'r2_stage_7_start': { chapter: 2, title: '筑基·踏入后期', pages: [
+                { text: '筑基后期的修炼让你对灵力有了全新的感悟。', speaker: '旁白' },
+                { text: '"师尊，前方有一处秘境，据说藏有筑基突破的机缘！"弟子带来了好消息。', speaker: '弟子' }
+            ]},
+            'r3_stage_7_start': { chapter: 3, title: '金丹·踏入后期', pages: [
+                { text: '金丹后期，你的丹田中金光大盛，修为已臻化境。', speaker: '旁白' },
+                { text: '长老严肃道："金丹后期是结婴的关键，务必小心应对每一次战斗。"', speaker: '长老' }
+            ]},
+            'r4_stage_7_start': { chapter: 4, title: '元婴·踏入后期', pages: [
+                { text: '元婴后期的你，已经可以感应到方圆百里的灵力波动。', speaker: '旁白' },
+                { text: '"火山深处有远古遗迹的消息，你打算亲自去探一探。"故友为你整理了情报。', speaker: '故友' }
+            ]},
+            'r5_stage_7_start': { chapter: 5, title: '化神·踏入后期', pages: [
+                { text: '化神后期的你，已经可以与天道进行初步的沟通。', speaker: '旁白' },
+                { text: '天道之音再次响起："你距离真相越来越近了，但最后的考验也最为凶险。"', speaker: '天道之音' }
+            ]},
+
+            // 后期→巅峰 (stage 10 第1级触发)
+            'r0_stage_10_start': { chapter: 0, title: '武者·巅峰之路', pages: [
+                { text: '后期的磨练让你拥有了远超常人的实力，武者巅峰就在眼前！', speaker: '旁白' },
+                { text: '"武者巅峰是通往更高境界的关键。"师尊目光深邃，"击败冰霜巨人，你的修仙之路才算真正开始。"', speaker: '师尊' }
+            ]},
+            'r1_stage_10_start': { chapter: 1, title: '炼气·大圆满', pages: [
+                { text: '炼气大圆满的境界近在咫尺，你的灵力已经精纯到了极致。', speaker: '旁白' },
+                { text: '"海滩深处有一只远古海怪，击败它，你就能突破到筑基境！"师兄为你打气。', speaker: '师兄' }
+            ]},
+            'r2_stage_10_start': { chapter: 2, title: '筑基·大圆满', pages: [
+                { text: '筑基大圆满，你的灵力根基稳如磐石。', speaker: '旁白' },
+                { text: '"师尊，平原之王出现了！它就在东方！"弟子的声音中带着一丝紧张。', speaker: '弟子' }
+            ]},
+            'r3_stage_10_start': { chapter: 3, title: '金丹·大圆满', pages: [
+                { text: '金丹大圆满，丹田中的金丹散发出璀璨光芒。', speaker: '旁白' },
+                { text: '长老沉声道："峡谷领主是金丹境最终的考验，战胜它，元婴可期。"', speaker: '长老' }
+            ]},
+            'r4_stage_10_start': { chapter: 4, title: '元婴·大圆满', pages: [
+                { text: '元婴大圆满的境界让你拥有了移山填海的力量。', speaker: '旁白' },
+                { text: '故友："火山领主是这个世界最强大的妖兽之一，也是你通往化神的最后考验。"', speaker: '故友' }
+            ]},
+            'r5_stage_10_start': { chapter: 5, title: '化神·大圆满', pages: [
+                { text: '化神大圆满——你已经是这个世界上最接近仙的存在了。', speaker: '旁白' },
+                { text: '天道之音轰然响起："元始天尊是永恒寒冬的守护者，击败他，你就能打破枷锁，飞升成仙！"', speaker: '天道之音' }
+            ]},
+
+            // ===== 模板系统：Boss 战后剧情 =====
+            // 武者境 Boss
+            'r0_boss_冰霜巨人': { chapter: 0, title: '冰霜巨人之战', pages: [
+                { text: '冰霜巨人轰然倒地，冰屑飞溅！你在武者境的实力已经无人能敌。', speaker: '旁白' },
+                { text: '"好！很好！"师尊眼中闪过光芒，"你已经做好了踏入炼气境的准备。"', speaker: '师尊' }
+            ]},
+            // 炼气境 Boss
+            'r1_boss_龙王': { chapter: 1, title: '龙王之战', pages: [
+                { text: '龙王发出最后的咆哮，倒在了你的脚下。海面的波涛渐渐平息。', speaker: '旁白' },
+                { text: '"龙王的内丹是炼气的绝佳材料！"师兄兴奋地捡起战利品。', speaker: '师兄' }
+            ]},
+            'r1_boss_海怪': { chapter: 1, title: '海怪之战', pages: [
+                { text: '海怪巨大的身躯沉入海底，溅起滔天巨浪。炼气境，圆满！', speaker: '旁白' },
+                { text: '"你已经准备好突破到筑基境了。"师兄为你递上突破丹药。', speaker: '师兄' }
+            ]},
+            // 筑基境 Boss
+            'r2_boss_草原之王': { chapter: 2, title: '草原之王之战', pages: [
+                { text: '草原之王倒下了，平原上的妖兽纷纷逃散。筑基境，圆满！', speaker: '旁白' },
+                { text: '"师尊威武！"弟子们欢呼雀跃，你的声望在门派中达到了顶峰。', speaker: '弟子' }
+            ]},
+            // 金丹境 Boss
+            'r3_boss_峡谷领主': { chapter: 3, title: '峡谷领主之战', pages: [
+                { text: '峡谷领主的巨大身躯轰然倒塌，峡谷中回荡着胜利的回声。', speaker: '旁白' },
+                { text: '长老捋须微笑："金丹圆满，元婴可期。你的成就已经超过了我的预期。"', speaker: '长老' }
+            ]},
+            'r3_boss_沙漠之王': { chapter: 3, title: '沙漠之王之战', pages: [
+                { text: '沙漠之王在烈日下化为飞灰，沙漠恢复了往日的宁静。', speaker: '旁白' },
+                { text: '"金丹境的考验你已经全部通过了。"长老为你指引前方的道路。', speaker: '长老' }
+            ]},
+            // 元婴境 Boss
+            'r4_boss_湖龙王': { chapter: 4, title: '湖龙王之战', pages: [
+                { text: '湖龙王的咆哮声渐渐消失在湖面上。湖水晶莹如镜。', speaker: '旁白' },
+                { text: '"元婴的力量果然非同凡响。"故友感叹道，"你已经是这个世界最顶尖的强者之一了。"', speaker: '故友' }
+            ]},
+            'r4_boss_妖狐王': { chapter: 4, title: '妖狐王之战', pages: [
+                { text: '妖狐王的幻术在你面前土崩瓦解，它化作一缕青烟消散。', speaker: '旁白' },
+                { text: '"妖狐王已除，森林恢复了安宁。"故友望着远方，"火山领主还在等着你。"', speaker: '故友' }
+            ]},
+            'r4_boss_火山领主': { chapter: 4, title: '火山领主之战', pages: [
+                { text: '火山领主的火焰在你面前熄灭！岩浆凝固，火山归于沉寂。元婴境，圆满！', speaker: '旁白' },
+                { text: '"化神境的考验才是真正的挑战。"故友的眼中闪过一丝担忧。', speaker: '故友' }
+            ]},
+            // 化神境 Boss
+            'r5_boss_地下蠕虫': { chapter: 5, title: '地下蠕虫之战', pages: [
+                { text: '巨大的蠕虫在洞穴中化为灰烬，洞穴恢复了光明。', speaker: '旁白' },
+                { text: '天道之音："这个世界的守护者不止一个，真正的考验才刚刚开始。"', speaker: '天道之音' }
+            ]},
+            'r5_boss_麒麟': { chapter: 5, title: '麒麟之战', pages: [
+                { text: '远古神兽麒麟发出最后的咆哮，化作金色光点消散。', speaker: '旁白' },
+                { text: '天道之音："你打破了世界的第二层封印...元始天尊正在等待你。"', speaker: '天道之音' }
+            ]},
+            'r5_boss_元始天尊': { chapter: 5, title: '最终之战', pages: [
+                { text: '元始天尊的身影在天空中渐渐消散，永恒寒冬的枷锁出现了裂痕...', speaker: '旁白' },
+                { text: '天空裂开一道金光，温暖的阳光洒落大地。寒冬，终于要结束了。', speaker: '旁白' }
+            ]},
+
+            // ===== 模板系统：境界最终剧情 =====
+            'r0_realm_final': { chapter: 0, title: '武者圆满', pages: [
+                { text: '武者境的修炼已经圆满！你的身体和意志都达到了凡人的巅峰。', speaker: '旁白' },
+                { text: '"从今天起，你正式踏入修仙者的行列。"师尊将一枚令牌递给你。', speaker: '师尊' }
+            ]},
+            'r1_realm_final': { chapter: 1, title: '炼气圆满', pages: [
+                { text: '炼气境的修炼已经圆满！你的灵力已经精纯到了极致。', speaker: '旁白' },
+                { text: '"筑基境的修炼需要更多悟性，但我相信你一定可以。"师兄拍了拍你的肩膀。', speaker: '师兄' }
+            ]},
+            'r2_realm_final': { chapter: 2, title: '筑基圆满', pages: [
+                { text: '筑基圆满！你的灵力根基已经稳如磐石。', speaker: '旁白' },
+                { text: '"师尊，我一定会成为门派的骄傲！"你的弟子眼中满是崇敬。', speaker: '弟子' }
+            ]},
+            'r3_realm_final': { chapter: 3, title: '金丹圆满', pages: [
+                { text: '金丹圆满！丹田中金光万丈，你的修为已经达到了一个全新的高度。', speaker: '旁白' },
+                { text: '长老感慨："老夫当年修炼到金丹境用了三百年，你只用了不到一年...后生可畏！"', speaker: '长老' }
+            ]},
+            'r4_realm_final': { chapter: 4, title: '元婴圆满', pages: [
+                { text: '元婴圆满！你拥有了移山填海的力量，已经站上了这个世界的顶端。', speaker: '旁白' },
+                { text: '故友望着你："化神境...那是传说中的领域。去完成你的使命吧！"', speaker: '故友' }
+            ]},
+            'r5_realm_final': { chapter: 5, title: '化神圆满', pages: [
+                { text: '化神圆满！你已经达到了这个世界修仙者的巅峰。', speaker: '旁白' },
+                { text: '天道之音："永恒寒冬的真相即将揭开...你准备好了吗？"', speaker: '天道之音' }
+            ]},
+
+            // ===== 武者卷新增场景 (Q4-Q9) =====
+            'realm0_Q4': { chapter: 0, title: '实战归来', pages: [{ text: '战斗归来，你的武者修为又精进了不少。', speaker: '旁白' }] },
+            'realm0_Q5': { chapter: 0, title: '精英挑战', pages: [{ text: '精英怪物比普通妖兽强大不少，但你也变得更强了！', speaker: '旁白' }] },
+            'realm0_Q6': { chapter: 0, title: '资源充足', pages: [{ text: '充足的修炼资源是突破的基础，你已经准备好了。', speaker: '旁白' }] },
+            'realm0_Q7': { chapter: 0, title: '进阶修炼', pages: [{ text: '你的修为更进一步，武者境的巅峰就在眼前。', speaker: '旁白' }] },
+            'realm0_Q8': { chapter: 0, title: '战斗历练', pages: [{ text: '在与妖兽的战斗中，你的实力不断提升。', speaker: '旁白' }] },
+            'realm0_Q9': { chapter: 0, title: '精英猎手', pages: [{ text: '你已经可以轻松击败精英怪物了，是时候挑战最终BOSS！', speaker: '师尊' }] },
+
+            // ===== 炼气卷新增场景 (Q3-Q9) =====
+            'realm1_Q3': { chapter: 1, title: '修炼提升', pages: [{ text: '炼气境的修炼比武者境更加精深，你感受到了灵力的流动。', speaker: '旁白' }] },
+            'realm1_Q4': { chapter: 1, title: '海滩战斗', pages: [{ text: '海滩上的妖兽比山峰的更加强大，但你应对自如。', speaker: '旁白' }] },
+            'realm1_Q6': { chapter: 1, title: '灵石猎人', pages: [{ text: '灵石是高级修仙的必备资源，你已经学会了如何高效收集。', speaker: '旁白' }] },
+            'realm1_Q8': { chapter: 1, title: '深入修炼', pages: [{ text: '你的灵力越来越精纯，炼气境的巅峰即将到来。', speaker: '旁白' }] },
+            'realm1_Q9': { chapter: 1, title: '战斗提升', pages: [{ text: '你已经准备好挑战海滩的最终BOSS了。', speaker: '师尊' }] },
+
+            // ===== 筑基卷场景 (Q1-Q9) =====
+            '2_chapter_start': { chapter: 2, title: '第三卷 · 筑基求真', pages: [{ text: '你的修为再次突破，踏入了筑基境！', speaker: '旁白' }] },
+            'realm2_Q1': { chapter: 2, title: '开山立派', pages: [{ text: '你收集了足够的资源，开始在门派中建立自己的势力。', speaker: '旁白' }] },
+            'realm2_Q2': { chapter: 2, title: '平原探索', pages: [{ text: '你来到了广阔的平原，风中带着青草的芬芳。', speaker: '旁白' }] },
+            'realm2_Q3': { chapter: 2, title: '修炼突破', pages: [{ text: '筑基境的修炼更加深入，你感受到了灵力的质变。', speaker: '旁白' }] },
+            'realm2_Q7': { chapter: 2, title: '精英猎手', pages: [{ text: '平原上的精英怪物已经被你一一击败。', speaker: '旁白' }] },
+            'realm2_Q8': { chapter: 2, title: '深入修炼', pages: [{ text: '你距离筑基境的巅峰只差一步了。', speaker: '旁白' }] },
+            'realm2_Q9': { chapter: 2, title: '战斗历练', pages: [{ text: '你已经准备好挑战平原的最终BOSS了。', speaker: '师尊' }] },
+
+            // ===== 金丹卷场景 (Q1-Q9) =====
+            '3_chapter_start': { chapter: 3, title: '第四卷 · 金丹大道', pages: [{ text: '金丹已成，大道可期！你踏入了金丹境！', speaker: '旁白' }] },
+            'realm3_Q1': { chapter: 3, title: '门派地位', pages: [{ text: '你在门派中的地位越来越高，获得了更多的资源和支持。', speaker: '旁白' }] },
+            'realm3_Q2': { chapter: 3, title: '峡谷探索', pages: [{ text: '你来到了险峻的峡谷，四周是悬崖峭壁。', speaker: '旁白' }] },
+            'realm3_Q3': { chapter: 3, title: '沙漠寻宝', pages: [{ text: '你穿越了茫茫沙漠，发现了传说中的遗迹！', speaker: '旁白' }] },
+            'realm3_Q7': { chapter: 3, title: '精英挑战', pages: [{ text: '金丹境的精英怪物实力强大，但你也不弱。', speaker: '旁白' }] },
+            'realm3_Q8': { chapter: 3, title: '修炼突破', pages: [{ text: '金丹的修炼接近圆满，元婴境的大门即将打开。', speaker: '旁白' }] },
+            'realm3_Q9': { chapter: 3, title: '秘境守卫', pages: [{ text: '击败了两位秘境守卫，你已准备好最终挑战。', speaker: '旁白' }] },
+
+            // ===== 元婴卷场景 (Q1-Q9) =====
+            '4_chapter_start': { chapter: 4, title: '第五卷 · 元婴无双', pages: [{ text: '元婴出世，神通无量！你踏入了元婴境！', speaker: '旁白' }] },
+            'realm4_Q1': { chapter: 4, title: '探索世界', pages: [{ text: '你离开了门派，开始探索这个广阔的世界。', speaker: '旁白' }] },
+            'realm4_Q2': { chapter: 4, title: '火山探索', pages: [{ text: '你来到了炽热的火山，岩浆在脚下流淌。', speaker: '旁白' }] },
+            'realm4_Q5': { chapter: 4, title: '战斗提升', pages: [{ text: '元婴境的战斗让你实力大增。', speaker: '旁白' }] },
+            'realm4_Q6': { chapter: 4, title: '精英猎手', pages: [{ text: '你已经可以轻松应对各种精英挑战。', speaker: '旁白' }] },
+            'realm4_Q8': { chapter: 4, title: '深入修炼', pages: [{ text: '元婴境的巅峰就在眼前，化神境的门槛已经打开。', speaker: '旁白' }] },
+            'realm4_Q9': { chapter: 4, title: '战斗历练', pages: [{ text: '一切准备就绪，最终之战即将到来。', speaker: '旁白' }] },
+
+            // ===== 化神卷新增场景 (Q2-Q9) =====
+            'realm5_Q2': { chapter: 5, title: '探索收集', pages: [{ text: '在化神境的修炼中，每一份资源都至关重要。', speaker: '旁白' }] },
+            'realm5_Q5': { chapter: 5, title: '战斗提升', pages: [{ text: '化神境的战斗已经接近神级。', speaker: '旁白' }] },
+            'realm5_Q8': { chapter: 5, title: '修炼巅峰', pages: [{ text: '你已达到化神境的修炼巅峰。', speaker: '旁白' }] },
+            'realm5_Q9': { chapter: 5, title: '突破枷锁', pages: [{ text: '你击败了麒麟，打破了世界的一层封印！', speaker: '旁白' }] }
+        }
+    }
 };
 
 export default gameMetadata;
