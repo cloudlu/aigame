@@ -14,42 +14,42 @@ const gameMetadata = {
     equipmentTemplates: [
         {
             type: "weapon",
-            baseStats: { attack: 5, speed: 1, luck: 0.5, criticalRate: 0.05 },
+            baseStats: { attack: 5, speed: 2, luck: 2, criticalRate: 0.05 },
             nameSuffixes: ["剑", "长刀", "战斧", "长矛", "匕首", "大剑", "重剑", "弯刀", "戟", "枪", "棍", "扇", "箫", "琴"]
         },
         {
             type: "armor",
-            baseStats: { defense: 3, hp: 5, speed: 0.5, dodgeRate: 0.05 },
+            baseStats: { defense: 3, hp: 8, speed: 1, dodgeRate: 0.05 },
             nameSuffixes: ["护甲", "胸甲", "宝甲", "道袍", "法衣", "仙袍", "神甲", "圣甲", "天甲", "玄甲", "灵铠", "龙鳞甲", "凤羽甲", "金蚕甲"]
         },
         {
             type: "helmet",
-            baseStats: { defense: 2, hp: 10, luck: 1, accuracy: 0.1 },
+            baseStats: { defense: 2, hp: 10, luck: 2, accuracy: 0.1 },
             nameSuffixes: ["头盔", "头冠", "道冠", "宝冠", "凤冠", "龙冠", "仙冠", "神冠", "圣冠", "天冠", "法冠", "灵冠", "玄冠", "紫金冠"]
         },
         {
             type: "boots",
-            baseStats: { defense: 1, luck: 1, speed: 2, moveSpeed: 0.1 },
+            baseStats: { defense: 1, luck: 1, speed: 3, moveSpeed: 0.1 },
             nameSuffixes: ["飞履", "云履", "踏风靴", "凌空履", "无痕靴", "追月履", "逐星履", "神行靴", "缩地靴", "御风履", "天行履", "幻影靴", "踏云靴", "凌波履"]
         },
         {
             type: "pants",
-            baseStats: { defense: 2, hp: 8, speed: 1, tenacity: 0.05 },
+            baseStats: { defense: 2, hp: 8, speed: 2, tenacity: 0.05 },
             nameSuffixes: ["护裙", "仙裳", "云裳", "道裙", "灵裙", "战裙", "法裙", "宝裙", "玄裳", "圣裳", "天裳", "龙鳞裙", "凤羽裳", "金蚕裙"]
         },
         {
             type: "amulet",
-            baseStats: { luck: 2, hp: 5, speed: 1, energyRegen: 0.5 },
+            baseStats: { luck: 3, hp: 8, speed: 2, energyRegen: 0.05 },
             nameSuffixes: ["灵符", "护身符", "玉佩", "玉璧", "命牌", "灵牌", "护心镜", "平安扣", "祈福牌", "辟邪坠", "养魂玉", "定心珠", "天师符", "镇魂牌"]
         },
         {
             type: "spiritTreasure",
-            baseStats: { luck: 3, hp: 5, energyRegen: 1.2, speed: 1.5 },
+            baseStats: { luck: 3, hp: 8, energyRegen: 0.08, speed: 2 },
             nameSuffixes: ["灵珠", "仙玉", "宝印", "圣令", "天鼎", "玄鉴", "灵镜", "仙葫", "道钟", "法钵", "宝莲", "圣塔", "神鼎", "天灯"]
         },
         {
             type: "magicArtifact",
-            baseStats: { attack: 4, defense: 2, hp: 5, criticalRate: 0.08 },
+            baseStats: { attack: 4, defense: 2, hp: 8, criticalRate: 0.08 },
             nameSuffixes: ["法杖", "灵扇", "仙铃", "圣幡", "天钟", "玄塔", "灵灯", "仙炉", "法印", "道符", "宝幡", "圣剑", "神鼎", "天书"]
         }
     ],
@@ -60,7 +60,7 @@ const gameMetadata = {
         helmet:         { name: '头盔', icon: 'fa-hat-wizard',   image: 'Images/helmet.jpg',             fallbackIcon: 'fa-hat-wizard',   order: 2 },
         armor:          { name: '护甲', icon: 'fa-shield',       image: 'Images/armor-chestplate.jpg',   fallbackIcon: 'fa-shield',       order: 3 },
         spiritTreasure: { name: '灵宝', icon: 'fa-gem',          image: 'Images/spirit-treasure.jpg',    fallbackIcon: 'fa-gem',          order: 4 },
-        pants:          { name: '下装', icon: 'fa-user',         image: 'Images/pants.jpg',              fallbackIcon: 'fa-user',         order: 5 },
+        pants:          { name: '下裳', icon: 'fa-user',         image: 'Images/pants.jpg',              fallbackIcon: 'fa-user',         order: 5 },
         boots:          { name: '靴子', icon: 'fa-shoe-prints',  image: 'Images/boots.jpg',              fallbackIcon: 'fa-shoe-prints',  order: 6 },
         magicArtifact:  { name: '法器', icon: 'fa-wand-sparkles',image: 'Images/magic-artifact.jpg',     fallbackIcon: 'fa-wand-sparkles',order: 7 },
         amulet:         { name: '护符', icon: 'fa-scroll',       image: 'Images/amulet.jpg',             fallbackIcon: 'fa-scroll',       order: 8 }

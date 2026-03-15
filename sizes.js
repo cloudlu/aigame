@@ -97,7 +97,7 @@ const SIZES = {
     // ========== 飞行敌人高度 ==========
     BIRD_MIN_HEIGHT: 8,       // 最低飞行高度（相对地面）
     BIRD_MAX_HEIGHT: 25,      // 最高飞行高度（相对地面）
-    FLY_COLLISION_THRESHOLD: 5, // 飞行碰撞垂直检测阈值
+    FLY_COLLISION_THRESHOLD: 28, // 飞行碰撞垂直检测阈值
 
     // ========== 水生类（鱼、蟹、虾、龟、蛟、鲛人）==========
     AQUA_BODY_WIDTH: 0.6,
@@ -176,8 +176,8 @@ const SIZES = {
     DOUBLE_CLICK_THRESHOLD: 300,  // 双击检测阈值（毫秒）
 
     // ========== 碰撞检测 ==========
-    COLLISION_THRESHOLD: 0.5,     // 敌人碰撞触发距离
-    DETECTION_RANGE: 2.0,         // 敌人信息显示范围
+    COLLISION_THRESHOLD: 1.0,     // 敌人碰撞触发距离
+    DETECTION_RANGE: 5.0,         // 敌人信息显示范围
 
     // ========== 边界障碍物 ==========
     // BOUNDARY_RADIUS 在文件末尾从 SKY_SIZE 派生

@@ -194,21 +194,33 @@ class EquipmentSystem {
         
         // 提升精炼等级
         item.refineLevel = nextLevel;
-        
+
+        // 记录精炼前战力
+        const oldPower = this.game.calculatePlayerCombatPower();
+
         // 重新计算装备效果
         this.calculateEquipmentEffects();
-        
+
         // 更新UI
         this.game.updateUI();
-        
+
+        // 更新人物属性面板
+        if (typeof this.game.updateCharacterModal === 'function') {
+            this.game.updateCharacterModal();
+        }
+
         // 更新血条显示
         if (typeof this.game.updateHealthBars === 'function') {
             this.game.updateHealthBars();
         }
-        
+
         // 添加日志
         this.game.addBattleLog(`${this.getSlotDisplayName(slot)}精炼成功！当前精炼等级：+${item.refineLevel}`);
         this.game.addBattleLog(`消耗了 ${cost.spiritWood} 灵木，${cost.blackIron} 玄铁，${cost.spiritCrystal} 灵石`);
+
+        // 显示战力变化
+        const newPower = this.game.calculatePlayerCombatPower();
+        this.game.showCombatPowerChange(newPower - oldPower);
     }
     
     // 精炼武器（保留向后兼容）
@@ -225,7 +237,7 @@ class EquipmentSystem {
         }
 
         // 检查背包是否有空位
-        if (this.game.gameState.inventory.length >= 50) {
+        if (this.game.gameState.player.inventory.length >= 50) {
             this.game.addBattleLog('背包已满，无法脱下装备！');
             return false;
         }
@@ -234,7 +246,10 @@ class EquipmentSystem {
         const itemName = item.name;
 
         // 将装备从装备槽移到背包
-        this.game.gameState.inventory.push(item);
+        if (!Array.isArray(this.game.gameState.player.inventory)) {
+            this.game.gameState.player.inventory = [];
+        }
+        this.game.gameState.player.inventory.push(item);
         this.game.gameState.player.equipment[slot] = null;
 
         // 更新UI
@@ -246,12 +261,14 @@ class EquipmentSystem {
         // 更新精炼信息
         this.updateRefineInfoModal(slot);
 
-        // 更新玩家属性
-        this.game.updatePlayerStats();
-
         // 更新血条显示
         if (typeof this.game.updateHealthBars === 'function') {
             this.game.updateHealthBars();
+        }
+
+        // 更新人物面板属性
+        if (typeof this.game.updateCharacterModal === 'function') {
+            this.game.updateCharacterModal();
         }
 
         // 添加日志
@@ -439,6 +456,7 @@ class EquipmentSystem {
         if (item) {
             // 显示装备并设置图片
             element.style.opacity = '1';
+            element.style.display = ''; // 重置display，防止之前onerror导致的display:none
             element.src = imageUrl || '';
             element.onerror = function() { this.style.display = 'none'; };
 
@@ -447,6 +465,12 @@ class EquipmentSystem {
             if (container) {
                 const rarity = item.rarityDisplayName || item.rarity;
                 container.style.borderColor = this.getEquipmentColor(rarity, 'color');
+
+                // 隐藏占位图标（图标是container的第二个子元素）
+                const placeholderIcon = container.querySelector('i.fa');
+                if (placeholderIcon) {
+                    placeholderIcon.style.display = 'none';
+                }
             }
         } else {
             // 隐藏装备
@@ -455,6 +479,12 @@ class EquipmentSystem {
             const container = element.parentElement;
             if (container) {
                 container.style.borderColor = 'rgba(74, 158, 255, 0.3)';
+
+                // 显示占位图标
+                const placeholderIcon = container.querySelector('i.fa');
+                if (placeholderIcon) {
+                    placeholderIcon.style.display = '';
+                }
             }
         }
     }
@@ -696,15 +726,21 @@ class EquipmentSystem {
         for (const stat of statOrder) {
             if (!item.stats[stat]) continue;
 
-            const totalValue = item.stats[stat];
+            // item.stats 存储的是基础属性（精炼不会修改它）
+            const baseValue = item.stats[stat];
             const refineLevel = item.refineLevel || 0;
 
-            // 计算基础值（去掉精炼加成）
-            // 精炼加成 = 基础值 * 10% * 精炼等级
-            // 总值 = 基础值 * (1 + 0.1 * 精炼等级)
-            // 基础值 = 总值 / (1 + 0.1 * 精炼等级)
-            const baseValue = totalValue / (1 + 0.1 * refineLevel);
-            const bonusValue = totalValue - baseValue;
+            // 精炼加成：百分比属性用百分比加成，整数属性用百分比+保底
+            let bonusValue = 0;
+            if (refineLevel > 0) {
+                if (percentageStats.includes(stat)) {
+                    // 百分比属性：纯百分比加成，不做保底
+                    bonusValue = baseValue * refineLevel * 0.1;
+                } else {
+                    // 整数属性：保底每级+1
+                    bonusValue = Math.max(refineLevel, Math.floor(baseValue * refineLevel * 0.1));
+                }
+            }
 
             const statName = statNames[stat] || stat;
             const baseStr = formatValue(stat, baseValue);
@@ -883,7 +919,9 @@ class EquipmentSystem {
 
         for (const statName of selectedStats) {
             const baseValue = template.baseStats[statName];
-            const calculatedValue = baseValue * item.level * rarityMultiplier;
+            // 添加随机浮动（80%~120%），使每次刷新结果不同
+            const variance = 0.8 + Math.random() * 0.4;
+            const calculatedValue = baseValue * item.level * rarityMultiplier * variance;
 
             if (percentageStats.includes(statName)) {
                 newStats[statName] = Math.round(calculatedValue * 100) / 100;
@@ -1125,6 +1163,7 @@ class EquipmentSystem {
         }
 
         // 应用新属性（资源已在预览时扣除）
+        const oldPower = this.game.calculatePlayerCombatPower();
         item.stats = newStats;
         item.name = newName;
         item.id = `${item.type}_${item.level}_${item.rarity}_${Math.floor(Math.random() * 100000)}`;
@@ -1134,12 +1173,12 @@ class EquipmentSystem {
 
         // 更新UI
         this.game.updateUI();
+        if (typeof this.game.updateCharacterModal === 'function') {
+            this.game.updateCharacterModal();
+        }
         if (typeof this.game.updateHealthBars === 'function') {
             this.game.updateHealthBars();
         }
-
-        // 更新刷新信息显示
-        this.updateRefreshInfo(slot);
 
         // 添加日志
         const oldStatsDesc = this.getStatsDescription(oldStats);
@@ -1147,6 +1186,10 @@ class EquipmentSystem {
         this.game.addBattleLog(`${this.getSlotDisplayName(slot)}属性刷新成功！`);
         this.game.addBattleLog(`原属性: ${oldStatsDesc}`);
         this.game.addBattleLog(`新属性: ${newStatsDesc}`);
+
+        // 显示战力变化
+        const newPower = this.game.calculatePlayerCombatPower();
+        this.game.showCombatPowerChange(newPower - oldPower);
 
         // 关闭模态框
         this.closeRefreshConfirmModal();
@@ -1167,39 +1210,6 @@ class EquipmentSystem {
         const modal = document.getElementById('refresh-confirm-modal');
         if (modal) {
             modal.remove();
-        }
-    }
-
-    // 更新刷新信息UI
-    updateRefreshInfo(selectedSlot = 'weapon') {
-        const item = this.game.gameState.player.equipment[selectedSlot];
-        const refreshInfo = document.getElementById('refresh-info');
-
-        if (item) {
-            // 显示刷新信息
-            refreshInfo.classList.remove('hidden');
-
-            // 更新装备名称
-            const refreshEquipmentNameElement = document.getElementById('refresh-equipment-name');
-            refreshEquipmentNameElement.textContent = item.name;
-            // 设置装备颜色
-            const colorClass = this.getEquipmentColorClass(item);
-            refreshEquipmentNameElement.className = `text-sm font-medium ${colorClass}`;
-
-            // 更新精炼等级
-            document.getElementById('refresh-equipment-level').textContent = `+${item.refineLevel || 0}`;
-
-            // 计算刷新所需材料
-            const cost = this.calculateRefreshCost(item);
-            document.getElementById('refresh-requirements').textContent =
-                `灵木: ${cost.spiritWood}, 玄铁: ${cost.blackIron}, 灵石: ${cost.spiritCrystal}`;
-
-            // 显示当前属性
-            const currentStatsDesc = this.getStatsDescription(item.stats);
-            document.getElementById('refresh-current-stats').textContent = currentStatsDesc;
-        } else {
-            // 隐藏刷新信息
-            refreshInfo.classList.add('hidden');
         }
     }
 
@@ -1225,16 +1235,23 @@ class EquipmentSystem {
             const item = this.game.gameState.player.equipment[slot];
             if (item && item.stats) {
                 // 计算基础属性
+                const percentageStats = ['criticalRate', 'dodgeRate', 'tenacity', 'accuracy', 'moveSpeed', 'energyRegen'];
                 for (const stat in item.stats) {
-                    // 即使是新属性，也要添加到装备效果中
+                    const refineLevel = item.refineLevel || 0;
+                    let bonus = 0;
+                    if (refineLevel > 0) {
+                        if (percentageStats.includes(stat)) {
+                            // 百分比属性：纯百分比加成
+                            bonus = item.stats[stat] * refineLevel * 0.1;
+                        } else {
+                            // 整数属性：保底每级+1
+                            bonus = Math.max(refineLevel, Math.floor(item.stats[stat] * refineLevel * 0.1));
+                        }
+                    }
                     if (this.game.gameState.player.equipmentEffects[stat] !== undefined) {
-                        // 应用精炼加成（每级精炼增加10%属性）
-                        const refineBonus = item.refineLevel ? (item.refineLevel * 0.1) : 0;
-                        this.game.gameState.player.equipmentEffects[stat] += Math.floor(item.stats[stat] * (1 + refineBonus));
+                        this.game.gameState.player.equipmentEffects[stat] += item.stats[stat] + bonus;
                     } else {
-                        // 如果是新属性，添加到装备效果对象中
-                        const refineBonus = item.refineLevel ? (item.refineLevel * 0.1) : 0;
-                        this.game.gameState.player.equipmentEffects[stat] = Math.floor(item.stats[stat] * (1 + refineBonus));
+                        this.game.gameState.player.equipmentEffects[stat] = item.stats[stat] + bonus;
                     }
                 }
             }
@@ -1318,11 +1335,11 @@ class EquipmentSystem {
                 const bestItem = suitableItems[0];
                 const currentItem = this.game.gameState.player.equipment[slot];
 
-                // 只有当新装备比当前装备好时才装备
-                if (!currentItem ||
-                    (bestItem.level || 0) > (currentItem.level || 0) ||
-                    (bestItem.level === currentItem.level &&
-                     rarityOrder.indexOf(bestItem.rarity) > rarityOrder.indexOf(currentItem.rarity))) {
+                // 用战力比较：新装备战力 > 当前装备战力 才替换
+                const newItemPower = this.game.calculateEquipmentCombatPower(bestItem);
+                const currentItemPower = currentItem ? this.game.calculateEquipmentCombatPower(currentItem) : 0;
+
+                if (!currentItem || newItemPower > currentItemPower) {
 
                     // 卸下当前装备（如果有）
                     if (currentItem) {
@@ -1346,8 +1363,14 @@ class EquipmentSystem {
         // 重新计算装备效果
         this.calculateEquipmentEffects();
 
-        // 更新UI
+        // 更新UI（会再次调用calculateEquipmentEffects）
         this.game.updateUI();
+
+        // 更新人物面板属性（内部会调用updateCharacterEquipmentDisplayModal）
+        this.updateCharacterEquipmentDisplay();
+        if (typeof this.game.updateCharacterModal === 'function') {
+            this.game.updateCharacterModal();
+        }
 
         // 添加日志
         if (equippedCount > 0) {
@@ -1404,7 +1427,7 @@ class EquipmentSystem {
             if (percentageStats.includes(statName)) {
                 stats[statName] = Math.round(calculatedValue * 100) / 100;
             } else {
-                stats[statName] = Math.floor(calculatedValue);
+                stats[statName] = Math.max(1, Math.floor(calculatedValue));
             }
         }
 

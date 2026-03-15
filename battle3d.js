@@ -6,7 +6,7 @@
 // 创建单独的3D战斗场景
 EndlessWinterGame.prototype.createBattleScene = function(enemyInfo) {
     // 播放战斗音乐
-    this.playSound('battle-music');
+    this.audioSystem.playSound('battle-music');
 
     // 隐藏敌人信息面板（进入战斗场景时）
     const enemyInfoPanel = document.getElementById('enemy-info-panel');
@@ -133,40 +133,42 @@ EndlessWinterGame.prototype.createBattleScene = function(enemyInfo) {
                 playerTooltip.style.left = `${pointerInfo.event.clientX + 10}px`;
                 playerTooltip.style.top = `${pointerInfo.event.clientY + 10}px`;
                 
-                // 计算临时命中和闪避率
+                // 计算装备效果和境界加成
+                this.equipmentSystem.calculateEquipmentEffects();
+                const ee = this.gameState.player.equipmentEffects || {};
+                const rb = this.metadata.realmConfig ? this.calculateRealmBonus() : { attack: 0, defense: 0, hp: 0, luck: 0, speed: 0 };
+                const p = this.gameState.player;
+                const totalSpeed = (p.speed || 0) + (ee.speed || 0) + (rb.speed || 0);
+                const totalLuck = p.luck + (ee.luck || 0) + rb.luck;
+
+                // 计算临时命中和闪避率（含装备效果）
                 const calculateHitChance = () => {
-                    const baseHit = 90; // 基础命中率 90%
-                    const playerSpeed = this.gameState.player.speed || 0;
-                    const luck = this.gameState.player.luck || 0;
-                    // 每10点速度增加1%命中，每10点幸运增加1%命中
-                    const hitBonus = Math.floor(playerSpeed / 10) + Math.floor(luck / 10);
+                    const baseHit = 90;
+                    const hitBonus = Math.floor(totalSpeed / 10) + Math.floor(totalLuck / 10);
                     const finalHit = Math.min(99, baseHit + hitBonus);
                     return finalHit;
                 };
-                
+
                 const calculateDodgeChance = () => {
-                    const baseDodge = 10; // 基础闪避率 10%
-                    const playerSpeed = this.gameState.player.speed || 0;
-                    const luck = this.gameState.player.luck || 0;
-                    // 每8点速度增加1%闪避，每15点幸运增加1%闪避
-                    const dodgeBonus = Math.floor(playerSpeed / 8) + Math.floor(luck / 15);
+                    const baseDodge = 10;
+                    const dodgeBonus = Math.floor(totalSpeed / 8) + Math.floor(totalLuck / 15);
                     const finalDodge = Math.min(50, baseDodge + dodgeBonus);
                     return finalDodge;
                 };
-                
+
                 const hitChance = calculateHitChance();
                 const dodgeChance = calculateDodgeChance();
-                
-                // 构建工具提示内容
+
+                // 构建工具提示内容（含装备效果和境界加成）
                 playerTooltip.innerHTML = `
                     <div class="font-bold">${this.gameState.user?.username || '玩家'}</div>
                     <div>等级: ${this.calculateTotalLevel()}</div>
-                    <div>生命值: ${this.gameState.player.hp}/${this.gameState.player.maxHp}</div>
-                    <div>灵力: ${this.gameState.player.energy}/${this.gameState.player.maxEnergy}</div>
-                    <div>攻击: ${this.gameState.player.attack}</div>
-                    <div>防御: ${this.gameState.player.defense}</div>
-                    <div>速度: ${this.gameState.player.speed || 0}</div>
-                    <div>幸运: ${this.gameState.player.luck || 0}</div>
+                    <div>生命值: ${p.hp}/${p.maxHp + ee.hp + rb.hp}</div>
+                    <div>灵力: ${p.energy}/${p.maxEnergy}</div>
+                    <div>攻击: ${p.attack + ee.attack + rb.attack}</div>
+                    <div>防御: ${p.defense + ee.defense + rb.defense}</div>
+                    <div>速度: ${(p.speed || 0) + (ee.speed || 0) + (rb.speed || 0)}</div>
+                    <div>幸运: ${p.luck + (ee.luck || 0) + rb.luck}</div>
                     <div>命中率: ${hitChance}%</div>
                     <div>闪避率: ${dodgeChance}%</div>
                 `;
@@ -289,6 +291,7 @@ EndlessWinterGame.prototype.createBattleScene = function(enemyInfo) {
         this.battle3D.player.position.x = -2;
         this.battle3D.player.position.y = 0;
         this.battle3D.player.position.z = 0;
+        this.battle3D.player.rotation.y = Math.PI / 2; // 面向右侧敌人（+X方向）
     }
     this.createEnemyModel();
 
@@ -438,132 +441,113 @@ EndlessWinterGame.prototype.fadeInBattleScene = function() {
 // ==================== 战斗动画 ====================
 
 // 播放玩家普通攻击动画
-EndlessWinterGame.prototype.playAttackAnimation = function(callback) {
-    if (!this.battle3D || !this.battle3D.player || !this.battle3D.enemy || this.battle3D.isAttacking) {
-        if (callback) callback();
-        return;
-    }
+// hitCallback: 碰撞到敌人时调用（~45%进度），用于显示伤害数字
+// endCallback: 动画结束时调用（100%进度），用于触发反击等后续逻辑
+EndlessWinterGame.prototype.playAttackAnimation = function(hitCallback, endCallback) {
+    if (!this.battle3D || !this.battle3D.player || !this.battle3D.enemy) return;
+    // 动画进行中时忽略新操作（不执行任何回调，防止位置偏移）
+    if (this.battle3D.isAttacking) return;
 
     this.battle3D.isAttacking = true;
     const player = this.battle3D.player;
-    const enemy = this.battle3D.enemy;
-
-    // 攻击动画（向右侧敌人冲刺）
+    const originalX = player.position.x;
     const startTime = Date.now();
     const animationDuration = 500;
-    const originalX = player.position.x;
+    let hitFired = false;
 
     const animateAttack = () => {
         const elapsed = Date.now() - startTime;
         const progress = Math.min(elapsed / animationDuration, 1);
 
-        // 向右侧冲刺然后后退，只移动一次
         if (progress < 0.5) {
-            // 向右侧冲刺（0到1的过程），增加移动距离以碰到敌人
             player.position.x = originalX + Math.sin(progress * Math.PI) * 3.5;
         } else {
-            // 后退（1到0的过程）
             player.position.x = originalX + Math.sin((1 - progress) * Math.PI) * 3.5;
+        }
+
+        // 碰撞点触发（~45%进度，玩家到达敌人位置时）
+        if (!hitFired && progress >= 0.45) {
+            hitFired = true;
+            if (hitCallback) hitCallback();
         }
 
         if (progress < 1) {
             requestAnimationFrame(animateAttack);
         } else {
-            // 重置位置
             player.position.x = originalX;
             this.battle3D.isAttacking = false;
-            if (callback) callback();
+            if (endCallback) endCallback();
         }
     };
 
     animateAttack();
-
-    // 播放攻击声音
-    this.playSound('attack-sound', 1, 200);
+    this.audioSystem.playSound('attack-sound', 1, 200);
 };
 
 // 播放玩家技能攻击动画
-EndlessWinterGame.prototype.playSkillAttackAnimation = function(isLuckyStrike = false, skillColor = { r: 0, g: 0.5, b: 1 }, callback) {
-    if (!this.battle3D || !this.battle3D.player || !this.battle3D.enemy || this.battle3D.isAttacking) {
-        if (callback) callback();
-        return;
-    }
+// hitCallback: 碰撞到敌人时调用（~45%进度）
+// endCallback: 动画结束时调用（100%进度）
+EndlessWinterGame.prototype.playSkillAttackAnimation = function(isLuckyStrike = false, skillColor = { r: 0, g: 0.5, b: 1 }, hitCallback, endCallback) {
+    if (!this.battle3D || !this.battle3D.player || !this.battle3D.enemy) return;
+    if (this.battle3D.isAttacking) return;
 
     this.battle3D.isAttacking = true;
     const player = this.battle3D.player;
-    const enemy = this.battle3D.enemy;
-
-    // 技能动画（旋转攻击）
+    const originalX = player.position.x;
     const startTime = Date.now();
     const animationDuration = 800;
-    const originalX = player.position.x;
+    let hitFired = false;
 
     const animateSkill = () => {
         const elapsed = Date.now() - startTime;
         const progress = Math.min(elapsed / animationDuration, 1);
 
-        // 旋转
-        player.rotation.y = progress * Math.PI * 2;
-        // 向右侧冲刺，增加移动距离以碰到敌人
+        player.rotation.y = Math.PI / 2 + progress * Math.PI * 2;
         player.position.x = originalX + Math.sin(progress * Math.PI) * 3.5;
 
-        // 添加技能效果
+        // 技能特效（30%-70%进度）
         if (progress > 0.3 && progress < 0.7 && this.battle3D.scene) {
-            // 创建技能特效
             const skillEffect = BABYLON.MeshBuilder.CreateSphere("skillEffect", { diameter: 0.5 }, this.battle3D.scene);
             const skillMaterial = new BABYLON.StandardMaterial("skillMaterial", this.battle3D.scene);
-
-            // 根据是否是幸运一击或技能特定颜色设置不同的颜色
             if (isLuckyStrike) {
-                // 幸运一击特效（金色）
                 skillMaterial.diffuseColor = new BABYLON.Color3(1, 0.8, 0);
                 skillMaterial.emissiveColor = new BABYLON.Color3(1, 0.8, 0);
             } else {
-                // 使用技能特定的颜色
                 skillMaterial.diffuseColor = new BABYLON.Color3(skillColor.r, skillColor.g, skillColor.b);
                 skillMaterial.emissiveColor = new BABYLON.Color3(skillColor.r, skillColor.g, skillColor.b);
             }
-
             skillMaterial.alpha = 0.8;
             skillEffect.material = skillMaterial;
             skillEffect.position.x = player.position.x;
             skillEffect.position.y = player.position.y;
             skillEffect.position.z = player.position.z;
 
-            // 动画效果
             const effectStartTime = Date.now();
-            const effectDuration = 300;
-
             const animateEffect = () => {
-                const effectElapsed = Date.now() - effectStartTime;
-                const effectProgress = Math.min(effectElapsed / effectDuration, 1);
-
-                skillEffect.scaling.x = 1 + effectProgress * 2;
-                skillEffect.scaling.y = 1 + effectProgress * 2;
-                skillEffect.scaling.z = 1 + effectProgress * 2;
-                skillMaterial.alpha = 0.8 - effectProgress * 0.8;
-
-                if (effectProgress < 1) {
-                    requestAnimationFrame(animateEffect);
-                } else {
-                    // 清理特效
-                    if (skillEffect) {
-                        skillEffect.dispose();
-                    }
-                }
+                const ep = Math.min((Date.now() - effectStartTime) / 300, 1);
+                skillEffect.scaling.x = 1 + ep * 2;
+                skillEffect.scaling.y = 1 + ep * 2;
+                skillEffect.scaling.z = 1 + ep * 2;
+                skillMaterial.alpha = 0.8 - ep * 0.8;
+                if (ep < 1) requestAnimationFrame(animateEffect);
+                else skillEffect.dispose();
             };
-
             animateEffect();
+        }
+
+        // 碰撞点触发（~45%进度）
+        if (!hitFired && progress >= 0.45) {
+            hitFired = true;
+            if (hitCallback) hitCallback();
         }
 
         if (progress < 1) {
             requestAnimationFrame(animateSkill);
         } else {
-            // 重置
-            player.rotation.y = 0;
+            player.rotation.y = Math.PI / 2;
             player.position.x = originalX;
             this.battle3D.isAttacking = false;
-            if (callback) callback();
+            if (endCallback) endCallback();
         }
     };
 
@@ -582,63 +566,41 @@ EndlessWinterGame.prototype.playDefenseAnimation = function(callback) {
     const startTime = Date.now();
     const animationDuration = 1000;
 
-    // 添加防御特效（光圈）
     if (this.battle3D.scene) {
-        // 清理之前的防御特效
         if (this.battle3D.defenseEffect) {
             this.battle3D.defenseEffect.dispose();
         }
-
         const defenseEffect = BABYLON.MeshBuilder.CreateSphere("defenseEffect", { diameter: 1.2 }, this.battle3D.scene);
         const defenseMaterial = new BABYLON.StandardMaterial("defenseMaterial", this.battle3D.scene);
         defenseMaterial.diffuseColor = new BABYLON.Color3(1, 1, 0);
         defenseMaterial.emissiveColor = new BABYLON.Color3(1, 1, 0);
         defenseMaterial.alpha = 0.5;
         defenseEffect.material = defenseMaterial;
-
-        // 将防御特效作为玩家的子对象，使其跟随玩家移动
         defenseEffect.parent = player;
         defenseEffect.position = new BABYLON.Vector3(0, 0, 0);
 
-        // 动画效果
         const effectStartTime = Date.now();
-        const effectDuration = 500;
-
         const animateEffect = () => {
-            const effectElapsed = Date.now() - effectStartTime;
-            const effectProgress = Math.min(effectElapsed / effectDuration, 1);
-
-            defenseEffect.scaling.x = 1 + effectProgress * 1.5;
-            defenseEffect.scaling.y = 1 + effectProgress * 1.5;
-            defenseEffect.scaling.z = 1 + effectProgress * 1.5;
-
-            if (effectProgress < 1) {
-                requestAnimationFrame(animateEffect);
-            }
+            const ep = Math.min((Date.now() - effectStartTime) / 500, 1);
+            defenseEffect.scaling.x = 1 + ep * 1.5;
+            defenseEffect.scaling.y = 1 + ep * 1.5;
+            defenseEffect.scaling.z = 1 + ep * 1.5;
+            if (ep < 1) requestAnimationFrame(animateEffect);
         };
-
         animateEffect();
-
-        // 存储防御特效
         this.battle3D.defenseEffect = defenseEffect;
     }
 
     const animateDefense = () => {
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(elapsed / animationDuration, 1);
-
+        const progress = Math.min((Date.now() - startTime) / animationDuration, 1);
         if (progress < 1) {
-            // 防御姿态（身体后仰，高度降低）
             player.position.y = originalY - Math.sin(progress * Math.PI) * 0.5;
             player.rotation.x = -Math.sin(progress * Math.PI) * 0.3;
+            requestAnimationFrame(animateDefense);
         } else {
             player.position.y = originalY;
             player.rotation.x = 0;
             if (callback) callback();
-        }
-
-        if (progress < 1) {
-            requestAnimationFrame(animateDefense);
         }
     };
 
@@ -646,105 +608,148 @@ EndlessWinterGame.prototype.playDefenseAnimation = function(callback) {
 };
 
 // 播放敌人攻击动画
-EndlessWinterGame.prototype.playEnemyAttackAnimation = function() {
-    console.log('playEnemyAttackAnimation 被调用');
-    if (!this.battle3D) {
-        console.log('playEnemyAttackAnimation: battle3D 不存在');
-        return;
-    }
-    if (!this.battle3D.enemy) {
-        console.log('playEnemyAttackAnimation: enemy 不存在');
-        return;
-    }
+// hitCallback: 碰撞到玩家时调用（~45%进度），用于显示伤害数字
+// endCallback: 动画结束时调用（100%进度），用于更新UI等后续逻辑
+EndlessWinterGame.prototype.playEnemyAttackAnimation = function(hitCallback, endCallback) {
+    if (!this.battle3D || !this.battle3D.enemy) return;
 
-    // 强制设置isAttacking为true，确保动画可以执行
     this.battle3D.isAttacking = true;
     const enemy = this.battle3D.enemy;
-    console.log('敌人初始位置:', enemy.position.x, enemy.position.y, enemy.position.z);
-
-    // 攻击动画（向前突进）
-    const startTime = Date.now();
-    const animationDuration = 600; // 延长动画时间
     const originalX = enemy.position.x;
+    const startTime = Date.now();
+    const animationDuration = 600;
+    let hitFired = false;
 
     const animateAttack = () => {
         const elapsed = Date.now() - startTime;
         const progress = Math.min(elapsed / animationDuration, 1);
 
         if (progress < 0.5) {
-            // 向玩家方向移动，增加移动距离
             enemy.position.x = originalX - Math.sin(progress * Math.PI) * 2.5;
         } else {
-            // 退回原位
             enemy.position.x = originalX - Math.sin((1 - progress) * Math.PI) * 2.5;
+        }
+
+        // 碰撞点触发（~45%进度，敌人到达玩家位置时）
+        if (!hitFired && progress >= 0.45) {
+            hitFired = true;
+            if (hitCallback) hitCallback();
         }
 
         if (progress < 1) {
             requestAnimationFrame(animateAttack);
         } else {
             enemy.position.x = originalX;
-            console.log('敌人攻击结束，回到初始位置:', enemy.position.x);
-            // 敌人攻击结束后，移除防御特效
             if (this.battle3D.defenseEffect) {
                 this.battle3D.defenseEffect.dispose();
                 this.battle3D.defenseEffect = null;
             }
             this.battle3D.isAttacking = false;
+            if (endCallback) endCallback();
         }
     };
 
     animateAttack();
 };
 
-// 播放敌人受击动画
-EndlessWinterGame.prototype.playEnemyHitAnimation = function() {
-    if (!this.battle3D || !this.battle3D.enemy) return;
+// ==================== 受击动画（共享） ====================
 
-    const enemy = this.battle3D.enemy;
-    const originalY = enemy.position.y;
+// 通用受击动画方法，随机选择一种受击动作
+// direction: -1 = 向后退（玩家），+1 = 向后退（敌人）
+// flagKey: 'isPlayerHitAnimating' 或 'isEnemyHitAnimating'
+EndlessWinterGame.prototype.playHitReaction = function(mesh, direction, flagKey) {
+    if (!this.battle3D || !mesh) return;
+
+    // 如果正在播放受击动画，跳过
+    if (this.battle3D[flagKey]) return;
+    this.battle3D[flagKey] = true;
+
+    const originalX = mesh.position.x;
+    const originalY = mesh.position.y;
+    const originalRotZ = mesh.rotation.z;
+    const animType = Math.floor(Math.random() * 4); // 0-3 四种动作
+
     const startTime = Date.now();
-    const animationDuration = 300;
+    const durations = [400, 300, 400, 350]; // knockback, hop, stagger, duck
+    const animationDuration = durations[animType];
 
     const animateHit = () => {
         const elapsed = Date.now() - startTime;
         const progress = Math.min(elapsed / animationDuration, 1);
 
-        // 受击效果（向上跳跃后落下）
-        enemy.position.y = originalY + Math.sin(progress * Math.PI) * 0.5;
+        switch (animType) {
+            case 0: // 后退踉跄
+                this._animateKnockback(mesh, progress, originalX, originalY, direction);
+                break;
+            case 1: // 向上跳起
+                this._animateHop(mesh, progress, originalY);
+                break;
+            case 2: // 左右摇晃
+                this._animateStagger(mesh, progress, originalX, originalY);
+                break;
+            case 3: // 下蹲
+                this._animateDuck(mesh, progress, originalX, originalY);
+                break;
+        }
 
         if (progress < 1) {
             requestAnimationFrame(animateHit);
         } else {
-            enemy.position.y = originalY;
+            // 恢复原始位置和旋转
+            mesh.position.x = originalX;
+            mesh.position.y = originalY;
+            mesh.rotation.z = originalRotZ;
+            this.battle3D[flagKey] = false;
         }
     };
 
     animateHit();
 };
 
+// 后退踉跄：向后退一步，身体后倾，然后恢复
+EndlessWinterGame.prototype._animateKnockback = function(mesh, progress, originalX, originalY, direction) {
+    // 先快退后慢回（ease-out曲线）
+    const knockback = Math.sin(progress * Math.PI) * 0.6;
+    mesh.position.x = originalX + direction * knockback;
+    // 身体后倾
+    mesh.rotation.z = Math.sin(progress * Math.PI) * 0.3 * direction;
+    // 轻微跳起
+    mesh.position.y = originalY + Math.sin(progress * Math.PI) * 0.2;
+};
+
+// 向上跳起：原地跳起落下
+EndlessWinterGame.prototype._animateHop = function(mesh, progress, originalY) {
+    mesh.position.y = originalY + Math.sin(progress * Math.PI) * 0.5;
+};
+
+// 左右摇晃：快速左右晃动2-3次
+EndlessWinterGame.prototype._animateStagger = function(mesh, progress, originalX, originalY) {
+    const shake = Math.sin(progress * Math.PI * 5) * 0.3 * (1 - progress);
+    mesh.position.x = originalX + shake;
+    mesh.rotation.z = shake * 0.5;
+    // 轻微下沉
+    mesh.position.y = originalY - (1 - progress) * 0.1;
+};
+
+// 下蹲：身体下沉后恢复
+EndlessWinterGame.prototype._animateDuck = function(mesh, progress, originalX, originalY) {
+    // 先蹲下后站起
+    const duck = Math.sin(progress * Math.PI);
+    mesh.position.y = originalY - duck * 0.4;
+    // 蹲下时身体前倾
+    mesh.rotation.z = -duck * 0.2;
+    // 轻微后退
+    mesh.position.x = originalX - duck * 0.15;
+};
+
+// 播放敌人受击动画
+EndlessWinterGame.prototype.playEnemyHitAnimation = function() {
+    this.playHitReaction(this.battle3D.enemy, 1, 'isEnemyHitAnimating');
+};
+
 // 播放玩家受击动画
 EndlessWinterGame.prototype.playPlayerHitAnimation = function() {
-    if (!this.battle3D || !this.battle3D.player) return;
-
-    const player = this.battle3D.player;
-    const originalY = player.position.y;
-    const startTime = Date.now();
-    const animationDuration = 300;
-
-    const animateHit = () => {
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(elapsed / animationDuration, 1);
-
-        player.position.y = originalY + Math.sin(progress * Math.PI) * 0.5;
-
-        if (progress < 1) {
-            requestAnimationFrame(animateHit);
-        } else {
-            player.position.y = originalY;
-        }
-    };
-
-    animateHit();
+    this.playHitReaction(this.battle3D.player, -1, 'isPlayerHitAnimating');
 };
 
 // ==================== 战斗特效 ====================
@@ -1067,15 +1072,20 @@ EndlessWinterGame.prototype.showDodge = function(target, text) {
 EndlessWinterGame.prototype.animateBattle3D = function() {
     if (!this.battle3D) return;
 
-    // 玩家和敌人动画
-    if (this.battle3D.player) {
+    // 玩家和敌人动画（受击动画期间暂停闲置动画）
+    if (this.battle3D.player && !this.battle3D.isPlayerHitAnimating) {
         const time = Date.now() * 0.003;
         this.battle3D.player.position.y = Math.sin(time) * 0.05;
     }
 
-    if (this.battle3D.enemy) {
+    if (this.battle3D.enemy && !this.battle3D.isEnemyHitAnimating) {
         // 战斗场景敌人保持静态面向玩家，不旋转
-        this.battle3D.enemy.rotation.y = Math.PI; // 面向玩家方向
+        this.battle3D.enemy.rotation.y = -Math.PI / 2; // 面向玩家方向（-X方向）
+        // 飞行类敌人添加微小浮动动画
+        if (this.battle3D.enemyIsFlying) {
+            const time = Date.now() * 0.002;
+            this.battle3D.enemy.position.y = -0.7 + Math.sin(time) * 0.05;
+        }
     }
 
     // 火焰动画

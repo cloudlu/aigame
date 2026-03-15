@@ -9,7 +9,7 @@
 
 ---
 
-## 🆕 v1.15 系统更新（2026-03-08）
+## v1.15 系统更新（2026-03-08）
 
 ### 统一技能名称系统
 
@@ -19,32 +19,9 @@
 - ✅ 简化配置结构（减少60%重复配置）
 - ✅ 完全向后兼容
 
-**数据结构变化**：
+**数据结构**（v1.15+）：
 
 ```javascript
-// 旧版本（已废弃）
-{
-    id: 'powerStrike',
-    name: '强力打击系',
-    levels: [
-        {
-            name: '重击',           // 每级不同名称
-            imageId: 1,            // 每级重复配置
-            soundUrl: 'xxx',
-            effectColor: {...},
-            damageMultiplier: 1.3
-        },
-        {
-            name: '猛击',           // 升级后名称改变
-            imageId: 1,            // 重复配置
-            soundUrl: 'xxx',
-            effectColor: {...},
-            damageMultiplier: 1.5
-        }
-    ]
-}
-
-// 新版本（v1.15+）
 {
     id: 'powerStrike',
     name: '强力打击系',
@@ -62,7 +39,6 @@
             stageRequired: 1,
             energyCost: 12,
             damageMultiplier: 1.3
-            // 移除了 imageId, soundUrl, effectColor
         },
         {
             name: 'powerStrike_lv2',

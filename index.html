@@ -86,6 +86,22 @@
             left: 0;
             z-index: 1;
         }
+        /* Boss高亮脉冲动画 */
+        .boss-highlight {
+            animation: boss-pulse 1s ease-in-out infinite;
+            box-shadow: 0 0 15px 5px rgba(255, 215, 0, 0.8) !important;
+            border: 2px solid gold !important;
+        }
+        @keyframes boss-pulse {
+            0%, 100% {
+                box-shadow: 0 0 10px 3px rgba(255, 215, 0, 0.6);
+                transform: scale(1);
+            }
+            50% {
+                box-shadow: 0 0 20px 8px rgba(255, 215, 0, 1);
+                transform: scale(1.15);
+            }
+        }
     </style>
     <style>
         body {
@@ -278,40 +294,6 @@
             border-color: #f87171;
         }
         
-        /* 装备槽容器 */
-        .equipment-slot-container {
-            position: relative;
-            cursor: pointer;
-        }
-        
-        /* 装备提示框 */
-        .equipment-tooltip {
-            transition: all 0.2s ease;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(96, 165, 250, 0.3);
-            background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
-        }
-        
-        .equipment-tooltip:hover {
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
-            transform: translateY(-2px);
-        }
-        
-        .equipment-tooltip h4 {
-            margin-bottom: 4px;
-            font-size: 14px;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-        }
-        
-        .equipment-tooltip p {
-            margin: 2px 0;
-            line-height: 1.2;
-        }
-        
-        .equipment-slot-container:hover .equipment-tooltip {
-            display: block !important;
-        }
 
         /* 技能树样式 */
         .skill-card {
@@ -437,6 +419,12 @@
                 <!-- 弹性空间 -->
                 <div class="flex-1"></div>
 
+                <!-- 战力显示 -->
+                <div class="flex items-center gap-1 px-2 py-1 rounded-lg bg-black/40 border border-gold/30 shrink-0">
+                    <i class="fa fa-bolt text-gold text-xs"></i>
+                    <span class="text-xs text-white/60">战力</span>
+                    <span id="combat-power" class="text-sm font-bold text-gold">0</span>
+                </div>
                 <!-- 境界徽章 -->
                 <div id="realm-badge" class="px-3 py-1 rounded-full bg-gradient-to-r from-gold-dark to-gold text-black font-bold shadow-lg shadow-gold/30 flex items-center gap-1 shrink-0">
                     <i class="fa fa-star text-gold-dark text-xs"></i>
@@ -517,6 +505,10 @@
                     <button id="refresh-enemy-btn" class="w-10 h-10 bg-black/60 backdrop-blur-sm rounded-lg text-white hover:bg-cyan-600/80 transition-all flex items-center justify-center border border-white/20" data-tooltip="刷新敌人">
                         <i class="fa fa-refresh"></i>
                     </button>
+                    <!-- 召唤任务Boss -->
+                    <button id="spawn-quest-boss-btn" class="w-10 h-10 bg-black/60 backdrop-blur-sm rounded-lg text-white hover:bg-yellow-600/80 transition-all flex items-center justify-center border border-white/20" data-tooltip="召唤任务Boss">
+                        <i class="fa fa-dragon"></i>
+                    </button>
                     <!-- 世界地图 -->
                     <button id="travel-map-btn" class="w-10 h-10 bg-black/60 backdrop-blur-sm rounded-lg text-white hover:bg-purple-600/80 transition-all flex items-center justify-center border border-white/20" data-tooltip="世界地图">
                         <i class="fa fa-globe"></i>
@@ -569,6 +561,7 @@
                         <span>防:<span id="enemy-defense" class="text-white font-medium">?</span></span>
                         <span>速:<span id="enemy-speed" class="text-white font-medium">?</span></span>
                         <span>运:<span id="enemy-luck" class="text-white font-medium">?</span></span>
+                        <span class="text-gold">⚔<span id="enemy-combat-power" class="font-medium">?</span></span>
                     </div>
                 </div>
                 <button id="confirm-attack-btn" class="btn-primary bg-primary hover:bg-primary/80 w-10 h-10 rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all hidden shrink-0" data-tooltip="攻击">
@@ -783,6 +776,10 @@
                                 <div class="text-xs text-teal-400">闪避</div>
                                 <div class="text-lg font-bold text-white"><span id="dodge-modal">5</span>%</div>
                             </div>
+                            <div class="bg-black/30 rounded-lg p-2.5 border border-gold/30 hover:border-gold/60 transition-colors col-span-2">
+                                <div class="text-xs text-gold">总战力</div>
+                                <div class="text-2xl font-bold text-gold"><span id="combat-power-modal">0</span></div>
+                            </div>
                         </div>
                     </div>
 
@@ -811,7 +808,7 @@
                             </div>
                             <!-- 第二行 -->
                             <div class="equipment-slot-modal aspect-square bg-black/40 rounded-lg border border-primary/30 flex items-center justify-center hover:border-gold transition-colors cursor-pointer relative group" data-slot="pants">
-                                <img id="character-pants-modal" src="" alt="下装" class="w-8 h-8 object-contain opacity-0">
+                                <img id="character-pants-modal" src="" alt="下裳" class="w-8 h-8 object-contain opacity-0">
                                 <i class="fa fa-socks text-primary/30 absolute group-hover:hidden"></i>
                             </div>
                             <div class="equipment-slot-modal aspect-square bg-black/40 rounded-lg border border-primary/30 flex items-center justify-center hover:border-gold transition-colors cursor-pointer relative group" data-slot="boots">
@@ -1672,18 +1669,20 @@
         </div>
     </div>
 
-    <!-- 游戏脚本: 核心及模块 -->
+    <!-- 游戏脚本: 独立类系统（需在 game.js 之前加载） -->
     <script src="equipment.js"></script>
     <script src="realmSkillSystem.js"></script>
+    <script src="mainQuest.js"></script>
+    <script src="dailyQuest.js"></script>
+    <script src="audio.js"></script>
+    <!-- 游戏核心 -->
     <script src="game.js"></script>
+    <!-- 原型扩展模块（game.js 定义之后） -->
     <script src="sizes.js"></script>
     <script src="models.js"></script>
     <script src="enemy-models.js"></script>
     <script src="map.js"></script>
     <script src="battle3d.js"></script>
-    <script src="mainQuest.js"></script>
-    <script src="dailyQuest.js"></script>
     <script src="combatlogic.js"></script>
-    <script src="audio.js"></script>
 </body>
 </html>

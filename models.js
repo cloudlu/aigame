@@ -241,11 +241,14 @@ EndlessWinterGame.prototype.createEnemyModel = function() {
 
     // 设置位置（右侧）
     enemyGroup.position.x = 2;
-    enemyGroup.position.y = 0;
+    // 飞行类敌人（鸟、幽灵）稍微浮空，其他敌人站在地面上
+    const isFlying = category === 'BIRD' || category === 'GHOST';
+    enemyGroup.position.y = isFlying ? -0.7 : -1;
     enemyGroup.position.z = 0;
 
-    // 存储敌人模型
+    // 存储敌人模型和是否飞行标记
     this.battle3D.enemy = enemyGroup;
+    this.battle3D.enemyIsFlying = isFlying;
 };
 
 // 创建血条

@@ -1,5 +1,13 @@
 # 开发指南
 
+## 设计原则
+
+1. 每次修改时确保代码尽可能重用，防止重复性代码
+2. 重构必须不影响已有功能
+3. 功能修改时，如果是修改已有功能模块，确保旧功能正确删除
+4. 按需更新文档
+5. 单个文件不能太大，如果太大需要考虑重构
+
 ## 快速开始
 
 ### 环境要求
@@ -42,6 +50,33 @@ http://localhost:3002
 - `equipment.js` - 装备系统
 - `audio.js` - 音效系统
 - `game-metadata.js` - 游戏元数据
+- `models.js` - 3D模型创建
+- `enemy-models.js` - 敌人3D模型
+- `sizes.js` - 场景尺寸配置
+- `mainQuest.js` - 主线任务系统
+- `dailyQuest.js` - 每日任务系统
+
+### 文档目录
+
+```
+docs/
+├── systems/           # 系统设计文档
+│   ├── skill-system.md
+│   ├── skill-testing.md
+│   ├── skill-table.md
+│   ├── map-system.md
+│   ├── main-story.md
+│   ├── balance.md
+│   └── security.md
+├── guides/            # 开发指南
+│   ├── development.md
+│   └── contributing.md
+├── api/               # API 文档
+│   └── rest-api.md
+├── ui/                # UI 设计
+│   └── design.md
+└── index.md           # 文档索引
+```
 
 ## 主要类说明
 
@@ -78,6 +113,28 @@ class EquipmentSystem {
 class RealmSkillSystem {
     getAvailableSkills()  // 获取可用技能
     upgradeSkill(id)      // 升级技能
+}
+```
+
+### MainQuestSystem
+
+主线任务系统。
+
+```javascript
+class MainQuestSystem {
+    trackMainQuestProgress(eventType, eventData)  // 追踪任务进度
+    onMainQuestComplete(questDef)                 // 任务完成处理
+}
+```
+
+### DailyQuestSystem
+
+每日任务系统。
+
+```javascript
+class DailyQuestSystem {
+    trackDailyQuestProgress(eventType, eventData)  // 追踪每日任务进度
+    claimDailyQuestReward(questIndex)              // 领取奖励
 }
 ```
 

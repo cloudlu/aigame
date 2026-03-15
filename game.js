@@ -1,5 +1,34 @@
 // 游戏核心数据结构和状态管理
 class EndlessWinterGame {
+    // ========== 战力系统配置 ==========
+    // 战力基数（调大此值可整体放大战力数字，提升爽感）
+    static COMBAT_POWER_BASE = 100;
+
+    // 战力权重配置（平坦属性）
+    static COMBAT_POWER_WEIGHTS = {
+        attack: 3.0,
+        defense: 2.0,
+        hp: 0.15,
+        speed: 1.0,
+        luck: 0.5
+    };
+
+    // 百分比属性权重（只计算超出基础值的部分）
+    static COMBAT_POWER_PCT_WEIGHTS = {
+        criticalRate: 50,
+        dodgeRate: 50,
+        accuracy: 40,
+        tenacity: 30
+    };
+
+    // 百分比属性基础值（低于此部分不计入战力）
+    static COMBAT_POWER_PCT_BASELINE = {
+        criticalRate: 5,
+        dodgeRate: 5,
+        accuracy: 100,
+        tenacity: 0
+    };
+
     constructor() {
         // 游戏状态 - 只初始化基本结构
         this.gameState = {
@@ -34,6 +63,18 @@ class EndlessWinterGame {
         // 初始化境界技能系统
         const RealmSkillSystemClass = typeof window !== 'undefined' ? window.RealmSkillSystem : require('./realmSkillSystem');
         this.realmSkillSystem = new RealmSkillSystemClass(this);
+
+        // 初始化主线任务系统
+        const MainQuestSystemClass = typeof window !== 'undefined' ? window.MainQuestSystem : require('./mainQuest');
+        this.mainQuestSystem = new MainQuestSystemClass(this);
+
+        // 初始化每日任务系统
+        const DailyQuestSystemClass = typeof window !== 'undefined' ? window.DailyQuestSystem : require('./dailyQuest');
+        this.dailyQuestSystem = new DailyQuestSystemClass(this);
+
+        // 初始化音频系统
+        const AudioSystemClass = typeof window !== 'undefined' ? window.AudioSystem : require('./audio');
+        this.audioSystem = new AudioSystemClass(this);
 
         // 初始化游戏
         this.initGame();
@@ -117,36 +158,66 @@ class EndlessWinterGame {
 
             // 初始化主线任务系统
             // 始终验证当前等级的任务是否正确初始化
-            if (this.gameState.mainQuest && this.initLevelQuests) {
+            if (this.gameState.mainQuest && this.mainQuestSystem) {
                 const mq = this.gameState.mainQuest;
                 const realm = this.gameState.player.realm?.currentRealm || 0;
                 const stage = this.gameState.player.realm?.currentStage || 1;
                 const level = this.gameState.player.realm?.currentLevel || 1;
 
-                // 清除旧的静态任务数据（兼容旧存档）
-                mq.questData = {};
-                mq.generatedCache = {};
+                // 检查是否需要重新初始化任务（保留已有进度）
+                const hasQuestData = mq.questData && Object.keys(mq.questData).length > 0;
 
-                try {
-                    this.initLevelQuests(realm, stage, level);
-                    console.log('[主线任务] 模板系统初始化成功 -', realm, '境', stage, '阶', level, '级');
-                } catch (e) {
-                    console.error('[主线任务] 初始化失败:', e);
-                    // 回退到旧系统
-                    if (this.initMainQuest) {
-                        this.initMainQuest(realm);
+                if (!hasQuestData) {
+                    // 无存档数据，初始化新任务
+                    mq.questData = {};
+                    mq.generatedCache = {};
+                    try {
+                        this.mainQuestSystem.initLevelQuests(realm, stage, level);
+                        console.log('[主线任务] 初始化新任务 -', realm, '境', stage, '阶', level, '级');
+                    } catch (e) {
+                        console.error('[主线任务] 初始化失败:', e);
+                        if (this.mainQuestSystem) {
+                            this.mainQuestSystem.initMainQuest(realm);
+                        }
                     }
+                } else if (mq.currentLevel !== level) {
+                    // 玩家等级发生变化，检查旧任务是否全部完成
+                    const allCompleted = Object.values(mq.questData).every(q => q.completed);
+                    if (allCompleted) {
+                        // 旧任务已全部完成，初始化新等级任务
+                        mq.questData = {};
+                        mq.generatedCache = {};
+                        try {
+                            this.mainQuestSystem.initLevelQuests(realm, stage, level);
+                            console.log('[主线任务] 升级后初始化新任务 -', realm, '境', stage, '阶', level, '级');
+                        } catch (e) {
+                            console.error('[主线任务] 初始化失败:', e);
+                        }
+                    } else {
+                        // 旧任务未完成，保留当前任务进度
+                        console.log('[主线任务] 保留未完成任务 - 当前等级', level, '任务等级', mq.currentLevel);
+                        this.mainQuestSystem.updateMainQuestUI();
+                    }
+                } else {
+                    // 同等级，恢复已有进度
+                    const levelKey = `r${realm}_s${stage}_l${level}`;
+                    if (!mq.generatedCache) mq.generatedCache = {};
+                    if (!mq.generatedCache[levelKey]) {
+                        this.mainQuestSystem.getCurrentLevelQuests();
+                    }
+                    this.mainQuestSystem.updateMainQuestUI();
+                    console.log('[主线任务] 恢复任务进度 -', realm, '境', stage, '阶', level, '级');
                 }
 
                 // 检查当前位置是否已满足 visit_map 类型的目标
                 const currentMapType = this.metadata.mapBackgrounds[this.gameState.currentBackgroundIndex]?.type;
-                if (currentMapType && this.trackMainQuestProgress) {
-                    this.trackMainQuestProgress('map_visited', { mapType: currentMapType });
+                if (currentMapType && this.mainQuestSystem) {
+                    this.mainQuestSystem.trackMainQuestProgress('map_visited', { mapType: currentMapType });
                 }
 
                 // 初始化每日任务系统
-                if (this.initDailyQuests) {
-                    this.initDailyQuests();
+                if (this.dailyQuestSystem) {
+                    this.dailyQuestSystem.initDailyQuests();
                 }
             }
         }, 100);
@@ -375,13 +446,13 @@ class EndlessWinterGame {
         this.onMapVisit(targetMapType);
 
         // 主线任务进度追踪 - 地图访问
-        if (this.trackMainQuestProgress) {
-            this.trackMainQuestProgress('map_visited', { mapType: targetMapType });
+        if (this.mainQuestSystem) {
+            this.mainQuestSystem.trackMainQuestProgress('map_visited', { mapType: targetMapType });
         }
 
         // 每日任务进度追踪 - 地图访问
-        if (this.trackDailyQuestProgress) {
-            this.trackDailyQuestProgress('map_visited', { mapType: targetMapType });
+        if (this.dailyQuestSystem) {
+            this.dailyQuestSystem.trackDailyQuestProgress('map_visited', { mapType: targetMapType });
         }
 
         this.updateUI();
@@ -1007,36 +1078,12 @@ class EndlessWinterGame {
                 criticalRateElement.textContent = Math.floor(criticalRate);
             }
 
-        // 更新装备栏显示
-        for (const slot in this.gameState.player.equipment) {
-            const item = this.gameState.player.equipment[slot];
-            const equipmentElement = document.getElementById(`equipment-${slot}`);
-            if (equipmentElement) {
-                if (item) {
-                    // 显示装备名称和精炼等级
-                    let displayName = item.name;
-                    if (item.refineLevel && item.refineLevel > 0) {
-                        displayName += ` +${item.refineLevel}`;
-                    }
-                    equipmentElement.textContent = displayName;
-                    // 根据装备稀有度设置颜色
-                    const colorClass = this.equipmentSystem.getEquipmentColorClass(item);
-                    equipmentElement.className = `text-sm ${colorClass}`;
-                    // 设置装备属性的tooltip
-                    const statsDescription = this.equipmentSystem.getStatsDescription(item.stats);
-                    const levelDisplay = item.realmName ? item.realmName : item.level;
-                    const tooltipText = `${item.name}\n等级: ${levelDisplay}\n品质: ${item.rarityDisplayName || '白色'}\n精炼: +${item.refineLevel || 0}\n属性: ${statsDescription}`;
-                    equipmentElement.setAttribute('data-tooltip', tooltipText);
-                } else {
-                    equipmentElement.textContent = '无';
-                    equipmentElement.className = 'text-sm';
-                    equipmentElement.setAttribute('data-tooltip', '未装备');
-                }
-            }
-        }
-        
-        // 重新初始化tooltip
-        this.initTooltips();
+        // 更新战力显示
+        const combatPower = this.calculatePlayerCombatPower();
+        const cpElement = document.getElementById('combat-power');
+        if (cpElement) cpElement.textContent = combatPower.toLocaleString();
+        const cpModalElement = document.getElementById('combat-power-modal');
+        if (cpModalElement) cpModalElement.textContent = combatPower.toLocaleString();
         
         // 更新人物装备显示
         this.equipmentSystem.updateCharacterEquipmentDisplay();
@@ -1365,17 +1412,17 @@ class EndlessWinterGame {
 
         // 主线任务按钮
         bindEvent('#main-quest-btn', 'click', () => {
-            this.showMainQuestPanel();
+            this.mainQuestSystem.showMainQuestPanel();
         });
 
         // 每日任务按钮
         bindEvent('#daily-quest-btn', 'click', () => {
-            this.showDailyQuestPanel();
+            this.dailyQuestSystem.showDailyQuestPanel();
         });
 
         // 关闭主线任务模态框
         bindEvent('#close-quest-modal', 'click', () => {
-            this.hideMainQuestPanel();
+            this.mainQuestSystem.hideMainQuestPanel();
         });
 
         // 主线任务标签页切换
@@ -1407,7 +1454,7 @@ class EndlessWinterGame {
             if (storyBtn) { storyBtn.classList.add('text-gold', 'border-b-2', 'border-gold', 'font-medium'); storyBtn.classList.remove('text-white/50'); }
             if (currentBtn) { currentBtn.classList.remove('text-gold', 'border-b-2', 'border-gold', 'font-medium'); currentBtn.classList.add('text-white/50'); }
             if (dailyBtn) { dailyBtn.classList.remove('text-gold', 'border-b-2', 'border-gold', 'font-medium'); dailyBtn.classList.add('text-white/50'); }
-            this.showStoryReview();
+            this.mainQuestSystem.showStoryReview();
         });
 
         bindEvent('#quest-tab-daily-btn', 'click', () => {
@@ -1423,12 +1470,12 @@ class EndlessWinterGame {
             if (dailyBtn) { dailyBtn.classList.add('text-gold', 'border-b-2', 'border-gold', 'font-medium'); dailyBtn.classList.remove('text-white/50'); }
             if (currentBtn) { currentBtn.classList.remove('text-gold', 'border-b-2', 'border-gold', 'font-medium'); currentBtn.classList.add('text-white/50'); }
             if (storyBtn) { storyBtn.classList.remove('text-gold', 'border-b-2', 'border-gold', 'font-medium'); storyBtn.classList.add('text-white/50'); }
-            this.updateDailyQuestUI();
+            this.dailyQuestSystem.updateDailyQuestUI();
         });
 
         // 剧情覆盖层点击翻页
         bindEvent('#story-overlay', 'click', () => {
-            this.nextStoryPage();
+            this.mainQuestSystem.nextStoryPage();
         });
 
         // 突破按钮
@@ -1543,7 +1590,6 @@ class EndlessWinterGame {
                 slot.addEventListener('click', () => {
                         const selectedSlot = slot.dataset.slot;
                         this.equipmentSystem.updateRefineInfo(selectedSlot);
-                        this.equipmentSystem.updateRefreshInfo(selectedSlot);
                         // 存储当前选中的装备槽位
                         this.selectedRefineSlot = selectedSlot;
                         // 更新装备槽位的样式
@@ -1653,6 +1699,11 @@ class EndlessWinterGame {
             const currentMap = this.metadata.mapBackgrounds[this.gameState.currentBackgroundIndex];
             this.addBattleLog(`刷新了${currentMap ? currentMap.name : '当前地图'}的敌人！`);
             this.updateUI();
+        });
+
+        // 召唤任务Boss按钮
+        bindEvent('#spawn-quest-boss-btn', 'click', () => {
+            this.forceSpawnQuestBoss();
         });
 
         // 地图移动按钮
@@ -1798,7 +1849,10 @@ class EndlessWinterGame {
                 realm.currentLevel++;
                 this.gameState.player.exp -= this.gameState.player.maxExp;
                 this.gameState.player.maxExp = Math.floor(this.gameState.player.maxExp * 1.5);
-                
+
+                // 记录升级前战力
+                const oldPower = this.calculatePlayerCombatPower();
+
                 // 提升属性
                 this.gameState.player.attack += 3;
                 this.gameState.player.defense += 2;
@@ -1816,20 +1870,32 @@ class EndlessWinterGame {
                 this.gameState.resources.spiritCrystalRate += 0.05;
                 
                 // 播放升级声音
-                this.playSound('levelup-sound', 1, 2000);
+                this.audioSystem.playSound('levelup-sound', 1, 2000);
                 
                 this.addBattleLog(`恭喜你升级到${realm.currentLevel}级！灵力上限提升了10点！`);
 
+                // 显示战力变化
+                const newPower = this.calculatePlayerCombatPower();
+                this.showCombatPowerChange(newPower - oldPower);
+
                 // 主线任务进度追踪 - 达到等级
-                if (this.trackMainQuestProgress) {
-                    this.trackMainQuestProgress('level_up', {
+                if (this.mainQuestSystem) {
+                    this.mainQuestSystem.trackMainQuestProgress('level_up', {
                         newLevel: realm.currentLevel
                     });
                 }
 
-                // 升级后初始化新等级的主线任务
-                if (this.initLevelQuests) {
-                    this.initLevelQuests(realm.currentRealm, realm.currentStage, realm.currentLevel);
+                // 升级后：仅在当前等级所有任务完成时才初始化新任务
+                if (this.mainQuestSystem) {
+                    const mq = this.gameState.mainQuest;
+                    const currentQuests = this.mainQuestSystem.getCurrentLevelQuests();
+                    const isAllDone = !currentQuests || currentQuests.length === 0 ||
+                        mq.currentLevelQuestIndex >= currentQuests.length ||
+                        (mq.currentLevelQuestIndex === currentQuests.length - 1 &&
+                         mq.questData[currentQuests[mq.currentLevelQuestIndex]?.id]?.completed);
+                    if (isAllDone) {
+                        this.mainQuestSystem.initLevelQuests(realm.currentRealm, realm.currentStage, realm.currentLevel);
+                    }
                 }
 
                 // 触发升级动画
@@ -1923,7 +1989,119 @@ class EndlessWinterGame {
         
         return totalBonus;
     }
-    
+
+    // ========== 战力系统 ==========
+
+    /**
+     * 通用战力计算
+     * @param {Object} stats - 含 attack/defense/hp/speed/luck/criticalRate/dodgeRate/accuracy/tenacity
+     * @returns {number} 战力值
+     */
+    calculateCombatPower(stats) {
+        const BASE = EndlessWinterGame.COMBAT_POWER_BASE;
+        const W = EndlessWinterGame.COMBAT_POWER_WEIGHTS;
+        const PW = EndlessWinterGame.COMBAT_POWER_PCT_WEIGHTS;
+        const PB = EndlessWinterGame.COMBAT_POWER_PCT_BASELINE;
+
+        let power = 0;
+
+        // 平坦属性：全量计算
+        power += (stats.attack || 0) * W.attack;
+        power += (stats.defense || 0) * W.defense;
+        power += (stats.hp || 0) * W.hp;
+        power += (stats.speed || 0) * W.speed;
+        power += (stats.luck || 0) * W.luck;
+
+        // 百分比属性：只计算超出基础值的部分
+        for (const stat in PW) {
+            const value = (stats[stat] || 0) - (PB[stat] || 0);
+            if (value > 0) {
+                power += value * PW[stat];
+            }
+        }
+
+        return Math.floor(power * BASE / 100);
+    }
+
+    /**
+     * 计算玩家总战力（基础 + 装备 + 境界加成）
+     */
+    calculatePlayerCombatPower() {
+        this.equipmentSystem.calculateEquipmentEffects();
+        const realmBonus = this.metadata.realmConfig ? this.calculateRealmBonus() : { attack: 0, defense: 0, hp: 0, luck: 0, speed: 0 };
+        const ee = this.gameState.player.equipmentEffects;
+        const p = this.gameState.player;
+
+        return this.calculateCombatPower({
+            attack: p.attack + ee.attack + realmBonus.attack,
+            defense: p.defense + ee.defense + realmBonus.defense,
+            hp: p.maxHp + ee.hp + realmBonus.hp,
+            speed: (p.speed || 0) + (ee.speed || 0) + (realmBonus.speed || 0),
+            luck: p.luck + ee.luck + realmBonus.luck,
+            criticalRate: (p.criticalRate || 5) + (ee.criticalRate || 0),
+            dodgeRate: (p.dodge || 5) + (ee.dodgeRate || 0),
+            accuracy: (p.accuracy || 100) + (ee.accuracy || 0),
+            tenacity: ee.tenacity || 0
+        });
+    }
+
+    /**
+     * 计算单件装备战力（含精炼加成）
+     */
+    calculateEquipmentCombatPower(item) {
+        if (!item || !item.stats) return 0;
+        const refineLevel = item.refineLevel || 0;
+        const percentageStats = ['criticalRate', 'dodgeRate', 'tenacity', 'accuracy', 'moveSpeed', 'energyRegen'];
+        const effectiveStats = {};
+        for (const stat in item.stats) {
+            let bonus = 0;
+            if (refineLevel > 0) {
+                if (percentageStats.includes(stat)) {
+                    bonus = item.stats[stat] * refineLevel * 0.1;
+                } else {
+                    bonus = Math.max(refineLevel, Math.floor(item.stats[stat] * refineLevel * 0.1));
+                }
+            }
+            effectiveStats[stat] = item.stats[stat] + bonus;
+        }
+        return this.calculateCombatPower(effectiveStats);
+    }
+
+    /**
+     * 计算敌人战力
+     */
+    calculateEnemyCombatPower(enemyInfo) {
+        return this.calculateCombatPower({
+            attack: enemyInfo.attack,
+            defense: enemyInfo.defense,
+            hp: enemyInfo.maxHp,
+            speed: enemyInfo.speed,
+            luck: enemyInfo.luck
+        });
+    }
+
+    /**
+     * 显示战力变化浮动提示
+     */
+    showCombatPowerChange(delta) {
+        if (delta === 0) return;
+        const isPositive = delta > 0;
+        const sign = isPositive ? '+' : '';
+        const colorClass = isPositive ? 'text-green-400' : 'text-red-400';
+
+        const notification = document.createElement('div');
+        notification.className = `fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[100] pointer-events-none ${colorClass} font-bold text-2xl animate-bounce transition-opacity duration-1000`;
+        notification.textContent = `⚔ 战力 ${sign}${delta}`;
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            setTimeout(() => notification.remove(), 1000);
+        }, 1500);
+
+        this.addBattleLog(`⚔ 战力变化: ${sign}${delta}`);
+    }
+
     // 计算总等级（基于境界、阶段和当前等级）
     calculateTotalLevel() {
         const realm = this.gameState.player.realm;
@@ -2013,12 +2191,10 @@ class EndlessWinterGame {
         this.updateUI();
 
         // 主线任务 - 境界提升时启动下一境任务
-        if (realm.currentStage === 1 && this.initMainQuest) {
-            // 跨境界突破（从阶段10突破到新境界阶段1）
-            this.initMainQuest(realm.currentRealm);
-        } else if (this.initLevelQuests) {
-            // 同境界内阶段突破，初始化新阶段的任务
-            this.initLevelQuests(realm.currentRealm, realm.currentStage, realm.currentLevel);
+        if (realm.currentStage === 1 && this.mainQuestSystem) {
+            this.mainQuestSystem.initMainQuest(realm.currentRealm);
+        } else if (this.mainQuestSystem) {
+            this.mainQuestSystem.initLevelQuests(realm.currentRealm, realm.currentStage, realm.currentLevel);
         }
 
         return true;
@@ -3077,13 +3253,13 @@ class EndlessWinterGame {
             this.addBattleLog(`收集了${amount}${type === 'spiritWood' ? '灵木' : type === 'blackIron' ? '玄铁' : '灵石'}！`);
 
             // 主线任务进度追踪 - 资源采集
-            if (this.trackMainQuestProgress) {
-                this.trackMainQuestProgress('resource_collected', { resource: type, amount: amount });
+            if (this.mainQuestSystem) {
+                this.mainQuestSystem.trackMainQuestProgress('resource_collected', { resource: type, amount: amount });
             }
 
             // 每日任务进度追踪 - 资源采集
-            if (this.trackDailyQuestProgress) {
-                this.trackDailyQuestProgress('resource_collected', { resource: type, amount: amount });
+            if (this.dailyQuestSystem) {
+                this.dailyQuestSystem.trackDailyQuestProgress('resource_collected', { resource: type, amount: amount });
             }
 
             // 更新UI
@@ -4557,6 +4733,8 @@ class EndlessWinterGame {
     
     // 装备物品
     equipItem(item) {
+        // 记录装备前战力
+        const oldPower = this.calculatePlayerCombatPower();
         // 检查是否已有同类型装备
         const existingItem = this.gameState.player.equipment[item.type];
         
@@ -4575,27 +4753,40 @@ class EndlessWinterGame {
         
         // 计算装备效果
         this.equipmentSystem.calculateEquipmentEffects();
-        
+
+        // 更新装备栏显示
+        this.equipmentSystem.updateCharacterEquipmentDisplay();
+        this.equipmentSystem.updateCharacterEquipmentDisplayModal();
+
         // 更新UI
         this.updateUI();
-        
+
+        // 更新人物面板属性
+        if (typeof this.updateCharacterModal === 'function') {
+            this.updateCharacterModal();
+        }
+
         // 更新血条显示
         if (typeof this.updateHealthBars === 'function') {
             this.updateHealthBars();
         }
-        
+
         // 添加日志
         if (existingItem) {
             this.addBattleLog(`卸下了 ${existingItem.name}，装备了 ${item.name}！`);
         } else {
             this.addBattleLog(`装备了 ${item.name}！`);
         }
+        // 显示战力变化
+        const newPower = this.calculatePlayerCombatPower();
+        this.showCombatPowerChange(newPower - oldPower);
     }
     
     // 卸下物品
     unequipItem(slot) {
         const item = this.gameState.player.equipment[slot];
         if (item) {
+            const oldPower = this.calculatePlayerCombatPower();
             // 卸下物品
             this.gameState.player.equipment[slot] = null;
             
@@ -4604,12 +4795,24 @@ class EndlessWinterGame {
             
             // 计算装备效果
             this.equipmentSystem.calculateEquipmentEffects();
-            
+
+            // 更新装备栏显示
+            this.equipmentSystem.updateCharacterEquipmentDisplay();
+            this.equipmentSystem.updateCharacterEquipmentDisplayModal();
+
             // 更新UI
             this.updateUI();
-            
+
+            // 更新人物面板属性
+            if (typeof this.updateCharacterModal === 'function') {
+                this.updateCharacterModal();
+            }
+
             // 添加日志
             this.addBattleLog(`卸下了 ${item.name}，已放回背包！`);
+            // 显示战力变化
+            const newPower = this.calculatePlayerCombatPower();
+            this.showCombatPowerChange(newPower - oldPower);
         }
     }
     
@@ -4653,24 +4856,113 @@ class EndlessWinterGame {
     
     // 检查并自动穿戴更好的装备
     checkAndEquipBetterGear(item) {
-        // 检查当前是否有同类型装备
         const currentItem = this.gameState.player.equipment[item.type];
-        
-        // 比较装备好坏
-        if (this.compareEquipment(item, currentItem)) {
-            // 从背包中移除新装备
+
+        // 没有当前装备，直接穿上
+        if (!currentItem) {
             const inventoryIndex = this.gameState.player.inventory.indexOf(item);
-            if (inventoryIndex > -1) {
-                this.gameState.player.inventory.splice(inventoryIndex, 1);
-            }
-            
-            // 装备新物品
+            if (inventoryIndex > -1) this.gameState.player.inventory.splice(inventoryIndex, 1);
             this.equipItem(item);
-            
             return true;
         }
-        
+
+        // 比较总战力（含精炼）
+        const newItemPower = this.calculateEquipmentCombatPower(item);
+        const currentItemPower = this.calculateEquipmentCombatPower(currentItem);
+
+        if (newItemPower > currentItemPower) {
+            const inventoryIndex = this.gameState.player.inventory.indexOf(item);
+            if (inventoryIndex > -1) this.gameState.player.inventory.splice(inventoryIndex, 1);
+            this.equipItem(item);
+            return true;
+        }
+
+        // 总战力不如当前，但基础战力更高 → 提示潜力装备
+        const newItemBase = this.calculateEquipmentCombatPower({ ...item, refineLevel: 0 });
+        const currentItemBase = this.calculateEquipmentCombatPower({ ...currentItem, refineLevel: 0 });
+
+        if (newItemBase > currentItemBase) {
+            this.showEquipUpgradePrompt(item, currentItem);
+            return true; // 不放入背包，等用户确认
+        }
+
         return false;
+    }
+
+    /**
+     * 显示潜力装备替换确认弹窗
+     */
+    showEquipUpgradePrompt(newItem, currentItem) {
+        const newItemPower = this.calculateEquipmentCombatPower(newItem);
+        const currentItemPower = this.calculateEquipmentCombatPower(currentItem);
+        const newItemBase = this.calculateEquipmentCombatPower({ ...newItem, refineLevel: 0 });
+        const currentItemBase = this.calculateEquipmentCombatPower({ ...currentItem, refineLevel: 0 });
+
+        const newStats = this.equipmentSystem.getStatsDescription(newItem.stats);
+        const curStats = this.equipmentSystem.getStatsDescription(currentItem.stats);
+        const newColor = this.equipmentSystem.getEquipmentColorClass(newItem);
+        const curColor = this.equipmentSystem.getEquipmentColorClass(currentItem);
+        const slotName = this.equipmentSystem.getSlotDisplayName(newItem.type);
+
+        const overlay = document.createElement('div');
+        overlay.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-[200]';
+        overlay.innerHTML = `
+            <div class="bg-dark-card border border-gold/40 rounded-xl p-5 max-w-sm w-full mx-4 shadow-2xl">
+                <h3 class="text-gold font-bold text-base mb-3 text-center">
+                    <i class="fa fa-arrow-up mr-1"></i> 发现潜力更高的${slotName}
+                </h3>
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div class="bg-black/40 rounded-lg p-3 border border-red-500/30">
+                        <div class="text-xs text-red-400 mb-1">当前装备</div>
+                        <div class="text-sm ${curColor} font-bold mb-1">${currentItem.name}</div>
+                        <div class="text-xs text-white/70">精炼: +${currentItem.refineLevel || 0}</div>
+                        <div class="text-xs text-white/70">${curStats}</div>
+                        <div class="text-xs text-gold mt-1">⚔ 战力: ${currentItemPower}</div>
+                    </div>
+                    <div class="bg-black/40 rounded-lg p-3 border border-green-500/30">
+                        <div class="text-xs text-green-400 mb-1">新装备</div>
+                        <div class="text-sm ${newColor} font-bold mb-1">${newItem.name}</div>
+                        <div class="text-xs text-white/70">精炼: +${newItem.refineLevel || 0}</div>
+                        <div class="text-xs text-white/70">${newStats}</div>
+                        <div class="text-xs text-gold mt-1">⚔ 战力: ${newItemPower}</div>
+                    </div>
+                </div>
+                <p class="text-xs text-yellow-400 text-center mb-4">
+                    <i class="fa fa-info-circle mr-1"></i>
+                    新装备基础属性更好，精炼后可超越当前装备
+                </p>
+                <div class="flex gap-3">
+                    <button id="equip-upgrade-cancel" class="flex-1 px-3 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm transition-colors">
+                        放入背包
+                    </button>
+                    <button id="equip-upgrade-confirm" class="flex-1 px-3 py-2 rounded-lg bg-gradient-to-r from-gold-dark to-gold hover:opacity-80 text-black text-sm font-bold transition-colors">
+                        替换装备
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        overlay.querySelector('#equip-upgrade-cancel').addEventListener('click', () => {
+            this.gameState.player.inventory.push(newItem);
+            this.addBattleLog(`${newItem.name} 已放入背包（潜力装备）`);
+            this.updateUI();
+            overlay.remove();
+        });
+
+        overlay.querySelector('#equip-upgrade-confirm').addEventListener('click', () => {
+            // 旧装备放入背包
+            this.gameState.player.inventory.push(currentItem);
+            // 卸下旧装备
+            this.gameState.player.equipment[newItem.type] = null;
+            // 从背包移除新装备并穿上
+            const idx = this.gameState.player.inventory.indexOf(newItem);
+            if (idx > -1) this.gameState.player.inventory.splice(idx, 1);
+            this.equipItem(newItem);
+            this.addBattleLog(`${newItem.name} 替换了 ${currentItem.name}！`);
+            overlay.remove();
+        });
     }
     
     // 购买商店物品

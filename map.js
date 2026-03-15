@@ -59,13 +59,14 @@ EndlessWinterGame.prototype.showEnemyInfo = function(enemyInfo) {
     const enemyIconElement = document.querySelector('#enemy-icon i');
     if (enemyIconElement) {
         if (this.gameState.enemy?.name) {
-            // 计算敌人和玩家的战斗力
-            const enemyPower = this.gameState.enemy.attack * 2 + this.gameState.enemy.defense * 1.5 + this.gameState.enemy.maxHp * 0.1;
-            const playerAttack = this.gameState.player.attack + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.attack : 0);
-            const playerDefense = this.gameState.player.defense + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.defense : 0);
-            const playerHp = this.gameState.player.maxHp + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.hp : 0);
-            const playerPower = playerAttack * 2 + playerDefense * 1.5 + playerHp * 0.1;
-            
+            // 使用新的战力计算方法
+            const enemyPower = this.calculateEnemyCombatPower(this.gameState.enemy);
+            const playerPower = this.calculatePlayerCombatPower();
+
+            // 更新敌人战力显示
+            const enemyCpElement = document.getElementById('enemy-combat-power');
+            if (enemyCpElement) enemyCpElement.textContent = enemyPower.toLocaleString();
+
             // 根据战斗力对比确定敌人颜色
             let enemyColorClass = 'text-danger'; // 默认红色
             if (this.gameState.enemy.isBoss) {
@@ -198,6 +199,7 @@ EndlessWinterGame.prototype.ENEMY_INFO_DEFAULTS = {
     defense: '?',
     speed: '?',
     luck: '?',
+    combatPower: '?',
     icon: 'fa fa-question text-base text-gray-400'
 };
 
@@ -215,7 +217,8 @@ EndlessWinterGame.prototype.clearEnemyInfo = function() {
     const enemyLuck = document.getElementById('enemy-luck');
     const confirmBtn = document.getElementById('confirm-attack-btn');
     const enemyEliteBadge = document.getElementById('enemy-elite-badge');
-
+    const enemyCpElement = document.getElementById('enemy-combat-power');
+    
     // 恢复到默认状态
     if (enemyName) enemyName.textContent = defaults.name;
     if (enemyLevel) enemyLevel.textContent = defaults.level;
@@ -225,6 +228,7 @@ EndlessWinterGame.prototype.clearEnemyInfo = function() {
     if (enemyDefense) enemyDefense.textContent = defaults.defense;
     if (enemySpeed) enemySpeed.textContent = defaults.speed;
     if (enemyLuck) enemyLuck.textContent = defaults.luck;
+    if (enemyCpElement) enemyCpElement.textContent = defaults.combatPower;
     if (enemyEliteBadge) enemyEliteBadge.classList.add('hidden');
 
     const enemyIconElement = document.querySelector('#enemy-icon i');
@@ -730,10 +734,9 @@ EndlessWinterGame.prototype.renderMiniMap = function() {
 
 // 创建敌人图标，用于2D小地图
 EndlessWinterGame.prototype.createEnemyIcon = function(enemyInfo) {
-    let enemyPower = enemyInfo.attack * 2 + enemyInfo.defense * 1.5 + enemyInfo.maxHp * 0.1;
-    const playerAttack = this.gameState.player.attack + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.attack : 0);
-    const playerDefense = this.gameState.player.defense + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.defense : 0);
-    const playerPower = playerAttack * 2 + playerDefense * 1.5 + this.gameState.player.maxHp * 0.1;
+    // 使用新的战力计算方法
+    const enemyPower = this.calculateEnemyCombatPower(enemyInfo);
+    const playerPower = this.calculatePlayerCombatPower();
 
     let enemyIconColor = 'text-green-500';
     let enemyBgColor = 'bg-green-500/30';
@@ -750,13 +753,12 @@ EndlessWinterGame.prototype.createEnemyIcon = function(enemyInfo) {
     enemyIcon.innerHTML = `<i class="fa fa-skull text-xs ${enemyIconColor}"></i>`;
 
     enemyIcon.dataset.enemyInfo = JSON.stringify(enemyInfo);
-    enemyIcon.setAttribute('data-tooltip', `${enemyInfo.name}\n等级: ${enemyInfo.level}\nHP: ${enemyInfo.hp}/${enemyInfo.maxHp}\n攻击: ${enemyInfo.attack}\n防御: ${enemyInfo.defense}${enemyInfo.isBoss ? '\n灵力: 100/100' : ''}`);
+    enemyIcon.setAttribute('data-tooltip', `${enemyInfo.name}\n等级: ${enemyInfo.level}\nHP: ${enemyInfo.hp}/${enemyInfo.maxHp}\n⚔ 战力: ${enemyPower.toLocaleString()}\n攻击: ${enemyInfo.attack}\n防御: ${enemyInfo.defense}${enemyInfo.isBoss ? '\n灵力: 100/100' : ''}`);
 
     enemyIcon.addEventListener('click', (e) => {
         e.stopPropagation();
         try {
             const info = JSON.parse(enemyIcon.dataset.enemyInfo);
-            // 移动玩家到敌人附近，到达后显示攻击确认
             this.movePlayerToEnemy(info);
         } catch (error) {
             console.error('解析敌人信息失败:', error);
@@ -936,12 +938,7 @@ EndlessWinterGame.prototype.checkSceneMonsterCollision = function() {
 
     // 如果最近的敌人在感知范围内，显示敌人信息
     if (nearestDistance < DETECTION_RANGE && nearestEnemy) {
-        // 只有当敌人信息发生变化时才更新
-        const currentEnemyName = this.gameState.enemy?.name;
-        const currentEnemyLevel = this.gameState.enemy?.level;
-        if (currentEnemyName !== nearestEnemy.name || currentEnemyLevel !== nearestEnemy.level) {
-            this.showAttackConfirmation(nearestEnemy);
-        }
+        this.showAttackConfirmation(nearestEnemy);
 
         // 如果在碰撞范围内，显示攻击按钮
         const confirmBtn = document.getElementById('confirm-attack-btn');
@@ -1269,7 +1266,13 @@ EndlessWinterGame.prototype.handleMouseClick = function() {
     const pickResult = this.battle3D.scene.pick(this.battle3D.scene.pointerX, this.battle3D.scene.pointerY);
 
     if (pickResult.hit && pickResult.pickedPoint) {
-        this.movePlayerTo(pickResult.pickedPoint);
+        // 将击中点投影到地面平面，取X/Z坐标（避免点击怪物身体导致坐标偏移）
+        const groundY = this.battle3D.GROUND_Y;
+        const groundTarget = new BABYLON.Vector3(pickResult.pickedPoint.x, groundY, pickResult.pickedPoint.z);
+        console.log('[handleMouseClick] 原始:', pickResult.pickedPoint.x.toFixed(1), pickResult.pickedPoint.y.toFixed(1), pickResult.pickedPoint.z.toFixed(1), '投影地面:', groundTarget.x.toFixed(1), groundTarget.z.toFixed(1), '网格:', pickResult.pickedMesh?.name || 'unknown');
+        this.movePlayerTo(groundTarget);
+    } else {
+        console.log('[handleMouseClick] 未击中任何物体');
     }
 };
 
@@ -1284,21 +1287,11 @@ EndlessWinterGame.prototype.movePlayerTo = function(targetPos, onArrival, forceS
     }
 
     const playerPos = this.battle3D.player.position;
-
+    
     // 限制目标位置在地图范围内
     const boundary = this.battle3D.PLAYER_BOUNDARY;
     targetPos.x = Math.max(-boundary, Math.min(boundary, targetPos.x));
     targetPos.z = Math.max(-boundary, Math.min(boundary, targetPos.z));
-
-    // 碰撞检测 - 如果目标位置被阻挡，尝试滑动
-    const validPos = this.getValidPosition(targetPos.x, targetPos.z);
-    if (validPos) {
-        targetPos.x = validPos.x;
-        targetPos.z = validPos.z;
-    } else {
-        // 完全被阻挡，不移动
-        return;
-    }
 
     // 计算移动距离
     const distance = BABYLON.Vector3.Distance(playerPos, new BABYLON.Vector3(targetPos.x, playerPos.y, targetPos.z));
@@ -1309,25 +1302,17 @@ EndlessWinterGame.prototype.movePlayerTo = function(targetPos, onArrival, forceS
         return;
     }
 
+    // A* 寻路
+    const path = this.findPath(playerPos.x, playerPos.z, targetPos.x, targetPos.z);
+    let waypointIndex = 0;
+
     // 确定速度
     const moveSpeed = forceSpeed ||
         (this.isFlying ? this.battle3D.FLY_CLICK_SPEED :
          this.movementMode === 'run' ? this.battle3D.RUN_CLICK_SPEED :
          this.battle3D.WALK_CLICK_SPEED);
 
-    // 方向向量
-    const dx = targetPos.x - playerPos.x;
-    const dz = targetPos.z - playerPos.z;
-    const dirLen = Math.sqrt(dx * dx + dz * dz);
-    const dirX = dx / dirLen;
-    const dirZ = dz / dirLen;
-
-    // 设置角色朝向
-    this.battle3D.player.rotation.y = Math.atan2(dx, dz);
-
     this.isMoving = true;
-    let stuckFrames = 0;
-    const STUCK_LIMIT = 30;
     const ARRIVAL_THRESHOLD = 0.5;
     let lastTime = performance.now();
 
@@ -1337,23 +1322,45 @@ EndlessWinterGame.prototype.movePlayerTo = function(targetPos, onArrival, forceS
             return;
         }
 
-        const dt = Math.min((currentTime - lastTime) / 1000, 0.1); // 限制最大dt防止跳帧
+        const dt = Math.min((currentTime - lastTime) / 1000, 0.1);
         lastTime = currentTime;
 
         const currentPos = this.battle3D.player.position;
-        const remaining = Math.sqrt(
-            Math.pow(targetPos.x - currentPos.x, 2) +
-            Math.pow(targetPos.z - currentPos.z, 2)
-        );
 
-        if (remaining < ARRIVAL_THRESHOLD) {
+        // 找到最近的未到达路径点
+        while (waypointIndex < path.length - 1) {
+            const wpDist = Math.sqrt(
+                Math.pow(path[waypointIndex].x - currentPos.x, 2) +
+                Math.pow(path[waypointIndex].z - currentPos.z, 2)
+            );
+            if (wpDist < ARRIVAL_THRESHOLD) {
+                waypointIndex++;
+            } else {
+                break;
+            }
+        }
+
+        // 朝当前路径点移动
+        const target = path[waypointIndex] || path[path.length - 1];
+        const dx = target.x - currentPos.x;
+        const dz = target.z - currentPos.z;
+        const remaining = Math.sqrt(dx * dx + dz * dz);
+
+        // 到达最终目标
+        if (remaining < ARRIVAL_THRESHOLD && waypointIndex >= path.length - 1) {
             this.isMoving = false;
             this.moveAnimationId = null;
             if (typeof onArrival === 'function') onArrival();
             return;
         }
 
-        // 计算期望位置
+        const dirX = dx / remaining;
+        const dirZ = dz / remaining;
+
+        // 更新角色朝向
+        this.battle3D.player.rotation.y = Math.atan2(dx, dz);
+
+        // 计算期望位置（每步不超过路径点间距）
         const stepDist = moveSpeed * dt;
         let desiredX = currentPos.x + dirX * stepDist;
         let desiredZ = currentPos.z + dirZ * stepDist;
@@ -1362,30 +1369,9 @@ EndlessWinterGame.prototype.movePlayerTo = function(targetPos, onArrival, forceS
         desiredX = Math.max(-boundary, Math.min(boundary, desiredX));
         desiredZ = Math.max(-boundary, Math.min(boundary, desiredZ));
 
-        // 碰撞检测+滑动
-        const validMovePos = this.getValidPosition(desiredX, desiredZ);
-        if (validMovePos) {
-            // 只有实际移动了才更新
-            const moved = Math.abs(validMovePos.x - currentPos.x) > 0.01 ||
-                          Math.abs(validMovePos.z - currentPos.z) > 0.01;
-            if (moved) {
-                currentPos.x = validMovePos.x;
-                currentPos.z = validMovePos.z;
-                stuckFrames = 0;
-            } else {
-                stuckFrames++;
-            }
-        } else {
-            stuckFrames++;
-        }
-
-        // 被卡住太久，放弃移动
-        if (stuckFrames >= STUCK_LIMIT) {
-            this.isMoving = false;
-            this.moveAnimationId = null;
-            if (typeof onArrival === 'function') onArrival();
-            return;
-        }
+        // 直接移动（路径已规划好，无需碰撞检测）
+        currentPos.x = desiredX;
+        currentPos.z = desiredZ;
 
         // 更新摄像机
         if (this.battle3D.camera) {
@@ -1420,7 +1406,7 @@ EndlessWinterGame.prototype.movePlayerToEnemy = function(enemyInfo) {
         return;
     }
 
-    // 计算敌人附近的位置（在敌人旁边约1单位距离）
+    // 计算敌人附近的位置（在敌人旁边近距离）
     const playerPos = this.battle3D.player.position;
     const direction = new BABYLON.Vector3(
         playerPos.x - enemyPos.x,
@@ -1429,10 +1415,10 @@ EndlessWinterGame.prototype.movePlayerToEnemy = function(enemyInfo) {
     );
     direction.normalize();
 
-    // 目标位置在敌人旁边
+    // 目标位置在敌人旁边（必须大于 enemyObstacleRadius 0.6 + playerRadius 0.5 = 1.1）
     const targetPos = {
-        x: enemyPos.x + direction.x * 0.8,
-        z: enemyPos.z + direction.z * 0.8
+        x: enemyPos.x + direction.x * 1.5,
+        z: enemyPos.z + direction.z * 1.5
     };
 
     // 移动玩家到敌人附近，到达后显示敌人信息（使用跑步速度）
@@ -1784,6 +1770,177 @@ EndlessWinterGame.prototype.createPreGeneratedEnemies = function() {
     }
 };
 
+// ==================== 强制生成任务Boss ====================
+
+// 强制刷出当前主线任务需要的Boss并高亮显示
+EndlessWinterGame.prototype.forceSpawnQuestBoss = function() {
+    if (!this.mainQuestSystem) {
+        this.addBattleLog('主线任务系统未初始化！');
+        return false;
+    }
+
+    const questDef = this.mainQuestSystem.getCurrentQuestDef();
+    const questState = this.mainQuestSystem.getCurrentQuestState();
+
+    if (!questDef || !questState || questState.completed) {
+        this.addBattleLog('没有进行中的主线任务！');
+        return false;
+    }
+
+    // 查找 kill_boss 类型的目标
+    const bossObjective = questState.objectives.find(
+        o => o.type === 'kill_boss' && o.targetBoss && (o.current !== true)
+    );
+
+    if (!bossObjective) {
+        this.addBattleLog('当前任务不是Boss挑战任务！');
+        return false;
+    }
+
+    const targetBossName = bossObjective.targetBoss;
+
+    // 检查场景中是否已有该Boss
+    const existingBoss = this.gameState.sceneMonsters.find(
+        m => m.name && m.name.includes(targetBossName) && m.isBoss
+    );
+    if (existingBoss) {
+        this.addBattleLog(`${targetBossName} 已在场景中，尝试高亮显示...`);
+        this.highlightMiniMapBoss(targetBossName);
+        return true;
+    }
+
+    // 从全局enemyTypes中查找该敌人模板
+    const selectedEnemyType = this.metadata.enemyTypes.find(e => e.name === targetBossName);
+    if (!selectedEnemyType) {
+        this.addBattleLog(`未找到Boss模板：${targetBossName}`);
+        return false;
+    }
+
+    // 创建Boss数据（参考createEnemy逻辑）
+    const playerLevel = this.calculateTotalLevel(this.gameState.player);
+    const enemyLevel = Math.max(1, playerLevel + 2);
+
+    const baseHp = selectedEnemyType.baseHp || 30;
+    const baseAttack = selectedEnemyType.baseAttack || 8;
+    const baseDefense = selectedEnemyType.baseDefense || 2;
+    const baseSpeed = selectedEnemyType.baseSpeed || 5;
+    const baseLuck = selectedEnemyType.baseLuck || 1;
+    const bonus = 1.0; // Boss倍率
+
+    const finalHp = Math.floor((baseHp + (enemyLevel - 1) * baseHp * 0.5) * (1 + bonus));
+    const finalAttack = Math.floor((baseAttack + (enemyLevel - 1) * baseAttack * 0.3) * (1 + bonus));
+    const finalDefense = Math.floor((baseDefense + (enemyLevel - 1) * baseDefense * 0.3) * (1 + bonus));
+    const finalSpeed = Math.floor((baseSpeed + (enemyLevel - 1) * baseSpeed * 0.2) * (1 + bonus));
+    const finalLuck = Math.floor((baseLuck + (enemyLevel - 1) * baseLuck * 0.2) * (1 + bonus));
+
+    // 飞行检测
+    const category = this.getEnemyCategory ? this.getEnemyCategory(selectedEnemyType.name) : null;
+    const isFlyingEnemy = category === 'BIRD' || category === 'GHOST';
+    const flyHeight = isFlyingEnemy ?
+        SIZES.BIRD_MIN_HEIGHT + Math.random() * (SIZES.BIRD_MAX_HEIGHT - SIZES.BIRD_MIN_HEIGHT) : 0;
+
+    // 在玩家前方随机位置生成（距离15-40单位）
+    const playerPos = this.battle3D ? this.battle3D.player.position : null;
+    const spawnAngle = Math.random() * Math.PI * 2;
+    const spawnDist = 15 + Math.random() * 25;
+    const enemyX = playerPos ? playerPos.x + Math.cos(spawnAngle) * spawnDist : Math.cos(spawnAngle) * spawnDist;
+    const enemyZ = playerPos ? playerPos.z + Math.sin(spawnAngle) * spawnDist : Math.sin(spawnAngle) * spawnDist;
+
+    // 找一个空闲的小地图格子
+    const usedCells = new Set(this.gameState.sceneMonsters.map(m => m.cellIndex));
+    let cellIndex = -1;
+    for (let i = 0; i < 49; i++) {
+        if (i === 24 || !usedCells.has(i)) { cellIndex = i; break; }
+    }
+    if (cellIndex === -1) cellIndex = Math.floor(Math.random() * 48);
+
+    const enemyInfo = {
+        level: enemyLevel,
+        hp: finalHp,
+        maxHp: finalHp,
+        attack: finalAttack,
+        defense: finalDefense,
+        speed: finalSpeed,
+        luck: finalLuck,
+        energy: 100,
+        maxEnergy: 100,
+        isElite: false,
+        isBoss: true,
+        bonus: bonus,
+        name: `BOSS${selectedEnemyType.name}`,
+        icon: 'fa-star',
+        image: selectedEnemyType.image,
+        expMultiplier: selectedEnemyType.expMultiplier * 2.0,
+        resourceMultiplier: selectedEnemyType.resourceMultiplier * 2.0,
+        position: { x: enemyX, z: enemyZ, y: flyHeight },
+        isFlying: isFlyingEnemy,
+        baseName: selectedEnemyType.name,
+        cellIndex: cellIndex,
+        questBoss: true // 标记为任务Boss
+    };
+
+    // 添加到场景怪物数据
+    this.gameState.sceneMonsters.push(enemyInfo);
+
+    // 创建3D模型
+    if (this.battle3D && this.battle3D.scene) {
+        const enemyGroup = this.createEnemyGroup(enemyInfo);
+        if (enemyGroup) {
+            const healthBarY = SIZES.getHealthBarY(category || 'HUMANOID');
+            const enemyHealthBar = this.createHealthBar(0xff0000);
+            enemyHealthBar.scaling.x = 0.5 / SIZES.ENEMY_SCALE_BOSS;
+            enemyHealthBar.scaling.y = 1.0 / SIZES.ENEMY_SCALE_BOSS;
+            enemyHealthBar.scaling.z = 0.5 / SIZES.ENEMY_SCALE_BOSS;
+            enemyHealthBar.position.y = healthBarY;
+            enemyHealthBar.parent = enemyGroup;
+            enemyHealthBar.isVisible = true;
+
+            this.battle3D.enemies.push({
+                model: enemyGroup,
+                info: enemyInfo,
+                active: true,
+                healthBar: enemyHealthBar
+            });
+
+            // 注册碰撞障碍物
+            this.registerObstacle(enemyX, enemyZ, 0.6, 'enemy', isFlyingEnemy, flyHeight);
+        }
+    }
+
+    // 刷新小地图
+    this.renderMiniMap();
+
+    // 高亮Boss
+    this.highlightMiniMapBoss(targetBossName);
+
+    this.addBattleLog(`已强制召唤任务Boss：BOSS${targetBossName}！`);
+    return true;
+};
+
+// 在小地图上高亮指定Boss（添加脉冲动画）
+EndlessWinterGame.prototype.highlightMiniMapBoss = function(bossName) {
+    // 清除之前的高亮
+    const oldHighlight = document.querySelectorAll('.boss-highlight');
+    oldHighlight.forEach(el => el.classList.remove('boss-highlight'));
+
+    const mapGrid = document.getElementById('map-grid');
+    if (!mapGrid) return;
+
+    // 在小地图格子中查找Boss图标
+    const icons = mapGrid.querySelectorAll('[data-enemy-info]');
+    for (const icon of icons) {
+        try {
+            const info = JSON.parse(icon.dataset.enemyInfo);
+            if (info.name && info.name.includes(bossName)) {
+                icon.classList.add('boss-highlight');
+                // 滚动到可见
+                icon.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                break;
+            }
+        } catch (e) {}
+    }
+};
+
 // ==================== 3D天空背景系统 ====================
 
 // 创建修仙场景背景（多层次远景系统 + 立方体贴图）
@@ -1839,6 +1996,154 @@ EndlessWinterGame.prototype.createSkyDome = function() {
     }
 };
 
+// ========== A* 寻路系统 ==========
+
+// A* 寻路算法
+EndlessWinterGame.prototype.findPath = function(startX, startZ, endX, endZ) {
+    if (!this.battle3D || !this.battle3D.obstacles) {
+        return [{ x: endX, z: endZ }]; // 无障碍物，直接返回终点
+    }
+
+    const GRID_SIZE = 2; // 网格分辨率（每格2单位）
+    const BOUNDARY = this.battle3D.PLAYER_BOUNDARY || 235;
+
+    // 坐标转网格索引
+    const toGrid = (coord) => Math.floor((coord + BOUNDARY) / GRID_SIZE);
+    const toWorld = (index) => index * GRID_SIZE - BOUNDARY + GRID_SIZE / 2;
+
+    // 检查网格点是否可通行
+    const isWalkable = (gx, gz) => {
+        const wx = toWorld(gx);
+        const wz = toWorld(gz);
+        // 边界检查
+        if (wx < -BOUNDARY || wx > BOUNDARY || wz < -BOUNDARY || wz > BOUNDARY) {
+            return false;
+        }
+        // 障碍物检查
+        const playerRadius = 0.5;
+        for (const obs of this.battle3D.obstacles) {
+            // 跳过飞行敌人（玩家在地面）
+            if (obs.isFlying) continue;
+            const dx = wx - obs.x;
+            const dz = wz - obs.z;
+            const dist = Math.sqrt(dx * dx + dz * dz);
+            if (dist < obs.radius + playerRadius + 0.3) { // 0.3安全边距
+                return false;
+            }
+        }
+        return true;
+    };
+
+    // 起点、终点网格坐标
+    const startGx = toGrid(startX);
+    const startGz = toGrid(startZ);
+    let endGx = toGrid(endX);
+    let endGz = toGrid(endZ);
+
+    // 如果终点不可达，找最近的可达点作为A*终点，但保留原始精确终点
+    if (!isWalkable(endGx, endGz)) {
+        let nearestGx = null, nearestGz = null;
+        for (let r = 1; r <= 5 && nearestGx === null; r++) {
+            for (let dx = -r; dx <= r && nearestGx === null; dx++) {
+                for (let dz = -r; dz <= r; dz++) {
+                    if (Math.abs(dx) === r || Math.abs(dz) === r) {
+                        if (isWalkable(endGx + dx, endGz + dz)) {
+                            nearestGx = endGx + dx;
+                            nearestGz = endGz + dz;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (nearestGx !== null) {
+            // 使用最近可达点作为A*目标网格，但endX/endZ不变（原始精确坐标）
+            endGx = nearestGx;
+            endGz = nearestGz;
+        } else {
+            return [{ x: endX, z: endZ }];
+        }
+    }
+
+    // A* 算法
+    const openSet = new Map(); // key: "gx,gz", value: { g, h, f, parent }
+    const closedSet = new Set();
+
+    const key = (gx, gz) => `${gx},${gz}`;
+    const heuristic = (gx, gz) => Math.abs(gx - endGx) + Math.abs(gz - endGz); // 曼哈顿距离
+
+    openSet.set(key(startGx, startGz), { g: 0, h: heuristic(startGx, startGz), f: heuristic(startGx, startGz), parent: null, gx: startGx, gz: startGz });
+
+    // 8方向移动
+    const directions = [
+        [-1, 0], [1, 0], [0, -1], [0, 1], // 上下左右
+        [-1, -1], [-1, 1], [1, -1], [1, 1] // 对角线
+    ];
+
+    let iterations = 0;
+    const MAX_ITERATIONS = 10000;
+
+    while (openSet.size > 0 && iterations < MAX_ITERATIONS) {
+        iterations++;
+
+        // 找 f 值最小的节点
+        let current = null;
+        let currentKey = null;
+        for (const [k, node] of openSet) {
+            if (!current || node.f < current.f) {
+                current = node;
+                currentKey = k;
+            }
+        }
+
+        if (current.gx === endGx && current.gz === endGz) {
+            // 找到路径，回溯构建路径点
+            const path = [];
+            let trace = current;
+            while (trace) {
+                path.unshift({ x: toWorld(trace.gx), z: toWorld(trace.gz) });
+                trace = trace.parent;
+            }
+            path[path.length - 1] = { x: endX, z: endZ }; // 精确终点
+            return path;
+        }
+
+        openSet.delete(currentKey);
+        closedSet.add(currentKey);
+
+        // 扩展邻居
+        for (const [dx, dz] of directions) {
+            const nx = current.gx + dx;
+            const nz = current.gz + dz;
+            const neighborKey = key(nx, nz);
+
+            if (closedSet.has(neighborKey)) continue;
+            if (!isWalkable(nx, nz)) continue;
+
+            // 对角线移动需要检查相邻格子
+            if (dx !== 0 && dz !== 0) {
+                if (!isWalkable(current.gx + dx, current.gz) || !isWalkable(current.gx, current.gz + dz)) {
+                    continue; // 对角线移动被阻挡
+                }
+            }
+
+            const moveCost = (dx !== 0 && dz !== 0) ? 1.414 : 1; // 对角线距离
+            const g = current.g + moveCost;
+            const h = heuristic(nx, nz);
+            const f = g + h;
+
+            const existing = openSet.get(neighborKey);
+            if (!existing || g < existing.g) {
+                openSet.set(neighborKey, { g, h, f, parent: { gx: current.gx, gz: current.gz }, gx: nx, gz: nz });
+            }
+        }
+    }
+
+    console.log(`[findPath] 未找到路径，迭代${iterations}次，返回直线路径`);
+    return [{ x: endX, z: endZ }];
+};
+
 // ========== 碰撞检测系统 ==========
 
 // 检测新位置是否与障碍物碰撞
@@ -1875,25 +2180,22 @@ EndlessWinterGame.prototype.checkCollision = function(newX, newZ) {
 EndlessWinterGame.prototype.getValidPosition = function(newX, newZ) {
     const obstacle = this.checkCollision(newX, newZ);
     if (!obstacle) {
-        return { x: newX, z: newZ };  // 没有碰撞，返回新位置
+        return { x: newX, z: newZ };
     }
 
     // 有碰撞，尝试只移动X或只移动Z（滑行效果）
-    // 获取当前玩家位置
     const playerPos = this.battle3D.player ? this.battle3D.player.position : null;
     const currentX = playerPos ? playerPos.x : 0;
     const currentZ = playerPos ? playerPos.z : 0;
 
-    // 尝试只移动X，保持当前Z
     if (!this.checkCollision(newX, currentZ)) {
         return { x: newX, z: currentZ };
     }
-    // 尝试只移动Z，保持当前X
     if (!this.checkCollision(currentX, newZ)) {
         return { x: currentX, z: newZ };
     }
 
-    return null;  // 完全被堵住
+    return null;
 };
 
 // 注册障碍物
@@ -2167,11 +2469,11 @@ EndlessWinterGame.prototype.createTrees = function() {
         leaves2.material = leavesMaterial;
         leaves2.position.set(x + leavesSize * 0.3, this.battle3D.GROUND_Y + trunkHeight + leavesSize * 0.6, z);
 
-        // 注册树木为碰撞障碍物
+        // 注册树木为碰撞障碍物（基于树干而非树冠，让玩家能从树下穿过）
         this.battle3D.obstacles.push({
             x: x,
             z: z,
-            radius: leavesSize + 0.3,  // 碰撞半径（树冠大小 + 余量）
+            radius: trunkRadius * 2 + 0.5,  // 碰撞半径（树干宽度 + 余量）
             type: 'tree'
         });
     }

@@ -2,10 +2,10 @@
 
 ## 📋 文档说明
 
-本文档详细记录了《无尽战斗》游戏的平衡性设计，包括玩家属性成长、敌人属性生成、战斗伤害计算。
+本文档详细记录了《无尽战斗》游戏的平衡性设计，包括玩家属性成长、敌人属性生成、战斗伤害计算、战力系统。
 
-**最后更新**: 2026-03-11
-**版本**: v2.1
+**最后更新**: 2026-03-15
+**版本**: v2.2
 **维护者**: 游戏平衡团队
 
 ---
@@ -184,13 +184,13 @@ EndlessWinterGame.prototype.refreshEnemies = function() {
 
 ### 敌人颜色标识系统
 
-来源：[map.js:643-655](map.js#L643-L655)
+来源：[map.js:63-84](map.js#L63-L84), [game.js:2012-2036](game.js#L2012-L2036)
 
-根据敌人战斗力与玩家战斗力的比值，使用颜色标识危险等级：
+使用战力公式（详见战力系统章节）计算敌人和玩家战力，根据比值使用颜色标识危险等级：
 
 ```javascript
-const enemyPower = enemyInfo.attack * 2 + enemyInfo.defense * 1.5 + enemyInfo.maxHp * 0.1;
-const playerPower = playerAttack * 2 + playerDefense * 1.5 + playerHp * 0.1;
+const enemyPower = this.calculateEnemyCombatPower(enemyInfo);
+const playerPower = this.calculatePlayerCombatPower();
 
 if (enemyPower > playerPower * 1.5) {
     // 红色：危险（战斗力 > 玩家1.5倍）
@@ -512,6 +512,88 @@ const finalDefense = Math.floor((baseDefense + (enemyLevel - 1) * baseDefense * 
 | 洞穴 | 2 | 暗影蝙蝠、地下蠕虫 |
 | 仙境 | 5 | 天女、风神、天将、仙人、元始天尊 |
 | **总计** | **34** | - |
+
+---
+
+## ⚔️ 战力系统
+
+### 战力公式
+
+来源：[game.js:2012-2036](game.js#L2012-L2036)
+
+战力是一个综合属性评估指标，用于直观展示玩家和敌人的整体实力。
+
+```javascript
+战力 = (平坦属性加成 + 百分比属性加成) × 基数 / 100
+
+平坦属性加成 = attack × 3 + defense × 2 + hp × 0.15 + speed × 1 + luck × 0.5
+
+百分比属性加成 = max(0, criticalRate - 5) × 50
+               + max(0, dodgeRate - 5) × 50
+               + max(0, accuracy - 100) × 40
+               + max(0, tenacity) × 30
+```
+
+### 战力配置
+
+来源：[game.js:3-30](game.js#L3-L30)
+
+| 配置项 | 值 | 说明 |
+|--------|-----|------|
+| `COMBAT_POWER_BASE` | 100 | 战力基数，可调整以放大数值 |
+| `attack` 权重 | 3.0 | 攻击力权重 |
+| `defense` 权重 | 2.0 | 防御力权重 |
+| `hp` 权重 | 0.15 | 生命值权重 |
+| `speed` 权重 | 1.0 | 速度权重 |
+| `luck` 权重 | 0.5 | 幸运值权重 |
+| `criticalRate` 权重 | 50 | 暴击率权重（超基础部分） |
+| `dodgeRate` 权重 | 50 | 闪避率权重（超基础部分） |
+| `accuracy` 权重 | 40 | 命中率权重（超基础部分） |
+| `tenacity` 权重 | 30 | 韧性权重 |
+
+**百分比属性基础值**：
+- `criticalRate` 基础值：5%（低于5%不计入战力）
+- `dodgeRate` 基础值：5%（低于5%不计入战力）
+- `accuracy` 基础值：100%（低于100%不计入战力）
+- `tenacity` 基础值：0%
+
+### 战力计算方法
+
+来源：[game.js:2041-2072](game.js#L2041-L2072)
+
+1. **`calculateCombatPower(stats)`** - 通用战力计算公式
+2. **`calculatePlayerCombatPower()`** - 玩家总战力（基础 + 装备 + 境界加成）
+3. **`calculateEquipmentCombatPower(item)`** - 单件装备战力（含精炼加成）
+4. **`calculateEnemyCombatPower(enemyInfo)`** - 敌人战力
+
+### 战力显示位置
+
+| 位置 | 元素ID | 说明 |
+|------|--------|------|
+| 顶部导航栏 | `combat-power` | 玩家总战力 |
+| 人物面板 | `combat-power-modal` | 玩家总战力（大字体） |
+| 敌人信息面板 | `enemy-combat-power` | 敌人战力 |
+| 装备tooltip | - | 单件装备战力 |
+
+### 战力变化提示
+
+来源：[game.js:2089-2106](game.js#L2089-L2106)
+
+当战力发生变化时（升级、装备/卸下装备、精炼、刷新属性），会显示浮动提示：
+
+- 屏幕中央显示 `⚔ 战力 +XX`（绿色）或 `⚔ 战力 -XX`（红色）
+- 使用 `animate-bounce` 动画，1.5秒后淡出
+- 同时在战斗日志中记录变化
+
+### 预估战力数值
+
+| 阶段 | 预估战力 | 说明 |
+|------|----------|------|
+| 1级无装备 | ~66 | 仅基础属性 |
+| 10级有装备 | 500-800 | 基础装备 + 境界加成 |
+| 满级满配 | 5000-10000 | 顶级装备 + 满精炼 |
+
+**调整建议**：若玩家反馈数值不够爽快，可调大 `COMBAT_POWER_BASE` 基数值。
 
 ## ⚔️ 战斗伤害计算
 
@@ -1054,12 +1136,12 @@ HP
 
 ---
 
-**文档版本**: v2.1
-**最后更新**: 2026-03-11
+**文档版本**: v2.2
+**最后更新**: 2026-03-15
 **主要更新**:
+- 新增战力系统（综合属性评估、显示、变化提示）
+- 敌人颜色标识改用统一战力公式
 - 优化敌人伤害公式，防止"只掉1血"问题
-- 敌人保底造成20%攻击力的伤害
-- 新增地图专属敌人系统（34个新敌人）
 
 **下次审核**: 2026-04-08
 
