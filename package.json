@@ -15,5 +15,8 @@
     "node-fetch": "^3.3.2"
   },
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "vitest": "^4.1.0"
+  }
 }

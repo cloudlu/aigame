@@ -72,6 +72,18 @@ class EndlessWinterGame {
         const DailyQuestSystemClass = typeof window !== 'undefined' ? window.DailyQuestSystem : require('./dailyQuest');
         this.dailyQuestSystem = new DailyQuestSystemClass(this);
 
+        // 初始化VIP系统
+        const VIPSystemClass = typeof window !== 'undefined' ? window.VIPSystem : require('./vipSystem').VIPSystem;
+        this.vipSystem = new VIPSystemClass(this);
+
+        // 初始化仙玉商店
+        const JadeShopClass = typeof window !== 'undefined' ? window.JadeShop : require('./jadeShop').JadeShop;
+        this.jadeShop = new JadeShopClass(this);
+
+        // 初始化图鉴系统
+        const CollectionSystemClass = typeof window !== 'undefined' ? window.CollectionSystem : require('./collectionSystem').CollectionSystem;
+        this.collectionSystem = new CollectionSystemClass(this);
+
         // 初始化音频系统
         const AudioSystemClass = typeof window !== 'undefined' ? window.AudioSystem : require('./audio');
         this.audioSystem = new AudioSystemClass(this);
@@ -129,6 +141,9 @@ class EndlessWinterGame {
             // 初始化地图邻接表
             this.adjacencyMap = this.buildAdjacencyMap(this.getConnections());
 
+            // 初始化图鉴系统（确保数据结构存在）
+            this.collectionSystem.init();
+
             // 计算初始装备效果
             this.equipmentSystem.calculateEquipmentEffects();
         
@@ -153,6 +168,11 @@ class EndlessWinterGame {
             this.updateUI();
             this.updateAdminControls(); // 根据用户角色更新管理控制按钮
             this.bindEvents();
+            // 渲染VIP充值和仙玉商店UI（充值码异步加载后渲染）
+            this.vipSystem.loadRechargeCodes().then(() => {
+                this.renderRechargePackages();
+            });
+            this.renderVIPShopItems();
             // 开始资源生成
             this.startResourceGeneration();
 
@@ -959,6 +979,19 @@ class EndlessWinterGame {
             if (breakthroughStonesElement) {
                 breakthroughStonesElement.textContent = `${this.gameState.resources.breakthroughStones || 0}`;
             }
+            // 更新仙玉显示
+            const jadeElement = document.getElementById('jade');
+            if (jadeElement) {
+                jadeElement.textContent = `${this.gameState.resources.jade || 0}`;
+            }
+            // 更新VIP等级显示
+            const vipBadgeElement = document.getElementById('nav-vip-badge');
+            if (vipBadgeElement) {
+                const vipLevel = this.gameState.vip?.level || 0;
+                const vipInfo = this.vipSystem.getVIPInfo();
+                vipBadgeElement.textContent = vipLevel > 0 ? `VIP${vipLevel}·${vipInfo.label}` : '';
+                vipBadgeElement.style.display = vipLevel > 0 ? 'flex' : 'none';
+            }
             // 更新突破按钮状态
             const breakthroughBtnElement = document.getElementById('breakthrough-btn');
             if (breakthroughBtnElement && this.metadata.realmConfig) {
@@ -1375,6 +1408,54 @@ class EndlessWinterGame {
                 }
             });
         }
+
+        // ==================== VIP充值按钮 ====================
+        bindEvent('#recharge-btn', 'click', () => {
+            this.openRechargeModal();
+        });
+        bindEvent('#close-recharge-modal', 'click', () => {
+            this.closeRechargeModal();
+        });
+        const rechargeModal = document.getElementById('recharge-modal');
+        if (rechargeModal) {
+            rechargeModal.addEventListener('click', (e) => {
+                if (e.target === rechargeModal) this.closeRechargeModal();
+            });
+        }
+
+        // ==================== 仙玉商店按钮 ====================
+        bindEvent('#vip-shop-btn', 'click', () => {
+            this.openVIPShopModal();
+        });
+        bindEvent('#close-vip-shop-modal', 'click', () => {
+            this.closeVIPShopModal();
+        });
+        const vipShopModal = document.getElementById('vip-shop-modal');
+        if (vipShopModal) {
+            vipShopModal.addEventListener('click', (e) => {
+                if (e.target === vipShopModal) this.closeVIPShopModal();
+            });
+        }
+
+        // ==================== 图鉴按钮 ====================
+        bindEvent('#collection-btn', 'click', () => {
+            this.openCollectionModal();
+        });
+        bindEvent('#close-collection-modal', 'click', () => {
+            this.closeCollectionModal();
+        });
+        const collectionModal = document.getElementById('collection-modal');
+        if (collectionModal) {
+            collectionModal.addEventListener('click', (e) => {
+                if (e.target === collectionModal) this.closeCollectionModal();
+            });
+        }
+        bindEvent('#collection-enemy-tab', 'click', () => {
+            this.renderCollection('enemy');
+        });
+        bindEvent('#collection-equip-tab', 'click', () => {
+            this.renderCollection('equipment');
+        });
 
         // 用户相关按钮
         
@@ -2970,6 +3051,431 @@ class EndlessWinterGame {
         }
     }
 
+    // ==================== VIP充值系统 ====================
+
+    openRechargeModal() {
+        const modal = document.getElementById('recharge-modal');
+        if (modal) {
+            // 更新余额和VIP显示
+            const jadeDisplay = document.getElementById('recharge-jade-balance');
+            if (jadeDisplay) jadeDisplay.textContent = this.gameState.resources.jade || 0;
+            const vipDisplay = document.getElementById('recharge-vip-level');
+            if (vipDisplay) {
+                const level = this.gameState.vip?.level || 0;
+                const info = this.vipSystem.getVIPInfo();
+                vipDisplay.textContent = level > 0 ? `VIP${level}·${info.label}` : '普通修士';
+            }
+            // 隐藏所有密码输入框
+            document.querySelectorAll('.recharge-password-group').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.recharge-message').forEach(el => { el.textContent = ''; el.classList.add('hidden'); });
+            modal.classList.remove('hidden');
+        }
+    }
+
+    closeRechargeModal() {
+        const modal = document.getElementById('recharge-modal');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    // 点击充值套餐，展开密码输入
+    selectRechargePackage(index) {
+        const codes = this.vipSystem.getRechargeCodes();
+        if (!codes[index]) return;
+
+        // 隐藏所有密码输入框
+        document.querySelectorAll('.recharge-password-group').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.recharge-message').forEach(el => { el.textContent = ''; el.classList.add('hidden'); });
+
+        // 显示对应的密码输入框
+        const group = document.getElementById(`recharge-pw-${index}`);
+        if (group) {
+            group.classList.remove('hidden');
+            const input = group.querySelector('input');
+            if (input) { input.value = ''; input.focus(); }
+        }
+    }
+
+    // 确认充值
+    async confirmRecharge(index) {
+        const group = document.getElementById(`recharge-pw-${index}`);
+        if (!group) return;
+
+        const input = group.querySelector('input');
+        const msgEl = document.getElementById(`recharge-msg-${index}`);
+        if (!input || !msgEl) return;
+
+        const result = await this.vipSystem.recharge(input.value.trim());
+        msgEl.classList.remove('hidden');
+
+        if (result.success) {
+            msgEl.textContent = result.message;
+            msgEl.className = 'recharge-message text-green-400 text-xs mt-1';
+
+            // 更新余额显示
+            const jadeDisplay = document.getElementById('recharge-jade-balance');
+            if (jadeDisplay) jadeDisplay.textContent = result.totalJade || this.gameState.resources.jade;
+            const vipDisplay = document.getElementById('recharge-vip-level');
+            if (vipDisplay) {
+                const level = this.gameState.vip?.level || 0;
+                const info = this.vipSystem.getVIPInfo();
+                vipDisplay.textContent = level > 0 ? `VIP${level}·${info.label}` : '普通修士';
+            }
+
+            this.updateUI();
+            this.addBattleLog(result.message);
+        } else {
+            msgEl.textContent = result.message;
+            msgEl.className = 'recharge-message text-red-400 text-xs mt-1';
+        }
+    }
+
+    // ==================== 仙玉商店 ====================
+
+    openVIPShopModal() {
+        const modal = document.getElementById('vip-shop-modal');
+        if (modal) {
+            // 更新仙玉余额
+            const jadeDisplay = document.getElementById('vip-shop-jade-balance');
+            if (jadeDisplay) jadeDisplay.textContent = this.gameState.resources.jade || 0;
+            modal.classList.remove('hidden');
+        }
+    }
+
+    closeVIPShopModal() {
+        const modal = document.getElementById('vip-shop-modal');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    // ==================== 图鉴系统 ====================
+
+    openCollectionModal(tab) {
+        const modal = document.getElementById('collection-modal');
+        if (modal) modal.classList.remove('hidden');
+        this.renderCollection(tab || 'enemy', 0, 0);
+    }
+
+    closeCollectionModal() {
+        const modal = document.getElementById('collection-modal');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    renderCollection(tab, realmIdx = 0, rarityIdx = 0) {
+        const content = document.getElementById('collection-content');
+        const subtabsContainer = document.getElementById('collection-subtabs');
+        const enemyTabBtn = document.getElementById('collection-enemy-tab');
+        const equipTabBtn = document.getElementById('collection-equip-tab');
+        const totalEl = document.getElementById('collection-total');
+
+        if (!content) return;
+
+        // 更新主Tab样式
+        if (enemyTabBtn) {
+            enemyTabBtn.className = tab === 'enemy'
+                ? 'px-4 py-1.5 rounded-lg text-xs font-medium bg-blue-600 text-white'
+                : 'px-4 py-1.5 rounded-lg text-xs font-medium text-gray-400 hover:text-white';
+        }
+        if (equipTabBtn) {
+            equipTabBtn.className = tab === 'equipment'
+                ? 'px-4 py-1.5 rounded-lg text-xs font-medium bg-blue-600 text-white'
+                : 'px-4 py-1.5 rounded-lg text-xs font-medium text-gray-400 hover:text-white';
+        }
+
+        // 总进度
+        const enemyProgress = this.collectionSystem.getEnemyProgress();
+        const equipProgress = this.collectionSystem.getEquipmentProgress();
+        const totalUnlocked = enemyProgress.unlocked + equipProgress.unlocked;
+        const totalAll = enemyProgress.total + equipProgress.total;
+        if (totalEl) {
+            totalEl.textContent = `已解锁 ${totalUnlocked}/${totalAll} (${(totalAll > 0 ? (totalUnlocked / totalAll * 100).toFixed(1) : 0)}%)`;
+        }
+
+        // Tab内容
+        if (tab === 'enemy') {
+            this.renderEnemyCollection(content, subtabsContainer, realmIdx);
+        } else {
+            this.renderEquipmentCollection(content, subtabsContainer, realmIdx, rarityIdx);
+        }
+    }
+
+    renderEnemyCollection(container, subtabsContainer, selectedRealmIdx = 0) {
+        const categories = this.collectionSystem.getEnemyCategories();
+        const collection = this.gameState.collection;
+        const realmConfig = this.metadata.realmConfig || [];
+
+        // 按境界分组
+        const byRealm = {};
+        for (const cat of categories) {
+            if (!byRealm[cat.realm]) byRealm[cat.realm] = { name: cat.realmName, maps: [] };
+            byRealm[cat.realm].maps.push(cat);
+        }
+
+        // 境界子Tab - 渲染到单独容器
+        if (subtabsContainer) {
+            let subtabsHtml = '<div class="flex flex-wrap gap-1 px-2">';
+            for (let i = 0; i < realmConfig.length; i++) {
+                const realm = realmConfig[i];
+                const isActive = i === selectedRealmIdx;
+                const realmCats = byRealm[i]?.maps || [];
+                const realmUnlocked = realmCats.reduce((sum, cat) =>
+                    sum + cat.enemyKeys.filter(k => collection.enemies.includes(k)).length, 0);
+                const realmTotal = realmCats.reduce((sum, cat) => sum + cat.enemyKeys.length, 0);
+
+                subtabsHtml += `<button onclick="game.renderCollection('enemy', ${i})" class="px-3 py-1 rounded text-xs ${isActive ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}">
+                    ${realm.name}境 (${realmUnlocked}/${realmTotal})
+                </button>`;
+            }
+            subtabsHtml += '</div>';
+            subtabsContainer.innerHTML = subtabsHtml;
+        }
+
+        // 选中境界的内容
+        let html = '';
+        const realmData = byRealm[selectedRealmIdx];
+        if (realmData && realmData.maps.length > 0) {
+            for (const cat of realmData.maps) {
+                const unlocked = cat.enemyKeys.filter(k => collection.enemies.includes(k)).length;
+                const total = cat.enemyKeys.length;
+                const rewardKey = `enemy_${cat.mapId}`;
+                const rewarded = collection.rewardedCategories.includes(rewardKey);
+                const allComplete = unlocked === total;
+
+                const titleClass = allComplete ? 'text-yellow-400 font-bold' : 'text-blue-300 font-medium';
+                const rewardBadge = rewarded
+                    ? '<span class="text-green-400 text-xs">✅奖励已领</span>'
+                    : allComplete
+                    ? '<span class="text-yellow-300 text-xs">🎉可领取</span>'
+                    : '';
+
+                html += `<div class="mb-4">
+                    <div class="flex items-center justify-between mb-2 px-2">
+                        <span class="${titleClass} text-sm">${cat.name} (${unlocked}/${total})</span>
+                        ${rewardBadge}
+                    </div>
+                    <div class="grid grid-cols-3 gap-1.5 px-2">`;
+
+                // 每个敌人显示：图标+名称+类型
+                for (const key of cat.enemyKeys) {
+                    const isUnlocked = collection.enemies.includes(key);
+                    let icon, displayName;
+                    if (key.startsWith('BOSS')) {
+                        icon = '👑';
+                        displayName = key.replace('BOSS', '');
+                    } else if (key.endsWith('_elite')) {
+                        icon = '⭐';
+                        displayName = key.replace('_elite', '');
+                    } else {
+                        icon = '👤';
+                        displayName = key;
+                    }
+                    const bgClass = isUnlocked ? 'bg-green-900/30 border-green-500/30' : 'bg-gray-800/50 border-gray-700/30';
+                    const textClass = isUnlocked ? 'text-green-400' : 'text-gray-600';
+                    html += `<div class="${bgClass} border rounded p-1.5 text-center">
+                        <div class="text-sm">${icon}</div>
+                        <div class="${textClass} text-xs truncate">${displayName}</div>
+                    </div>`;
+                }
+
+                html += '</div></div>';
+            }
+        } else {
+            html += '<div class="text-center text-gray-500 py-8">该境界暂无地图</div>';
+        }
+
+        container.innerHTML = html;
+    }
+
+    renderEquipmentCollection(container, subtabsContainer, selectedRealmIdx = 0, selectedRarityIdx = 0) {
+        const categories = this.collectionSystem.getEquipmentCategories();
+        const collection = this.gameState.collection;
+        const templates = this.metadata.equipmentTemplates || [];
+        const slotConfig = this.metadata.equipmentSlotConfig || {};
+        const realmConfig = this.metadata.realmConfig || [];
+        const rarities = this.metadata.equipmentRarities || [];
+
+        const rarityColors = {
+            white: { bg: 'bg-gray-600', text: 'text-gray-200' },
+            blue: { bg: 'bg-blue-600', text: 'text-blue-200' },
+            purple: { bg: 'bg-purple-600', text: 'text-purple-200' },
+            gold: { bg: 'bg-yellow-600', text: 'text-yellow-200' },
+            rainbow: { bg: 'bg-pink-600', text: 'text-pink-200' }
+        };
+
+        // 子Tab渲染到单独容器
+        if (subtabsContainer) {
+            let subtabsHtml = '';
+
+            // 境界子Tab
+            subtabsHtml += '<div class="flex flex-wrap gap-1 mb-2 px-2">';
+            for (let i = 0; i < realmConfig.length; i++) {
+                const realm = realmConfig[i];
+                const isActive = i === selectedRealmIdx;
+                subtabsHtml += `<button onclick="game.renderCollection('equipment', ${i}, ${selectedRarityIdx})" class="px-3 py-1 rounded text-xs ${isActive ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}">
+                    ${realm.name}境
+                </button>`;
+            }
+            subtabsHtml += '</div>';
+
+            // 品质子Tab
+            subtabsHtml += '<div class="flex flex-wrap gap-1 px-2">';
+            for (let i = 0; i < rarities.length; i++) {
+                const rarity = rarities[i];
+                const isActive = i === selectedRarityIdx;
+                const colors = rarityColors[rarity.name] || rarityColors.white;
+                subtabsHtml += `<button onclick="game.renderCollection('equipment', ${selectedRealmIdx}, ${i})" class="px-3 py-1 rounded text-xs ${isActive ? colors.bg + ' text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}">
+                    ${rarity.displayName}
+                </button>`;
+            }
+            subtabsHtml += '</div>';
+
+            subtabsContainer.innerHTML = subtabsHtml;
+        }
+
+        // 当前选中境界+品质的装备
+        const currentRarity = rarities[selectedRarityIdx];
+        if (!currentRarity) {
+            container.innerHTML = '<div class="text-center text-gray-500 py-8">无数据</div>';
+            return;
+        }
+
+        // 检查该分类是否全解锁
+        const catKey = `equipment_${selectedRealmIdx}_${currentRarity.name}`;
+        const category = categories.find(c => c.realmIdx === selectedRealmIdx && c.rarity.name === currentRarity.name);
+        const equipKeys = category?.equipKeys || [];
+        const unlocked = equipKeys.filter(k => collection.equipmentTypes.includes(k)).length;
+        const total = equipKeys.length;
+        const rewarded = collection.rewardedCategories.includes(catKey);
+        const allComplete = unlocked === total && total > 0;
+
+        let html = '';
+
+        // 进度条
+        const progressPercent = total > 0 ? (unlocked / total * 100) : 0;
+        html += `<div class="px-2 mb-3">
+            <div class="flex items-center justify-between mb-1">
+                <span class="${rarityColors[currentRarity.name]?.text || 'text-gray-300'} text-sm font-medium">
+                    ${realmConfig[selectedRealmIdx]?.name || ''}境 · ${currentRarity.displayName}品质 (${unlocked}/${total})
+                </span>
+                ${rewarded ? '<span class="text-green-400 text-xs">✅奖励已领</span>' : allComplete ? '<span class="text-yellow-300 text-xs">🎉可领取</span>' : ''}
+            </div>
+            <div class="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+                <div class="h-full ${rarityColors[currentRarity.name]?.bg || 'bg-gray-500'}" style="width: ${progressPercent}%"></div>
+            </div>
+        </div>`;
+
+        // 按装备类型显示
+        html += '<div class="space-y-3 px-2">';
+        for (const template of templates) {
+            const suffixes = Array.isArray(template.nameSuffixes[0])
+                ? template.nameSuffixes[selectedRealmIdx]
+                : template.nameSuffixes;
+
+            if (!suffixes) continue;
+
+            const typeName = slotConfig[template.type]?.name || template.type;
+            const typeIcon = slotConfig[template.type]?.fallbackIcon || 'fa-box';
+
+            html += `<div class="bg-black/20 rounded p-2">
+                <div class="text-gray-400 text-xs mb-2 flex items-center gap-1">
+                    <i class="fa ${typeIcon}"></i> ${typeName}
+                </div>
+                <div class="grid grid-cols-3 gap-1">`;
+
+            for (const suffix of suffixes) {
+                const key = `${template.type}_${currentRarity.name}_${suffix}`;
+                const isUnlocked = collection.equipmentTypes.includes(key);
+                const bgClass = isUnlocked ? 'bg-green-900/30 border-green-500/30' : 'bg-gray-800/30 border-gray-700/20';
+                const textClass = isUnlocked ? 'text-green-400' : 'text-gray-600';
+
+                html += `<div class="${bgClass} border rounded px-2 py-1.5 text-center">
+                    <div class="${textClass} text-xs">${suffix}</div>
+                </div>`;
+            }
+
+            html += '</div></div>';
+        }
+        html += '</div>';
+
+        container.innerHTML = html;
+    }
+
+    // 购买仙玉商品
+    buyVIPItem(itemId) {
+        const result = this.jadeShop.buyItem(itemId);
+        const msgEl = document.getElementById('vip-shop-message');
+        if (msgEl) {
+            msgEl.textContent = result.message;
+            msgEl.className = result.success ? 'text-green-400 text-center text-sm mb-4' : 'text-red-400 text-center text-sm mb-4';
+            msgEl.classList.remove('hidden');
+        }
+
+        if (result.success) {
+            // 装备箱掉落处理
+            if (result.equipment) {
+                // 图鉴：记录获取装备
+                if (this.collectionSystem) {
+                    this.collectionSystem.recordEquipment(result.equipment);
+                }
+                const equipped = this.checkAndEquipBetterGear(result.equipment);
+                if (!equipped) {
+                    this.gameState.player.inventory.items.push(result.equipment);
+                    this.addBattleLog(`获得${result.equipment.rarityDisplayName} ${result.equipment.name}，已放入背包！`);
+                } else {
+                    this.addBattleLog(`获得${result.equipment.rarityDisplayName} ${result.equipment.name}，已自动装备！`);
+                }
+            }
+            // 更新UI
+            const jadeDisplay = document.getElementById('vip-shop-jade-balance');
+            if (jadeDisplay) jadeDisplay.textContent = this.gameState.resources.jade || 0;
+            this.updateUI();
+            this.updateHealthBars();
+
+            // 3秒后隐藏消息
+            setTimeout(() => { if (msgEl) msgEl.classList.add('hidden'); }, 3000);
+        }
+    }
+
+    // 渲染充值套餐卡片
+    renderRechargePackages() {
+        const container = document.getElementById('recharge-packages');
+        if (!container) return;
+
+        container.innerHTML = this.vipSystem.getRechargeCodes().map((pkg, index) => `
+            <div class="bg-gradient-to-br from-yellow-900/30 to-yellow-800/20 border border-yellow-500/30 rounded-lg p-3">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-yellow-300 font-bold text-sm">${pkg.label}</span>
+                    <span class="text-purple-300 font-bold text-lg">${pkg.jade}仙玉</span>
+                </div>
+                <button class="w-full py-1.5 rounded bg-gradient-to-r from-yellow-600 to-yellow-500 text-black font-medium text-xs hover:opacity-80 transition-opacity" onclick="game.selectRechargePackage(${index})">
+                    立即充值
+                </button>
+                <div id="recharge-pw-${index}" class="recharge-password-group mt-2 hidden">
+                    <input type="text" placeholder="请输入充值码" class="w-full px-2 py-1 rounded bg-black/40 border border-yellow-500/30 text-white text-xs mb-1 focus:outline-none focus:border-yellow-400">
+                    <button class="w-full py-1 rounded bg-gradient-to-r from-green-600 to-green-500 text-white text-xs hover:opacity-80" onclick="game.confirmRecharge(${index})">确认</button>
+                </div>
+                <div id="recharge-msg-${index}" class="recharge-message hidden text-xs mt-1"></div>
+            </div>
+        `).join('');
+    }
+
+    // 渲染仙玉商店商品
+    renderVIPShopItems() {
+        const container = document.getElementById('vip-shop-items');
+        if (!container) return;
+
+        container.innerHTML = JadeShop.SHOP_ITEMS.map(item => `
+            <div class="bg-gradient-to-br from-purple-900/30 to-purple-800/20 border border-purple-500/30 rounded-lg p-3">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-purple-200 font-bold">${item.name}</span>
+                    <span class="text-purple-300 text-sm">${item.jade}仙玉</span>
+                </div>
+                <p class="text-light/60 text-xs mb-2">${item.desc}</p>
+                <button class="w-full py-1.5 rounded bg-gradient-to-r from-purple-600 to-purple-500 text-white text-xs font-medium hover:opacity-80 transition-opacity" onclick="game.buyVIPItem('${item.id}')">
+                    购买
+                </button>
+            </div>
+        `).join('');
+    }
+
     // 同步自动采集设置到弹窗
     syncAutoCollectSettingsToModal() {
         const settings = this.gameState.settings.autoCollectSettings;
@@ -3606,6 +4112,23 @@ class EndlessWinterGame {
                             };
                         }
 
+                        // VIP系统数据迁移（兼容旧存档）
+                        if (!this.gameState.vip) {
+                            this.gameState.vip = { level: 0, totalRecharged: 0 };
+                        }
+                        if (this.gameState.resources.jade === undefined) {
+                            this.gameState.resources.jade = 0;
+                        }
+
+                        // 图鉴系统数据迁移（兼容旧存档）
+                        if (!this.gameState.collection) {
+                            this.gameState.collection = {
+                                enemies: [],
+                                equipmentTypes: [],
+                                rewardedCategories: []
+                            };
+                        }
+
                         // 检查临时状态是否过期
                         this.checkTemporaryStats();
                     } else {
@@ -3760,6 +4283,16 @@ class EndlessWinterGame {
             streak: 0,
             totalCompleted: 0,
             completedToday: false
+        };
+
+        // 11. 初始化VIP系统
+        this.gameState.vip = { level: 0, totalRecharged: 0 };
+
+        // 12. 初始化图鉴系统
+        this.gameState.collection = {
+            enemies: [],
+            equipmentTypes: [],
+            rewardedCategories: []
         };
 
         console.log('新玩家初始化完成');

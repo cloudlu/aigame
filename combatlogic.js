@@ -60,72 +60,81 @@ EndlessWinterGame.prototype.attackEnemy = function() {
         () => {
             if (this.gameState.enemy.hp <= 0) return;
 
-            // 计算敌人反击伤害（检查防御/免疫状态）
-            let isImmune = false;
-            let finalEnemyDamage = enemyDamage;
-            let logMsg = '';
-
-            if (this.gameState.player.immuneNextAttack) {
-                this.gameState.player.immuneNextAttack = false;
-                isImmune = true;
-                this.addBattleLog(`你完全免疫了${this.gameState.enemy.name}的攻击！`);
-            } else if (this.gameState.player.defenseActive) {
-                finalEnemyDamage = Math.max(1, Math.floor(finalEnemyDamage * 0.5));
-                if (this.gameState.enemy.isBoss && this.gameState.enemy.energy >= 50) {
-                    const skillDamage = Math.floor(enemyDamage * 1.5);
-                    finalEnemyDamage = Math.max(1, Math.floor((enemyDamage + skillDamage) * 0.5));
-                    this.gameState.enemy.energy -= 50;
-                    logMsg = `${this.gameState.enemy.name}释放了技能，对你造成了${finalEnemyDamage}点伤害！（防御减免50%）`;
-                } else {
-                    logMsg = `${this.gameState.enemy.name}对你造成了${finalEnemyDamage}点伤害！（防御减免50%）`;
-                }
-                this.gameState.player.defenseActive = false;
-                this.removeDefenseEffect();
-            } else {
-                if (this.gameState.enemy.isBoss && this.gameState.enemy.energy >= 50) {
-                    const skillDamage = Math.floor(enemyDamage * 1.5);
-                    finalEnemyDamage = enemyDamage + skillDamage;
-                    this.gameState.enemy.energy -= 50;
-                    logMsg = `${this.gameState.enemy.name}释放了技能，对你造成了${finalEnemyDamage}点伤害！`;
-                } else {
-                    logMsg = `${this.gameState.enemy.name}对你造成了${finalEnemyDamage}点伤害！`;
-                }
-            }
-
-            // 护盾吸收
-            let actualDamage = finalEnemyDamage;
-            if (!isImmune && this.gameState.player.shieldValue && this.gameState.player.shieldValue > 0) {
-                if (this.gameState.player.shieldValue >= actualDamage) {
-                    this.gameState.player.shieldValue -= actualDamage;
-                    this.addBattleLog(`护盾吸收了${actualDamage}点伤害！剩余护盾：${this.gameState.player.shieldValue}`);
-                    actualDamage = 0;
-                } else {
-                    const absorbed = this.gameState.player.shieldValue;
-                    actualDamage -= this.gameState.player.shieldValue;
-                    this.gameState.player.shieldValue = 0;
-                    this.addBattleLog(`护盾吸收了${absorbed}点伤害，护盾破碎！剩余伤害：${actualDamage}`);
-                }
-            }
-
-            // 播放敌人攻击动画
+            // 播放敌人攻击动画（先播放动画，在碰撞回调中判定闪避/防御/伤害）
             this.playEnemyAttackAnimation(
-                // 敌人碰撞回调：敌人到达玩家位置时
+                // 敌人碰撞回调：敌人到达玩家位置时，先判定闪避再消耗状态
                 () => {
                     if (!enemyHit) {
+                        // 闪避成功，不消耗任何防御状态
                         this.addBattleLog(`你闪避了${this.gameState.enemy.name}的攻击！`);
                         this.showDodge(this.battle3D.player, '闪避！');
-                    } else if (isImmune) {
-                        // 免疫已在上面处理
-                    } else if (actualDamage > 0) {
-                        this.gameState.player.hp -= actualDamage;
-                        if (this.gameState.player.hp < 0) this.gameState.player.hp = 0;
-                        this.playPlayerHitAnimation();
-                        this.showDamage(this.battle3D.player, actualDamage, 'red');
-                    }
-                    if (!isImmune && !enemyHit) {
-                        // already logged above
-                    } else if (!isImmune && logMsg) {
-                        this.addBattleLog(logMsg);
+                    } else if (this.gameState.player.immuneNextAttack) {
+                        this.gameState.player.immuneNextAttack = false;
+                        this.addBattleLog(`你完全免疫了${this.gameState.enemy.name}的攻击！`);
+                    } else if (this.gameState.player.defenseActive) {
+                        let finalEnemyDamage = Math.max(1, Math.floor(enemyDamage * 0.5));
+                        if (this.gameState.enemy.isBoss && this.gameState.enemy.energy >= 50) {
+                            const skillDamage = Math.floor(enemyDamage * 1.5);
+                            finalEnemyDamage = Math.max(1, Math.floor((enemyDamage + skillDamage) * 0.5));
+                            this.gameState.enemy.energy -= 50;
+                            this.addBattleLog(`${this.gameState.enemy.name}释放了技能，对你造成了${finalEnemyDamage}点伤害！（防御减免50%）`);
+                        } else {
+                            this.addBattleLog(`${this.gameState.enemy.name}对你造成了${finalEnemyDamage}点伤害！（防御减免50%）`);
+                        }
+                        this.gameState.player.defenseActive = false;
+                        this.removeDefenseEffect();
+
+                        // 护盾吸收
+                        let actualDamage = finalEnemyDamage;
+                        if (this.gameState.player.shieldValue && this.gameState.player.shieldValue > 0) {
+                            if (this.gameState.player.shieldValue >= actualDamage) {
+                                this.gameState.player.shieldValue -= actualDamage;
+                                this.addBattleLog(`护盾吸收了${actualDamage}点伤害！剩余护盾：${this.gameState.player.shieldValue}`);
+                                actualDamage = 0;
+                            } else {
+                                const absorbed = this.gameState.player.shieldValue;
+                                actualDamage -= this.gameState.player.shieldValue;
+                                this.gameState.player.shieldValue = 0;
+                                this.addBattleLog(`护盾吸收了${absorbed}点伤害，护盾破碎！剩余伤害：${actualDamage}`);
+                            }
+                        }
+                        if (actualDamage > 0) {
+                            this.gameState.player.hp -= actualDamage;
+                            if (this.gameState.player.hp < 0) this.gameState.player.hp = 0;
+                            this.playPlayerHitAnimation();
+                            this.showDamage(this.battle3D.player, actualDamage, 'red');
+                        }
+                    } else {
+                        let finalEnemyDamage = enemyDamage;
+                        if (this.gameState.enemy.isBoss && this.gameState.enemy.energy >= 50) {
+                            const skillDamage = Math.floor(enemyDamage * 1.5);
+                            finalEnemyDamage = enemyDamage + skillDamage;
+                            this.gameState.enemy.energy -= 50;
+                            this.addBattleLog(`${this.gameState.enemy.name}释放了技能，对你造成了${finalEnemyDamage}点伤害！`);
+                        } else {
+                            this.addBattleLog(`${this.gameState.enemy.name}对你造成了${finalEnemyDamage}点伤害！`);
+                        }
+
+                        // 护盾吸收
+                        let actualDamage = finalEnemyDamage;
+                        if (this.gameState.player.shieldValue && this.gameState.player.shieldValue > 0) {
+                            if (this.gameState.player.shieldValue >= actualDamage) {
+                                this.gameState.player.shieldValue -= actualDamage;
+                                this.addBattleLog(`护盾吸收了${actualDamage}点伤害！剩余护盾：${this.gameState.player.shieldValue}`);
+                                actualDamage = 0;
+                            } else {
+                                const absorbed = this.gameState.player.shieldValue;
+                                actualDamage -= this.gameState.player.shieldValue;
+                                this.gameState.player.shieldValue = 0;
+                                this.addBattleLog(`护盾吸收了${absorbed}点伤害，护盾破碎！剩余伤害：${actualDamage}`);
+                            }
+                        }
+                        if (actualDamage > 0) {
+                            this.gameState.player.hp -= actualDamage;
+                            if (this.gameState.player.hp < 0) this.gameState.player.hp = 0;
+                            this.playPlayerHitAnimation();
+                            this.showDamage(this.battle3D.player, actualDamage, 'red');
+                        }
                     }
                 },
                 // 敌人结束回调
@@ -429,6 +438,11 @@ EndlessWinterGame.prototype.triggerEnemyCounterattack = function(finalDefense, e
 
 // 敌人被击败
 EndlessWinterGame.prototype.enemyDefeated = function() {
+    // 图鉴：记录击杀敌人
+    if (this.collectionSystem) {
+        this.collectionSystem.recordEnemy(this.gameState.enemy);
+    }
+
     // 显示敌人倒地的画面
     this.showEnemyDefeatedAnimation();
 
@@ -483,6 +497,10 @@ EndlessWinterGame.prototype.enemyDefeated = function() {
     // 装备掉落
     const droppedEquipment = this.equipmentSystem.generateEquipmentDrop();
     if (droppedEquipment) {
+        // 图鉴：记录获取装备
+        if (this.collectionSystem) {
+            this.collectionSystem.recordEquipment(droppedEquipment);
+        }
         const equipped = this.checkAndEquipBetterGear(droppedEquipment);
         if (!equipped) {
             this.gameState.player.inventory.push(droppedEquipment);

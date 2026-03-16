@@ -414,6 +414,11 @@
                         <span class="text-light/70 hidden sm:inline">突破石:</span>
                         <span id="breakthrough-stones" class="text-gold font-medium">0</span>
                     </div>
+                    <div class="flex items-center gap-1">
+                        <i class="fa fa-gem text-purple-400"></i>
+                        <span class="text-light/70 hidden sm:inline">仙玉:</span>
+                        <span id="jade" class="text-purple-300 font-medium">0</span>
+                    </div>
                 </div>
 
                 <!-- 弹性空间 -->
@@ -433,6 +438,8 @@
                     <span id="nav-realm-level" class="text-xs opacity-60">（1阶）</span>
                     <span id="realm-display" class="hidden">武者期 · 初期</span>
                 </div>
+                <!-- VIP徽章 -->
+                <div id="nav-vip-badge" class="px-2 py-1 rounded-full bg-gradient-to-r from-yellow-600 to-yellow-400 text-black font-bold text-xs shadow-lg shadow-yellow-500/30 flex items-center gap-1 shrink-0" style="display:none"></div>
 
                 <!-- 功能按钮 -->
                 <div class="flex items-center gap-1">
@@ -442,8 +449,17 @@
                     <button id="shop-btn" class="px-2 py-1 rounded-lg bg-gradient-to-r from-yellow-600 to-yellow-500 text-white text-xs font-medium hover:opacity-80 transition-opacity flex items-center gap-1" data-tooltip="商店">
                         <i class="fa fa-store"></i><span class="hidden sm:inline"> 商店</span>
                     </button>
+                    <button id="recharge-btn" class="px-2 py-1 rounded-lg bg-gradient-to-r from-yellow-500 to-amber-400 text-black text-xs font-bold hover:opacity-80 transition-opacity flex items-center gap-1" data-tooltip="充值">
+                        <i class="fa fa-gem"></i><span class="hidden sm:inline"> 充值</span>
+                    </button>
+                    <button id="vip-shop-btn" class="px-2 py-1 rounded-lg bg-gradient-to-r from-purple-600 to-purple-500 text-white text-xs font-medium hover:opacity-80 transition-opacity flex items-center gap-1" data-tooltip="仙玉商店">
+                        <i class="fa fa-crown"></i><span class="hidden sm:inline"> 仙玉</span>
+                    </button>
                     <button id="skill-tree-btn" class="px-2 py-1 rounded-lg bg-gradient-to-r from-spirit to-primary text-white text-xs font-medium hover:opacity-80 transition-opacity flex items-center gap-1" data-tooltip="技能树">
                         <i class="fa fa-star"></i><span class="hidden sm:inline"> 技能</span>
+                    </button>
+                    <button id="collection-btn" class="px-2 py-1 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 text-white text-xs font-medium hover:opacity-80 transition-opacity flex items-center gap-1" data-tooltip="图鉴">
+                        <i class="fa fa-book"></i><span class="hidden sm:inline"> 图鉴</span>
                     </button>
                     <button id="open-inventory-btn" class="px-2 py-1 rounded-lg bg-gradient-to-r from-primary to-spirit text-white text-xs font-medium hover:opacity-80 transition-opacity flex items-center gap-1" data-tooltip="背包">
                         <i class="fa fa-backpack"></i><span class="hidden sm:inline"> 背包</span>
@@ -1669,12 +1685,92 @@
         </div>
     </div>
 
+    <!-- ==================== VIP充值弹窗 ==================== -->
+    <div id="recharge-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
+        <div class="bg-dark-card rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-yellow-500/30 backdrop-blur-sm shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-yellow-400 flex items-center gap-2">
+                    <i class="fa fa-gem"></i> 仙玉充值
+                </h2>
+                <button id="close-recharge-modal" class="text-light/60 hover:text-white transition-colors">
+                    <i class="fa fa-times text-xl"></i>
+                </button>
+            </div>
+            <!-- 当前状态 -->
+            <div class="flex items-center gap-4 mb-4 p-3 rounded-lg bg-yellow-900/20 border border-yellow-500/20">
+                <div class="flex items-center gap-2">
+                    <i class="fa fa-gem text-purple-400"></i>
+                    <span class="text-light/70">当前仙玉:</span>
+                    <span id="recharge-jade-balance" class="text-purple-300 font-bold">0</span>
+                </div>
+                <div class="h-4 w-px bg-yellow-500/30"></div>
+                <div class="flex items-center gap-2">
+                    <i class="fa fa-crown text-yellow-400"></i>
+                    <span id="recharge-vip-level" class="text-yellow-300 font-bold">普通修士</span>
+                </div>
+            </div>
+            <!-- 套餐卡片网格 -->
+            <div id="recharge-packages" class="grid grid-cols-2 gap-3"></div>
+        </div>
+    </div>
+
+    <!-- ==================== 仙玉商店弹窗 ==================== -->
+    <div id="vip-shop-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
+        <div class="bg-dark-card rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-purple-500/30 backdrop-blur-sm shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-purple-400 flex items-center gap-2">
+                    <i class="fa fa-crown"></i> 仙玉商店
+                </h2>
+                <button id="close-vip-shop-modal" class="text-light/60 hover:text-white transition-colors">
+                    <i class="fa fa-times text-xl"></i>
+                </button>
+            </div>
+            <!-- 仙玉余额 -->
+            <div class="flex items-center gap-2 mb-4 p-3 rounded-lg bg-purple-900/20 border border-purple-500/20">
+                <i class="fa fa-gem text-purple-400"></i>
+                <span class="text-light/70">仙玉余额:</span>
+                <span id="vip-shop-jade-balance" class="text-purple-300 font-bold">0</span>
+            </div>
+            <!-- 购买消息 -->
+            <div id="vip-shop-message" class="hidden text-center text-sm mb-4"></div>
+            <!-- 商品网格 -->
+            <div id="vip-shop-items" class="grid grid-cols-2 gap-3"></div>
+        </div>
+    </div>
+
+    <!-- 图鉴弹窗 -->
+    <div id="collection-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
+        <div class="bg-dark-card rounded-xl p-6 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-indigo-500/30 backdrop-blur-sm shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-indigo-400 flex items-center gap-2">
+                    <i class="fa fa-book"></i> 图鉴
+                    <span id="collection-total" class="text-xs text-gray-400 font-normal ml-2"></span>
+                </h2>
+                <button id="close-collection-modal" class="text-light/60 hover:text-white transition-colors">
+                    <i class="fa fa-times text-xl"></i>
+                </button>
+            </div>
+            <!-- Tab切换 -->
+            <div class="flex gap-2 mb-4">
+                <button id="collection-enemy-tab" class="px-4 py-1.5 rounded-lg text-xs font-medium bg-blue-600 text-white">敌人图鉴</button>
+                <button id="collection-equip-tab" class="px-4 py-1.5 rounded-lg text-xs font-medium text-gray-400 hover:text-white">装备图鉴</button>
+            </div>
+            <!-- 子Tab区域（由JS动态渲染） -->
+            <div id="collection-subtabs" class="mb-3"></div>
+            <!-- 内容区域 -->
+            <div id="collection-content"></div>
+        </div>
+    </div>
+
     <!-- 游戏脚本: 独立类系统（需在 game.js 之前加载） -->
     <script src="equipment.js"></script>
     <script src="realmSkillSystem.js"></script>
     <script src="mainQuest.js"></script>
     <script src="dailyQuest.js"></script>
     <script src="audio.js"></script>
+    <script src="vipSystem.js"></script>
+    <script src="jadeShop.js"></script>
+    <script src="collectionSystem.js"></script>
     <!-- 游戏核心 -->
     <script src="game.js"></script>
     <!-- 原型扩展模块（game.js 定义之后） -->

@@ -327,6 +327,114 @@ app.get('/api/metadata', verifyToken, (req, res) => {
     }
 });
 
+// 加载充值码配置
+const RECHARGE_CODES_PATH = path.join(__dirname, 'config', 'vipcode.json');
+let rechargeCodes = [];
+if (fs.existsSync(RECHARGE_CODES_PATH)) {
+    try {
+        rechargeCodes = JSON.parse(fs.readFileSync(RECHARGE_CODES_PATH, 'utf8'));
+        console.log(`[充值] 已加载${rechargeCodes.length}个充值码`);
+    } catch (e) {
+        console.error('[充值] 充值码加载失败:', e);
+    }
+} else {
+    console.warn('[充值] 未找到充值码配置文件:', RECHARGE_CODES_PATH);
+}
+
+// 充值套餐列表接口（不包含密码）
+app.get('/api/recharge/packages', verifyToken, (req, res) => {
+    try {
+        const packages = rechargeCodes.map(r => ({ jade: r.jade, label: r.label }));
+        res.json({ success: true, packages });
+    } catch (error) {
+        res.status(500).json({ success: false, message: '获取套餐失败' });
+    }
+});
+
+// 充值验证接口
+app.post('/api/recharge', verifyToken, (req, res) => {
+    try {
+        const { code } = req.body;
+        if (!code) {
+            return res.status(400).json({ success: false, message: '请输入充值码' });
+        }
+
+        const upperCode = code.trim().toUpperCase();
+        const found = rechargeCodes.find(r => r.code === upperCode);
+        if (!found) {
+            return res.json({ success: false, message: '充值码无效！' });
+        }
+
+        // 读取用户存档并增加仙玉
+        const userId = req.user.userId;
+        const saveFilePath = path.join(SAVE_DIR, `${userId}.json`);
+        if (!fs.existsSync(saveFilePath)) {
+            return res.status(404).json({ success: false, message: '存档不存在' });
+        }
+
+        const gameState = JSON.parse(fs.readFileSync(saveFilePath, 'utf8'));
+
+        // 初始化仙玉和VIP字段
+        if (!gameState.resources) gameState.resources = {};
+        if (gameState.resources.jade === undefined) gameState.resources.jade = 0;
+        if (!gameState.vip) gameState.vip = { level: 0, totalRecharged: 0 };
+
+        // 增加仙玉
+        gameState.resources.jade += found.jade;
+        gameState.vip.totalRecharged += found.jade;
+
+        // 重新计算VIP等级
+        let newLevel = 0;
+        const VIP_LEVELS = [
+            { level: 0,  requiredJade: 0,     label: '普通修士' },
+            { level: 1,  requiredJade: 60,    label: '入门弟子' },
+            { level: 2,  requiredJade: 360,   label: '外门弟子' },
+            { level: 3,  requiredJade: 680,   label: '内门弟子' },
+            { level: 4,  requiredJade: 1280,  label: '精英弟子' },
+            { level: 5,  requiredJade: 2000,  label: '核心弟子' },
+            { level: 6,  requiredJade: 3280,  label: '长老候选' },
+            { level: 7,  requiredJade: 5000,  label: '执事长老' },
+            { level: 8,  requiredJade: 6480,  label: '副掌门' },
+            { level: 9,  requiredJade: 10000, label: '掌门' },
+            { level: 10, requiredJade: 15000, label: '太上长老' },
+            { level: 11, requiredJade: 20000, label: '圣者' },
+            { level: 12, requiredJade: 30000, label: '仙尊' }
+        ];
+        for (const v of VIP_LEVELS) {
+            if (gameState.vip.totalRecharged >= v.requiredJade) {
+                newLevel = v.level;
+            } else {
+                break;
+            }
+        }
+        const oldLevel = gameState.vip.level;
+        gameState.vip.level = newLevel;
+
+        // 保存存档
+        fs.writeFileSync(saveFilePath, JSON.stringify(gameState, null, 2));
+
+        // 构建响应
+        const response = {
+            success: true,
+            jade: found.jade,
+            totalJade: gameState.resources.jade,
+            message: `充值成功！获得${found.jade}仙玉`,
+            label: found.label,
+            vipLevel: newLevel,
+            vipLeveledUp: newLevel > oldLevel
+        };
+
+        if (response.vipLeveledUp) {
+            response.vipInfo = VIP_LEVELS[newLevel];
+        }
+
+        res.json(response);
+    } catch (error) {
+        console.error('充值处理失败:', error);
+        res.status(500).json({ success: false, message: '充值处理失败' });
+    }
+});
+
 // 静态文件服务
 app.use(express.static(__dirname));
 

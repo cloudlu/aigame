@@ -1256,8 +1256,26 @@ class EquipmentSystem {
                 }
             }
         }
+
+        // 叠加VIP等级加成
+        if (this.game.vipSystem) {
+            const bonus = this.game.vipSystem.getBonus();
+            const effects = this.game.gameState.player.equipmentEffects;
+            if (bonus.attackBonus > 0) {
+                effects.attack = Math.floor(effects.attack * (1 + bonus.attackBonus / 100));
+            }
+            if (bonus.defenseBonus > 0) {
+                effects.defense = Math.floor(effects.defense * (1 + bonus.defenseBonus / 100));
+            }
+            if (bonus.hpBonus > 0) {
+                effects.hp = Math.floor(effects.hp * (1 + bonus.hpBonus / 100));
+            }
+            if (bonus.critBonus > 0) {
+                effects.criticalRate = (effects.criticalRate || 0) + bonus.critBonus;
+            }
+        }
     }
-    
+
     // 获取属性描述
     getStatsDescription(stats) {
         if (!stats) return '';
@@ -1436,8 +1454,10 @@ class EquipmentSystem {
         const realmIdx = Math.min(Math.max(0, level - 1), (this.game.metadata.equipmentPrefixesByRealm?.length || 1) - 1);
         const prefixes = this.game.metadata.equipmentPrefixesByRealm?.[realmIdx] || ["", "", "", "", ""];
         const prefix = prefixes[rarityIdx] || "";
-        const suffixIndex = Math.floor(Math.random() * template.nameSuffixes.length);
-        const suffix = template.nameSuffixes[suffixIndex] || "装备";
+        // 二维数组：nameSuffixes[realmIdx][suffixIndex]
+        const suffixPool = Array.isArray(template.nameSuffixes[0]) ? template.nameSuffixes[realmIdx] : template.nameSuffixes;
+        const suffixIndex = Math.floor(Math.random() * suffixPool.length);
+        const suffix = suffixPool[suffixIndex] || "装备";
         const name = prefix + suffix;
 
         // 获取境界名称
@@ -1449,6 +1469,7 @@ class EquipmentSystem {
             id: `${type}_${level}_${rarity}_${Math.floor(Math.random() * 1000)}`,
             name: name,
             type: type,
+            suffix: suffix,
             level: level,
             realmName: realmName,
             refineLevel: 0,

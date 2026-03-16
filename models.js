@@ -240,7 +240,7 @@ EndlessWinterGame.prototype.createEnemyModel = function() {
     enemyGroup.scaling.setAll(scale);
 
     // 设置位置（右侧）
-    enemyGroup.position.x = 2;
+    enemyGroup.position.x = this.battle3D.enemyStartX;
     // 飞行类敌人（鸟、幽灵）稍微浮空，其他敌人站在地面上
     const isFlying = category === 'BIRD' || category === 'GHOST';
     enemyGroup.position.y = isFlying ? -0.7 : -1;

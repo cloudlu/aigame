@@ -281,14 +281,17 @@ EndlessWinterGame.prototype.createBattleScene = function(enemyInfo) {
         battleEffects: [],
         fireEffects: [],
         enemies: [],
-        defenseEffect: null
+        defenseEffect: null,
+        // 战斗布局配置（修改间距只需调整这里）
+        playerStartX: -2.5,
+        enemyStartX: 2.5
     };
 
     // 创建玩家和敌人模型
     this.createPlayerModel();
     // 设置玩家位置（左侧）
     if (this.battle3D.player) {
-        this.battle3D.player.position.x = -2;
+        this.battle3D.player.position.x = this.battle3D.playerStartX;
         this.battle3D.player.position.y = 0;
         this.battle3D.player.position.z = 0;
         this.battle3D.player.rotation.y = Math.PI / 2; // 面向右侧敌人（+X方向）
@@ -451,6 +454,7 @@ EndlessWinterGame.prototype.playAttackAnimation = function(hitCallback, endCallb
     this.battle3D.isAttacking = true;
     const player = this.battle3D.player;
     const originalX = player.position.x;
+    const attackRange = this.battle3D.enemyStartX - this.battle3D.playerStartX;
     const startTime = Date.now();
     const animationDuration = 500;
     let hitFired = false;
@@ -460,9 +464,9 @@ EndlessWinterGame.prototype.playAttackAnimation = function(hitCallback, endCallb
         const progress = Math.min(elapsed / animationDuration, 1);
 
         if (progress < 0.5) {
-            player.position.x = originalX + Math.sin(progress * Math.PI) * 3.5;
+            player.position.x = originalX + Math.sin(progress * Math.PI) * attackRange;
         } else {
-            player.position.x = originalX + Math.sin((1 - progress) * Math.PI) * 3.5;
+            player.position.x = originalX + Math.sin((1 - progress) * Math.PI) * attackRange;
         }
 
         // 碰撞点触发（~45%进度，玩家到达敌人位置时）
@@ -494,6 +498,7 @@ EndlessWinterGame.prototype.playSkillAttackAnimation = function(isLuckyStrike = 
     this.battle3D.isAttacking = true;
     const player = this.battle3D.player;
     const originalX = player.position.x;
+    const attackRange = this.battle3D.enemyStartX - this.battle3D.playerStartX;
     const startTime = Date.now();
     const animationDuration = 800;
     let hitFired = false;
@@ -503,7 +508,7 @@ EndlessWinterGame.prototype.playSkillAttackAnimation = function(isLuckyStrike = 
         const progress = Math.min(elapsed / animationDuration, 1);
 
         player.rotation.y = Math.PI / 2 + progress * Math.PI * 2;
-        player.position.x = originalX + Math.sin(progress * Math.PI) * 3.5;
+        player.position.x = originalX + Math.sin(progress * Math.PI) * attackRange;
 
         // 技能特效（30%-70%进度）
         if (progress > 0.3 && progress < 0.7 && this.battle3D.scene) {
@@ -616,6 +621,7 @@ EndlessWinterGame.prototype.playEnemyAttackAnimation = function(hitCallback, end
     this.battle3D.isAttacking = true;
     const enemy = this.battle3D.enemy;
     const originalX = enemy.position.x;
+    const attackRange = this.battle3D.enemyStartX - this.battle3D.playerStartX;
     const startTime = Date.now();
     const animationDuration = 600;
     let hitFired = false;
@@ -625,9 +631,9 @@ EndlessWinterGame.prototype.playEnemyAttackAnimation = function(hitCallback, end
         const progress = Math.min(elapsed / animationDuration, 1);
 
         if (progress < 0.5) {
-            enemy.position.x = originalX - Math.sin(progress * Math.PI) * 2.5;
+            enemy.position.x = originalX - Math.sin(progress * Math.PI) * attackRange;
         } else {
-            enemy.position.x = originalX - Math.sin((1 - progress) * Math.PI) * 2.5;
+            enemy.position.x = originalX - Math.sin((1 - progress) * Math.PI) * attackRange;
         }
 
         // 碰撞点触发（~45%进度，敌人到达玩家位置时）
