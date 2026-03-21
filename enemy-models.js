@@ -531,3 +531,105 @@ EndlessCultivationGame.prototype.buildHumanoidEnemy = function(group, material, 
     eye2.position.set(SIZES.HUMANOID_HEAD_SIZE * 0.25, SIZES.HUMANOID_LEG_HEIGHT + SIZES.HUMANOID_BODY_HEIGHT + SIZES.HUMANOID_HEAD_SIZE * 0.55, SIZES.HUMANOID_HEAD_SIZE * 0.4);
     eye2.material = eyeMat;
 };
+
+// ==================== 副本系统：替换敌人模型 ====================
+
+/**
+ * 替换战斗场景中的敌人模型（用于副本连续战斗）
+ * @param {Object} newEnemy - 新敌人数据
+ */
+EndlessCultivationGame.prototype.replaceEnemyInBattle = function(newEnemy) {
+    if (!this.battle3D || !this.battle3D.scene) {
+        console.error('战斗场景未初始化');
+        return;
+    }
+
+    const scene = this.battle3D.scene;
+
+    // 1. 移除旧敌人模型
+    if (this.battle3D.enemy) {
+        // 递归销毁所有子网格
+        const disposeNode = (node) => {
+            if (node.getChildMeshes) {
+                node.getChildMeshes().forEach(child => disposeNode(child));
+            }
+            if (node.dispose) {
+                node.dispose();
+            }
+        };
+        disposeNode(this.battle3D.enemy);
+        this.battle3D.enemy = null;
+    }
+
+    // 2. 更新游戏状态中的敌人数据
+    this.gameState.enemy = newEnemy;
+
+    // 3. 创建新敌人模型（复用createEnemyGroup逻辑）
+    const enemyInfo = {
+        name: newEnemy.name,
+        isBoss: newEnemy.isBoss,
+        isElite: newEnemy.isElite,
+        position: {
+            x: this.battle3D.enemyStartX || 5,
+            y: 0,
+            z: 0
+        }
+    };
+
+    // 使用统一的敌人创建方法
+    this.battle3D.enemy = this.createEnemyGroup(enemyInfo);
+
+    // 4. 重置敌人血条
+    if (this.updateEnemyHealthBar) {
+        this.updateEnemyHealthBar();
+    }
+
+    // 5. 重置战斗状态
+    if (this.battle3D.isAttacking) {
+        this.battle3D.isAttacking = false;
+    }
+
+    console.log(`✅ 敌人已替换为: ${newEnemy.name} (Lv.${newEnemy.level})`);
+};
+
+/**
+ * 清理战斗场景（用于退出副本）
+ */
+EndlessCultivationGame.prototype.cleanupBattleScene = function() {
+    if (!this.battle3D) return;
+
+    // 停止渲染循环
+    if (this.battle3D.engine) {
+        this.battle3D.engine.stopRenderLoop();
+    }
+
+    // 清理粒子系统
+    if (this.battle3D.particleSystems) {
+        this.battle3D.particleSystems.forEach(ps => {
+            if (ps && ps.dispose) {
+                ps.dispose();
+            }
+        });
+        this.battle3D.particleSystems = [];
+    }
+
+    // 清理场景
+    if (this.battle3D.scene) {
+        this.battle3D.scene.dispose();
+        this.battle3D.scene = null;
+    }
+
+    // 清理引擎
+    if (this.battle3D.engine) {
+        this.battle3D.engine.dispose();
+        this.battle3D.engine = null;
+    }
+
+    // 重置状态
+    this.battle3D.isSceneReady = false;
+    this.battle3D.isAttacking = false;
+    this.battle3D.player = null;
+    this.battle3D.enemy = null;
+
+    console.log('✅ 战斗场景已清理');
+};

@@ -1002,7 +1002,8 @@
             </div>
 
             <!-- 自动采集设置 -->
-            <div class="mb-6 p-4 rounded-lg bg-gradient-to-r from-primary/10 to-spirit/10 border border-primary/30">
+            <!-- ❌ 已移除自动采集设置区域（v2.0资源系统重构） -->
+            <!-- <div class="mb-6 p-4 rounded-lg bg-gradient-to-r from-primary/10 to-spirit/10 border border-primary/30">
                 <div class="flex items-center justify-between mb-3">
                     <h3 class="font-medium text-white flex items-center gap-2">
                         <i class="fa fa-cog text-primary"></i> 自动采集设置
@@ -1032,7 +1033,7 @@
                         </span>
                     </label>
                 </div>
-            </div>
+            </div> -->
 
             <!-- 手动采集 -->
             <div class="mb-4">
@@ -1209,6 +1210,46 @@
                     确认注销
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- 资源副本界面 -->
+    <div id="dungeon-list-container" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
+        <div class="bg-dark-card rounded-xl p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-blue-500/30 backdrop-blur-sm shadow-2xl">
+            <!-- 标题栏 -->
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                    <i class="fa fa-dungeon text-blue-400"></i> 资源副本
+                </h2>
+                <button onclick="document.getElementById('dungeon-list-container').classList.add('hidden')" class="text-light/60 hover:text-white transition-colors">
+                    <i class="fa fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <!-- 说明文字 -->
+            <div class="bg-blue-900/20 border border-blue-500/20 rounded-lg p-4 mb-6">
+                <p class="text-sm text-blue-300">
+                    <i class="fa fa-info-circle mr-2"></i>
+                    资源副本是获取资源的唯一途径。VIP玩家可扫荡并拥有更多挑战次数。
+                </p>
+            </div>
+
+            <!-- 副本卡片容器 -->
+            <div id="dungeon-cards" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- 动态生成副本卡片 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 副本通关界面 -->
+    <div id="dungeon-complete-container" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 hidden">
+        <div class="bg-dark-card rounded-xl p-8 max-w-md w-full mx-4 border border-yellow-500/30 backdrop-blur-sm shadow-2xl">
+            <div id="dungeon-reward" class="text-center">
+                <!-- 动态生成奖励内容 -->
+            </div>
+            <button onclick="game.closeDungeonComplete()" class="mt-6 w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white py-3 rounded-lg font-bold hover:scale-105 transition-transform">
+                返回副本列表
+            </button>
         </div>
     </div>
 
@@ -1596,6 +1637,10 @@
             </div>
             <!-- 战斗容器 -->
             <div id="battle-modal-3d-container" class="flex-1 relative mt-3 bg-black/50 rounded-lg overflow-hidden">
+                <!-- 退出副本按钮（副本模式下显示） -->
+                <button id="exit-dungeon-btn" class="hidden absolute top-4 right-4 z-50 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold transition-all hover:scale-105 border-2 border-red-500 shadow-lg">
+                    <i class="fa fa-sign-out-alt mr-2"></i>退出副本
+                </button>
                 <!-- 3D场景将在这里渲染 -->
             </div>
             <div class="flex justify-end space-x-2" id="attack-skills">
@@ -1913,6 +1958,7 @@
     <script src="vipSystem.js"></script>
     <script src="jadeShop.js"></script>
     <script src="collectionSystem.js"></script>
+    <script src="dungeon.js"></script>
     <!-- 游戏核心 -->
     <script src="game.js"></script>
     <!-- 原型扩展模块（game.js 定义之后） -->

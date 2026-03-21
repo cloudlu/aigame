@@ -874,10 +874,19 @@ EndlessCultivationGame.prototype.enemyDefeated = function() {
     this.updateUI();
     this.updateHealthBars();
 
-    // 战斗结束，延迟后关闭战斗模态窗口并返回主界面
-    setTimeout(() => {
-        this.closeBattleModal();
-    }, 3000);
+    // ========== 副本战斗胜利处理 ==========
+    // 如果是副本战斗，通知副本系统
+    if (this.dungeon && this.dungeon.currentDungeon) {
+        // 副本战斗胜利，不立即关闭战斗界面
+        setTimeout(() => {
+            this.dungeon.onBattleVictory();
+        }, 1500);
+    } else {
+        // 普通战斗结束，延迟后关闭战斗模态窗口并返回主界面
+        setTimeout(() => {
+            this.closeBattleModal();
+        }, 3000);
+    }
 };
 
 // 玩家被击败
@@ -913,10 +922,19 @@ EndlessCultivationGame.prototype.playerDefeated = function() {
         this.updateHealthBars();
     }
 
-    // 关闭战斗模态窗口
-    setTimeout(() => {
-        this.closeBattleModal();
-    }, 2000);
+    // ========== 副本战斗失败处理 ==========
+    // 如果是副本战斗，通知副本系统
+    if (this.dungeon && this.dungeon.currentDungeon) {
+        // 副本战斗失败
+        setTimeout(() => {
+            this.dungeon.onBattleDefeat();
+        }, 2000);
+    } else {
+        // 普通战斗失败，关闭战斗模态窗口
+        setTimeout(() => {
+            this.closeBattleModal();
+        }, 2000);
+    }
 };
 
 // ==================== 升级系统 ====================

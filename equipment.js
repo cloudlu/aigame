@@ -139,20 +139,26 @@ class EquipmentSystem {
         return stats;
     }
     
-    // 计算武器精炼所需材料
+    // 计算装备强化所需资源（v2.0资源系统重构）
+    // 消耗灵石 + 玄铁，配合资源副本产出
     calculateRefineCost(refineLevel) {
-        // 基础材料需求
-        const baseSpiritWood = 50;
-        const baseBlackIron = 30;
-        const baseSpiritCrystal = 10;
-        
-        // 每级精炼增加的材料倍数
-        const multiplier = Math.pow(1.5, refineLevel);
-        
+        // 新的强化消耗公式（基于副本产出）
+        // +1: 1,000灵石 + 50玄铁
+        // +2: 2,500灵石 + 100玄铁
+        // +3: 5,000灵石 + 200玄铁
+        // ...
+        // +10: 500,000灵石 + 20,000玄铁
+
+        const spiritStonesBase = 1000;  // 灵石基数
+        const ironBase = 50;            // 玄铁基数
+
+        // 指数增长（配合副本产出）
+        const spiritStonesMultiplier = Math.pow(2.0, refineLevel);
+        const ironMultiplier = Math.pow(1.8, refineLevel);
+
         return {
-            spiritWood: Math.floor(baseSpiritWood * multiplier),
-            blackIron: Math.floor(baseBlackIron * multiplier),
-            spiritCrystal: Math.floor(baseSpiritCrystal * multiplier)
+            spiritStones: Math.floor(spiritStonesBase * spiritStonesMultiplier),
+            iron: Math.floor(ironBase * ironMultiplier)
         };
     }
     
@@ -175,22 +181,24 @@ class EquipmentSystem {
             return;
         }
         
-        // 计算精炼所需材料
+        // 计算强化所需资源
         const nextLevel = item.refineLevel + 1;
         const cost = this.calculateRefineCost(item.refineLevel);
-        
-        // 检查材料是否足够
-        if (this.game.gameState.resources.spiritWood < cost.spiritWood ||
-            this.game.gameState.resources.blackIron < cost.blackIron ||
-            this.game.gameState.resources.spiritCrystal < cost.spiritCrystal) {
-            this.game.addBattleLog('材料不足，无法精炼装备！');
+
+        // 检查资源是否足够（v2.0改为灵石+玄铁）
+        const player = this.game.gameState.player;
+        const resources = this.game.gameState.resources;
+
+        if ((player.spiritStones || 0) < cost.spiritStones ||
+            (resources.iron || 0) < cost.iron) {
+            this.game.addBattleLog(`资源不足！需要 ${cost.spiritStones} 灵石，${cost.iron} 玄铁`);
+            this.game.addBattleLog(`当前：${player.spiritStones || 0} 灵石，${resources.iron || 0} 玄铁`);
             return;
         }
-        
-        // 消耗材料
-        this.game.gameState.resources.spiritWood -= cost.spiritWood;
-        this.game.gameState.resources.blackIron -= cost.blackIron;
-        this.game.gameState.resources.spiritCrystal -= cost.spiritCrystal;
+
+        // 消耗资源
+        player.spiritStones = (player.spiritStones || 0) - cost.spiritStones;
+        resources.iron = (resources.iron || 0) - cost.iron;
         
         // 提升精炼等级
         item.refineLevel = nextLevel;
@@ -215,8 +223,8 @@ class EquipmentSystem {
         }
 
         // 添加日志
-        this.game.addBattleLog(`${this.getSlotDisplayName(slot)}精炼成功！当前精炼等级：+${item.refineLevel}`);
-        this.game.addBattleLog(`消耗了 ${cost.spiritWood} 灵木，${cost.blackIron} 玄铁，${cost.spiritCrystal} 灵石`);
+        this.game.addBattleLog(`${this.getSlotDisplayName(slot)}强化成功！当前强化等级：+${item.refineLevel}`);
+        this.game.addBattleLog(`消耗了 ${cost.spiritStones} 灵石，${cost.iron} 玄铁`);
 
         // 显示战力变化
         const newPower = this.game.calculatePlayerCombatPower();

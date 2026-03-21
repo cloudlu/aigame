@@ -3733,6 +3733,109 @@ const gameMetadata = {
         ]
     },
 
+    // ========== 资源副本配置 ==========
+    resourceDungeons: {
+        spirit_stone_mine: {
+            id: 'spirit_stone_mine',
+            name: '灵石矿脉',
+            description: '深入矿脉采集灵石',
+            icon: 'fa-gem',
+            scene: 'mine',
+            type: 'spirit_stones',
+            difficulties: {
+                easy: {
+                    name: '简单',
+                    enemies: 3,
+                    reward: { spirit_stones: 1000, exp: 2000 },
+                    first_clear_bonus: { spirit_stones: 500 },
+                    level_req: 1
+                },
+                medium: {
+                    name: '普通',
+                    enemies: 5,
+                    reward: { spirit_stones: 3000, exp: 5000 },
+                    first_clear_bonus: { spirit_stones: 1500 },
+                    level_req: 10
+                },
+                hard: {
+                    name: '困难',
+                    enemies: 7,
+                    reward: { spirit_stones: 10000, exp: 15000 },
+                    first_clear_bonus: { spirit_stones: 5000 },
+                    level_req: 20
+                }
+            },
+            enemy_types: ['矿石怪', '石巨人', '矿工幽灵'],
+            boss_type: '精英石巨人'
+        },
+        herb_garden: {
+            id: 'herb_garden',
+            name: '灵草园',
+            description: '采摘珍稀灵草',
+            icon: 'fa-leaf',
+            scene: 'garden',
+            type: 'herbs',
+            difficulties: {
+                easy: {
+                    name: '简单',
+                    enemies: 3,
+                    reward: { herbs: 30, exp: 2000 },
+                    first_clear_bonus: { herbs: 15 },
+                    level_req: 1
+                },
+                medium: {
+                    name: '普通',
+                    enemies: 5,
+                    reward: { herbs: 100, exp: 5000 },
+                    first_clear_bonus: { herbs: 50 },
+                    level_req: 10
+                },
+                hard: {
+                    name: '困难',
+                    enemies: 7,
+                    reward: { herbs: 300, exp: 15000 },
+                    first_clear_bonus: { herbs: 150 },
+                    level_req: 20
+                }
+            },
+            enemy_types: ['藤蔓怪', '花仙子', '树精'],
+            boss_type: '千年树妖'
+        },
+        iron_mine: {
+            id: 'iron_mine',
+            name: '玄铁矿',
+            description: '开采玄铁矿石',
+            icon: 'fa-gem',
+            scene: 'iron_mine',
+            type: 'iron',
+            difficulties: {
+                easy: {
+                    name: '简单',
+                    enemies: 3,
+                    reward: { iron: 60, exp: 2000 },
+                    first_clear_bonus: { iron: 30 },
+                    level_req: 1
+                },
+                medium: {
+                    name: '普通',
+                    enemies: 5,
+                    reward: { iron: 200, exp: 5000 },
+                    first_clear_bonus: { iron: 100 },
+                    level_req: 10
+                },
+                hard: {
+                    name: '困难',
+                    enemies: 7,
+                    reward: { iron: 600, exp: 15000 },
+                    first_clear_bonus: { iron: 300 },
+                    level_req: 20
+                }
+            },
+            enemy_types: ['铁甲兽', '矿石魔', '熔岩怪'],
+            boss_type: '熔岩巨人'
+        }
+    },
+
     // ========== 主线剧情场景配置 ==========
     storyScenes: {
         scenes: {

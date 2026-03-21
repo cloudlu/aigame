@@ -376,13 +376,34 @@
             if (window.location.search.includes('logout=true')) {
                 localStorage.removeItem('cultivationToken');
                 localStorage.removeItem('cultivationUser');
+                sessionStorage.removeItem('redirectCount'); // 清除跳转计数
+                console.log('已清除登录状态');
+                return; // 不继续检查，让用户重新登录
+            }
+
+            // 防止无限跳转循环
+            const redirectCount = parseInt(sessionStorage.getItem('redirectCount') || '0');
+            if (redirectCount > 3) {
+                console.error('检测到跳转循环，停止自动跳转');
+                sessionStorage.removeItem('redirectCount');
+                alert('检测到登录异常，请手动登录');
+                return;
             }
 
             // 检查是否已经登录
             const token = localStorage.getItem('cultivationToken');
-            if (token) {
-                // 已登录，跳转到游戏页面
-                window.location.href = 'index.html';
+            const userStr = localStorage.getItem('cultivationUser');
+
+            if (token && userStr) {
+                // 记录跳转次数
+                sessionStorage.setItem('redirectCount', (redirectCount + 1).toString());
+
+                // 已登录，显示提示后跳转到游戏页面
+                console.log('检测到登录状态，正在跳转到游戏页面...');
+                // 延迟跳转，避免过快跳转
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 500);
             }
         };
     </script>

@@ -110,6 +110,14 @@ class EndlessCultivationGame {
     
     // 登录成功后初始化游戏
     initAfterLogin() {
+        // ✅ 初始化资源副本系统
+        if (typeof DungeonSystem !== 'undefined') {
+            this.dungeon = new DungeonSystem(this);
+            this.dungeon.initAllDungeonData();
+        } else {
+            console.error('DungeonSystem未定义，跳过副本系统初始化');
+        }
+
         // ✅ 重置战斗状态（防止页面刷新后残留战斗状态）
         if (this.gameState.battle) {
             this.gameState.battle.inBattle = false;
@@ -803,6 +811,15 @@ class EndlessCultivationGame {
 
     // 检查保存的登录状态
     async loadUserFromSession() {
+        // 防止无限跳转循环
+        const redirectCount = parseInt(sessionStorage.getItem('redirectCount') || '0');
+        if (redirectCount > 3) {
+            console.error('检测到跳转循环，停止自动跳转');
+            sessionStorage.removeItem('redirectCount');
+            this.addBattleLog('登录状态异常，请刷新页面或手动登录');
+            return;
+        }
+
         try {
             // 从 localStorage 中获取 token 和用户信息
             const token = localStorage.getItem('cultivationToken');
@@ -824,6 +841,9 @@ class EndlessCultivationGame {
                     // 加载游戏状态（等待完成）
                     await this.loadGame();
 
+                    // 登录成功，清除跳转计数
+                    sessionStorage.removeItem('redirectCount');
+
                     // 显示登录成功消息
                     this.addBattleLog(`登录成功！欢迎回来，${userInfo.username}！`);
 
@@ -831,17 +851,38 @@ class EndlessCultivationGame {
                     this.initAfterLogin();
                 } catch (parseError) {
                     console.error('解析用户信息失败:', parseError);
-                    // 解析失败，重定向到登录页面
-                    window.location.href = 'login.html';
+                    // 清除无效的登录状态，但不立即跳转
+                    localStorage.removeItem('cultivationToken');
+                    localStorage.removeItem('cultivationUser');
+                    this.addBattleLog('登录状态已过期，请重新登录');
+
+                    // 记录跳转次数
+                    sessionStorage.setItem('redirectCount', (redirectCount + 1).toString());
+
+                    // 延迟跳转，避免循环
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 2000);
                 }
             } else {
-                // 未登录，重定向到登录页面
-                window.location.href = 'login.html';
+                // 未登录，延迟跳转到登录页面（给页面加载时间）
+                console.log('未找到登录信息，2秒后跳转到登录页面');
+                sessionStorage.setItem('redirectCount', (redirectCount + 1).toString());
+
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 2000);
             }
         } catch (error) {
             console.error('检查登录状态失败:', error);
-            // 发生错误，重定向到登录页面
-            window.location.href = 'login.html';
+            // 发生错误，清除状态并延迟跳转
+            localStorage.removeItem('cultivationToken');
+            localStorage.removeItem('cultivationUser');
+            sessionStorage.setItem('redirectCount', (redirectCount + 1).toString());
+
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 2000);
         }
     }
     
@@ -1386,20 +1427,15 @@ class EndlessCultivationGame {
         }
 
         // 弹窗内的自动采集设置
-        bindEvent('#modal-auto-collect-spiritWood', 'change', () => {
-            this.updateAutoCollectResourceTypes();
-        });
-        bindEvent('#modal-auto-collect-blackIron', 'change', () => {
-            this.updateAutoCollectResourceTypes();
-        });
-        bindEvent('#modal-auto-collect-spiritCrystal', 'change', () => {
-            this.updateAutoCollectResourceTypes();
-        });
+        // ❌ 已移除自动采集checkbox的事件绑定（v2.0资源系统重构）
+        // bindEvent('#modal-auto-collect-spiritWood', 'change', () => { ... });
+        // bindEvent('#modal-auto-collect-blackIron', 'change', () => { ... });
+        // bindEvent('#modal-auto-collect-spiritCrystal', 'change', () => { ... });
 
-        // 弹窗内的开始/停止自动采集按钮
-        bindEvent('#modal-toggle-auto-collect-btn', 'click', () => {
-            this.toggleAutoCollect();
-        });
+        // ❌ 已移除自动采集按钮事件（v2.0资源系统重构）
+        // bindEvent('#modal-toggle-auto-collect-btn', 'click', () => {
+        //     this.toggleAutoCollect();
+        // });
 
         // 手动采集按钮
         bindEvent('#collect-spiritWood-btn', 'click', () => {
@@ -1846,12 +1882,45 @@ class EndlessCultivationGame {
         window.addEventListener('beforeunload', () => {
             this.saveGameState();
         });
-        
+
         // 添加定期保存机制
         setInterval(() => {
             this.saveGameState();
         }, 60000); // 每60秒自动保存
-        
+
+        // ==================== 资源副本事件绑定 ====================
+
+        // 副本按钮委托事件（动态生成的按钮需要委托）
+        document.addEventListener('click', (e) => {
+            // 副本挑战按钮
+            if (e.target.closest('.dungeon-btn')) {
+                const btn = e.target.closest('.dungeon-btn');
+                const dungeonId = btn.dataset.dungeon;
+                const difficulty = btn.dataset.difficulty;
+
+                if (dungeonId && difficulty && !btn.disabled) {
+                    this.dungeon.enterDungeon(dungeonId, difficulty);
+                }
+            }
+
+            // 扫荡按钮
+            if (e.target.closest('.sweep-btn')) {
+                const btn = e.target.closest('.sweep-btn');
+                const dungeonId = btn.dataset.dungeon;
+                const difficulty = btn.dataset.difficulty;
+
+                if (dungeonId && difficulty && !btn.disabled) {
+                    this.dungeon.sweepDungeon(dungeonId, difficulty);
+                }
+            }
+
+            // 退出副本按钮（在3D战斗场景中）
+            if (e.target.closest('#exit-dungeon-btn')) {
+                if (this.dungeon.currentDungeon) {
+                    this.dungeon.exitDungeonManually();
+                }
+            }
+        });
     }
     
 
@@ -3413,36 +3482,11 @@ class EndlessCultivationGame {
         this.deleteAccount();
     }
     
-    // 切换自动收集资源
-    toggleAutoCollect() {
-        this.gameState.settings.autoCollectSettings.enabled = !this.gameState.settings.autoCollectSettings.enabled;
-        const btn = document.getElementById('auto-collect-btn');
-        const modalBtn = document.getElementById('modal-toggle-auto-collect-btn');
-
-        if (this.gameState.settings.autoCollectSettings.enabled) {
-            if (btn) {
-                btn.innerHTML = '<i class="fa fa-pause mr-1"></i> 停止自动收集';
-                btn.setAttribute('data-tooltip', '停止自动收集');
-            }
-            if (modalBtn) {
-                modalBtn.innerHTML = '<i class="fa fa-pause"></i> 停止自动采集';
-                modalBtn.classList.remove('from-green-600', 'to-green-500');
-                modalBtn.classList.add('from-red-600', 'to-red-500');
-            }
-            this.startAutoCollect();
-        } else {
-            if (btn) {
-                btn.innerHTML = '<img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=auto%20collect%20resources%20button%20winter%20theme%20blue%20crystal%20style%20clean%20minimal&image_size=square" alt="自动收集" class="w-full h-full object-cover">';
-                btn.setAttribute('data-tooltip', '自动收集资源，消耗灵力');
-            }
-            if (modalBtn) {
-                modalBtn.innerHTML = '<i class="fa fa-play"></i> 开始自动采集';
-                modalBtn.classList.remove('from-red-600', 'to-red-500');
-                modalBtn.classList.add('from-green-600', 'to-green-500');
-            }
-            this.stopAutoCollect();
-        }
-    }
+    // ❌ 已移除自动收集资源系统（v2.0资源系统重构）
+    // 资源现在只能通过资源副本获取
+    // toggleAutoCollect() { ... } - 已删除
+    // startAutoCollect() { ... } - 已删除
+    // stopAutoCollect() { ... } - 已删除
 
     // 打开资源采集弹窗
     openCollectResourcesModal() {
@@ -3925,39 +3969,8 @@ class EndlessCultivationGame {
         `).join('');
     }
 
-    // 同步自动采集设置到弹窗
-    syncAutoCollectSettingsToModal() {
-        const settings = this.gameState.settings.autoCollectSettings;
-
-        // 同步复选框状态
-        const modalSpiritWood = document.getElementById('modal-auto-collect-spiritWood');
-        const modalBlackIron = document.getElementById('modal-auto-collect-blackIron');
-        const modalSpiritCrystal = document.getElementById('modal-auto-collect-spiritCrystal');
-
-        if (modalSpiritWood) {
-            modalSpiritWood.checked = settings.resourceTypes.includes('spiritWood');
-        }
-        if (modalBlackIron) {
-            modalBlackIron.checked = settings.resourceTypes.includes('blackIron');
-        }
-        if (modalSpiritCrystal) {
-            modalSpiritCrystal.checked = settings.resourceTypes.includes('spiritCrystal');
-        }
-
-        // 同步按钮状态
-        const modalBtn = document.getElementById('modal-toggle-auto-collect-btn');
-        if (modalBtn) {
-            if (settings.enabled) {
-                modalBtn.innerHTML = '<i class="fa fa-pause"></i> 停止自动采集';
-                modalBtn.classList.remove('from-green-600', 'to-green-500');
-                modalBtn.classList.add('from-red-600', 'to-red-500');
-            } else {
-                modalBtn.innerHTML = '<i class="fa fa-play"></i> 开始自动采集';
-                modalBtn.classList.remove('from-red-600', 'to-red-500');
-                modalBtn.classList.add('from-green-600', 'to-green-500');
-            }
-        }
-    }
+    // ❌ 已移除自动采集相关功能（v2.0资源系统重构）
+    // syncAutoCollectSettingsToModal() 和 updateAutoCollectResourceTypes() 已不再使用
 
     // 更新自动战斗目标颜色
     updateAutoBattleTargetColors() {
@@ -3974,28 +3987,9 @@ class EndlessCultivationGame {
         this.gameState.settings.autoBattleSettings.targetColors = targetColors;
     }
 
-    // 更新自动收集资源类型
-    updateAutoCollectResourceTypes() {
-        const resourceTypes = [];
+    // ❌ 已移除自动采集资源类型更新（v2.0资源系统重构）
+    // updateAutoCollectResourceTypes() 已不再使用
 
-        // 从弹窗中的复选框读取
-        const modalSpiritWood = document.getElementById('modal-auto-collect-spiritWood');
-        const modalBlackIron = document.getElementById('modal-auto-collect-blackIron');
-        const modalSpiritCrystal = document.getElementById('modal-auto-collect-spiritCrystal');
-
-        if (modalSpiritWood && modalSpiritWood.checked) {
-            resourceTypes.push('spiritWood');
-        }
-        if (modalBlackIron && modalBlackIron.checked) {
-            resourceTypes.push('blackIron');
-        }
-        if (modalSpiritCrystal && modalSpiritCrystal.checked) {
-            resourceTypes.push('spiritCrystal');
-        }
-
-        this.gameState.settings.autoCollectSettings.resourceTypes = resourceTypes;
-    }
-    
     // 开始自动战斗
     startAutoBattle() {
         if (!this.timers.autoBattleTimer) {
@@ -4053,31 +4047,13 @@ class EndlessCultivationGame {
         }
     }
     
-    // 开始自动收集资源
-    startAutoCollect() {
-        if (!this.timers.autoCollectTimer) {
-            this.timers.autoCollectTimer = setInterval(() => {
-                // 检查自动收集是否启用
-                if (this.gameState.settings.autoCollectSettings.enabled) {
-                    // 收集指定类型的资源
-                    for (const resourceType of this.gameState.settings.autoCollectSettings.resourceTypes) {
-                        if (this.gameState.player.energy >= 5) {
-                            this.collectResource(resourceType);
-                        }
-                    }
-                }
-            }, 2000);
-        }
-    }
-    
-    // 停止自动收集资源
-    stopAutoCollect() {
-        if (this.timers.autoCollectTimer) {
-            clearInterval(this.timers.autoCollectTimer);
-            this.timers.autoCollectTimer = null;
-        }
-    }
-    
+    // ❌ 已移除自动收集资源（v2.0资源系统重构）
+    // 资源现在只能通过资源副本获取
+    // startAutoCollect() { ... } - 已删除
+
+    // ❌ 已移除自动收集资源系统（v2.0资源系统重构）
+    // stopAutoCollect() { ... } - 已删除
+
     // 开始自动挂机
     startAutoPlay() {
         if (!this.timers.autoPlayTimer) {
@@ -4493,6 +4469,25 @@ class EndlessCultivationGame {
                             gameData.resources.spiritCrystal = gameData.resources.spiritCrystal || 0;
                             gameData.resources.spiritCrystalRate = gameData.resources.spiritCrystalRate || 0.2;
                             gameData.resources.breakthroughStones = gameData.resources.breakthroughStones || 0;
+                        }
+
+                        // ✅ 补充缺失的资源副本数据（v2.0新增）
+                        if (gameData.player) {
+                            if (!gameData.player.resourceDungeons) {
+                                console.log('[数据迁移] 添加资源副本数据...');
+                                gameData.player.resourceDungeons = {};
+                                // 如果dungeon系统已初始化，调用其初始化方法
+                                if (this.dungeon) {
+                                    this.dungeon.initAllDungeonData();
+                                }
+                            }
+                        }
+
+                        // ✅ 更新玩家灵石字段（从spiritCrystal改为spiritStones）
+                        if (gameData.player && gameData.player.spiritCrystal !== undefined && gameData.player.spiritStones === undefined) {
+                            console.log('[数据迁移] 更新灵石字段 spiritCrystal -> spiritStones');
+                            gameData.player.spiritStones = gameData.player.spiritCrystal || 0;
+                            delete gameData.player.spiritCrystal;
                         }
 
                         this.gameState = { ...gameData, user: userInfo };
@@ -5626,10 +5621,12 @@ class EndlessCultivationGame {
             // 清除localStorage中的token和用户信息
             localStorage.removeItem('cultivationToken');
             localStorage.removeItem('cultivationUser');
-            
+
             // 立即重定向到登录页面，添加logout参数以触发强制清除
             // 使用 replace 方法避免浏览器历史记录问题
             setTimeout(() => {
+                // 清除跳转计数
+                sessionStorage.removeItem('redirectCount');
                 // 使用 replace 方法确保不会回到已登录状态，并添加logout参数
                 window.location.replace('login.html?logout=true');
             }, 100);
@@ -5638,6 +5635,7 @@ class EndlessCultivationGame {
             // 即使出错，也要清除本地存储并重定向到登录页面
             localStorage.removeItem('cultivationToken');
             localStorage.removeItem('cultivationUser');
+            sessionStorage.removeItem('redirectCount');
             window.location.replace('login.html?logout=true');
         }
     }
@@ -5722,9 +5720,10 @@ class EndlessCultivationGame {
                         // 清除本地存储的token和用户信息
                         localStorage.removeItem('cultivationToken');
                         localStorage.removeItem('cultivationUser');
+                        sessionStorage.removeItem('redirectCount'); // 清除跳转计数
                         // 重定向到登录页面
                         setTimeout(() => {
-                            window.location.href = 'login.html';
+                            window.location.href = 'login.html?logout=true';
                         }, 2000);
                     } else {
                         self.addBattleLog(`注销失败：${result.error}`);
@@ -7192,6 +7191,201 @@ class EndlessCultivationGame {
             this.inventoryPagination.currentPage++;
             this.showInventory();
         }
+    }
+
+    // ==================== 资源副本系统 ====================
+
+    /**
+     * 显示副本列表界面
+     */
+    showDungeonList() {
+        const container = document.getElementById('dungeon-list-container');
+        if (!container) return;
+
+        container.classList.remove('hidden');
+        this.renderDungeonList();
+    }
+
+    /**
+     * 渲染副本列表
+     */
+    renderDungeonList() {
+        const dungeons = this.metadata.resourceDungeons;
+        if (!dungeons) return;
+
+        const container = document.getElementById('dungeon-cards');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        Object.keys(dungeons).forEach(dungeonId => {
+            const dungeon = dungeons[dungeonId];
+            const card = this.createDungeonCard(dungeonId, dungeon);
+            container.appendChild(card);
+        });
+    }
+
+    /**
+     * 创建副本卡片
+     */
+    createDungeonCard(dungeonId, dungeon) {
+        const card = document.createElement('div');
+        card.className = 'dungeon-card bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-6 border border-slate-700';
+
+        const iconMap = {
+            spirit_stone_mine: 'fa-gem',
+            herb_garden: 'fa-leaf',
+            iron_mine: 'fa-gem'
+        };
+
+        const colorMap = {
+            spirit_stone_mine: 'text-blue-400',
+            herb_garden: 'text-green-400',
+            iron_mine: 'text-orange-400'
+        };
+
+        card.innerHTML = `
+            <div class="dungeon-header mb-4">
+                <div class="flex items-center gap-3">
+                    <i class="fa ${iconMap[dungeonId]} ${colorMap[dungeonId]} text-3xl"></i>
+                    <div>
+                        <h3 class="text-xl font-bold text-white">${dungeon.name}</h3>
+                        <p class="text-sm text-gray-400">${dungeon.description}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="difficulty-buttons space-y-2">
+                ${this.createDifficultyButtons(dungeonId, dungeon)}
+            </div>
+
+            <div class="dungeon-info mt-4 text-xs text-gray-400">
+                <p>VIP特权: VIP1可扫荡</p>
+            </div>
+        `;
+
+        return card;
+    }
+
+    /**
+     * 创建难度按钮
+     */
+    createDifficultyButtons(dungeonId, dungeon) {
+        const difficulties = ['easy', 'medium', 'hard'];
+        const difficultyNames = { easy: '简单', medium: '普通', hard: '困难' };
+        const difficultyColors = {
+            easy: 'from-green-600 to-green-500',
+            medium: 'from-yellow-600 to-yellow-500',
+            hard: 'from-red-600 to-red-500'
+        };
+
+        const vipLevel = this.gameState.player.vipLevel || 0;
+        const canSweep = vipLevel >= 1;
+
+        let html = '';
+
+        difficulties.forEach(diff => {
+            const config = dungeon.difficulties[diff];
+            const currentAttempts = this.dungeon.getCurrentAttempts(dungeonId, diff);
+            const maxAttempts = this.dungeon.getMaxAttempts(vipLevel);
+            const hasRemaining = currentAttempts < maxAttempts;
+            const isLocked = this.gameState.player.level < config.level_req;
+            const hasCleared = this.hasClearedDungeon(dungeonId, diff);
+
+            html += `
+                <div class="difficulty-row flex gap-2">
+                    <button class="flex-1 dungeon-btn bg-gradient-to-r ${difficultyColors[diff]} text-white py-2 px-4 rounded-lg font-bold
+                        ${isLocked || !hasRemaining ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 transition-transform'}"
+                        data-dungeon="${dungeonId}"
+                        data-difficulty="${diff}"
+                        ${isLocked || !hasRemaining ? 'disabled' : ''}>
+                        <div class="flex justify-between items-center">
+                            <span>${difficultyNames[diff]}</span>
+                            <span class="text-xs">${currentAttempts}/${maxAttempts}</span>
+                        </div>
+                        ${isLocked ? `<div class="text-xs">Lv.${config.level_req}解锁</div>` : ''}
+                    </button>
+                    ${canSweep && hasCleared ? `
+                        <button class="sweep-btn bg-gradient-to-r from-purple-600 to-purple-500 text-white py-2 px-4 rounded-lg font-bold
+                            ${!hasRemaining ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 transition-transform'}"
+                            data-dungeon="${dungeonId}"
+                            data-difficulty="${diff}"
+                            ${!hasRemaining ? 'disabled' : ''}>
+                            扫荡
+                        </button>
+                    ` : ''}
+                </div>
+            `;
+        });
+
+        return html;
+    }
+
+    /**
+     * 检查是否已通关
+     */
+    hasClearedDungeon(dungeonId, difficulty) {
+        const playerData = this.gameState.player.resourceDungeons;
+        return playerData && playerData[dungeonId] && playerData[dungeonId].cleared[difficulty];
+    }
+
+    /**
+     * 显示副本通关界面
+     */
+    showDungeonComplete(reward) {
+        const container = document.getElementById('dungeon-complete-container');
+        if (!container) return;
+
+        container.classList.remove('hidden');
+
+        // 渲染奖励
+        const rewardDiv = document.getElementById('dungeon-reward');
+        if (rewardDiv) {
+            let rewardHtml = '<h3 class="text-2xl font-bold text-yellow-400 mb-4">副本通关！</h3>';
+            rewardHtml += '<div class="space-y-2">';
+
+            if (reward.spirit_stones) {
+                rewardHtml += `<div class="flex items-center gap-2 text-blue-400">
+                    <i class="fa fa-gem"></i>
+                    <span>灵石 +${reward.spirit_stones.toLocaleString()}</span>
+                </div>`;
+            }
+
+            if (reward.herbs) {
+                rewardHtml += `<div class="flex items-center gap-2 text-green-400">
+                    <i class="fa fa-leaf"></i>
+                    <span>灵草 +${reward.herbs}</span>
+                </div>`;
+            }
+
+            if (reward.iron) {
+                rewardHtml += `<div class="flex items-center gap-2 text-orange-400">
+                    <i class="fa fa-gem"></i>
+                    <span>玄铁 +${reward.iron}</span>
+                </div>`;
+            }
+
+            if (reward.exp) {
+                rewardHtml += `<div class="flex items-center gap-2 text-purple-400">
+                    <i class="fa fa-star"></i>
+                    <span>经验 +${reward.exp.toLocaleString()}</span>
+                </div>`;
+            }
+
+            rewardHtml += '</div>';
+            rewardDiv.innerHTML = rewardHtml;
+        }
+    }
+
+    /**
+     * 关闭副本通关界面
+     */
+    closeDungeonComplete() {
+        const container = document.getElementById('dungeon-complete-container');
+        if (container) {
+            container.classList.add('hidden');
+        }
+        this.showDungeonList();
     }
 };
 
