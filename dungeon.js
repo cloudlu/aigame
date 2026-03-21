@@ -431,6 +431,12 @@ class DungeonSystem {
         // 设置游戏状态中的敌人（复用现有战斗系统）
         this.game.gameState.enemy = enemy;
 
+        // ✅ 隐藏敌人信息面板（副本战斗不需要）
+        const enemyInfoPanel = document.getElementById('enemy-info-panel');
+        if (enemyInfoPanel) {
+            enemyInfoPanel.classList.add('hidden');
+        }
+
         // 设置战斗场景（根据副本类型选择场景）
         const sceneMap = {
             spirit_stone_mine: BATTLE_SCENES.LAVA_HELL,      // 矿洞用熔岩场景
@@ -441,8 +447,8 @@ class DungeonSystem {
         const sceneType = sceneMap[this.currentDungeon] || BATTLE_SCENES.IMMORTAL_PEAK;
 
         // 显示3D战斗界面
-        document.getElementById('map-container').classList.add('hidden');
-        document.getElementById('battle-3d-container').classList.remove('hidden');
+        document.getElementById('game-area-container').classList.add('hidden');
+        document.getElementById('battle-modal').classList.remove('hidden');
 
         // 显示退出副本按钮
         const exitBtn = document.getElementById('exit-dungeon-btn');
@@ -451,13 +457,12 @@ class DungeonSystem {
         }
 
         // 调用battle3d系统创建战斗场景（复用）
-        if (this.game.battle3d && this.game.battle3d.isSceneReady) {
+        if (this.game.battle3D && this.game.battle3D.isSceneReady) {
             // 场景已存在，只替换敌人（复用场景，100ms）
             this.game.replaceEnemyInBattle(enemy);
         } else {
             // 首次创建场景（2000ms）
-            this.game.battle3d = new Battle3D(this.game, sceneType);
-            this.game.battle3d.createScene();
+            this.game.createBattleScene(enemy);
         }
 
         // 显示进度提示
@@ -536,6 +541,10 @@ class DungeonSystem {
             exitBtn.classList.add('hidden');
         }
 
+        // 隐藏战斗模态框，显示主游戏区域
+        document.getElementById('battle-modal').classList.add('hidden');
+        document.getElementById('game-area-container').classList.remove('hidden');
+
         // 重置副本状态
         this.currentDungeon = null;
         this.currentDifficulty = null;
@@ -576,6 +585,10 @@ class DungeonSystem {
         this.currentDungeon = null;
         this.currentDifficulty = null;
         this.enemyQueue = [];
+
+        // 隐藏战斗模态框，显示主游戏区域
+        document.getElementById('battle-modal').classList.add('hidden');
+        document.getElementById('game-area-container').classList.remove('hidden');
 
         // 显示通关界面
         this.game.showDungeonComplete(reward);

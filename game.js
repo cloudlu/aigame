@@ -190,8 +190,8 @@ class EndlessCultivationGame {
                 this.renderRechargePackages();
             });
             this.renderVIPShopItems();
-            // 开始资源生成
-            this.startResourceGeneration();
+            // 开始属性恢复（生命/灵力自动恢复）
+            this.startStatRegeneration();
 
             // 初始化主线任务系统
             // 始终验证当前等级的任务是否正确初始化
@@ -540,10 +540,10 @@ class EndlessCultivationGame {
             this.addBattleLog(`解锁了 ${map.name} 的传送点！`);
 
             // 首次探索奖励
-            const bonus = { exp: 100, spiritCrystal: 50 };
+            const bonus = { exp: 100, spiritStones: 50 };
             this.gameState.player.exp += bonus.exp;
-            this.gameState.resources.spiritCrystal += bonus.spiritCrystal;
-            this.addBattleLog(`首次探索！获得 ${bonus.exp} 经验和 ${bonus.spiritCrystal} 灵石`);
+            this.gameState.player.spiritStones = (this.gameState.player.spiritStones || 0) + bonus.spiritStones;
+            this.addBattleLog(`首次探索！获得 ${bonus.exp} 经验和 ${bonus.spiritStones} 灵石`);
         }
     }
 
@@ -922,11 +922,10 @@ class EndlessCultivationGame {
         if (!this.gameState.resources) {
             this.gameState.resources = {
                 spiritWood: 0,
-                spiritWoodRate: 1,
                 blackIron: 0,
-                blackIronRate: 0.5,
                 spiritCrystal: 0,
-                spiritCrystalRate: 0.2
+                herbs: 0,
+                iron: 0
             };
         }
         if (!this.gameState.player) {
@@ -953,32 +952,24 @@ class EndlessCultivationGame {
         if (maxEnergyElement) {
             maxEnergyElement.textContent = energyMax;
         }
-        const spiritWoodElement = document.getElementById('spiritWood');
-        if (spiritWoodElement) {
-            spiritWoodElement.textContent = Math.floor(this.gameState.resources.spiritWood || 0);
+
+        // ✅ v2.0资源系统重构：更新资源显示
+        // 灵石（spiritStones）
+        const spiritStonesElement = document.getElementById('spirit-stones');
+        if (spiritStonesElement) {
+            spiritStonesElement.textContent = Math.floor(this.gameState.player.spiritStones || 0);
         }
-        const spiritWoodRateElement = document.getElementById('spiritWood-rate');
-        if (spiritWoodRateElement) {
-            const rate = this.gameState.resources.spiritWoodRate || 0;
-            spiritWoodRateElement.textContent = `+${rate.toFixed(1)}/秒`;
+
+        // 灵草（herbs）
+        const herbsElement = document.getElementById('herbs');
+        if (herbsElement) {
+            herbsElement.textContent = Math.floor(this.gameState.player.resources?.herbs || 0);
         }
-        const blackIronElement = document.getElementById('blackIron');
-        if (blackIronElement) {
-            blackIronElement.textContent = Math.floor(this.gameState.resources.blackIron || 0);
-        }
-        const blackIronRateElement = document.getElementById('blackIron-rate');
-        if (blackIronRateElement) {
-            const rate = this.gameState.resources.blackIronRate || 0;
-            blackIronRateElement.textContent = `+${rate.toFixed(1)}/秒`;
-        }
-        const spiritCrystalElement = document.getElementById('spiritCrystal');
-        if (spiritCrystalElement) {
-            spiritCrystalElement.textContent = Math.floor(this.gameState.resources.spiritCrystal || 0);
-        }
-        const spiritCrystalRateElement = document.getElementById('spiritCrystal-rate');
-        if (spiritCrystalRateElement) {
-            const rate = this.gameState.resources.spiritCrystalRate || 0;
-            spiritCrystalRateElement.textContent = `+${rate.toFixed(1)}/秒`;
+
+        // 玄铁（iron）
+        const ironElement = document.getElementById('iron');
+        if (ironElement) {
+            ironElement.textContent = Math.floor(this.gameState.player.resources?.iron || 0);
         }
         
         // 计算装备效果
@@ -1032,12 +1023,12 @@ class EndlessCultivationGame {
             // 更新突破石显示
             const breakthroughStonesElement = document.getElementById('breakthrough-stones');
             if (breakthroughStonesElement) {
-                breakthroughStonesElement.textContent = `${this.gameState.resources.breakthroughStones || 0}`;
+                breakthroughStonesElement.textContent = `${this.gameState.player.resources.breakthroughStones || 0}`;
             }
             // 更新仙玉显示
             const jadeElement = document.getElementById('jade');
             if (jadeElement) {
-                jadeElement.textContent = `${this.gameState.resources.jade || 0}`;
+                jadeElement.textContent = `${this.gameState.player.jade || 0}`;
             }
             // 更新VIP等级显示
             const vipBadgeElement = document.getElementById('nav-vip-badge');
@@ -1054,7 +1045,7 @@ class EndlessCultivationGame {
                 const currentStageConfig = this.metadata.realmConfig[realm.currentRealm].stages[realm.currentStage - 1];
                 const requiredStones = currentStageConfig.breakthroughStones;
                 const hasEnoughLevel = realm.currentLevel >= currentStageConfig.levelCap;
-                const hasEnoughStones = (this.gameState.resources.breakthroughStones || 0) >= requiredStones;
+                const hasEnoughStones = (this.gameState.player.resources.breakthroughStones || 0) >= requiredStones;
                 
                 if (hasEnoughLevel && hasEnoughStones) {
                     breakthroughBtnElement.disabled = false;
@@ -1215,34 +1206,20 @@ class EndlessCultivationGame {
         return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
     
-    // 开始资源生成
-    startResourceGeneration() {
+    // 开始属性恢复（生命/灵力）
+    startStatRegeneration() {
         this.timers.resourceTimer = setInterval(() => {
-            this.generateResources();
+            this.regeneratePlayerStats();
         }, 1000);
     }
-    
+
     // 停止战斗音乐（移至 audio.js）
     stopBattleMusic() {
         // placeholder to avoid undefined calls
     }
-    
-    // 生成资源
-    generateResources() {
-        // 获取资源速率，添加默认值
-        const spiritWoodRate = this.gameState.resources.spiritWoodRate || 1;
-        const blackIronRate = this.gameState.resources.blackIronRate || 0.5;
-        const spiritCrystalRate = this.gameState.resources.spiritCrystalRate || 0.2;
-        
-        // 生成灵木
-        this.gameState.resources.spiritWood += spiritWoodRate;
-        
-        // 生成玄铁
-        this.gameState.resources.blackIron += blackIronRate;
-        
-        // 生成灵石
-        this.gameState.resources.spiritCrystal += spiritCrystalRate;
-        
+
+    // 玩家属性自动恢复（生命/灵力）
+    regeneratePlayerStats() {
         // 生命自动恢复（百分比恢复）
         const actualMaxHp = this.getActualStats().maxHp;
         if (this.gameState.player.hp < actualMaxHp) {
@@ -1407,26 +1384,24 @@ class EndlessCultivationGame {
             this.toggleAutoPlay(e.target.checked);
         });
 
-        // 资源采集弹窗
-        bindEvent('#collect-resources-btn', 'click', () => {
-            this.openCollectResourcesModal();
-        });
+        // ❌ 已移除资源采集弹窗（v2.0资源系统重构）
+        // bindEvent('#collect-resources-btn', 'click', () => {
+        //     this.openCollectResourcesModal();
+        // });
 
-        bindEvent('#close-collect-resources-modal', 'click', () => {
-            this.closeCollectResourcesModal();
-        });
+        // bindEvent('#close-collect-resources-modal', 'click', () => {
+        //     this.closeCollectResourcesModal();
+        // });
 
-        // 点击弹窗外部关闭
-        const collectModal = document.getElementById('collect-resources-modal');
-        if (collectModal) {
-            collectModal.addEventListener('click', (e) => {
-                if (e.target === collectModal) {
-                    this.closeCollectResourcesModal();
-                }
-            });
-        }
+        // const collectModal = document.getElementById('collect-resources-modal');
+        // if (collectModal) {
+        //     collectModal.addEventListener('click', (e) => {
+        //         if (e.target === collectModal) {
+        //             this.closeCollectResourcesModal();
+        //         }
+        //     });
+        // }
 
-        // 弹窗内的自动采集设置
         // ❌ 已移除自动采集checkbox的事件绑定（v2.0资源系统重构）
         // bindEvent('#modal-auto-collect-spiritWood', 'change', () => { ... });
         // bindEvent('#modal-auto-collect-blackIron', 'change', () => { ... });
@@ -1437,18 +1412,8 @@ class EndlessCultivationGame {
         //     this.toggleAutoCollect();
         // });
 
-        // 手动采集按钮
-        bindEvent('#collect-spiritWood-btn', 'click', () => {
-            this.collectResource('spiritWood');
-        });
-
-        bindEvent('#collect-blackIron-btn', 'click', () => {
-            this.collectResource('blackIron');
-        });
-
-        bindEvent('#collect-spiritCrystal-btn', 'click', () => {
-            this.collectResource('spiritCrystal');
-        });
+        // ❌ 已移除手动采集按钮事件绑定（v2.0资源系统重构）
+        // 资源现在只能通过资源副本获取
 
         // 商店弹窗
         bindEvent('#shop-btn', 'click', () => {
@@ -1559,6 +1524,11 @@ class EndlessCultivationGame {
         // 每日任务按钮
         bindEvent('#daily-quest-btn', 'click', () => {
             this.dailyQuestSystem.showDailyQuestPanel();
+        });
+
+        // 资源副本按钮
+        bindEvent('#dungeon-btn', 'click', () => {
+            this.showDungeonList();
         });
 
         // 关闭主线任务模态框
@@ -2037,12 +2007,7 @@ class EndlessCultivationGame {
                 // 提升灵力上限
                 this.gameState.player.maxEnergy += 10;
                 this.gameState.player.energy = this.gameState.player.maxEnergy; // 升级时充满灵力
-                
-                // 提升资源产出率
-                this.gameState.resources.spiritWoodRate += 0.2;
-                this.gameState.resources.blackIronRate += 0.1;
-                this.gameState.resources.spiritCrystalRate += 0.05;
-                
+
                 // 播放升级声音
                 this.audioSystem.playSound('levelup-sound', 1, 2000);
                 
@@ -2705,13 +2670,13 @@ class EndlessCultivationGame {
         
         // 检查突破石是否足够
         const requiredStones = this.getRequiredBreakthroughStones(realm.currentRealm, realm.currentStage);
-        if (this.gameState.resources.breakthroughStones < requiredStones) {
+        if (this.gameState.player.resources.breakthroughStones < requiredStones) {
             this.addBattleLog('突破石不足，无法突破！');
             return false;
         }
         
         // 执行突破
-        this.gameState.resources.breakthroughStones -= requiredStones;
+        this.gameState.player.resources.breakthroughStones -= requiredStones;
         
         // 更新境界/阶段/等级
         if (realm.currentStage < 10) {
@@ -2820,7 +2785,7 @@ class EndlessCultivationGame {
             const breakthroughRequirement = document.getElementById('breakthrough-requirement-modal');
             if (breakthroughRequirement && stageConfig) {
                 const hasEnoughLevel = realm.currentLevel >= stageConfig.levelCap;
-                const currentStones = this.gameState.resources.breakthroughStones || 0;
+                const currentStones = this.gameState.player.resources.breakthroughStones || 0;
                 const requiredStones = stageConfig.breakthroughStones;
                 const hasEnoughStones = currentStones >= requiredStones;
 
@@ -2856,23 +2821,23 @@ class EndlessCultivationGame {
             }
         }
 
-        // 更新资源显示
-        const spiritWoodModal = document.getElementById('spirit-wood-modal');
-        const blackIronModal = document.getElementById('black-iron-modal');
-        const spiritCrystalModal = document.getElementById('spirit-crystal-modal');
+        // ✅ v2.0资源系统重构：更新资源显示（模态框）
+        const spiritStonesModal = document.getElementById('spirit-stones-modal');
+        const herbsModal = document.getElementById('herbs-modal');
+        const ironModal = document.getElementById('iron-modal');
         const stonesModal = document.getElementById('breakthrough-stones-modal');
 
-        if (spiritWoodModal) {
-            spiritWoodModal.textContent = Math.floor(this.gameState.resources.spiritWood || 0);
+        if (spiritStonesModal) {
+            spiritStonesModal.textContent = Math.floor(this.gameState.player.spiritStones || 0);
         }
-        if (blackIronModal) {
-            blackIronModal.textContent = Math.floor(this.gameState.resources.blackIron || 0);
+        if (herbsModal) {
+            herbsModal.textContent = Math.floor(this.gameState.player.resources?.herbs || 0);
         }
-        if (spiritCrystalModal) {
-            spiritCrystalModal.textContent = Math.floor(this.gameState.resources.spiritCrystal || 0);
+        if (ironModal) {
+            ironModal.textContent = Math.floor(this.gameState.player.resources?.iron || 0);
         }
         if (stonesModal) {
-            stonesModal.textContent = Math.floor(this.gameState.resources.breakthroughStones || 0);
+            stonesModal.textContent = Math.floor(this.gameState.player.resources?.breakthroughStones || 0);
         }
 
         // 更新属性
@@ -3489,22 +3454,9 @@ class EndlessCultivationGame {
     // stopAutoCollect() { ... } - 已删除
 
     // 打开资源采集弹窗
-    openCollectResourcesModal() {
-        const modal = document.getElementById('collect-resources-modal');
-        if (modal) {
-            // 同步当前自动采集设置到弹窗中的复选框
-            this.syncAutoCollectSettingsToModal();
-            modal.classList.remove('hidden');
-        }
-    }
-
-    // 关闭资源采集弹窗
-    closeCollectResourcesModal() {
-        const modal = document.getElementById('collect-resources-modal');
-        if (modal) {
-            modal.classList.add('hidden');
-        }
-    }
+    // ❌ 已移除资源采集弹窗（v2.0资源系统重构）
+    // openCollectResourcesModal() { ... }
+    // closeCollectResourcesModal() { ... }
 
     // 打开商店弹窗
     openShopModal() {
@@ -3529,7 +3481,7 @@ class EndlessCultivationGame {
         if (modal) {
             // 更新余额和VIP显示
             const jadeDisplay = document.getElementById('recharge-jade-balance');
-            if (jadeDisplay) jadeDisplay.textContent = this.gameState.resources.jade || 0;
+            if (jadeDisplay) jadeDisplay.textContent = this.gameState.player.jade || 0;
             const vipDisplay = document.getElementById('recharge-vip-level');
             if (vipDisplay) {
                 const level = this.gameState.vip?.level || 0;
@@ -3584,7 +3536,7 @@ class EndlessCultivationGame {
 
             // 更新余额显示
             const jadeDisplay = document.getElementById('recharge-jade-balance');
-            if (jadeDisplay) jadeDisplay.textContent = result.totalJade || this.gameState.resources.jade;
+            if (jadeDisplay) jadeDisplay.textContent = result.totalJade || this.gameState.player.jade;
             const vipDisplay = document.getElementById('recharge-vip-level');
             if (vipDisplay) {
                 const level = this.gameState.vip?.level || 0;
@@ -3607,7 +3559,7 @@ class EndlessCultivationGame {
         if (modal) {
             // 更新仙玉余额
             const jadeDisplay = document.getElementById('vip-shop-jade-balance');
-            if (jadeDisplay) jadeDisplay.textContent = this.gameState.resources.jade || 0;
+            if (jadeDisplay) jadeDisplay.textContent = this.gameState.player.jade || 0;
             modal.classList.remove('hidden');
         }
     }
@@ -3918,7 +3870,7 @@ class EndlessCultivationGame {
             }
             // 更新UI
             const jadeDisplay = document.getElementById('vip-shop-jade-balance');
-            if (jadeDisplay) jadeDisplay.textContent = this.gameState.resources.jade || 0;
+            if (jadeDisplay) jadeDisplay.textContent = this.gameState.player.jade || 0;
             this.updateUI();
             this.updateHealthBars();
 
@@ -4058,15 +4010,6 @@ class EndlessCultivationGame {
     startAutoPlay() {
         if (!this.timers.autoPlayTimer) {
             this.timers.autoPlayTimer = setInterval(() => {
-                // 自动收集资源（如果启用）
-                if (this.gameState.settings.autoCollectSettings.enabled) {
-                    for (const resourceType of this.gameState.settings.autoCollectSettings.resourceTypes) {
-                        if (this.gameState.player.energy >= 5) {
-                            this.collectResource(resourceType);
-                        }
-                    }
-                }
-                
                 // 自动战斗（如果启用）
                 if (this.gameState.settings.autoBattleSettings.enabled && this.gameState.player.energy >= 10) {
                     // 检查当前敌人是否符合目标颜色
@@ -4128,83 +4071,9 @@ class EndlessCultivationGame {
             this.timers.afkTimer = null;
         }
     }
-    
-    // 收集资源
-    collectResource(type) {
-        if (this.gameState.player.energy < 5) {
-            this.addBattleLog('灵力不足，无法收集资源！');
-            return;
-        }
-        
-        // 消耗灵力
-        this.gameState.player.energy -= 5;
-        
-        // 显示进度条动画
-        const progressBar = document.getElementById(`${type}-progress`);
-        if (progressBar) {
-            // 重置进度条
-            progressBar.style.transition = 'none';
-            progressBar.style.width = '0%';
-            
-            // 触发重排
-            void progressBar.offsetWidth;
-            
-            // 恢复过渡效果
-            progressBar.style.transition = '';
-            
-            // 增加到100%
-            progressBar.style.width = '100%';
-            
-            // 收集资源
-            let amount = 0;
-            const spiritWoodRate = this.gameState.resources.spiritWoodRate || 1;
-            const blackIronRate = this.gameState.resources.blackIronRate || 0.5;
-            const spiritCrystalRate = this.gameState.resources.spiritCrystalRate || 0.2;
-            
-            switch (type) {
-                case 'spiritWood':
-                    amount = Math.floor(spiritWoodRate * 10 + Math.random() * 5);
-                    this.gameState.resources.spiritWood += amount;
-                    break;
-                case 'blackIron':
-                    amount = Math.floor(blackIronRate * 10 + Math.random() * 3);
-                    this.gameState.resources.blackIron += amount;
-                    break;
-                case 'spiritCrystal':
-                    amount = Math.floor(spiritCrystalRate * 10 + Math.random() * 2);
-                    this.gameState.resources.spiritCrystal += amount;
-                    break;
-            }
-            
-            this.gameState.settings.collectedResources += amount;
-            this.addBattleLog(`收集了${amount}${type === 'spiritWood' ? '灵木' : type === 'blackIron' ? '玄铁' : '灵石'}！`);
 
-            // 主线任务进度追踪 - 资源采集
-            if (this.mainQuestSystem) {
-                this.mainQuestSystem.trackMainQuestProgress('resource_collected', { resource: type, amount: amount });
-            }
-
-            // 每日任务进度追踪 - 资源采集
-            if (this.dailyQuestSystem) {
-                this.dailyQuestSystem.trackDailyQuestProgress('resource_collected', { resource: type, amount: amount });
-            }
-
-            // 更新UI
-            this.updateUI();
-            
-            // 等待动画完成后重置进度条
-            setTimeout(() => {
-                // 禁用过渡效果，瞬间重置进度条
-                progressBar.style.transition = 'none';
-                progressBar.style.width = '0%';
-                
-                // 恢复过渡效果，以便下次使用
-                setTimeout(() => {
-                    progressBar.style.transition = '';
-                }, 100);
-            }, 500); // 等待动画完成（与CSS transition duration一致）
-        }
-    }
+    // ❌ 已移除 collectResource() 函数（v2.0资源系统重构）
+    // 资源现在只能通过资源副本获取
 
     // 添加战斗日志
     addBattleLog(message) {
@@ -4369,6 +4238,17 @@ class EndlessCultivationGame {
         document.getElementById('close-alert-modal').onclick = () => this.hideAlertModal();
     }
 
+    // 显示通知（简化版本，直接调用alertModal）
+    showNotification(message, type = 'info') {
+        const titles = {
+            info: '提示',
+            warning: '警告',
+            error: '错误',
+            success: '成功'
+        };
+        this.showAlertModal(titles[type] || '提示', message, type);
+    }
+
     // 隐藏提示模态框
     hideAlertModal() {
         const modal = document.getElementById('alert-modal');
@@ -4460,18 +4340,7 @@ class EndlessCultivationGame {
                         // 保留用户信息，只更新游戏的其他部分
                         const { user, ...gameData } = serverGameState.gameState;
 
-                        // 补充缺失的资源属性
-                        if (gameData.resources) {
-                            gameData.resources.spiritWood = gameData.resources.spiritWood || 0;
-                            gameData.resources.spiritWoodRate = gameData.resources.spiritWoodRate || 1;
-                            gameData.resources.blackIron = gameData.resources.blackIron || 0;
-                            gameData.resources.blackIronRate = gameData.resources.blackIronRate || 0.5;
-                            gameData.resources.spiritCrystal = gameData.resources.spiritCrystal || 0;
-                            gameData.resources.spiritCrystalRate = gameData.resources.spiritCrystalRate || 0.2;
-                            gameData.resources.breakthroughStones = gameData.resources.breakthroughStones || 0;
-                        }
-
-                        // ✅ 补充缺失的资源副本数据（v2.0新增）
+                        // 补充缺失的资源副本数据（v2.0新增）
                         if (gameData.player) {
                             if (!gameData.player.resourceDungeons) {
                                 console.log('[数据迁移] 添加资源副本数据...');
@@ -4481,13 +4350,6 @@ class EndlessCultivationGame {
                                     this.dungeon.initAllDungeonData();
                                 }
                             }
-                        }
-
-                        // ✅ 更新玩家灵石字段（从spiritCrystal改为spiritStones）
-                        if (gameData.player && gameData.player.spiritCrystal !== undefined && gameData.player.spiritStones === undefined) {
-                            console.log('[数据迁移] 更新灵石字段 spiritCrystal -> spiritStones');
-                            gameData.player.spiritStones = gameData.player.spiritCrystal || 0;
-                            delete gameData.player.spiritCrystal;
                         }
 
                         this.gameState = { ...gameData, user: userInfo };
@@ -4556,8 +4418,8 @@ class EndlessCultivationGame {
                         if (!this.gameState.vip) {
                             this.gameState.vip = { level: 0, totalRecharged: 0 };
                         }
-                        if (this.gameState.resources.jade === undefined) {
-                            this.gameState.resources.jade = 0;
+                        if (this.gameState.player.jade === undefined) {
+                            this.gameState.player.jade = 0;
                         }
 
                         // 图鉴系统数据迁移（兼容旧存档）
@@ -4668,13 +4530,19 @@ class EndlessCultivationGame {
             Object.assign(this.gameState.player, this.metadata.player.initialStats);
         }
 
-        // 2. 初始化资源
-        if (this.metadata.resources?.types) {
-            this.gameState.resources = {};
-            this.metadata.resources.types.forEach(resource => {
-                this.gameState.resources[resource.name] = resource.initialAmount || 0;
-                this.gameState.resources[`${resource.name}Rate`] = resource.baseRate || 0;
-            });
+        // 2. 初始化资源（v2.0资源系统重构）
+        // 初始化玩家资源（灵石、灵草、玄铁等）
+        if (!this.gameState.player.resources) {
+            this.gameState.player.resources = {
+                herbs: 0,
+                iron: 0,
+                breakthroughStones: 0
+            };
+        }
+
+        // 初始化灵石
+        if (this.gameState.player.spiritStones === undefined) {
+            this.gameState.player.spiritStones = 0;
         }
 
         // 3. 初始化装备和背包
@@ -6158,23 +6026,23 @@ class EndlessCultivationGame {
         });
     }
     
-    // 购买商店物品
+    // 购买商店物品（v2.0资源系统重构：使用灵石）
     buyShopItem(itemId) {
         const item = this.metadata.shop.items.find(item => item.id === itemId);
-        
+
         if (!item) {
             this.addBattleLog('无效的商品！');
             return;
         }
-        
-        // 检查灵木是否足够
-        if (this.gameState.resources.spiritWood < item.price) {
-            this.addBattleLog(`灵木不足，无法购买 ${item.name}！`);
+
+        // 检查灵石是否足够
+        if ((this.gameState.player.spiritStones || 0) < item.price) {
+            this.addBattleLog(`灵石不足，无法购买 ${item.name}！`);
             return;
         }
-        
-        // 扣除灵木
-        this.gameState.resources.spiritWood -= item.price;
+
+        // 扣除灵石
+        this.gameState.player.spiritStones = (this.gameState.player.spiritStones || 0) - item.price;
         
         if (item.type === 'consumable') {
             // 药水类物品放入背包
@@ -6515,9 +6383,8 @@ class EndlessCultivationGame {
     showDisassembleModal(item, inventory, index) {
         const returns = this.equipmentSystem.calculateDisassembleReturns(item);
         const itemName = item.name || '未知装备';
-        const woodAmount = returns.spiritWood || 0;
-        const ironAmount = returns.blackIron || 0;
-        const crystalAmount = returns.spiritCrystal || 0;
+        const stonesAmount = returns.spiritStones || 0;
+        const ironAmount = returns.iron || 0;
 
         const modal = document.getElementById('disassemble-modal');
         const infoDiv = document.getElementById('disassemble-modal-info');
@@ -6534,19 +6401,14 @@ class EndlessCultivationGame {
                 <p class="text-sm text-light/70 mb-2">分解可获得：</p>
                 <div class="flex justify-around">
                     <div class="text-center">
-                        <i class="fa fa-wood text-accent mb-1"></i>
-                        <p class="text-sm text-light/60">灵木</p>
-                        <p class="text-lg font-bold text-success">${woodAmount}</p>
-                    </div>
-                    <div class="text-center">
-                        <i class="fa fa-iron text-accent mb-1"></i>
-                        <p class="text-sm text-light/60">玄铁</p>
-                        <p class="text-lg font-bold text-success">${ironAmount}</p>
+                        <i class="fa fa-gem text-accent mb-1"></i>
+                        <p class="text-sm text-light/60">灵石</p>
+                        <p class="text-lg font-bold text-success">${stonesAmount}</p>
                     </div>
                     <div class="text-center">
                         <i class="fa fa-gem text-accent mb-1"></i>
-                        <p class="text-sm text-light/60">灵石</p>
-                        <p class="text-lg font-bold text-success">${crystalAmount}</p>
+                        <p class="text-sm text-light/60">玄铁</p>
+                        <p class="text-lg font-bold text-success">${ironAmount}</p>
                     </div>
                 </div>
             </div>
@@ -6561,10 +6423,9 @@ class EndlessCultivationGame {
         // 添加新的事件监听器
         newConfirmBtn.addEventListener('click', () => {
             inventory.splice(index, 1);
-            this.gameState.resources.spiritWood += woodAmount;
-            this.gameState.resources.blackIron += ironAmount;
-            this.gameState.resources.spiritCrystal += crystalAmount;
-            this.addBattleLog(`分解 ${itemName} 获得了 ${woodAmount} 灵木, ${ironAmount} 玄铁, ${crystalAmount} 灵石！`);
+            this.gameState.player.spiritStones = (this.gameState.player.spiritStones || 0) + stonesAmount;
+            this.gameState.player.resources.iron = (this.gameState.player.resources.iron || 0) + ironAmount;
+            this.addBattleLog(`分解 ${itemName} 获得了 ${stonesAmount} 灵石, ${ironAmount} 玄铁！`);
             this.updateUI();
             this.showInventory();
             modal.classList.add('hidden');

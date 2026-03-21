@@ -2558,11 +2558,8 @@ const gameMetadata = {
             autoBattleSettings: {
                 enabled: false,
                 targetColors: ['green', 'yellow', 'red']
-            },
-            autoCollectSettings: {
-                enabled: false,
-                resourceTypes: ['spiritWood', 'blackIron', 'spiritCrystal']
             }
+            // ❌ 已移除 autoCollectSettings（v2.0资源系统重构）
         },
         // 默认战斗状态
         defaultBattleState: {
@@ -2578,28 +2575,28 @@ const gameMetadata = {
                 name: "spiritWood",
                 displayName: "灵木",
                 initialAmount: 0,
-                baseRate: 1,
+                // ❌ 已移除 baseRate（v2.0资源系统重构）
                 description: "基础修仙资源，用于装备精炼"
             },
             {
                 name: "blackIron",
                 displayName: "玄铁",
                 initialAmount: 0,
-                baseRate: 0.5,
+                // ❌ 已移除 baseRate（v2.0资源系统重构）
                 description: "中级修仙资源，用于装备精炼"
             },
             {
                 name: "spiritCrystal",
                 displayName: "灵石",
                 initialAmount: 0,
-                baseRate: 0.2,
+                // ❌ 已移除 baseRate（v2.0资源系统重构）
                 description: "高级修仙资源，用于装备精炼"
             },
             {
                 name: "jade",
                 displayName: "仙玉",
                 initialAmount: 0,
-                baseRate: 0,
+                // ❌ 已移除 baseRate（v2.0资源系统重构）
                 description: "珍贵货币，通过充值获得"
             }
         ]

@@ -579,10 +579,8 @@ EndlessCultivationGame.prototype.replaceEnemyInBattle = function(newEnemy) {
     // 使用统一的敌人创建方法
     this.battle3D.enemy = this.createEnemyGroup(enemyInfo);
 
-    // 4. 重置敌人血条
-    if (this.updateEnemyHealthBar) {
-        this.updateEnemyHealthBar();
-    }
+    // 4. 重新创建血条（旧血条已随旧敌人模型一起被销毁）
+    this.createHealthBars();
 
     // 5. 重置战斗状态
     if (this.battle3D.isAttacking) {

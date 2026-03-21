@@ -286,64 +286,56 @@ class EquipmentSystem {
     }
 
     // 计算分解返还材料
+    // 计算分解返还材料（v2.0资源系统重构）
     calculateDisassembleReturns(item) {
         // 确保refineLevel有值
         const refineLevel = item.refineLevel || 0;
 
         // 计算精炼材料返还（只返还50%的精炼材料，保持游戏经济平衡）
-        let refineSpiritWood = 0;
-        let refineBlackIron = 0;
-        let refineSpiritCrystal = 0;
+        let refineSpiritStones = 0;
+        let refineIron = 0;
 
         // 计算从0级到当前精炼等级的所有材料消耗
         for (let i = 0; i < refineLevel; i++) {
             const cost = this.calculateRefineCost(i);
-            refineSpiritWood += Math.floor(cost.spiritWood * 0.5);
-            refineBlackIron += Math.floor(cost.blackIron * 0.5);
-            refineSpiritCrystal += Math.floor(cost.spiritCrystal * 0.5);
+            refineSpiritStones += Math.floor(cost.spiritStones * 0.5);
+            refineIron += Math.floor(cost.iron * 0.5);
         }
 
         // 计算品质材料返还
-        let qualitySpiritWood = 0;
-        let qualityBlackIron = 0;
-        let qualitySpiritCrystal = 0;
+        let qualitySpiritStones = 0;
+        let qualityIron = 0;
 
         // 根据装备品质确定返还材料（仅支持标准品质：white, blue, purple, gold, rainbow）
         if (item.rarity) {
             switch (item.rarity) {
                 case 'white':
-                    qualitySpiritWood = 30;
-                    qualityBlackIron = 15;
-                    qualitySpiritCrystal = 5;
+                    qualitySpiritStones = 5;
+                    qualityIron = 15;
                     break;
                 case 'blue':
-                    qualitySpiritWood = 60;
-                    qualityBlackIron = 30;
-                    qualitySpiritCrystal = 12;
+                    qualitySpiritStones = 12;
+                    qualityIron = 30;
                     break;
                 case 'purple':
-                    qualitySpiritWood = 100;
-                    qualityBlackIron = 50;
-                    qualitySpiritCrystal = 20;
+                    qualitySpiritStones = 20;
+                    qualityIron = 50;
                     break;
                 case 'gold':
-                    qualitySpiritWood = 150;
-                    qualityBlackIron = 75;
-                    qualitySpiritCrystal = 30;
+                    qualitySpiritStones = 30;
+                    qualityIron = 75;
                     break;
                 case 'rainbow':
-                    qualitySpiritWood = 220;
-                    qualityBlackIron = 110;
-                    qualitySpiritCrystal = 50;
+                    qualitySpiritStones = 50;
+                    qualityIron = 110;
                     break;
                 // 非标准品质不返还材料
             }
         }
 
         return {
-            spiritWood: qualitySpiritWood + refineSpiritWood,
-            blackIron: qualityBlackIron + refineBlackIron,
-            spiritCrystal: qualitySpiritCrystal + refineSpiritCrystal
+            spiritStones: qualitySpiritStones + refineSpiritStones,
+            iron: qualityIron + refineIron
         };
     }
     
@@ -578,7 +570,7 @@ class EquipmentSystem {
                 if (item.refineLevel < 10) {
                     const cost = this.calculateRefineCost(item.refineLevel);
                     refineRequirementsElement.textContent =
-                        `木:${cost.spiritWood} 铁:${cost.blackIron} 石:${cost.spiritCrystal}`;
+                        `灵石:${cost.spiritStones} 玄铁:${cost.iron}`;
                 } else {
                     refineRequirementsElement.textContent = '已满级';
                 }
@@ -643,7 +635,7 @@ class EquipmentSystem {
                 const cost = this.calculateRefineCost(item.refineLevel);
                 const requirementsModal = document.getElementById('refine-requirements-modal');
                 if (requirementsModal) {
-                    requirementsModal.textContent = `木:${cost.spiritWood} 铁:${cost.blackIron} 石:${cost.spiritCrystal}`;
+                    requirementsModal.textContent = `灵石:${cost.spiritStones} 玄铁:${cost.iron}`;
                 }
             } else {
                 const requirementsModal = document.getElementById('refine-requirements-modal');
