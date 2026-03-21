@@ -160,7 +160,7 @@ const SIZES = {
     PLAYER_HEIGHT: 2,
 
     // ========== 地图场景尺寸 ==========
-    SKY_SIZE: 500,                // 天空盒/地面尺寸（唯一基准值，其他距离从此派生）
+    SKY_SIZE: 250,                // 天空盒/地面尺寸（唯一基准值，其他距离从此派生）
     // 注意：以下距离值在文件末尾从 SKY_SIZE 派生计算
     // GROUND_Y, PLAYER_BOUNDARY, BOUNDARY_RADIUS, TREE_DISTRIBUTION_RADIUS 等
     PLAYER_HEIGHT_OFFSET: 1.1,    // 玩家相对地面的高度偏移（角色身高，不随地图缩放）
@@ -181,12 +181,16 @@ const SIZES = {
 
     // ========== 边界障碍物 ==========
     // BOUNDARY_RADIUS 在文件末尾从 SKY_SIZE 派生
-    BOUNDARY_OBSTACLE_COUNT: 80,  // 外环障碍物数量（密度，不随距离缩放）
-    BOUNDARY_INNER_COUNT: 55,     // 内环障碍物数量
+    BOUNDARY_OBSTACLE_COUNT: 40,  // 外环障碍物数量（密度，不随距离缩放）
+    BOUNDARY_INNER_COUNT: 28,     // 内环障碍物数量
 
     // ========== 场景生成 ==========
-    TREE_COUNT_MIN: 40,           // 树木数量范围（密度）
-    TREE_COUNT_MAX: 60,
+    TREE_COUNT_MIN: 20,           // 树木数量范围（密度）
+    TREE_COUNT_MAX: 30,
+
+    // ========== 背包系统 ==========
+    MAX_INVENTORY_SIZE: 400,      // 背包最大容量（格）- 每种装备类型50格 × 8类型
+    INVENTORY_PAGE_SIZE: 50,      // 每页显示物品数量
 };
 
 // ========== 从 SKY_SIZE 派生距离值 ==========

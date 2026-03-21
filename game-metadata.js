@@ -2,19 +2,20 @@
 
 const gameMetadata = {
     // 装备品质定义（简化为5个品质：白、蓝、紫、金、彩）
+    // multiplier: 整数属性乘数，pctMultiplier: 百分比属性乘数
     equipmentRarities: [
-        { name: "white", displayName: "白色", multiplier: 1.0, statCount: 1 },
-        { name: "blue", displayName: "蓝色", multiplier: 1.5, statCount: 2 },
-        { name: "purple", displayName: "紫色", multiplier: 2.2, statCount: 3 },
-        { name: "gold", displayName: "黄金", multiplier: 3.2, statCount: 4 },
-        { name: "rainbow", displayName: "彩色", multiplier: 4.5, statCount: 5 }
+        { name: "white", displayName: "白色", multiplier: 1.0, pctMultiplier: 1.0, statCount: 1 },
+        { name: "blue", displayName: "蓝色", multiplier: 1.5, pctMultiplier: 1.2, statCount: 2 },
+        { name: "purple", displayName: "紫色", multiplier: 2.2, pctMultiplier: 1.4, statCount: 3 },
+        { name: "gold", displayName: "黄金", multiplier: 3.2, pctMultiplier: 1.6, statCount: 4 },
+        { name: "rainbow", displayName: "彩色", multiplier: 4.5, pctMultiplier: 2.0, statCount: 5 }
     ],
     
     // 装备模板
     equipmentTemplates: [
         {
             type: "weapon",
-            baseStats: { attack: 5, speed: 2, luck: 2, criticalRate: 0.05 },
+            baseStats: { attack: 5, speed: 2, luck: 2, criticalRate: 0.05, critDamage: 10 },
             // 剑、刀、枪、棍、斧、杖（6后缀 × 6境界）
             nameSuffixes: [
                 ['铁剑','钢刀','木枪','木棍','石斧','木杖'],         // 武者境
@@ -79,7 +80,7 @@ const gameMetadata = {
         },
         {
             type: "amulet",
-            baseStats: { luck: 3, hp: 8, speed: 2, energyRegen: 0.05 },
+            baseStats: { luck: 3, maxEnergy: 15, speed: 2, energyRegen: 0.05 },  // 改为加灵力上限
             // 符、佩、牌、坠、珠、玉（6后缀 × 6境界）
             nameSuffixes: [
                 ['木符','木佩','铁牌','石坠','木珠','原玉'],         // 武者境
@@ -92,7 +93,7 @@ const gameMetadata = {
         },
         {
             type: "spiritTreasure",
-            baseStats: { luck: 3, hp: 8, energyRegen: 0.08, speed: 2 },
+            baseStats: { luck: 3, maxEnergy: 20, energyRegen: 0.08, speed: 2 },  // 改为加灵力上限
             // 珠、鼎、鉴、钟、莲、塔（6后缀 × 6境界）
             nameSuffixes: [
                 ['木珠','木鼎','铜鉴','铁钟','铜莲','木塔'],         // 武者境
@@ -154,25 +155,25 @@ const gameMetadata = {
         normal: {
             white: 0.50,
             blue: 0.30,
-            purple: 0.14,
+            purple: 0.148,
             gold: 0.05,
-            rainbow: 0.01
+            rainbow: 0.002   // 0.2%（原1%）
         },
         // 精英怪物掉率
         elite: {
             white: 0.30,
             blue: 0.35,
             purple: 0.20,
-            gold: 0.12,
-            rainbow: 0.03
+            gold: 0.145,
+            rainbow: 0.005   // 0.5%（原3%）
         },
         // BOSS掉率
         boss: {
             white: 0.10,
             blue: 0.30,
             purple: 0.30,
-            gold: 0.22,
-            rainbow: 0.08
+            gold: 0.285,
+            rainbow: 0.015   // 1.5%（原8%）
         }
     },
     
@@ -180,8 +181,8 @@ const gameMetadata = {
     enemyTypes: [
         {
             name: "雪原狼",
-            baseHp: 30,
-            baseAttack: 8,
+            baseHp: 28,
+            baseAttack: 7,
             baseDefense: 2,
             baseSpeed: 12,
             baseAccuracy: 95,
@@ -193,8 +194,8 @@ const gameMetadata = {
         },
         {
             name: "冰原熊",
-            baseHp: 60,
-            baseAttack: 12,
+            baseHp: 48,
+            baseAttack: 11,
             baseDefense: 4,
             baseSpeed: 8,
             baseAccuracy: 90,
@@ -206,9 +207,9 @@ const gameMetadata = {
         },
         {
             name: "冰霜巨人",
-            baseHp: 100,
-            baseAttack: 18,
-            baseDefense: 6,
+            baseHp: 48,
+            baseAttack: 13,
+            baseDefense: 5,
             baseSpeed: 6,
             baseAccuracy: 85,
             baseDodge: 3,
@@ -219,9 +220,9 @@ const gameMetadata = {
         },
         {
             name: "妖狐王",
-            baseHp: 650,
-            baseAttack: 60,
-            baseDefense: 18,
+            baseHp: 130,
+            baseAttack: 48,
+            baseDefense: 14,
             baseSpeed: 16,
             baseAccuracy: 96,
             baseDodge: 28,
@@ -233,9 +234,9 @@ const gameMetadata = {
         // 海滩地图敌人 (Realm 1)
         {
             name: "蟹将",
-            baseHp: 60,
-            baseAttack: 10,
-            baseDefense: 6,
+            baseHp: 50,
+            baseAttack: 9,
+            baseDefense: 5,
             baseSpeed: 6,
             baseAccuracy: 88,
             baseDodge: 8,
@@ -246,9 +247,9 @@ const gameMetadata = {
         },
         {
             name: "虾兵",
-            baseHp: 50,
-            baseAttack: 9,
-            baseDefense: 5,
+            baseHp: 42,
+            baseAttack: 8,
+            baseDefense: 4,
             baseSpeed: 8,
             baseAccuracy: 90,
             baseDodge: 10,
@@ -259,9 +260,9 @@ const gameMetadata = {
         },
         {
             name: "贝壳精",
-            baseHp: 60,
-            baseAttack: 10,
-            baseDefense: 6,
+            baseHp: 52,
+            baseAttack: 9,
+            baseDefense: 5,
             baseSpeed: 5,
             baseAccuracy: 85,
             baseDodge: 6,
@@ -272,9 +273,9 @@ const gameMetadata = {
         },
         {
             name: "海马精",
-            baseHp: 90,
-            baseAttack: 16,
-            baseDefense: 7,
+            baseHp: 65,
+            baseAttack: 14,
+            baseDefense: 6,
             baseSpeed: 9,
             baseAccuracy: 92,
             baseDodge: 14,
@@ -299,7 +300,7 @@ const gameMetadata = {
         },
         {
             name: "花豹",
-            baseHp: 100,
+            baseHp: 90,
             baseAttack: 19,
             baseDefense: 7,
             baseSpeed: 14,
@@ -312,7 +313,7 @@ const gameMetadata = {
         },
         {
             name: "草原之王",
-            baseHp: 250,
+            baseHp: 140,
             baseAttack: 36,
             baseDefense: 12,
             baseSpeed: 11,
@@ -365,9 +366,9 @@ const gameMetadata = {
         },
         {
             name: "峡谷领主",
-            baseHp: 320,
-            baseAttack: 49,
-            baseDefense: 18,
+            baseHp: 64,
+            baseAttack: 39,
+            baseDefense: 14,
             baseSpeed: 12,
             baseAccuracy: 95,
             baseDodge: 16,
@@ -405,9 +406,9 @@ const gameMetadata = {
         },
         {
             name: "沙漠之王",
-            baseHp: 325,
-            baseAttack: 52,
-            baseDefense: 17,
+            baseHp: 65,
+            baseAttack: 42,
+            baseDefense: 14,
             baseSpeed: 13,
             baseAccuracy: 94,
             baseDodge: 17,
@@ -432,9 +433,9 @@ const gameMetadata = {
         },
         {
             name: "淡水鲛人",
-            baseHp: 280,
-            baseAttack: 44,
-            baseDefense: 16,
+            baseHp: 112,
+            baseAttack: 35,
+            baseDefense: 13,
             baseSpeed: 11,
             baseAccuracy: 92,
             baseDodge: 16,
@@ -445,9 +446,9 @@ const gameMetadata = {
         },
         {
             name: "湖妖",
-            baseHp: 320,
-            baseAttack: 48,
-            baseDefense: 20,
+            baseHp: 128,
+            baseAttack: 38,
+            baseDefense: 16,
             baseSpeed: 12,
             baseAccuracy: 93,
             baseDodge: 18,
@@ -458,9 +459,9 @@ const gameMetadata = {
         },
         {
             name: "湖怪",
-            baseHp: 500,
-            baseAttack: 68,
-            baseDefense: 29,
+            baseHp: 100,
+            baseAttack: 54,
+            baseDefense: 23,
             baseSpeed: 10,
             baseAccuracy: 90,
             baseDodge: 12,
@@ -471,9 +472,9 @@ const gameMetadata = {
         },
         {
             name: "湖龙王",
-            baseHp: 580,
-            baseAttack: 76,
-            baseDefense: 33,
+            baseHp: 116,
+            baseAttack: 61,
+            baseDefense: 26,
             baseSpeed: 13,
             baseAccuracy: 96,
             baseDodge: 20,
@@ -525,8 +526,8 @@ const gameMetadata = {
         },
         {
             name: "山精",
-            baseHp: 60,
-            baseAttack: 14,
+            baseHp: 48,
+            baseAttack: 12,
             baseDefense: 5,
             baseSpeed: 7,
             baseAccuracy: 88,
@@ -564,9 +565,9 @@ const gameMetadata = {
         },
         {
             name: "土妖",
-            baseHp: 850,
-            baseAttack: 68,
-            baseDefense: 32,
+            baseHp: 170,
+            baseAttack: 54,
+            baseDefense: 25,
             baseSpeed: 7,
             baseAccuracy: 86,
             baseDodge: 6,
@@ -590,9 +591,9 @@ const gameMetadata = {
         },
         {
             name: "雷兽",
-            baseHp: 580,
-            baseAttack: 66,
-            baseDefense: 16,
+            baseHp: 116,
+            baseAttack: 53,
+            baseDefense: 13,
             baseSpeed: 13,
             baseAccuracy: 92,
             baseDodge: 15,
@@ -603,8 +604,8 @@ const gameMetadata = {
         },
         {
             name: "山妖",
-            baseHp: 40,
-            baseAttack: 10,
+            baseHp: 32,
+            baseAttack: 8,
             baseDefense: 3,
             baseSpeed: 8,
             baseAccuracy: 89,
@@ -616,9 +617,9 @@ const gameMetadata = {
         },
         {
             name: "岩怪",
-            baseHp: 680,
-            baseAttack: 48,
-            baseDefense: 24,
+            baseHp: 45,
+            baseAttack: 18,
+            baseDefense: 7,
             baseSpeed: 4,
             baseAccuracy: 85,
             baseDodge: 3,
@@ -629,8 +630,8 @@ const gameMetadata = {
         },
         {
             name: "神雕",
-            baseHp: 45,
-            baseAttack: 11,
+            baseHp: 36,
+            baseAttack: 9,
             baseDefense: 3,
             baseSpeed: 18,
             baseAccuracy: 94,
@@ -642,9 +643,9 @@ const gameMetadata = {
         },
         {
             name: "石精",
-            baseHp: 600,
-            baseAttack: 52,
-            baseDefense: 20,
+            baseHp: 40,
+            baseAttack: 15,
+            baseDefense: 6,
             baseSpeed: 5,
             baseAccuracy: 87,
             baseDodge: 5,
@@ -655,8 +656,8 @@ const gameMetadata = {
         },
         {
             name: "山魈",
-            baseHp: 50,
-            baseAttack: 11,
+            baseHp: 40,
+            baseAttack: 10,
             baseDefense: 4,
             baseSpeed: 10,
             baseAccuracy: 90,
@@ -707,9 +708,9 @@ const gameMetadata = {
         },
         {
             name: "鹿灵",
-            baseHp: 400,
-            baseAttack: 42,
-            baseDefense: 12,
+            baseHp: 160,
+            baseAttack: 34,
+            baseDefense: 10,
             baseSpeed: 14,
             baseAccuracy: 92,
             baseDodge: 20,
@@ -720,9 +721,9 @@ const gameMetadata = {
         },
         {
             name: "木怪",
-            baseHp: 550,
-            baseAttack: 48,
-            baseDefense: 18,
+            baseHp: 110,
+            baseAttack: 38,
+            baseDefense: 14,
             baseSpeed: 7,
             baseAccuracy: 87,
             baseDodge: 7,
@@ -772,9 +773,9 @@ const gameMetadata = {
         },
         {
             name: "森林守护者",
-            baseHp: 520,
-            baseAttack: 42,
-            baseDefense: 24,
+            baseHp: 104,
+            baseAttack: 34,
+            baseDefense: 19,
             baseSpeed: 9,
             baseAccuracy: 90,
             baseDodge: 12,
@@ -811,8 +812,8 @@ const gameMetadata = {
         },
         {
             name: "鱼精",
-            baseHp: 120,
-            baseAttack: 22,
+            baseHp: 75,
+            baseAttack: 16,
             baseDefense: 6,
             baseSpeed: 14,
             baseAccuracy: 91,
@@ -824,9 +825,9 @@ const gameMetadata = {
         },
         {
             name: "水仙",
-            baseHp: 480,
-            baseAttack: 55,
-            baseDefense: 18,
+            baseHp: 96,
+            baseAttack: 44,
+            baseDefense: 14,
             baseSpeed: 14,
             baseAccuracy: 94,
             baseDodge: 18,
@@ -902,9 +903,9 @@ const gameMetadata = {
         },
         {
             name: "洞穴蝙蝠",
-            baseHp: 380,
-            baseAttack: 52,
-            baseDefense: 10,
+            baseHp: 76,
+            baseAttack: 42,
+            baseDefense: 8,
             baseSpeed: 19,
             baseAccuracy: 94,
             baseDodge: 25,
@@ -915,9 +916,9 @@ const gameMetadata = {
         },
         {
             name: "蜘蛛精",
-            baseHp: 450,
-            baseAttack: 56,
-            baseDefense: 12,
+            baseHp: 90,
+            baseAttack: 45,
+            baseDefense: 10,
             baseSpeed: 10,
             baseAccuracy: 91,
             baseDodge: 15,
@@ -928,9 +929,9 @@ const gameMetadata = {
         },
         {
             name: "蚯蚓怪",
-            baseHp: 600,
-            baseAttack: 48,
-            baseDefense: 18,
+            baseHp: 120,
+            baseAttack: 38,
+            baseDefense: 14,
             baseSpeed: 6,
             baseAccuracy: 86,
             baseDodge: 6,
@@ -941,9 +942,9 @@ const gameMetadata = {
         },
         {
             name: "洞穴幽灵",
-            baseHp: 400,
-            baseAttack: 60,
-            baseDefense: 10,
+            baseHp: 80,
+            baseAttack: 48,
+            baseDefense: 8,
             baseSpeed: 14,
             baseAccuracy: 93,
             baseDodge: 20,
@@ -967,9 +968,9 @@ const gameMetadata = {
         },
         {
             name: "凤凰",
-            baseHp: 620,
-            baseAttack: 65,
-            baseDefense: 15,
+            baseHp: 124,
+            baseAttack: 52,
+            baseDefense: 12,
             baseSpeed: 17,
             baseAccuracy: 95,
             baseDodge: 22,
@@ -980,9 +981,9 @@ const gameMetadata = {
         },
         {
             name: "火凤凰",
-            baseHp: 550,
-            baseAttack: 68,
-            baseDefense: 16,
+            baseHp: 110,
+            baseAttack: 54,
+            baseDefense: 13,
             baseSpeed: 18,
             baseAccuracy: 96,
             baseDodge: 25,
@@ -1019,9 +1020,9 @@ const gameMetadata = {
         },
         {
             name: "火山领主",
-            baseHp: 720,
-            baseAttack: 70,
-            baseDefense: 28,
+            baseHp: 144,
+            baseAttack: 56,
+            baseDefense: 22,
             baseSpeed: 8,
             baseAccuracy: 88,
             baseDodge: 8,
@@ -1045,9 +1046,9 @@ const gameMetadata = {
         },
         {
             name: "麒麟",
-            baseHp: 620,
-            baseAttack: 60,
-            baseDefense: 18,
+            baseHp: 40,
+            baseAttack: 16,
+            baseDefense: 6,
             baseSpeed: 12,
             baseAccuracy: 92,
             baseDodge: 15,
@@ -1058,9 +1059,9 @@ const gameMetadata = {
         },
         {
             name: "龙王",
-            baseHp: 720,
-            baseAttack: 72,
-            baseDefense: 28,
+            baseHp: 170,
+            baseAttack: 35,
+            baseDefense: 15,
             baseSpeed: 10,
             baseAccuracy: 93,
             baseDodge: 12,
@@ -1123,9 +1124,9 @@ const gameMetadata = {
         },
         {
             name: "元始天尊",
-            baseHp: 880,
-            baseAttack: 82,
-            baseDefense: 35,
+            baseHp: 176,
+            baseAttack: 66,
+            baseDefense: 28,
             baseSpeed: 12,
             baseAccuracy: 97,
             baseDodge: 18,
@@ -1136,9 +1137,9 @@ const gameMetadata = {
         },
         {
             name: "海妖",
-            baseHp: 420,
-            baseAttack: 48,
-            baseDefense: 14,
+            baseHp: 120,
+            baseAttack: 25,
+            baseDefense: 11,
             baseSpeed: 11,
             baseAccuracy: 90,
             baseDodge: 15,
@@ -1149,9 +1150,9 @@ const gameMetadata = {
         },
         {
             name: "海怪",
-            baseHp: 680,
-            baseAttack: 62,
-            baseDefense: 24,
+            baseHp: 150,
+            baseAttack: 30,
+            baseDefense: 13,
             baseSpeed: 7,
             baseAccuracy: 88,
             baseDodge: 8,
@@ -1162,9 +1163,9 @@ const gameMetadata = {
         },
         {
             name: "鲛人",
-            baseHp: 380,
-            baseAttack: 42,
-            baseDefense: 12,
+            baseHp: 100,
+            baseAttack: 20,
+            baseDefense: 9,
             baseSpeed: 13,
             baseAccuracy: 92,
             baseDodge: 18,
@@ -1214,7 +1215,7 @@ const gameMetadata = {
         },
         {
             name: "草原巨兽",
-            baseHp: 130,
+            baseHp: 110,
             baseAttack: 23,
             baseDefense: 10,
             baseSpeed: 6,
@@ -1377,31 +1378,31 @@ const gameMetadata = {
             levels: [
                 {
                     name: 'heavyStrike_lv1',
-                    description: '凝聚力量，造成1.3倍伤害',
+                    description: '凝聚力量，造成1.2倍伤害',
                     stageRequired: 1,
                     energyCost: 12,
-                    damageMultiplier: 1.3
+                    damageMultiplier: 1.2
                 },
                 {
                     name: 'heavyStrike_lv2',
-                    description: '全力一击，造成1.5倍伤害',
+                    description: '全力一击，造成1.3倍伤害',
                     stageRequired: 4,
                     energyCost: 14,
-                    damageMultiplier: 1.5
+                    damageMultiplier: 1.3
                 },
                 {
                     name: 'heavyStrike_lv3',
-                    description: '爆发力量，造成1.7倍伤害',
+                    description: '爆发力量，造成1.4倍伤害',
                     stageRequired: 7,
                     energyCost: 16,
-                    damageMultiplier: 1.7
+                    damageMultiplier: 1.4
                 },
                 {
                     name: 'heavyStrike_lv4',
-                    description: '武者境巅峰，造成1.9倍伤害，+5%暴击率',
+                    description: '武者境巅峰，造成1.5倍伤害，+5%暴击率',
                     stageRequired: 10,
                     energyCost: 20,
-                    damageMultiplier: 1.9,
+                    damageMultiplier: 1.5,
                     criticalBonus: 0.05
                 }
             ]
@@ -1509,33 +1510,33 @@ const gameMetadata = {
             levels: [
                 {
                     name: 'qiBlade_lv1',
-                    description: '凝聚气刃，造成2.0倍伤害',
+                    description: '凝聚气刃，造成1.4倍伤害',
                     stageRequired: 1,
                     energyCost: 15,
-                    damageMultiplier: 2.0
+                    damageMultiplier: 1.4
                 },
                 {
                     name: 'qiBlade_lv2',
-                    description: '强化气刃，造成2.3倍伤害，+5%暴击率',
+                    description: '强化气刃，造成1.5倍伤害，+5%暴击率',
                     stageRequired: 4,
                     energyCost: 18,
-                    damageMultiplier: 2.3,
+                    damageMultiplier: 1.5,
                     criticalBonus: 0.05
                 },
                 {
                     name: 'qiBlade_lv3',
-                    description: '气刃爆发，造成2.6倍伤害，额外造成5%敌人最大生命伤害',
+                    description: '气刃爆发，造成1.7倍伤害，额外造成5%敌人最大生命伤害',
                     stageRequired: 7,
                     energyCost: 22,
-                    damageMultiplier: 2.6,
+                    damageMultiplier: 1.7,
                     extraDamagePercent: 0.05
                 },
                 {
                     name: 'qiBlade_lv4',
-                    description: '炼气境巅峰，造成3.0倍伤害，额外造成10%敌人最大生命伤害',
+                    description: '炼气境巅峰，造成1.9倍伤害，额外造成10%敌人最大生命伤害',
                     stageRequired: 10,
                     energyCost: 28,
-                    damageMultiplier: 3.0,
+                    damageMultiplier: 1.9,
                     extraDamagePercent: 0.1
                 }
             ]
@@ -1672,33 +1673,33 @@ const gameMetadata = {
             levels: [
                 {
                     name: 'foundationSlash_lv1',
-                    description: '剑气斩击，造成3.2倍伤害',
+                    description: '剑气斩击，造成1.7倍伤害',
                     stageRequired: 1,
                     energyCost: 20,
-                    damageMultiplier: 3.2
+                    damageMultiplier: 1.7
                 },
                 {
                     name: 'foundationSlash_lv2',
-                    description: '强化剑气，造成3.6倍伤害，无视15%防御',
+                    description: '强化剑气，造成1.8倍伤害，无视15%防御',
                     stageRequired: 4,
                     energyCost: 25,
-                    damageMultiplier: 3.6,
+                    damageMultiplier: 1.8,
                     armorPenetration: 0.15
                 },
                 {
                     name: 'foundationSlash_lv3',
-                    description: '剑气爆发，造成4.0倍伤害，无视25%防御',
+                    description: '剑气爆发，造成2.0倍伤害，无视25%防御',
                     stageRequired: 7,
                     energyCost: 32,
-                    damageMultiplier: 4.0,
+                    damageMultiplier: 2.0,
                     armorPenetration: 0.25
                 },
                 {
                     name: 'foundationSlash_lv4',
-                    description: '筑基境巅峰，造成4.5倍伤害，无视30%防御，+10%暴击率',
+                    description: '筑基境巅峰，造成2.2倍伤害，无视30%防御，+10%暴击率',
                     stageRequired: 10,
                     energyCost: 40,
-                    damageMultiplier: 4.5,
+                    damageMultiplier: 2.2,
                     armorPenetration: 0.3,
                     criticalBonus: 0.1
                 }
@@ -1854,34 +1855,34 @@ const gameMetadata = {
             levels: [
                 {
                     name: 'goldenCore_lv1',
-                    description: '金丹之力，造成4.8倍伤害',
+                    description: '金丹之力，造成2.0倍伤害',
                     stageRequired: 1,
                     energyCost: 25,
-                    damageMultiplier: 4.8
+                    damageMultiplier: 2.0
                 },
                 {
                     name: 'goldenCore_lv2',
-                    description: '强化金丹掌，造成5.3倍伤害，眩晕敌人1回合',
+                    description: '强化金丹掌，造成2.2倍伤害，眩晕敌人1回合',
                     stageRequired: 4,
                     energyCost: 32,
-                    damageMultiplier: 5.3,
+                    damageMultiplier: 2.2,
                     stun: 1
                 },
                 {
                     name: 'goldenCore_lv3',
-                    description: '金丹爆发，造成5.8倍伤害，眩晕1回合，无视20%防御',
+                    description: '金丹爆发，造成2.3倍伤害，眩晕1回合，无视20%防御',
                     stageRequired: 7,
                     energyCost: 40,
-                    damageMultiplier: 5.8,
+                    damageMultiplier: 2.3,
                     stun: 1,
                     armorPenetration: 0.2
                 },
                 {
                     name: 'goldenCore_lv4',
-                    description: '金丹境巅峰，造成6.5倍伤害，眩晕2回合，无视30%防御',
+                    description: '金丹境巅峰，造成2.5倍伤害，眩晕2回合，无视30%防御',
                     stageRequired: 10,
                     energyCost: 52,
-                    damageMultiplier: 6.5,
+                    damageMultiplier: 2.5,
                     stun: 2,
                     armorPenetration: 0.3
                 }
@@ -2043,34 +2044,34 @@ const gameMetadata = {
             levels: [
                 {
                     name: 'infantStrike_lv1',
-                    description: '元婴之力，造成6.8倍伤害',
+                    description: '元婴之力，造成2.3倍伤害',
                     stageRequired: 1,
                     energyCost: 35,
-                    damageMultiplier: 6.8
+                    damageMultiplier: 2.3
                 },
                 {
                     name: 'infantStrike_lv2',
-                    description: '元婴攻击，造成7.5倍伤害，额外造成10%敌人最大生命伤害',
+                    description: '元婴攻击，造成2.5倍伤害，额外造成10%敌人最大生命伤害',
                     stageRequired: 4,
                     energyCost: 42,
-                    damageMultiplier: 7.5,
+                    damageMultiplier: 2.5,
                     extraDamagePercent: 0.1
                 },
                 {
                     name: 'infantStrike_lv3',
-                    description: '元婴寂灭一击，造成8.2倍伤害，对生命低于25%敌人额外2倍伤害',
+                    description: '元婴寂灭一击，造成2.6倍伤害，对生命低于25%敌人额外2倍伤害',
                     stageRequired: 7,
                     energyCost: 50,
-                    damageMultiplier: 8.2,
+                    damageMultiplier: 2.6,
                     executeMultiplier: 2.0,
                     executeThreshold: 0.25
                 },
                 {
                     name: 'infantStrike_lv4',
-                    description: '元婴境巅峰，造成9.0倍伤害，斩杀生命低于35%敌人',
+                    description: '元婴境巅峰，造成2.8倍伤害，斩杀生命低于35%敌人',
                     stageRequired: 10,
                     energyCost: 65,
-                    damageMultiplier: 9.0,
+                    damageMultiplier: 2.8,
                     executeThreshold: 0.35
                 }
             ]
@@ -2244,34 +2245,34 @@ const gameMetadata = {
             levels: [
                 {
                     name: 'deityFist_lv1',
-                    description: '化神之力，造成9.5倍伤害',
+                    description: '化神之力，造成2.5倍伤害',
                     stageRequired: 1,
                     energyCost: 45,
-                    damageMultiplier: 9.5
+                    damageMultiplier: 2.5
                 },
                 {
                     name: 'deityFist_lv2',
-                    description: '紫气东来，造成10.5倍伤害，无视40%防御',
+                    description: '紫气东来，造成2.7倍伤害，无视40%防御',
                     stageRequired: 4,
                     energyCost: 55,
-                    damageMultiplier: 10.5,
+                    damageMultiplier: 2.7,
                     armorPenetration: 0.4
                 },
                 {
                     name: 'deityFist_lv3',
-                    description: '鸿蒙紫气，造成11.5倍伤害，对生命低于20%敌人额外3倍伤害',
+                    description: '鸿蒙紫气，造成3.0倍伤害，对生命低于20%敌人额外3倍伤害',
                     stageRequired: 7,
                     energyCost: 65,
-                    damageMultiplier: 11.5,
+                    damageMultiplier: 3.0,
                     executeMultiplier: 3.0,
                     executeThreshold: 0.2
                 },
                 {
                     name: 'deityFist_lv4',
-                    description: '化神境巅峰，造成13.0倍伤害，必定暴击，无视50%防御',
+                    description: '化神境巅峰，造成3.2倍伤害，必定暴击，无视50%防御',
                     stageRequired: 10,
                     energyCost: 80,
-                    damageMultiplier: 13.0,
+                    damageMultiplier: 3.2,
                     guaranteedCrit: true,
                     armorPenetration: 0.5
                 }
@@ -2524,6 +2525,7 @@ const gameMetadata = {
             speed: 10,
             accuracy: 100,
             dodge: 5,
+            critDamage: 0,  // 暴击伤害值（初始为0，只能通过装备获得）
             breakthroughStones: 0,
             realm: {
                 currentRealm: 0,
@@ -2604,9 +2606,11 @@ const gameMetadata = {
     },
     
     // 境界系统配置
+    // pctFactor: 百分比属性境界系数（影响装备百分比属性）
     realmConfig: [
         {
             name: "武者",
+            pctFactor: 1.0,
             stages: [
                 { stage: 1, name: "初期", levelCap: 10, bonus: { attack: 0, defense: 0, hp: 0, luck: 0 }, breakthroughStones: 0 },
                 { stage: 2, name: "初期", levelCap: 10, bonus: { attack: 0, defense: 0, hp: 0, luck: 0 }, breakthroughStones: 0 },
@@ -2622,6 +2626,7 @@ const gameMetadata = {
         },
         {
             name: "炼气",
+            pctFactor: 1.1,
             stages: [
                 { stage: 1, name: "前期", levelCap: 10, bonus: { attack: 1, defense: 1, hp: 10, luck: 0.1 }, breakthroughStones: 5 },
                 { stage: 2, name: "前期", levelCap: 10, bonus: { attack: 2, defense: 2, hp: 20, luck: 0.2 }, breakthroughStones: 10 },
@@ -2637,6 +2642,7 @@ const gameMetadata = {
         },
         {
             name: "筑基",
+            pctFactor: 1.2,
             stages: [
                 { stage: 1, name: "前期", levelCap: 20, bonus: { attack: 30, defense: 30, hp: 300, luck: 3 }, breakthroughStones: 150 },
                 { stage: 2, name: "前期", levelCap: 20, bonus: { attack: 35, defense: 35, hp: 350, luck: 3.5 }, breakthroughStones: 175 },
@@ -2652,6 +2658,7 @@ const gameMetadata = {
         },
         {
             name: "金丹",
+            pctFactor: 1.25,
             stages: [
                 { stage: 1, name: "前期", levelCap: 30, bonus: { attack: 180, defense: 180, hp: 1800, luck: 18 }, breakthroughStones: 900 },
                 { stage: 2, name: "前期", levelCap: 30, bonus: { attack: 200, defense: 200, hp: 2000, luck: 20 }, breakthroughStones: 1000 },
@@ -2667,6 +2674,7 @@ const gameMetadata = {
         },
         {
             name: "元婴",
+            pctFactor: 1.3,
             stages: [
                 { stage: 1, name: "前期", levelCap: 40, bonus: { attack: 550, defense: 550, hp: 5500, luck: 55 }, breakthroughStones: 2750 },
                 { stage: 2, name: "前期", levelCap: 40, bonus: { attack: 600, defense: 600, hp: 6000, luck: 60 }, breakthroughStones: 3000 },
@@ -2682,6 +2690,7 @@ const gameMetadata = {
         },
         {
             name: "化神",
+            pctFactor: 1.4,
             stages: [
                 { stage: 1, name: "前期", levelCap: 50, bonus: { attack: 1350, defense: 1350, hp: 13500, luck: 135 }, breakthroughStones: 6750 },
                 { stage: 2, name: "前期", levelCap: 50, bonus: { attack: 1450, defense: 1450, hp: 14500, luck: 145 }, breakthroughStones: 7250 },

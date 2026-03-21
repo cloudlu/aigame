@@ -84,13 +84,13 @@ class EquipmentSystem {
         const luck = this.game.gameState.player.luck || 0;
         const luckBonus = luck * 0.005;
 
-        // 调整掉率，提高高品质装备的概率
+        // 调整掉率，提高高品质装备的概率（彩色幸运加成降低）
         const adjustedRates = {
             white: Math.max(0, dropRates.white - luckBonus * 3),
             blue: Math.max(0, dropRates.blue - luckBonus * 1.5),
             purple: Math.max(0, dropRates.purple + luckBonus * 1),
             gold: Math.max(0, dropRates.gold + luckBonus * 1.5),
-            rainbow: Math.max(0, dropRates.rainbow + luckBonus * 2)
+            rainbow: Math.max(0, dropRates.rainbow + luckBonus * 0.5)  // 幸运对彩色加成降低
         };
 
         // 归一化概率
@@ -120,7 +120,7 @@ class EquipmentSystem {
         const rarityMultiplier = rarityInfo ? rarityInfo.multiplier : 1;
 
         // 定义百分比属性列表（这些属性值小于1，表示百分比）
-        const percentageStats = ['criticalRate', 'dodgeRate', 'tenacity', 'accuracy', 'moveSpeed', 'energyRegen'];
+        const percentageStats = ['criticalRate', 'dodgeRate', 'tenacity', 'accuracy', 'moveSpeed', 'energyRegen', 'critDamage'];
 
         // 计算基础属性
         for (const stat in template.baseStats) {
@@ -697,6 +697,7 @@ class EquipmentSystem {
             attack: '攻击',
             defense: '防御',
             hp: '生命',
+            maxEnergy: '灵力上限',
             luck: '幸运',
             speed: '速度',
             criticalRate: '暴击率',
@@ -704,10 +705,11 @@ class EquipmentSystem {
             tenacity: '韧性',
             accuracy: '命中率',
             moveSpeed: '移动速度',
-            energyRegen: '灵力回复'
+            energyRegen: '灵力回复',
+            critDamage: '暴击伤害'
         };
 
-        const percentageStats = ['criticalRate', 'dodgeRate', 'tenacity', 'accuracy', 'moveSpeed', 'energyRegen'];
+        const percentageStats = ['criticalRate', 'dodgeRate', 'tenacity', 'accuracy', 'moveSpeed', 'energyRegen', 'critDamage'];
 
         // 格式化属性值
         const formatValue = (stat, value) => {
@@ -721,7 +723,7 @@ class EquipmentSystem {
         const statsHtml = [];
 
         // 按优先级排序
-        const statOrder = ['attack', 'defense', 'hp', 'luck', 'speed', 'criticalRate', 'dodgeRate', 'tenacity', 'accuracy', 'moveSpeed', 'energyRegen'];
+        const statOrder = ['attack', 'defense', 'hp', 'luck', 'speed', 'criticalRate', 'critDamage', 'dodgeRate', 'tenacity', 'accuracy', 'moveSpeed', 'energyRegen'];
 
         for (const stat of statOrder) {
             if (!item.stats[stat]) continue;
@@ -914,7 +916,7 @@ class EquipmentSystem {
 
         // 计算选中属性的值
         const rarityMultiplier = rarityInfo ? rarityInfo.multiplier : 1;
-        const percentageStats = ['criticalRate', 'dodgeRate', 'tenacity', 'accuracy', 'moveSpeed', 'energyRegen'];
+        const percentageStats = ['criticalRate', 'dodgeRate', 'tenacity', 'accuracy', 'moveSpeed', 'energyRegen', 'critDamage'];
         const newStats = {};
 
         for (const statName of selectedStats) {
@@ -1019,6 +1021,7 @@ class EquipmentSystem {
             attack: '攻击',
             defense: '防御',
             hp: '生命',
+            maxEnergy: '灵力上限',
             luck: '幸运',
             speed: '速度',
             criticalRate: '暴击率',
@@ -1026,10 +1029,11 @@ class EquipmentSystem {
             tenacity: '韧性',
             accuracy: '命中率',
             moveSpeed: '移动速度',
-            energyRegen: '灵力回复'
+            energyRegen: '灵力回复',
+            critDamage: '暴击伤害'
         };
 
-        const percentageStats = ['criticalRate', 'dodgeRate', 'tenacity', 'accuracy', 'moveSpeed', 'energyRegen'];
+        const percentageStats = ['criticalRate', 'dodgeRate', 'tenacity', 'accuracy', 'moveSpeed', 'energyRegen', 'critDamage'];
 
         // 格式化属性值
         const formatValue = (stat, value) => {
@@ -1044,7 +1048,7 @@ class EquipmentSystem {
         const lines = [];
 
         // 按优先级排序
-        const statOrder = ['attack', 'defense', 'hp', 'luck', 'speed', 'criticalRate', 'dodgeRate', 'tenacity', 'accuracy', 'moveSpeed', 'energyRegen'];
+        const statOrder = ['attack', 'defense', 'hp', 'luck', 'speed', 'criticalRate', 'critDamage', 'dodgeRate', 'tenacity', 'accuracy', 'moveSpeed', 'energyRegen'];
         const sortedStats = [...allStats].sort((a, b) => {
             return statOrder.indexOf(a) - statOrder.indexOf(b);
         });
@@ -1117,6 +1121,7 @@ class EquipmentSystem {
             attack: '攻击',
             defense: '防御',
             hp: '生命',
+            maxEnergy: '灵力上限',
             luck: '幸运',
             speed: '速度',
             criticalRate: '暴击率',
@@ -1124,10 +1129,11 @@ class EquipmentSystem {
             tenacity: '韧性',
             accuracy: '命中率',
             moveSpeed: '移动速度',
-            energyRegen: '灵力回复'
+            energyRegen: '灵力回复',
+            critDamage: '暴击伤害'
         };
 
-        const percentageStats = ['criticalRate', 'dodgeRate', 'tenacity', 'accuracy', 'moveSpeed', 'energyRegen'];
+        const percentageStats = ['criticalRate', 'dodgeRate', 'tenacity', 'accuracy', 'moveSpeed', 'energyRegen', 'critDamage'];
 
         const lines = [];
         for (const stat in stats) {
@@ -1220,9 +1226,11 @@ class EquipmentSystem {
             attack: 0,
             defense: 0,
             hp: 0,
+            maxEnergy: 0,
             luck: 0,
             speed: 0,
             criticalRate: 0,
+            critDamage: 0,  // 暴击伤害值
             dodgeRate: 0,
             accuracy: 0,
             moveSpeed: 0,
@@ -1235,14 +1243,14 @@ class EquipmentSystem {
             const item = this.game.gameState.player.equipment[slot];
             if (item && item.stats) {
                 // 计算基础属性
-                const percentageStats = ['criticalRate', 'dodgeRate', 'tenacity', 'accuracy', 'moveSpeed', 'energyRegen'];
+                const percentageStats = ['criticalRate', 'dodgeRate', 'tenacity', 'accuracy', 'moveSpeed', 'energyRegen', 'critDamage'];
                 for (const stat in item.stats) {
                     const refineLevel = item.refineLevel || 0;
                     let bonus = 0;
                     if (refineLevel > 0) {
                         if (percentageStats.includes(stat)) {
-                            // 百分比属性：纯百分比加成
-                            bonus = item.stats[stat] * refineLevel * 0.1;
+                            // 百分比属性：固定成长（每级+0.5%），不受装备基础值影响
+                            bonus = 0.005 * refineLevel;
                         } else {
                             // 整数属性：保底每级+1
                             bonus = Math.max(refineLevel, Math.floor(item.stats[stat] * refineLevel * 0.1));
@@ -1271,7 +1279,8 @@ class EquipmentSystem {
                 effects.hp = Math.floor(effects.hp * (1 + bonus.hpBonus / 100));
             }
             if (bonus.critBonus > 0) {
-                effects.criticalRate = (effects.criticalRate || 0) + bonus.critBonus;
+                // VIP暴击加成：从百分比格式转换为小数格式（除以100）
+                effects.criticalRate = (effects.criticalRate || 0) + (bonus.critBonus / 100);
             }
         }
     }
@@ -1284,6 +1293,7 @@ class EquipmentSystem {
             attack: '攻击',
             defense: '防御',
             hp: '生命',
+            maxEnergy: '灵力上限',
             luck: '幸运',
             speed: '速度',
             criticalRate: '暴击率',
@@ -1291,11 +1301,12 @@ class EquipmentSystem {
             tenacity: '韧性',
             accuracy: '命中率',
             moveSpeed: '移动速度',
-            energyRegen: '灵力回复'
+            energyRegen: '灵力回复',
+            critDamage: '暴击伤害'
         };
 
         // 百分比属性列表
-        const percentageStats = ['criticalRate', 'dodgeRate', 'tenacity', 'accuracy', 'moveSpeed', 'energyRegen'];
+        const percentageStats = ['criticalRate', 'dodgeRate', 'tenacity', 'accuracy', 'moveSpeed', 'energyRegen', 'critDamage'];
 
         const descriptions = [];
         for (const stat in stats) {
@@ -1325,8 +1336,6 @@ class EquipmentSystem {
 
         // 装备槽位列表
         const equipmentSlots = this.getAllSlotTypes();
-        // 品质排序顺序（从低到高）
-        const rarityOrder = ['white', 'blue', 'purple', 'gold', 'rainbow'];
         let equippedCount = 0;
 
         // 遍历每个装备槽位
@@ -1338,16 +1347,11 @@ class EquipmentSystem {
             );
 
             if (suitableItems.length > 0) {
-                // 按品质和等级排序，选择最好的装备
+                // ✅ 按战力排序（从高到低），选择最好的装备
                 suitableItems.sort((a, b) => {
-                    // 首先按品质排序
-                    const rarityA = rarityOrder.indexOf(a.rarity) || 0;
-                    const rarityB = rarityOrder.indexOf(b.rarity) || 0;
-                    if (rarityA !== rarityB) {
-                        return rarityB - rarityA;
-                    }
-                    // 品质相同时按等级排序
-                    return (b.level || 0) - (a.level || 0);
+                    const powerA = this.game.calculateEquipmentCombatPower(a);
+                    const powerB = this.game.calculateEquipmentCombatPower(b);
+                    return powerB - powerA;  // 战力从高到低
                 });
 
                 const bestItem = suitableItems[0];
@@ -1425,6 +1429,12 @@ class EquipmentSystem {
         // 获取品质信息
         const rarityInfo = this.game.metadata.equipmentRarities.find(r => r.name === rarity);
         const rarityMultiplier = rarityInfo ? rarityInfo.multiplier : 1;
+        const pctMultiplier = rarityInfo ? rarityInfo.pctMultiplier : 1;  // 百分比属性乘数
+
+        // 获取境界系数（用于百分比属性）
+        const realmIndex = Math.max(0, level - 1);  // level从1开始，realm从0开始
+        const realmConfig = this.game.metadata.realmConfig?.[realmIndex];
+        const pctFactor = realmConfig?.pctFactor || 1.0;
 
         // 根据品质获取属性条数限制
         const statCount = rarityInfo ? rarityInfo.statCount : 1;
@@ -1435,16 +1445,19 @@ class EquipmentSystem {
         const selectedStats = shuffledStats.slice(0, Math.min(statCount, allStatNames.length));
 
         // 计算选中属性的值
-        const percentageStats = ['criticalRate', 'dodgeRate', 'tenacity', 'accuracy', 'moveSpeed', 'energyRegen'];
+        const percentageStats = ['criticalRate', 'dodgeRate', 'tenacity', 'accuracy', 'moveSpeed', 'energyRegen', 'critDamage'];
         const stats = {};
 
         for (const statName of selectedStats) {
             const baseValue = template.baseStats[statName];
-            const calculatedValue = baseValue * level * rarityMultiplier;
 
             if (percentageStats.includes(statName)) {
-                stats[statName] = Math.round(calculatedValue * 100) / 100;
+                // 百分比属性：baseValue × pctMultiplier × pctFactor（不乘level）
+                const calculatedValue = baseValue * pctMultiplier * pctFactor;
+                stats[statName] = Math.round(calculatedValue * 1000) / 1000;  // 保留3位小数
             } else {
+                // 整数属性：baseValue × level × multiplier（原公式）
+                const calculatedValue = baseValue * level * rarityMultiplier;
                 stats[statName] = Math.max(1, Math.floor(calculatedValue));
             }
         }
@@ -1461,8 +1474,8 @@ class EquipmentSystem {
         const name = prefix + suffix;
 
         // 获取境界名称
-        const realmIndex = Math.max(0, level - 1); // level从1开始，realm从0开始
-        const realmName = this.game.metadata.realmConfig?.[realmIndex]?.name || `等级${level}`;
+        const realmIdxForName = Math.max(0, level - 1); // level从1开始，realm从0开始
+        const realmName = this.game.metadata.realmConfig?.[realmIdxForName]?.name || `等级${level}`;
 
         // 创建装备对象
         return {

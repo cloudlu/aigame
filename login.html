@@ -274,8 +274,8 @@
 
                 if (result.success) {
                     // 保存token和用户信息到localStorage
-                    localStorage.setItem('endlessWinterToken', result.token);
-                    localStorage.setItem('endlessWinterUser', JSON.stringify(result.user));
+                    localStorage.setItem('cultivationToken', result.token);
+                    localStorage.setItem('cultivationUser', JSON.stringify(result.user));
 
                     // 跳转到游戏页面
                     window.location.href = 'index.html';
@@ -318,8 +318,8 @@
 
                 if (result.success) {
                     // 保存token和用户信息到localStorage
-                    localStorage.setItem('endlessWinterToken', result.token);
-                    localStorage.setItem('endlessWinterUser', JSON.stringify(result.user));
+                    localStorage.setItem('cultivationToken', result.token);
+                    localStorage.setItem('cultivationUser', JSON.stringify(result.user));
 
                     // 跳转到游戏页面
                     window.location.href = 'index.html';
@@ -374,12 +374,12 @@
         window.onload = function() {
             // 强制清除可能的残留登录状态（针对退出登录的情况）
             if (window.location.search.includes('logout=true')) {
-                localStorage.removeItem('endlessWinterToken');
-                localStorage.removeItem('endlessWinterUser');
+                localStorage.removeItem('cultivationToken');
+                localStorage.removeItem('cultivationUser');
             }
 
             // 检查是否已经登录
-            const token = localStorage.getItem('endlessWinterToken');
+            const token = localStorage.getItem('cultivationToken');
             if (token) {
                 // 已登录，跳转到游戏页面
                 window.location.href = 'index.html';

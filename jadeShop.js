@@ -15,7 +15,8 @@ class JadeShop {
         { id: 'breakthrough_x20',name: '突破石×20',  jade: 180,  type: 'item', item: 'breakthrough_stone', amount: 20, desc: '20颗突破石' },
         { id: 'exp_pill',        name: '修为丹',     jade: 30,   type: 'exp', expAmount: 500, desc: '获得500经验值' },
         { id: 'exp_pill_lg',     name: '高级修为丹', jade: 100,  type: 'exp', expAmount: 2000, desc: '获得2000经验值' },
-        { id: 'reforge_stone',   name: '重铸石',     jade: 80,   type: 'reforge', desc: '重铸一件装备的随机属性' }
+        { id: 'reforge_stone',   name: '重铸石',     jade: 80,   type: 'reforge', desc: '重铸一件装备的随机属性' },
+        { id: 'fusion_stone',    name: '合成石',     jade: 50,   type: 'fusion', desc: '提高装备合成成功率20%' }
     ];
 
     // 获取商品列表
@@ -79,6 +80,16 @@ class JadeShop {
                 this.game.gameState.player.inventory.consumables.reforge_stone =
                     (this.game.gameState.player.inventory.consumables.reforge_stone || 0) + 1;
                 result.message = `购买${item.name}成功！可在背包中使用`;
+                break;
+
+            case 'fusion':
+                // 合成石放入背包，合成装备时使用提高成功率
+                if (!this.game.gameState.player.inventory.consumables) {
+                    this.game.gameState.player.inventory.consumables = {};
+                }
+                this.game.gameState.player.inventory.consumables.fusion_stone =
+                    (this.game.gameState.player.inventory.consumables.fusion_stone || 0) + 1;
+                result.message = `购买${item.name}成功！合成装备时可使用`;
                 break;
         }
 

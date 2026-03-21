@@ -80,12 +80,12 @@ docs/
 
 ## 主要类说明
 
-### EndlessWinterGame
+### EndlessCultivationGame
 
 主游戏类，管理游戏状态。
 
 ```javascript
-class EndlessWinterGame {
+class EndlessCultivationGame {
     constructor() {
         this.gameState = {}  // 游戏状态
         this.timers = {}     // 计时器

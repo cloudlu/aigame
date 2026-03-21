@@ -792,6 +792,14 @@
                                 <div class="text-xs text-teal-400">闪避</div>
                                 <div class="text-lg font-bold text-white"><span id="dodge-modal">5</span>%</div>
                             </div>
+                            <div class="bg-black/30 rounded-lg p-2.5 border border-emerald-500/30 hover:border-emerald-500/60 transition-colors">
+                                <div class="text-xs text-emerald-400">韧性</div>
+                                <div class="text-lg font-bold text-white"><span id="tenacity-modal">0</span>%</div>
+                            </div>
+                            <div class="bg-black/30 rounded-lg p-2.5 border border-rose-500/30 hover:border-rose-500/60 transition-colors">
+                                <div class="text-xs text-rose-400">暴伤</div>
+                                <div class="text-lg font-bold text-white"><span id="crit-damage-modal">0</span></div>
+                            </div>
                             <div class="bg-black/30 rounded-lg p-2.5 border border-gold/30 hover:border-gold/60 transition-colors col-span-2">
                                 <div class="text-xs text-gold">总战力</div>
                                 <div class="text-2xl font-bold text-gold"><span id="combat-power-modal">0</span></div>
@@ -1306,6 +1314,9 @@
                             </button>
                         </div>
 
+                        <!-- 背包容量提示 -->
+                        <div id="inventory-capacity" class="mb-4 text-sm font-medium text-light/60"></div>
+
                         <!-- 装备物品区域 -->
                         <div id="inventory-equipment" class="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2 mb-4">
                             <!-- 装备将通过 JavaScript 动态添加 -->
@@ -1314,6 +1325,17 @@
                         <!-- 消耗品物品区域 -->
                         <div id="inventory-consumables" class="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2 mb-4 hidden">
                             <!-- 消耗品将通过 JavaScript 动态添加 -->
+                        </div>
+
+                        <!-- 分页导航 -->
+                        <div id="inventory-pagination" class="flex items-center justify-center gap-2 mt-4 mb-4">
+                            <button id="inventory-prev-page" class="px-3 py-1 rounded-lg bg-dark/50 border border-primary/30 text-light/70 hover:bg-primary/20 hover:text-light transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                                <i class="fa fa-chevron-left"></i>
+                            </button>
+                            <span id="inventory-page-info" class="text-sm text-light/70 min-w-[100px] text-center">第 1 页 / 共 1 页</span>
+                            <button id="inventory-next-page" class="px-3 py-1 rounded-lg bg-dark/50 border border-primary/30 text-light/70 hover:bg-primary/20 hover:text-light transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                                <i class="fa fa-chevron-right"></i>
+                            </button>
                         </div>
 
                         <div id="item-details" class="bg-dark/50 rounded-xl p-4 border border-primary/20 hidden">
@@ -1388,6 +1410,15 @@
                             <div class="text-center mb-4 p-3 bg-dark/50 rounded-lg border border-accent/10">
                                 <p class="text-light/60 text-sm">合成成功率</p>
                                 <p id="craft-success-rate" class="text-2xl font-bold text-success">0%</p>
+                            </div>
+
+                            <!-- 使用合成石选项 -->
+                            <div class="mb-4 p-3 bg-dark/50 rounded-lg border border-accent/10">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" id="use-fusion-stone" class="w-4 h-4 rounded border-accent/50 bg-dark/80 text-accent focus:ring-accent/50">
+                                    <span class="text-light/80 text-sm">使用合成石（+20%成功率）</span>
+                                    <span id="fusion-stone-count" class="text-xs text-accent/80 ml-auto">拥有: 0</span>
+                                </label>
                             </div>
 
                             <!-- 操作按钮 -->
@@ -1486,8 +1517,8 @@
         <div class="bg-dark-card rounded-xl p-4 w-11/12 h-5/6 flex flex-col border border-danger/50 shadow-2xl shadow-danger/30">
             <!-- 战斗模态头部 -->
             <div class="flex justify-between items-center pb-3 border-b border-danger/30">
-                <h2 class="text-2xl font-bold text-light flex items-center gap-2">
-                    <i class="fa fa-shield text-danger"></i> 3D战斗场景
+                <h2 id="battle-title" class="text-2xl font-bold text-light flex items-center gap-2">
+                    <i class="fa fa-shield text-danger"></i> <span id="battle-scene-title">3D战斗场景</span>
                 </h2>
                 <button id="close-battle-modal" class="text-light/60 hover:text-white transition-colors">
                     <i class="fa fa-times text-2xl"></i>
@@ -1667,6 +1698,34 @@
         </div>
     </div>
 
+    <!-- ========== 每日任务速通确认弹窗 ========== -->
+    <div id="instant-complete-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
+        <div class="bg-gradient-to-br from-purple-900/95 to-pink-900/95 border border-purple-500/60 rounded-xl px-8 py-6 shadow-2xl min-w-[320px] max-w-[90vw]">
+            <div class="text-center mb-4">
+                <i class="fa fa-bolt text-4xl text-purple-400 mb-2"></i>
+                <h3 class="text-purple-300 font-bold text-lg">仙玉速通确认</h3>
+            </div>
+            <div class="bg-black/30 rounded-lg p-4 mb-4">
+                <p class="text-white/90 text-center mb-2">确定要速通以下任务吗？</p>
+                <p id="instant-complete-quest-name" class="text-purple-300 font-medium text-center text-lg"></p>
+            </div>
+            <div class="flex items-center justify-center gap-2 mb-4">
+                <i class="fa fa-gem text-purple-400"></i>
+                <span class="text-white/70">消耗：</span>
+                <span id="instant-complete-cost" class="text-purple-300 font-bold text-xl">0</span>
+                <span class="text-white/70">仙玉</span>
+            </div>
+            <div class="flex gap-3">
+                <button id="instant-complete-cancel-btn" class="flex-1 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white/80 transition-colors" onclick="document.getElementById('instant-complete-modal').classList.add('hidden')">
+                    取消
+                </button>
+                <button id="instant-complete-confirm-btn" class="flex-1 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 text-white font-medium transition-colors">
+                    确认速通
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- ========== 任务完成弹窗 ========== -->
     <div id="quest-complete-popup" class="fixed top-1/3 left-1/2 -translate-x-1/2 z-[150] hidden">
         <div class="bg-gradient-to-br from-amber-900/95 to-orange-900/95 border border-gold/60 rounded-xl px-8 py-6 shadow-2xl min-w-[280px]">
@@ -1755,6 +1814,8 @@
                 <button id="collection-enemy-tab" class="px-4 py-1.5 rounded-lg text-xs font-medium bg-blue-600 text-white">敌人图鉴</button>
                 <button id="collection-equip-tab" class="px-4 py-1.5 rounded-lg text-xs font-medium text-gray-400 hover:text-white">装备图鉴</button>
             </div>
+            <!-- 帮助说明区域 -->
+            <div id="collection-help" class="mb-3"></div>
             <!-- 子Tab区域（由JS动态渲染） -->
             <div id="collection-subtabs" class="mb-3"></div>
             <!-- 内容区域 -->

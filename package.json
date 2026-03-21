@@ -1,7 +1,7 @@
 {
-  "name": "endless-winter-game",
+  "name": "endless-cultivation",
   "version": "1.0.0",
-  "description": "Endless Winter game with server-side save functionality",
+  "description": "无尽修仙 - Immortal Path game with server-side save functionality",
   "type": "module",
   "main": "server.js",
   "scripts": {

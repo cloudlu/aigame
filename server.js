@@ -31,8 +31,48 @@ if (!fs.existsSync(USERS_DIR)) {
     fs.mkdirSync(USERS_DIR, { recursive: true });
 }
 
-// 简单的用户存储
+// Token存储文件路径
+const TOKENS_FILE = path.join(__dirname, 'data', 'tokens.json');
+
+// 确保data目录存在
+const DATA_DIR = path.join(__dirname, 'data');
+if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+// 简单的用户存储（token -> userInfo）
 const users = new Map();
+
+// 从文件加载tokens
+function loadTokens() {
+    if (fs.existsSync(TOKENS_FILE)) {
+        try {
+            const tokensData = JSON.parse(fs.readFileSync(TOKENS_FILE, 'utf8'));
+            for (const [token, user] of Object.entries(tokensData)) {
+                users.set(token, user);
+            }
+            console.log(`[Token] 已加载 ${users.size} 个有效token`);
+        } catch (e) {
+            console.error('[Token] 加载token失败:', e);
+        }
+    }
+}
+
+// 保存tokens到文件
+function saveTokens() {
+    try {
+        const tokensData = {};
+        for (const [token, user] of users.entries()) {
+            tokensData[token] = user;
+        }
+        fs.writeFileSync(TOKENS_FILE, JSON.stringify(tokensData, null, 2));
+    } catch (e) {
+        console.error('[Token] 保存token失败:', e);
+    }
+}
+
+// 服务器启动时加载tokens
+loadTokens();
 
 // 生成随机token
 function generateToken() {
@@ -92,7 +132,8 @@ app.post('/api/login', async (req, res) => {
             gender: userData.gender,
             role: userData.role || 'player'
         });
-        
+        saveTokens(); // 持久化token
+
         res.json({ 
             success: true, 
             token: token,
@@ -153,6 +194,7 @@ app.post('/api/register', async (req, res) => {
             gender: gender,
             role: 'player'
         });
+        saveTokens(); // 持久化token
 
         res.json({
             success: true,
@@ -172,17 +214,27 @@ app.post('/api/register', async (req, res) => {
 
 // 验证token
 function verifyToken(req, res, next) {
-    const token = req.headers.authorization?.split(' ')[1];
-    
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.split(' ')[1];
+
+    console.log(`[Token] 收到请求: ${req.method} ${req.path}`);
+    console.log(`[Token] Authorization header: ${authHeader ? authHeader.substring(0, 30) + '...' : 'undefined'}`);
+    console.log(`[Token] 提取的token: ${token ? token.substring(0, 15) + '...' : 'undefined'}`);
+    console.log(`[Token] 当前有效token数: ${users.size}`);
+
     if (!token) {
+        console.log('[Token] ❌ 未提供token');
         return res.status(401).json({ error: 'No token provided' });
     }
-    
+
     const user = users.get(token);
     if (!user) {
+        console.log(`[Token] ❌ 无效token: ${token}`);
+        console.log(`[Token] 当前有效tokens: ${JSON.stringify([...users.keys()].map(t => t.substring(0, 15) + '...'))}`);
         return res.status(401).json({ error: 'Invalid token' });
     }
-    
+
+    console.log(`[Token] ✅ 验证通过: ${user.username}`);
     req.user = user;
     next();
 }
@@ -261,6 +313,7 @@ app.post('/api/logout', verifyToken, (req, res) => {
         const token = req.headers.authorization?.split(' ')[1];
         if (token) {
             users.delete(token);
+            saveTokens(); // 持久化token删除
         }
         res.json({ success: true, message: 'Logged out successfully' });
     } catch (error) {
@@ -305,8 +358,9 @@ app.post('/api/delete-account', verifyToken, async (req, res) => {
         // 删除token
         if (token) {
             users.delete(token);
+            saveTokens(); // 持久化token删除
         }
-        
+
         res.json({ success: true, message: 'Account deleted successfully' });
     } catch (error) {
         console.error('Error deleting account:', error);

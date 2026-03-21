@@ -3,7 +3,7 @@
 // ⚠️ 注意：这个文件只负责探险场景，不包含任何战斗相关代码
 
 // 为后续创建锥形网格提供辅助方法
-EndlessWinterGame.prototype.createConeMesh = function(name, options, scene) {
+EndlessCultivationGame.prototype.createConeMesh = function(name, options, scene) {
     const coneOptions = {
         diameterTop: options.diameter ? options.diameter * 0.2 : 0.2,
         diameterBottom: options.diameter || 1,
@@ -16,7 +16,7 @@ EndlessWinterGame.prototype.createConeMesh = function(name, options, scene) {
 // ==================== 刷新系统 ====================
 
 // 刷新敌人分布和地图
-EndlessWinterGame.prototype.refreshEnemies = function() {
+EndlessCultivationGame.prototype.refreshEnemies = function() {
     console.log('刷新敌人分布...');
 
     // 清空场景怪物数据
@@ -34,7 +34,7 @@ EndlessWinterGame.prototype.refreshEnemies = function() {
 // ==================== 敌人信息区域 ====================
 
 // 显示敌人信息区域
-EndlessWinterGame.prototype.showEnemyInfo = function(enemyInfo) {
+EndlessCultivationGame.prototype.showEnemyInfo = function(enemyInfo) {
     // 更新敌人信息区域UI
     const enemyName = document.getElementById('enemy-name');
     const enemyLevel = document.getElementById('enemy-level');
@@ -190,7 +190,7 @@ EndlessWinterGame.prototype.showEnemyInfo = function(enemyInfo) {
 };
 
 // 敌人信息区默认状态配置（统一管理，避免重复代码）
-EndlessWinterGame.prototype.ENEMY_INFO_DEFAULTS = {
+EndlessCultivationGame.prototype.ENEMY_INFO_DEFAULTS = {
     name: '等待敌人...',
     level: '?',
     hp: '?',
@@ -204,7 +204,7 @@ EndlessWinterGame.prototype.ENEMY_INFO_DEFAULTS = {
 };
 
 // 清空敌人信息并隐藏攻击按钮（恢复到默认状态）
-EndlessWinterGame.prototype.clearEnemyInfo = function() {
+EndlessCultivationGame.prototype.clearEnemyInfo = function() {
     const defaults = this.ENEMY_INFO_DEFAULTS;
 
     const enemyName = document.getElementById('enemy-name');
@@ -258,7 +258,7 @@ EndlessWinterGame.prototype.clearEnemyInfo = function() {
 };
 
 // 显示攻击确认对话框
-EndlessWinterGame.prototype.showAttackConfirmation = function(enemyInfo) {
+EndlessCultivationGame.prototype.showAttackConfirmation = function(enemyInfo) {
 
     // 设置游戏状态中的敌人信息
     this.gameState.enemy = enemyInfo;
@@ -278,7 +278,7 @@ EndlessWinterGame.prototype.showAttackConfirmation = function(enemyInfo) {
 };
 
 // 遭遇敌人
-EndlessWinterGame.prototype.encounterEnemy = function(enemyInfo, initScene = true) {
+EndlessCultivationGame.prototype.encounterEnemy = function(enemyInfo, initScene = true) {
     if (enemyInfo) {
         // 保存当前地图场景状态，包括玩家位置
         this.saveMapState();
@@ -325,7 +325,7 @@ EndlessWinterGame.prototype.encounterEnemy = function(enemyInfo, initScene = tru
 // ==================== 探险3D场景初始化 ====================
 
 // 初始化3D探险场景
-EndlessWinterGame.prototype.initMap3DScene = function() {
+EndlessCultivationGame.prototype.initMap3DScene = function() {
     console.log('开始初始化3D探险场景');
 
     // 移动模式状态
@@ -622,7 +622,7 @@ EndlessWinterGame.prototype.initMap3DScene = function() {
 // ==================== 小地图系统 ====================
 
 // 生成小地图并初始化场景怪物数据
-EndlessWinterGame.prototype.generateMiniMap = function() {
+EndlessCultivationGame.prototype.generateMiniMap = function() {
     const mapGrid = document.getElementById('map-grid');
     if (!mapGrid) return;
     mapGrid.innerHTML = '';
@@ -664,7 +664,7 @@ EndlessWinterGame.prototype.generateMiniMap = function() {
 };
 
 // 根据格子总数生成敌人分布（根据地图境界调整难度）
-EndlessWinterGame.prototype.createEnemyDistribution = function(totalCells) {
+EndlessCultivationGame.prototype.createEnemyDistribution = function(totalCells) {
     const availableCells = totalCells - 1;
     const totalEnemies = Math.max(30, Math.floor(availableCells * 0.9));
 
@@ -711,7 +711,7 @@ EndlessWinterGame.prototype.createEnemyDistribution = function(totalCells) {
 };
 
 // 重新渲染小地图
-EndlessWinterGame.prototype.renderMiniMap = function() {
+EndlessCultivationGame.prototype.renderMiniMap = function() {
     const mapGrid = document.getElementById('map-grid');
     if (!mapGrid) return;
     mapGrid.innerHTML = '';
@@ -733,14 +733,22 @@ EndlessWinterGame.prototype.renderMiniMap = function() {
 };
 
 // 创建敌人图标，用于2D小地图
-EndlessWinterGame.prototype.createEnemyIcon = function(enemyInfo) {
+EndlessCultivationGame.prototype.createEnemyIcon = function(enemyInfo) {
     // 使用新的战力计算方法
     const enemyPower = this.calculateEnemyCombatPower(enemyInfo);
     const playerPower = this.calculatePlayerCombatPower();
 
     let enemyIconColor = 'text-green-500';
     let enemyBgColor = 'bg-green-500/30';
-    if (enemyPower > playerPower * 1.5) {
+
+    // Boss和精英使用固定颜色（不依赖战力比）
+    if (enemyInfo.isBoss) {
+        enemyIconColor = 'text-purple-500';
+        enemyBgColor = 'bg-purple-500/30';
+    } else if (enemyInfo.isElite) {
+        enemyIconColor = 'text-yellow-500';
+        enemyBgColor = 'bg-yellow-500/30';
+    } else if (enemyPower > playerPower * 1.5) {
         enemyIconColor = 'text-red-500';
         enemyBgColor = 'bg-red-500/30';
     } else if (enemyPower > playerPower) {
@@ -769,7 +777,7 @@ EndlessWinterGame.prototype.createEnemyIcon = function(enemyInfo) {
 };
 
 // 创建敌人实体并返回信息对象
-EndlessWinterGame.prototype.createEnemy = function(enemyDistribution, enemyIndex, x, z, i) {
+EndlessCultivationGame.prototype.createEnemy = function(enemyDistribution, enemyIndex, x, z, i) {
     const playerLevel = this.calculateTotalLevel(this.gameState.player);
     const enemyLevel = Math.max(1, Math.min(playerLevel + 3, playerLevel + Math.floor(Math.random() * 3) - 1));
 
@@ -874,7 +882,7 @@ EndlessWinterGame.prototype.createEnemy = function(enemyDistribution, enemyIndex
 };
 
 // 保存地图场景状态
-EndlessWinterGame.prototype.saveMapState = function() {
+EndlessCultivationGame.prototype.saveMapState = function() {
     this.mapState = {
         playerPosition: this.battle3D ? this.battle3D.player.position.clone() : null,
         enemies: this.battle3D ? this.battle3D.enemies.filter(e => e.active) : [],
@@ -884,7 +892,7 @@ EndlessWinterGame.prototype.saveMapState = function() {
 };
 
 // 检查玩家与场景怪物的碰撞（2D映射碰撞）
-EndlessWinterGame.prototype.checkSceneMonsterCollision = function() {
+EndlessCultivationGame.prototype.checkSceneMonsterCollision = function() {
     // 检查 battle3D 和玩家是否存在
     if (!this.battle3D || !this.battle3D.player) {
         console.warn('checkSceneMonsterCollision: battle3D 或 player 不存在');
@@ -955,7 +963,7 @@ EndlessWinterGame.prototype.checkSceneMonsterCollision = function() {
 };
 
 // 恢复地图场景（从战斗退出时调用）
-EndlessWinterGame.prototype.restoreMapScene = function() {
+EndlessCultivationGame.prototype.restoreMapScene = function() {
     console.log('恢复地图场景...');
 
     // 显示敌人信息面板（退出战斗场景时）
@@ -964,7 +972,24 @@ EndlessWinterGame.prototype.restoreMapScene = function() {
         enemyInfoPanel.classList.remove('hidden');
     }
 
-    // 清理旧引擎
+    // ✅ 先清理所有战斗临时状态（必须在 battle3D = null 之前）
+    if (typeof this.clearBattleStates === 'function') {
+        this.clearBattleStates();
+    }
+
+    // ✅ 然后清理粒子系统
+    if (this.battle3D && this.battle3D.particleSystems) {
+        this.battle3D.particleSystems.forEach(ps => {
+            try {
+                ps.dispose();
+            } catch (e) {
+                console.log('清理粒子系统失败:', e);
+            }
+        });
+        this.battle3D.particleSystems = [];
+    }
+
+    // ✅ 最后清理引擎和 battle3D 对象
     if (this.battle3D && this.battle3D.engine) {
         try {
             this.battle3D.engine.dispose();
@@ -1021,7 +1046,7 @@ EndlessWinterGame.prototype.restoreMapScene = function() {
 };
 
 // 初始化地图（新登录时调用）
-EndlessWinterGame.prototype.initMap = function() {
+EndlessCultivationGame.prototype.initMap = function() {
     console.log('初始化探险地图...');
 
     // 重置敌人分布标记
@@ -1046,7 +1071,7 @@ EndlessWinterGame.prototype.initMap = function() {
 // ==================== 探险控制 ====================
 
 // 处理键盘按键（人物移动和技能快捷键）
-EndlessWinterGame.prototype.handleKeyPress = function(e) {
+EndlessCultivationGame.prototype.handleKeyPress = function(e) {
     console.log('检测到键盘按键:', e.key);
 
     // 优先处理战斗中的技能快捷键
@@ -1218,7 +1243,7 @@ EndlessWinterGame.prototype.handleKeyPress = function(e) {
 };
 
 // 切换飞行模式
-EndlessWinterGame.prototype.toggleFlight = function() {
+EndlessCultivationGame.prototype.toggleFlight = function() {
     if (this.gameState.battle.inBattle) return;
     if (!this.battle3D || !this.battle3D.player) return;
 
@@ -1238,7 +1263,7 @@ EndlessWinterGame.prototype.toggleFlight = function() {
 };
 
 // 处理鼠标点击（鼠标引导移动 + 双击跑步）
-EndlessWinterGame.prototype.handleMouseClick = function() {
+EndlessCultivationGame.prototype.handleMouseClick = function() {
     if (!this.battle3D) {
         console.log('battle3D 不存在');
         return;
@@ -1277,7 +1302,7 @@ EndlessWinterGame.prototype.handleMouseClick = function() {
 };
 
 // 移动玩家到指定位置（通用移动函数）
-EndlessWinterGame.prototype.movePlayerTo = function(targetPos, onArrival, forceSpeed) {
+EndlessCultivationGame.prototype.movePlayerTo = function(targetPos, onArrival, forceSpeed) {
     if (!this.battle3D || !this.battle3D.player) return;
 
     // 取消之前的点击移动
@@ -1317,6 +1342,13 @@ EndlessWinterGame.prototype.movePlayerTo = function(targetPos, onArrival, forceS
     let lastTime = performance.now();
 
     const step = (currentTime) => {
+        // 检查是否在战斗中，如果是则停止移动
+        if (this.gameState.battle.inBattle) {
+            this.isMoving = false;
+            this.moveAnimationId = null;
+            return;
+        }
+
         if (!this.battle3D || !this.battle3D.player) {
             this.isMoving = false;
             return;
@@ -1385,7 +1417,7 @@ EndlessWinterGame.prototype.movePlayerTo = function(targetPos, onArrival, forceS
 };
 
 // 移动玩家到敌人附近（用于点击2D小地图敌人时）
-EndlessWinterGame.prototype.movePlayerToEnemy = function(enemyInfo) {
+EndlessCultivationGame.prototype.movePlayerToEnemy = function(enemyInfo) {
     if (!this.battle3D || !this.battle3D.player) {
         // 如果3D场景不存在，直接显示敌人信息
         this.showAttackConfirmation(enemyInfo);
@@ -1428,7 +1460,7 @@ EndlessWinterGame.prototype.movePlayerToEnemy = function(enemyInfo) {
 };
 
 // 统一的场景氛围设置（clearColor + 雾效）
-EndlessWinterGame.prototype.applySceneAtmosphere = function(scene, background) {
+EndlessCultivationGame.prototype.applySceneAtmosphere = function(scene, background) {
     if (!scene || !background) return;
 
     if (background.imageUrl) {
@@ -1450,7 +1482,7 @@ EndlessWinterGame.prototype.applySceneAtmosphere = function(scene, background) {
 };
 
 // 更新地图背景（UI + 3D场景统一入口）
-EndlessWinterGame.prototype.updateMapBackground = function() {
+EndlessCultivationGame.prototype.updateMapBackground = function() {
     if (this.metadata.mapBackgrounds.length === 0) return;
     const currentBackground = this.metadata.mapBackgrounds[this.gameState.currentBackgroundIndex];
     if (!currentBackground) return;
@@ -1474,7 +1506,7 @@ EndlessWinterGame.prototype.updateMapBackground = function() {
 // ==================== 探险动画循环 ====================
 
 // 探险场景动画循环
-EndlessWinterGame.prototype.animateMap3D = function() {
+EndlessCultivationGame.prototype.animateMap3D = function() {
     if (!this.battle3D) return;
 
     const player = this.battle3D.player;
@@ -1542,7 +1574,7 @@ EndlessWinterGame.prototype.animateMap3D = function() {
 // ==================== 探险3D元素创建 ====================
 
 // 创建雪花粒子系统
-EndlessWinterGame.prototype.createSnowSystem = function() {
+EndlessCultivationGame.prototype.createSnowSystem = function() {
     if (!this.battle3D || !this.battle3D.scene) return;
 
     // 创建雪花粒子系统
@@ -1587,7 +1619,7 @@ EndlessWinterGame.prototype.createSnowSystem = function() {
 };
 
 // 创建仙气粒子系统（飘浮的光点）
-EndlessWinterGame.prototype.createSpiritParticles = function() {
+EndlessCultivationGame.prototype.createSpiritParticles = function() {
     if (!this.battle3D || !this.battle3D.scene) return;
 
     // 创建仙气粒子系统
@@ -1630,7 +1662,7 @@ EndlessWinterGame.prototype.createSpiritParticles = function() {
 };
 
 // 创建落叶粒子系统（森林地图）
-EndlessWinterGame.prototype.createLeafParticles = function() {
+EndlessCultivationGame.prototype.createLeafParticles = function() {
     const mapType = this.metadata.mapBackgrounds[this.gameState.currentBackgroundIndex]?.type;
 
     // 只在森林地图显示
@@ -1668,7 +1700,7 @@ EndlessWinterGame.prototype.createLeafParticles = function() {
 };
 
 // 预生成多个敌人（探险场景）
-EndlessWinterGame.prototype.createPreGeneratedEnemies = function() {
+EndlessCultivationGame.prototype.createPreGeneratedEnemies = function() {
     // 清空敌人列表
     this.battle3D.enemies = [];
 
@@ -1773,7 +1805,7 @@ EndlessWinterGame.prototype.createPreGeneratedEnemies = function() {
 // ==================== 强制生成任务Boss ====================
 
 // 强制刷出当前主线任务需要的Boss并高亮显示
-EndlessWinterGame.prototype.forceSpawnQuestBoss = function() {
+EndlessCultivationGame.prototype.forceSpawnQuestBoss = function() {
     if (!this.mainQuestSystem) {
         this.addBattleLog('主线任务系统未初始化！');
         return false;
@@ -1918,7 +1950,7 @@ EndlessWinterGame.prototype.forceSpawnQuestBoss = function() {
 };
 
 // 在小地图上高亮指定Boss（添加脉冲动画）
-EndlessWinterGame.prototype.highlightMiniMapBoss = function(bossName) {
+EndlessCultivationGame.prototype.highlightMiniMapBoss = function(bossName) {
     // 清除之前的高亮
     const oldHighlight = document.querySelectorAll('.boss-highlight');
     oldHighlight.forEach(el => el.classList.remove('boss-highlight'));
@@ -1945,7 +1977,7 @@ EndlessWinterGame.prototype.highlightMiniMapBoss = function(bossName) {
 
 // 创建修仙场景背景（多层次远景系统 + 立方体贴图）
 // 创建修仙场景背景（使用全景图或渐变色）
-EndlessWinterGame.prototype.createSkyDome = function() {
+EndlessCultivationGame.prototype.createSkyDome = function() {
     if (!this.battle3D || !this.battle3D.scene) return;
 
     const scene = this.battle3D.scene;
@@ -1999,7 +2031,7 @@ EndlessWinterGame.prototype.createSkyDome = function() {
 // ========== A* 寻路系统 ==========
 
 // A* 寻路算法
-EndlessWinterGame.prototype.findPath = function(startX, startZ, endX, endZ) {
+EndlessCultivationGame.prototype.findPath = function(startX, startZ, endX, endZ) {
     if (!this.battle3D || !this.battle3D.obstacles) {
         return [{ x: endX, z: endZ }]; // 无障碍物，直接返回终点
     }
@@ -2147,7 +2179,7 @@ EndlessWinterGame.prototype.findPath = function(startX, startZ, endX, endZ) {
 // ========== 碰撞检测系统 ==========
 
 // 检测新位置是否与障碍物碰撞
-EndlessWinterGame.prototype.checkCollision = function(newX, newZ) {
+EndlessCultivationGame.prototype.checkCollision = function(newX, newZ) {
     if (!this.battle3D || !this.battle3D.obstacles) return false;
 
     const playerRadius = 0.5;  // 玩家碰撞半径
@@ -2177,7 +2209,7 @@ EndlessWinterGame.prototype.checkCollision = function(newX, newZ) {
 };
 
 // 获取新位置（如果碰撞则返回null）
-EndlessWinterGame.prototype.getValidPosition = function(newX, newZ) {
+EndlessCultivationGame.prototype.getValidPosition = function(newX, newZ) {
     const obstacle = this.checkCollision(newX, newZ);
     if (!obstacle) {
         return { x: newX, z: newZ };
@@ -2199,13 +2231,13 @@ EndlessWinterGame.prototype.getValidPosition = function(newX, newZ) {
 };
 
 // 注册障碍物
-EndlessWinterGame.prototype.registerObstacle = function(x, z, radius, type, isFlying, height) {
+EndlessCultivationGame.prototype.registerObstacle = function(x, z, radius, type, isFlying, height) {
     if (!this.battle3D) return;
     this.battle3D.obstacles.push({ x, z, radius, type: type || 'obstacle', isFlying: !!isFlying, height: height || 0 });
 };
 
 // 创建渐变色背景（备用方案）
-EndlessWinterGame.prototype.createGradientBackground = function(scene) {
+EndlessCultivationGame.prototype.createGradientBackground = function(scene) {
     console.log('使用渐变色背景...');
 
     const SKY_SIZE = this.battle3D ? this.battle3D.SKY_SIZE : SIZES.SKY_SIZE;
@@ -2257,7 +2289,7 @@ EndlessWinterGame.prototype.createGradientBackground = function(scene) {
 // ==================== 远景系统 ====================
 
 // 创建远景山脉（多层次，营造深度感）
-EndlessWinterGame.prototype.createDistantMountains = function(scene, farColor, nearColor) {
+EndlessCultivationGame.prototype.createDistantMountains = function(scene, farColor, nearColor) {
     if (!scene) return;
 
     const SKY_SIZE = this.battle3D ? this.battle3D.SKY_SIZE : SIZES.SKY_SIZE;
@@ -2307,7 +2339,7 @@ EndlessWinterGame.prototype.createDistantMountains = function(scene, farColor, n
 // ==================== 装饰元素 ====================
 
 // 创建边界障碍物（岩石+树木环，自然遮挡地面边缘）
-EndlessWinterGame.prototype.createBoundaryObstacles = function() {
+EndlessCultivationGame.prototype.createBoundaryObstacles = function() {
     if (!this.battle3D || !this.battle3D.scene) return;
 
     const scene = this.battle3D.scene;
@@ -2341,7 +2373,7 @@ EndlessWinterGame.prototype.createBoundaryObstacles = function() {
 };
 
 // 创建边界岩石
-EndlessWinterGame.prototype.createBoundaryRock = function(x, z, scene, groundY) {
+EndlessCultivationGame.prototype.createBoundaryRock = function(x, z, scene, groundY) {
     const rockSize = SIZES.BOUNDARY_ROCK_SIZE_MIN + Math.random() * (SIZES.BOUNDARY_ROCK_SIZE_MAX - SIZES.BOUNDARY_ROCK_SIZE_MIN);
 
     const rock = BABYLON.MeshBuilder.CreateBox("boundaryRock_" + x.toFixed(0) + "_" + z.toFixed(0), {
@@ -2366,7 +2398,7 @@ EndlessWinterGame.prototype.createBoundaryRock = function(x, z, scene, groundY) 
 };
 
 // 创建边界树木
-EndlessWinterGame.prototype.createBoundaryTree = function(x, z, scene, groundY) {
+EndlessCultivationGame.prototype.createBoundaryTree = function(x, z, scene, groundY) {
     const trunkHeight = SIZES.BOUNDARY_TREE_HEIGHT_MIN + Math.random() * (SIZES.BOUNDARY_TREE_HEIGHT_MAX - SIZES.BOUNDARY_TREE_HEIGHT_MIN);
     const leavesSize = SIZES.BOUNDARY_TREE_CROWN_MIN + Math.random() * (SIZES.BOUNDARY_TREE_CROWN_MAX - SIZES.BOUNDARY_TREE_CROWN_MIN);
     const trunkRadius = SIZES.BOUNDARY_TREE_RADIUS_MIN + Math.random() * (SIZES.BOUNDARY_TREE_RADIUS_MAX - SIZES.BOUNDARY_TREE_RADIUS_MIN);
@@ -2403,7 +2435,7 @@ EndlessWinterGame.prototype.createBoundaryTree = function(x, z, scene, groundY) 
 };
 
 // 创建装饰元素（树木、岩石、草丛等）
-EndlessWinterGame.prototype.createTrees = function() {
+EndlessCultivationGame.prototype.createTrees = function() {
     if (!this.battle3D || !this.battle3D.scene) return;
 
     const scene = this.battle3D.scene;
@@ -2606,7 +2638,7 @@ EndlessWinterGame.prototype.createTrees = function() {
 };
 
 // 创建建筑物（仙侠风格小屋、草庐、石碑等）
-EndlessWinterGame.prototype.createBuildings = function() {
+EndlessCultivationGame.prototype.createBuildings = function() {
     if (!this.battle3D || !this.battle3D.scene) return;
 
     const scene = this.battle3D.scene;

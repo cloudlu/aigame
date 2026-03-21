@@ -4,7 +4,7 @@
 // 敌人类型缩放：普通=1倍，精英=2倍，Boss=3倍
 
 // 根据敌人名称识别动物类别
-EndlessWinterGame.prototype.getEnemyCategory = function(enemyName) {
+EndlessCultivationGame.prototype.getEnemyCategory = function(enemyName) {
     const categories = [
         { category: 'QUAD', keywords: ['狼', '熊', '豹', '狮', '牛', '鹿', '兽', '狐'] },
         { category: 'SERPENT', keywords: ['蛇', '蜥', '虫', '蠕虫', '蚯蚓'] },
@@ -24,7 +24,7 @@ EndlessWinterGame.prototype.getEnemyCategory = function(enemyName) {
 };
 
 // 根据类别和类型缩放创建敌人组（探险场景）
-EndlessWinterGame.prototype.createEnemyGroup = function(enemyInfo) {
+EndlessCultivationGame.prototype.createEnemyGroup = function(enemyInfo) {
     if (!this.battle3D || !this.battle3D.scene) return;
 
     const scene = this.battle3D.scene;
@@ -100,7 +100,7 @@ EndlessWinterGame.prototype.createEnemyGroup = function(enemyInfo) {
 };
 
 // 根据动物类别构建敌人外形
-EndlessWinterGame.prototype.buildEnemyByCategory = function(group, category, material, scene) {
+EndlessCultivationGame.prototype.buildEnemyByCategory = function(group, category, material, scene) {
     switch (category) {
         case 'QUAD': this.buildQuadEnemy(group, material, scene); break;
         case 'SERPENT': this.buildSerpentEnemy(group, material, scene); break;
@@ -114,7 +114,7 @@ EndlessWinterGame.prototype.buildEnemyByCategory = function(group, category, mat
 };
 
 // 四足兽类（狼、熊、豹、狮、牛、鹿、狐）
-EndlessWinterGame.prototype.buildQuadEnemy = function(group, material, scene) {
+EndlessCultivationGame.prototype.buildQuadEnemy = function(group, material, scene) {
     // 身体：横置椭球
     const body = BABYLON.MeshBuilder.CreateSphere("quadBody", {
         diameterX: SIZES.QUAD_BODY_LENGTH,
@@ -176,7 +176,7 @@ EndlessWinterGame.prototype.buildQuadEnemy = function(group, material, scene) {
 };
 
 // 蛇虫类（蛇、蜥蜴、虫、蠕虫）
-EndlessWinterGame.prototype.buildSerpentEnemy = function(group, material, scene) {
+EndlessCultivationGame.prototype.buildSerpentEnemy = function(group, material, scene) {
     // 身体：多节弯曲的球体
     const segments = 6;
     const segLength = SIZES.SERPENT_LENGTH / segments;
@@ -216,7 +216,7 @@ EndlessWinterGame.prototype.buildSerpentEnemy = function(group, material, scene)
 };
 
 // 飞行类（雕、鹰、鹤、凤凰、蝙蝠）
-EndlessWinterGame.prototype.buildBirdEnemy = function(group, material, scene) {
+EndlessCultivationGame.prototype.buildBirdEnemy = function(group, material, scene) {
     // 身体
     const body = BABYLON.MeshBuilder.CreateSphere("birdBody", {
         diameterX: SIZES.BIRD_BODY_LENGTH,
@@ -274,7 +274,7 @@ EndlessWinterGame.prototype.buildBirdEnemy = function(group, material, scene) {
 };
 
 // 水生类（鱼、蟹、虾、龟、蛟、鲛人）
-EndlessWinterGame.prototype.buildAquaEnemy = function(group, material, scene) {
+EndlessCultivationGame.prototype.buildAquaEnemy = function(group, material, scene) {
     // 身体：鱼形椭球
     const body = BABYLON.MeshBuilder.CreateSphere("aquaBody", {
         diameterX: SIZES.AQUA_BODY_LENGTH,
@@ -325,7 +325,7 @@ EndlessWinterGame.prototype.buildAquaEnemy = function(group, material, scene) {
 };
 
 // 植物类（树精、花妖、仙人掌）
-EndlessWinterGame.prototype.buildPlantEnemy = function(group, material, scene) {
+EndlessCultivationGame.prototype.buildPlantEnemy = function(group, material, scene) {
     // 树干/茎
     const trunk = BABYLON.MeshBuilder.CreateCylinder("plantTrunk", {
         diameterTop: SIZES.PLANT_TRUNK_RADIUS * 1.5,
@@ -359,7 +359,7 @@ EndlessWinterGame.prototype.buildPlantEnemy = function(group, material, scene) {
 };
 
 // 岩石/巨人类（石精、岩怪、巨人）
-EndlessWinterGame.prototype.buildGolemEnemy = function(group, material, scene) {
+EndlessCultivationGame.prototype.buildGolemEnemy = function(group, material, scene) {
     // 身体：大方块
     const body = BABYLON.MeshBuilder.CreateBox("golemBody", {
         width: SIZES.GOLEM_BODY_WIDTH, height: SIZES.GOLEM_BODY_HEIGHT, depth: SIZES.GOLEM_BODY_WIDTH * 0.8
@@ -427,7 +427,7 @@ EndlessWinterGame.prototype.buildGolemEnemy = function(group, material, scene) {
 };
 
 // 幽灵/元素类（幽灵、暗影、风魔、火灵、雷兽、云兽）
-EndlessWinterGame.prototype.buildGhostEnemy = function(group, material, scene) {
+EndlessCultivationGame.prototype.buildGhostEnemy = function(group, material, scene) {
     // 幽灵体：上方球形 + 下方锥形尾迹
     const body = BABYLON.MeshBuilder.CreateSphere("ghostBody", {
         diameter: SIZES.GHOST_BODY_SIZE, segments: 8
@@ -464,7 +464,7 @@ EndlessWinterGame.prototype.buildGhostEnemy = function(group, material, scene) {
 };
 
 // 人形类（妖、魔、精、怪、仙、将、王）
-EndlessWinterGame.prototype.buildHumanoidEnemy = function(group, material, scene) {
+EndlessCultivationGame.prototype.buildHumanoidEnemy = function(group, material, scene) {
     // 身体
     const body = BABYLON.MeshBuilder.CreateCylinder("humanoidBody", {
         diameterTop: SIZES.HUMANOID_BODY_WIDTH * 0.8,

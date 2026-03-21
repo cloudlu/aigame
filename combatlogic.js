@@ -4,7 +4,7 @@
 // ==================== 战斗控制 ====================
 
 // 攻击敌人（玩家回合）
-EndlessWinterGame.prototype.attackEnemy = function() {
+EndlessCultivationGame.prototype.attackEnemy = function() {
     // 只有在战斗模式中才能使用普通攻击
     if (!this.gameState.battle.inBattle) {
         this.addBattleLog('只有在战斗模式中才能使用普通攻击！');
@@ -17,43 +17,109 @@ EndlessWinterGame.prototype.attackEnemy = function() {
         return;
     }
 
-    // 计算装备效果
-    this.equipmentSystem.calculateEquipmentEffects();
+    // 获取实际属性（包含装备和境界加成）
+    const playerStats = this.getActualStats();
+    const enemyStats = this.getEnemyActualStats();
 
-    // 计算最终属性
-    const finalAttack = this.gameState.player.attack + this.gameState.player.equipmentEffects.attack;
-    const finalDefense = this.gameState.player.defense + this.gameState.player.equipmentEffects.defense;
-    const finalAccuracy = (this.gameState.player.accuracy || 100) + (this.gameState.player.equipmentEffects.accuracy || 0);
-    const finalDodge = (this.gameState.player.dodge || 5) + (this.gameState.player.equipmentEffects.dodgeRate || 0);
-    const enemyAccuracy = this.gameState.enemy.accuracy || 90;
-    const enemyDodge = this.gameState.enemy.dodge || 10;
+    const finalAttack = playerStats.attack;
+    const finalDefense = playerStats.defense;
+    const finalAccuracy = playerStats.accuracy;
+    const finalDodge = playerStats.dodgeRate;
+    const finalCriticalRate = playerStats.criticalRate;
+    const playerCritDamage = playerStats.critDamage;
+    const playerTenacity = playerStats.tenacity || 0;
+
+    const enemyAttack = enemyStats.attack;
+    const enemyDefense = enemyStats.defense;
+    const enemyAccuracy = enemyStats.accuracy;
+    const enemyDodge = enemyStats.dodgeRate;
+    const enemyCriticalRate = enemyStats.criticalRate;
+    const enemyCritDamage = enemyStats.critDamage;
 
     // 预计算所有伤害和命中（动画前确定随机值）
-    const playerDamage = Math.max(1, finalAttack - this.gameState.enemy.defense);
-    const enemyMinDamage = Math.floor(this.gameState.enemy.attack * 0.2);
-    const enemyDamage = Math.max(enemyMinDamage, this.gameState.enemy.attack - finalDefense);
-    const playerHitChance = Math.min(95, finalAccuracy - enemyDodge);
+    // 注意：accuracy/dodgeRate/criticalRate 内部是小数格式（0.05表示5%），判定时乘100转为百分比
+    const playerHitChance = Math.min(95, Math.max(5, finalAccuracy * 100 - enemyDodge * 100));
     const playerHit = Math.random() * 100 < playerHitChance;
-    const enemyHitChance = Math.min(95, enemyAccuracy - finalDodge);
-    const enemyHit = Math.random() * 100 < enemyHitChance;
+    // 暴击判定：命中后才判定暴击
+    const playerCrit = playerHit && Math.random() * 100 < finalCriticalRate * 100;
+    // 暴击伤害：使用新的随机系统
+    let playerCritResult = null;
+    const playerDamage = playerCrit
+        ? (() => {
+            playerCritResult = this.rollCritDamage(playerCritDamage);
+            return Math.max(1, Math.floor(finalAttack * playerCritResult.multiplier) - enemyDefense);
+        })()
+        : Math.max(1, finalAttack - enemyDefense);
+
+    // 敌人伤害预计算（使用统一函数，避免代码重复）
+    const {
+        enemyHit,
+        enemyDamage,
+        enemyCrit,
+        enemyCritResult,
+        tenacityReduction
+    } = this.calculateEnemyAttack(finalDefense, enemyAccuracy, finalDodge, false);
 
         // 播放攻击动画
     this.playAttackAnimation(
         // === 碰撞回调：玩家到达敌人位置时（撞击感） ===
         () => {
             if (playerHit) {
+                // ✅ 命中时创建冲击特效（在敌人躯干位置）
+                if (this.battle3D.enemy) {
+                    const hitPosition = this.battle3D.enemy.position.clone();
+                    hitPosition.y = 1.0; // ✅ 躯干高度
+
+                    // 暴击时金色冲击波，普通攻击白色冲击波
+                    const effectColor = playerCrit ? '#ffcc00' : '#ffffff';
+                    this.createAttackEffect(hitPosition, effectColor);
+                }
+
                 this.gameState.enemy.hp -= playerDamage;
                 if (this.gameState.enemy.hp < 0) this.gameState.enemy.hp = 0;
-                this.showDamage(this.battle3D.enemy, playerDamage, 'red');
+                // 暴击显示
+                if (playerCrit) {
+                    this.showDamage(this.battle3D.enemy, playerDamage, 'crit');
+                    const critPercent = Math.floor((playerCritResult.multiplier - 1) * 100);
+                    this.addBattleLog(`💥暴击！(+${critPercent}%) 你对${this.gameState.enemy.name}造成了${playerDamage}点伤害！`);
+
+                    // ✅ 暴击爆炸特效
+                    if (this.battle3D && this.battle3D.enemy) {
+                        const critPosition = this.battle3D.enemy.position.clone();
+                        critPosition.y = 1.0;
+                        this.createCriticalHitEffect(critPosition, 'gold');
+                    }
+
+                    // ✅ 暴击时相机震动 + 光照闪光
+                    this.cameraShake(0.08, 250);
+                    this.lightFlash(3.0, 200, new BABYLON.Color3(1.0, 0.9, 0.6));
+                } else {
+                    this.showDamage(this.battle3D.enemy, playerDamage, 'red');
+                    this.addBattleLog(`你对${this.gameState.enemy.name}造成了${playerDamage}点伤害！`);
+                }
                 this.playEnemyHitAnimation();
-                this.addBattleLog(`你对${this.gameState.enemy.name}造成了${playerDamage}点伤害！`);
                 if (this.gameState.enemy.hp <= 0) {
+                    // ✅ 敌人死亡爆炸特效
+                    if (this.battle3D && this.battle3D.enemy) {
+                        const deathPosition = this.battle3D.enemy.position.clone();
+                        deathPosition.y = 1.0;
+                        this.createKillEffect(deathPosition);
+                    }
+                    // ✅ 击杀时强烈震动 + 白色闪光
+                    this.cameraShake(0.12, 400);
+                    this.lightFlash(4.0, 300, new BABYLON.Color3(1.0, 0.95, 0.9));
                     this.enemyDefeated();
                     return;
                 }
             } else {
                 this.addBattleLog(`你的攻击被${this.gameState.enemy.name}闪避了！`);
                 this.showDodge(this.battle3D.enemy, '闪避！');
+                // ✅ 闪避残影特效
+                if (this.battle3D && this.battle3D.enemy) {
+                    const dodgePosition = this.battle3D.enemy.position.clone();
+                    dodgePosition.y = 1.0;
+                    this.createDodgeEffect(dodgePosition);
+                }
             }
         },
         // === 结束回调：玩家返回后，触发敌人反击 ===
@@ -75,9 +141,13 @@ EndlessWinterGame.prototype.attackEnemy = function() {
                         let finalEnemyDamage = Math.max(1, Math.floor(enemyDamage * 0.5));
                         if (this.gameState.enemy.isBoss && this.gameState.enemy.energy >= 50) {
                             const skillDamage = Math.floor(enemyDamage * 1.5);
-                            finalEnemyDamage = Math.max(1, Math.floor((enemyDamage + skillDamage) * 0.5));
+                            finalEnemyDamage = Math.max(1, Math.floor((skillDamage) * 0.5));
                             this.gameState.enemy.energy -= 50;
                             this.addBattleLog(`${this.gameState.enemy.name}释放了技能，对你造成了${finalEnemyDamage}点伤害！（防御减免50%）`);
+                        } else if (enemyCrit) {
+                            const critPercent = Math.floor((enemyCritResult.multiplier - 1) * 100);
+                            const reductionText = tenacityReduction > 0 ? ` 韧性减免${Math.floor(tenacityReduction * 100)}%` : '';
+                            this.addBattleLog(`💥暴击！(+${critPercent}%) ${this.gameState.enemy.name}！对你造成了${finalEnemyDamage}点伤害！（防御减免50%${reductionText}）`);
                         } else {
                             this.addBattleLog(`${this.gameState.enemy.name}对你造成了${finalEnemyDamage}点伤害！（防御减免50%）`);
                         }
@@ -96,6 +166,13 @@ EndlessWinterGame.prototype.attackEnemy = function() {
                                 actualDamage -= this.gameState.player.shieldValue;
                                 this.gameState.player.shieldValue = 0;
                                 this.addBattleLog(`护盾吸收了${absorbed}点伤害，护盾破碎！剩余伤害：${actualDamage}`);
+
+                                // ✅ 护盾破碎特效
+                                if (this.battle3D && this.battle3D.player) {
+                                    const shieldBreakPosition = this.battle3D.player.position.clone();
+                                    shieldBreakPosition.y = 1.0;
+                                    this.createShieldBreakEffect(shieldBreakPosition);
+                                }
                             }
                         }
                         if (actualDamage > 0) {
@@ -108,9 +185,13 @@ EndlessWinterGame.prototype.attackEnemy = function() {
                         let finalEnemyDamage = enemyDamage;
                         if (this.gameState.enemy.isBoss && this.gameState.enemy.energy >= 50) {
                             const skillDamage = Math.floor(enemyDamage * 1.5);
-                            finalEnemyDamage = enemyDamage + skillDamage;
+                            finalEnemyDamage = skillDamage;
                             this.gameState.enemy.energy -= 50;
                             this.addBattleLog(`${this.gameState.enemy.name}释放了技能，对你造成了${finalEnemyDamage}点伤害！`);
+                        } else if (enemyCrit) {
+                            const critPercent = Math.floor((enemyCritResult.multiplier - 1) * 100);
+                            const reductionText = tenacityReduction > 0 ? ` 韧性减免${Math.floor(tenacityReduction * 100)}%` : '';
+                            this.addBattleLog(`💥暴击！(+${critPercent}%) ${this.gameState.enemy.name}！对你造成了${finalEnemyDamage}点伤害！${reductionText}`);
                         } else {
                             this.addBattleLog(`${this.gameState.enemy.name}对你造成了${finalEnemyDamage}点伤害！`);
                         }
@@ -127,6 +208,13 @@ EndlessWinterGame.prototype.attackEnemy = function() {
                                 actualDamage -= this.gameState.player.shieldValue;
                                 this.gameState.player.shieldValue = 0;
                                 this.addBattleLog(`护盾吸收了${absorbed}点伤害，护盾破碎！剩余伤害：${actualDamage}`);
+
+                                // ✅ 护盾破碎特效
+                                if (this.battle3D && this.battle3D.player) {
+                                    const shieldBreakPosition = this.battle3D.player.position.clone();
+                                    shieldBreakPosition.y = 1.0;
+                                    this.createShieldBreakEffect(shieldBreakPosition);
+                                }
                             }
                         }
                         if (actualDamage > 0) {
@@ -157,7 +245,7 @@ EndlessWinterGame.prototype.attackEnemy = function() {
 };
 
 // 使用技能攻击敌人（按类型使用装备的技能）
-EndlessWinterGame.prototype.useSkill = function(skillType = 'attack') {
+EndlessCultivationGame.prototype.useSkill = function(skillType = 'attack') {
     if (!this.gameState.battle.inBattle) {
         this.addBattleLog('只有在战斗模式中才能使用技能！');
         return;
@@ -210,39 +298,77 @@ EndlessWinterGame.prototype.useSkill = function(skillType = 'attack') {
         this.audioSystem.playSound('skill-0-sound', 1, 300);
     }
 
-    // 计算装备效果
-    this.equipmentSystem.calculateEquipmentEffects();
-    const finalAttack = this.gameState.player.attack + this.gameState.player.equipmentEffects.attack;
-    const finalDefense = this.gameState.player.defense + this.gameState.player.equipmentEffects.defense;
-    const finalAccuracy = (this.gameState.player.accuracy || 100) + (this.gameState.player.equipmentEffects.accuracy || 0);
-    const finalDodge = (this.gameState.player.dodge || 5) + (this.gameState.player.equipmentEffects.dodgeRate || 0);
-    const enemyAccuracy = this.gameState.enemy.accuracy || 90;
-    const enemyDodge = this.gameState.enemy.dodge || 10;
+    // 获取实际属性（包含装备和境界加成）
+    const playerStats = this.getActualStats();
+    const enemyStats = this.getEnemyActualStats();
+
+    const finalAttack = playerStats.attack;
+    const finalDefense = playerStats.defense;
+    const finalAccuracy = playerStats.accuracy;
+    const finalDodge = playerStats.dodgeRate;
+    const finalCriticalRate = playerStats.criticalRate;
+    const playerCritDamage = playerStats.critDamage;
+    const enemyAccuracy = enemyStats.accuracy;
+    const enemyDodge = enemyStats.dodgeRate;
+    const enemyDefense = enemyStats.defense;
 
     let playerDamage = 0;
     let hit = true;
     let isLuckyStrike = false;
+    let playerCrit = false;
+    let playerCritResult = null;
 
     // === 伤害类技能：预计算伤害，使用碰撞回调 ===
     if (skill.damageMultiplier || skill.criticalMultiplier) {
         // 预计算命中和伤害（动画前确定随机值）
-        const playerHitChance = Math.min(95, finalAccuracy - enemyDodge);
+        // accuracy/dodgeRate 内部是小数格式，乘100转为百分比
+        const playerHitChance = Math.min(95, Math.max(5, finalAccuracy * 100 - enemyDodge * 100));
         hit = Math.random() * 100 < playerHitChance;
 
         if (hit) {
             if (skill.damageMultiplier) {
-                playerDamage = Math.max(1, Math.floor(finalAttack * skill.damageMultiplier) - this.gameState.enemy.defense);
-                if (skill.extraDamagePercent) playerDamage += Math.floor(this.gameState.enemy.maxHp * skill.extraDamagePercent);
-                if (skill.ignoreDefense) playerDamage += Math.floor(this.gameState.enemy.defense * skill.ignoreDefense);
+                // 计算技能基础伤害
+                let baseSkillDamage = Math.floor(finalAttack * skill.damageMultiplier) - enemyDefense;
+                if (skill.extraDamagePercent) baseSkillDamage += Math.floor(this.gameState.enemy.maxHp * skill.extraDamagePercent);
+                if (skill.ignoreDefense) baseSkillDamage += Math.floor(enemyDefense * skill.ignoreDefense);
+
+                // ✅ 暴击判定（使用玩家暴击率和暴击伤害）
+                playerCrit = Math.random() * 100 < finalCriticalRate * 100;
+
+                if (playerCrit) {
+                    playerCritResult = this.rollCritDamage(playerCritDamage);
+                    playerDamage = Math.max(1, Math.floor(baseSkillDamage * playerCritResult.multiplier));
+                } else {
+                    playerDamage = Math.max(1, baseSkillDamage);
+                }
             } else if (skill.criticalMultiplier) {
                 isLuckyStrike = Math.random() < skill.criticalChance;
                 playerDamage = isLuckyStrike
-                    ? Math.max(1, Math.floor(finalAttack * skill.criticalMultiplier) - this.gameState.enemy.defense)
-                    : Math.max(1, finalAttack - this.gameState.enemy.defense);
+                    ? Math.max(1, Math.floor(finalAttack * skill.criticalMultiplier) - enemyDefense)
+                    : Math.max(1, finalAttack - enemyDefense);
             }
         }
 
         const skillEffectColor = skill.effectColor || { r: 0, g: 0.5, b: 1 };
+
+        // ✅ 技能释放前摇能量聚集特效
+        if (this.battle3D && this.battle3D.player) {
+            const chargePosition = this.battle3D.player.position.clone();
+            chargePosition.y = 1.0;
+            const skillColor3 = new BABYLON.Color3(
+                skillEffectColor.r,
+                skillEffectColor.g,
+                skillEffectColor.b
+            );
+            this.createSkillChargeEffect(chargePosition, skillColor3, 400);
+        }
+
+        // ✅ 技能释放时光照闪光
+        this.lightFlash(2.5, 150, new BABYLON.Color3(
+            skillEffectColor.r,
+            skillEffectColor.g,
+            skillEffectColor.b
+        ));
 
         this.playSkillAttackAnimation(isLuckyStrike, skillEffectColor,
             // 碰撞回调：到达敌人时显示伤害
@@ -251,16 +377,58 @@ EndlessWinterGame.prototype.useSkill = function(skillType = 'attack') {
                 this.showEnergyChange(this.battle3D.player, -skill.energyCost);
 
                 if (hit) {
-                    this.showDamage(this.battle3D.enemy, playerDamage, 'red');
+                    // ✅ 创建技能爆发特效（元素爆炸，在敌人躯干位置）
+                    if (this.battle3D.enemy) {
+                        const burstPosition = this.battle3D.enemy.position.clone();
+                        burstPosition.y = 1.0; // ✅ 躯干高度
+
+                        this.createSkillBurstEffect(
+                            burstPosition,
+                            this.getSkillElementType(skill)
+                        );
+                    }
+
+                    this.showDamage(this.battle3D.enemy, playerDamage, playerCrit ? 'crit' : 'red');
                     this.playEnemyHitAnimation();
-                    if (isLuckyStrike) {
+                    if (playerCrit) {
+                        const critPercent = Math.floor((playerCritResult.multiplier - 1) * 100);
+                        this.addBattleLog(`💥暴击！(+${critPercent}%) 你使用了${skillDisplayName}，对${this.gameState.enemy.name}造成了${playerDamage}点伤害！`);
+
+                        // ✅ 暴击爆炸特效
+                        if (this.battle3D && this.battle3D.enemy) {
+                            const critPosition = this.battle3D.enemy.position.clone();
+                            critPosition.y = 1.0;
+                            this.createCriticalHitEffect(critPosition, 'red');
+                        }
+
+                        // ✅ 暴击时相机震动 + 红色光照闪光
+                        this.cameraShake(0.1, 280);
+                        this.lightFlash(3.5, 220, new BABYLON.Color3(1.0, 0.7, 0.5));
+                    } else if (isLuckyStrike) {
                         this.addBattleLog(`你使用了${skillDisplayName}，触发了暴击！对${this.gameState.enemy.name}造成了${playerDamage}点伤害！`);
+
+                        // ✅ 暴击爆炸特效
+                        if (this.battle3D && this.battle3D.enemy) {
+                            const critPosition = this.battle3D.enemy.position.clone();
+                            critPosition.y = 1.0;
+                            this.createCriticalHitEffect(critPosition, 'red');
+                        }
+
+                        // ✅ 幸运暴击也震动
+                        this.cameraShake(0.1, 280);
+                        this.lightFlash(3.5, 220, new BABYLON.Color3(1.0, 0.7, 0.5));
                     } else {
                         this.addBattleLog(`你使用了${skillDisplayName}，对${this.gameState.enemy.name}造成了${playerDamage}点伤害！`);
                     }
                 } else {
                     this.addBattleLog(`你的${skillDisplayName}被${this.gameState.enemy.name}闪避了！`);
                     this.showDodge(this.battle3D.enemy, '闪避！');
+                    // ✅ 闪避残影特效
+                    if (this.battle3D && this.battle3D.enemy) {
+                        const dodgePosition = this.battle3D.enemy.position.clone();
+                        dodgePosition.y = 1.0;
+                        this.createDodgeEffect(dodgePosition);
+                    }
                 }
             },
             // 结束回调：应用状态、触发反击
@@ -268,7 +436,23 @@ EndlessWinterGame.prototype.useSkill = function(skillType = 'attack') {
                 if (playerDamage > 0 && hit) {
                     this.gameState.enemy.hp -= playerDamage;
                     if (this.gameState.enemy.hp < 0) this.gameState.enemy.hp = 0;
-                    if (this.gameState.enemy.hp <= 0) { this.enemyDefeated(); return; }
+                    if (this.gameState.enemy.hp <= 0) {
+                        // ✅ 技能击杀特效
+                        if (this.battle3D && this.battle3D.enemy) {
+                            const killPosition = this.battle3D.enemy.position.clone();
+                            killPosition.y = 1.0;
+                            this.createKillEffect(killPosition);
+                        }
+                        // ✅ 技能击杀时强烈震动 + 彩色闪光
+                        this.cameraShake(0.12, 400);
+                        this.lightFlash(4.0, 300, new BABYLON.Color3(
+                            skillEffectColor.r,
+                            skillEffectColor.g,
+                            skillEffectColor.b
+                        ));
+                        this.enemyDefeated();
+                        return;
+                    }
                 }
                 // 应用buff/debuff等效果
                 if (skill.energyRecover) {
@@ -277,7 +461,14 @@ EndlessWinterGame.prototype.useSkill = function(skillType = 'attack') {
                     if (recoverAmount > 0) this.addBattleLog(`恢复了${recoverAmount}点灵力！`);
                 }
                 if (skill.immuneNextAttack) { this.gameState.player.immuneNextAttack = true; this.addBattleLog(`你获得了免疫状态，下次攻击将被完全抵挡！`); }
-                if (skill.shield) { this.gameState.player.shieldValue = (this.gameState.player.shieldValue || 0) + skill.shield; this.addBattleLog(`获得了${skill.shield}点护盾！当前护盾：${this.gameState.player.shieldValue}`); }
+                if (skill.shield) {
+                    this.gameState.player.shieldValue = (this.gameState.player.shieldValue || 0) + skill.shield;
+                    this.addBattleLog(`获得了${skill.shield}点护盾！当前护盾：${this.gameState.player.shieldValue}`);
+                    // ✅ 创建护盾特效
+                    if (typeof this.createDefenseEffect === 'function') {
+                        this.createDefenseEffect();
+                    }
+                }
                 if (skill.effects && skill.effects.length > 0) this.processSkillEffects(skill.effects);
                 if (skill.buffs && skill.buffs.length > 0) {
                     if (!this.gameState.player.buffs) this.gameState.player.buffs = [];
@@ -309,8 +500,10 @@ EndlessWinterGame.prototype.useSkill = function(skillType = 'attack') {
             this.gameState.player.defenseBonusValue = skill.defenseBonus;
             this.addBattleLog(`你使用了${skillDisplayName}，防御姿态已激活！下次受到的伤害减少${Math.floor(skill.defenseBonus * 100)}%！`);
         } else if (skill.healPercentage) {
-            const healAmount = Math.floor(this.gameState.player.maxHp * skill.healPercentage);
-            this.gameState.player.hp = Math.min(this.gameState.player.hp + healAmount, this.gameState.player.maxHp);
+            // 使用公共方法获取实际最大血量
+            const actualMaxHp = this.getActualStats().maxHp;
+            const healAmount = Math.floor(actualMaxHp * skill.healPercentage);
+            this.gameState.player.hp = Math.min(this.gameState.player.hp + healAmount, actualMaxHp);
             this.addBattleLog(`你使用了${skillDisplayName}，恢复了${healAmount}点生命值！`);
             this.showDamage(this.battle3D.player, healAmount, 'green');
         } else if (skill.dodgeBonus) {
@@ -325,7 +518,14 @@ EndlessWinterGame.prototype.useSkill = function(skillType = 'attack') {
             this.addBattleLog(`恢复了${recoverAmount}点灵力！`);
         }
         if (skill.immuneNextAttack) { this.gameState.player.immuneNextAttack = true; this.addBattleLog(`你获得了免疫状态，下次攻击将被完全抵挡！`); }
-        if (skill.shield) { this.gameState.player.shieldValue = (this.gameState.player.shieldValue || 0) + skill.shield; this.addBattleLog(`获得了${skill.shield}点护盾！当前护盾：${this.gameState.player.shieldValue}`); }
+        if (skill.shield) {
+            this.gameState.player.shieldValue = (this.gameState.player.shieldValue || 0) + skill.shield;
+            this.addBattleLog(`获得了${skill.shield}点护盾！当前护盾：${this.gameState.player.shieldValue}`);
+            // ✅ 创建护盾特效
+            if (typeof this.createDefenseEffect === 'function') {
+                this.createDefenseEffect();
+            }
+        }
         if (skill.effects && skill.effects.length > 0) this.processSkillEffects(skill.effects);
         if (skill.buffs && skill.buffs.length > 0) {
             if (!this.gameState.player.buffs) this.gameState.player.buffs = [];
@@ -349,14 +549,31 @@ EndlessWinterGame.prototype.useSkill = function(skillType = 'attack') {
     }
 };
 
-// 敌人反击通用函数（供技能使用）
-EndlessWinterGame.prototype.triggerEnemyCounterattack = function(finalDefense, enemyAccuracy, finalDodge) {
-    // 敌人反击
-    const enemyMinDamage = Math.floor(this.gameState.enemy.attack * 0.2);
-    const enemyDamage = Math.max(enemyMinDamage, this.gameState.enemy.attack - finalDefense);
-    let enemyHitChance = Math.min(95, enemyAccuracy - finalDodge);
+/**
+ * 计算敌人攻击（统一函数，避免代码重复）
+ * @param {number} finalDefense - 玩家防御力
+ * @param {number} enemyAccuracy - 敌人命中率（小数格式，如0.95表示95%）
+ * @param {number} finalDodge - 玩家闪避率（小数格式，如0.50表示50%）
+ * @param {boolean} useDodgeBonus - 是否使用闪避技能加成（默认false）
+ * @returns {Object} { enemyHit, enemyDamage, enemyCrit, enemyCritResult, tenacityReduction }
+ */
+EndlessCultivationGame.prototype.calculateEnemyAttack = function(finalDefense, enemyAccuracy, finalDodge, useDodgeBonus = false) {
+    const enemyStats = this.getEnemyActualStats();
+    const playerStats = this.getActualStats();
+    const enemyAttack = enemyStats.attack;
+    const enemyCriticalRate = enemyStats.criticalRate;
+    const enemyCritDamage = enemyStats.critDamage;
+    const playerTenacity = playerStats.tenacity || 0;
 
-    if (this.gameState.player.dodgeActive && this.gameState.player.dodgeBonus) {
+    // 敌人伤害计算
+    const enemyMinDamage = Math.floor(enemyAttack * 0.2);
+    const enemyBaseDamage = Math.max(enemyMinDamage, enemyAttack - finalDefense);
+
+    // 命中判定
+    let enemyHitChance = Math.min(95, Math.max(5, (enemyAccuracy - finalDodge) * 100));
+
+    // 闪避技能加成（仅在useDodgeBonus=true时生效）
+    if (useDodgeBonus && this.gameState.player.dodgeActive && this.gameState.player.dodgeBonus) {
         enemyHitChance -= this.gameState.player.dodgeBonus * 100;
         enemyHitChance = Math.max(5, enemyHitChance);
         this.gameState.player.dodgeActive = false;
@@ -364,6 +581,40 @@ EndlessWinterGame.prototype.triggerEnemyCounterattack = function(finalDefense, e
     }
 
     const enemyHit = Math.random() * 100 < enemyHitChance;
+
+    // 暴击判定和伤害（应用韧性减免）
+    let enemyCritResult = null;
+    let tenacityReduction = 0;
+    const enemyCrit = enemyHit && Math.random() * 100 < enemyCriticalRate * 100;
+    const enemyDamage = enemyCrit
+        ? (() => {
+            enemyCritResult = this.rollCritDamage(enemyCritDamage);
+            // 韧性减免：reduction = tenacity / (tenacity + 1)
+            tenacityReduction = playerTenacity / (playerTenacity + 1);
+            const reducedMultiplier = enemyCritResult.multiplier * (1 - tenacityReduction);
+            return Math.max(1, Math.floor(enemyBaseDamage * Math.max(reducedMultiplier, 1.1)));
+        })()
+        : enemyBaseDamage;
+
+    return {
+        enemyHit,
+        enemyDamage,
+        enemyCrit,
+        enemyCritResult,
+        tenacityReduction
+    };
+};
+
+// 敌人反击通用函数（供技能使用）
+EndlessCultivationGame.prototype.triggerEnemyCounterattack = function(finalDefense, enemyAccuracy, finalDodge) {
+    // 敌人反击（使用统一函数计算）
+    const {
+        enemyHit,
+        enemyDamage,
+        enemyCrit,
+        enemyCritResult,
+        tenacityReduction
+    } = this.calculateEnemyAttack(finalDefense, enemyAccuracy, finalDodge, true);
     let isImmune = false;
     let finalEnemyDamage = enemyDamage;
 
@@ -381,10 +632,13 @@ EndlessWinterGame.prototype.triggerEnemyCounterattack = function(finalDefense, e
                 const reductionRate = this.gameState.player.defenseBonusValue || 0.5;
                 finalEnemyDamage = Math.max(1, Math.floor(enemyDamage * (1 - reductionRate)));
                 if (this.gameState.enemy.isBoss && this.gameState.enemy.energy >= 50) {
-                    const skillDmg = Math.floor(enemyDamage * 1.5);
-                    finalEnemyDamage = Math.max(1, Math.floor((enemyDamage + skillDmg) * (1 - reductionRate)));
+                    finalEnemyDamage = Math.max(1, Math.floor(enemyDamage * 1.5 * (1 - reductionRate)));  // 技能伤害×1.5，然后防御减免
                     this.gameState.enemy.energy -= 50;
                     this.addBattleLog(`${this.gameState.enemy.name}释放了技能，对你造成了${finalEnemyDamage}点伤害！（防御减免${Math.floor(reductionRate * 100)}%）`);
+                } else if (enemyCrit) {
+                    const critPercent = Math.floor((enemyCritResult.multiplier - 1) * 100);
+                    const reductionText = tenacityReduction > 0 ? ` 韧性减免${Math.floor(tenacityReduction * 100)}%` : '';
+                    this.addBattleLog(`💥暴击！(+${critPercent}%) ${this.gameState.enemy.name}！对你造成了${finalEnemyDamage}点伤害！（防御减免${Math.floor(reductionRate * 100)}%${reductionText}）`);
                 } else {
                     this.addBattleLog(`${this.gameState.enemy.name}对你造成了${finalEnemyDamage}点伤害！（防御减免${Math.floor(reductionRate * 100)}%）`);
                 }
@@ -397,7 +651,13 @@ EndlessWinterGame.prototype.triggerEnemyCounterattack = function(finalDefense, e
                     finalEnemyDamage = enemyDamage + skillDmg;
                     this.gameState.enemy.energy -= 50;
                     this.addBattleLog(`${this.gameState.enemy.name}释放了技能，对你造成了${finalEnemyDamage}点伤害！`);
+                } else if (enemyCrit) {
+                    finalEnemyDamage = enemyDamage;
+                    const critPercent = Math.floor((enemyCritResult.multiplier - 1) * 100);
+                    const reductionText = tenacityReduction > 0 ? ` 韧性减免${Math.floor(tenacityReduction * 100)}%` : '';
+                    this.addBattleLog(`💥暴击！(+${critPercent}%) ${this.gameState.enemy.name}！对你造成了${finalEnemyDamage}点伤害！${reductionText}`);
                 } else {
+                    finalEnemyDamage = enemyDamage;
                     this.addBattleLog(`${this.gameState.enemy.name}对你造成了${finalEnemyDamage}点伤害！`);
                 }
             }
@@ -414,6 +674,13 @@ EndlessWinterGame.prototype.triggerEnemyCounterattack = function(finalDefense, e
                         actualDamage -= this.gameState.player.shieldValue;
                         this.gameState.player.shieldValue = 0;
                         this.addBattleLog(`护盾吸收了${absorbed}点伤害，护盾破碎！剩余伤害：${actualDamage}`);
+
+                        // ✅ 护盾破碎特效
+                        if (this.battle3D && this.battle3D.player) {
+                            const shieldBreakPosition = this.battle3D.player.position.clone();
+                            shieldBreakPosition.y = 1.0;
+                            this.createShieldBreakEffect(shieldBreakPosition);
+                        }
                     }
                 }
                 if (actualDamage > 0) {
@@ -437,7 +704,7 @@ EndlessWinterGame.prototype.triggerEnemyCounterattack = function(finalDefense, e
 };
 
 // 敌人被击败
-EndlessWinterGame.prototype.enemyDefeated = function() {
+EndlessCultivationGame.prototype.enemyDefeated = function() {
     // 图鉴：记录击杀敌人
     if (this.collectionSystem) {
         this.collectionSystem.recordEnemy(this.gameState.enemy);
@@ -578,7 +845,7 @@ EndlessWinterGame.prototype.enemyDefeated = function() {
 };
 
 // 玩家被击败
-EndlessWinterGame.prototype.playerDefeated = function() {
+EndlessCultivationGame.prototype.playerDefeated = function() {
     if (this.battle3D) {
         this.battle3D.playerDefeated = true;
     }
@@ -603,26 +870,6 @@ EndlessWinterGame.prototype.playerDefeated = function() {
     // 重置敌人HP/灵力
     this.gameState.enemy.hp = this.gameState.enemy.maxHp;
     this.gameState.enemy.energy = this.gameState.enemy.maxEnergy;
-
-    // 清理玩家战斗状态
-    this.gameState.player.defenseActive = false;
-    this.gameState.player.defenseBonusValue = 0;
-    this.gameState.player.dodgeActive = false;
-    this.gameState.player.dodgeBonus = 0;
-    this.gameState.player.immuneNextAttack = false;
-    this.gameState.player.buffs = [];
-    this.gameState.player.tempAttackBonus = 0;
-    this.gameState.player.tempDefenseBonus = 0;
-    this.gameState.player.tempAccuracyBonus = 0;
-    this.gameState.player.tempSkillCostReduce = 0;
-
-    // 清理敌人战斗状态
-    this.gameState.enemy.debuffs = [];
-
-    // 移除防御特效（如果存在）
-    if (typeof this.removeDefenseEffect === 'function') {
-        this.removeDefenseEffect();
-    }
 
     // 更新UI
     this.updateUI();
@@ -653,7 +900,7 @@ EndlessWinterGame.prototype.playerDefeated = function() {
 // ==================== 战斗UI管理 ====================
 
 // 关闭战斗模态窗口
-EndlessWinterGame.prototype.closeBattleModal = function() {
+EndlessCultivationGame.prototype.closeBattleModal = function() {
     const battleModal = document.getElementById('battle-modal');
     if (battleModal) {
         battleModal.classList.add('hidden');
@@ -661,6 +908,11 @@ EndlessWinterGame.prototype.closeBattleModal = function() {
 
     // 停止战斗音乐
     this.audioSystem.stopBattleMusic();
+
+    // ✅ 先清理所有战斗临时状态（必须在清理引擎之前）
+    if (typeof this.clearBattleStates === 'function') {
+        this.clearBattleStates();
+    }
 
     // 清理3D场景
     if (this.battle3D && this.battle3D.engine) {
@@ -679,19 +931,20 @@ EndlessWinterGame.prototype.closeBattleModal = function() {
         }
     }
 
-    // 设置战斗状态为false
+    // ✅ 然后清理 battle3D 对象
+    this.battle3D = null;
+
+    // ✅ 最后重置战斗状态
     if (this.gameState.battle) {
         this.gameState.battle.inBattle = false;
     }
-
-    this.battle3D = null;
 
     // 恢复地图场景
     this.restoreMapScene();
 };
 
 // 显示敌人被击败动画
-EndlessWinterGame.prototype.showEnemyDefeatedAnimation = function() {
+EndlessCultivationGame.prototype.showEnemyDefeatedAnimation = function() {
     if (!this.battle3D || !this.battle3D.enemy) return;
 
     const enemy = this.battle3D.enemy;
@@ -722,7 +975,7 @@ EndlessWinterGame.prototype.showEnemyDefeatedAnimation = function() {
 // ==================== 自动战斗 ====================
 
 // 切换自动战斗
-EndlessWinterGame.prototype.toggleAutoBattle = function() {
+EndlessCultivationGame.prototype.toggleAutoBattle = function() {
     this.gameState.settings.autoBattle = !this.gameState.settings.autoBattle;
 
     if (this.gameState.settings.autoBattle) {
@@ -735,7 +988,7 @@ EndlessWinterGame.prototype.toggleAutoBattle = function() {
 };
 
 // 开始自动战斗
-EndlessWinterGame.prototype.startAutoBattle = function() {
+EndlessCultivationGame.prototype.startAutoBattle = function() {
     if (!this.gameState.battle.inBattle) return;
 
     this.gameState.settings.autoBattle = true;
@@ -748,7 +1001,7 @@ EndlessWinterGame.prototype.startAutoBattle = function() {
 };
 
 // 停止自动战斗
-EndlessWinterGame.prototype.stopAutoBattle = function() {
+EndlessCultivationGame.prototype.stopAutoBattle = function() {
     this.gameState.settings.autoBattle = false;
     if (this.gameState.battle.autoBattleLoop) {
         clearInterval(this.gameState.battle.autoBattleLoop);
@@ -759,7 +1012,7 @@ EndlessWinterGame.prototype.stopAutoBattle = function() {
 // ==================== 技能效果处理 ====================
 
 // 处理技能组合效果
-EndlessWinterGame.prototype.processSkillEffects = function(effects) {
+EndlessCultivationGame.prototype.processSkillEffects = function(effects) {
     for (const effect of effects) {
         switch (effect.type) {
             case 'dodgeBonus':
@@ -782,8 +1035,10 @@ EndlessWinterGame.prototype.processSkillEffects = function(effects) {
                 this.addBattleLog(`命中提升${Math.floor(effect.value * 100)}%！`);
                 break;
             case 'healPercentage':
-                const healAmount = Math.floor(this.gameState.player.maxHp * effect.value);
-                this.gameState.player.hp = Math.min(this.gameState.player.hp + healAmount, this.gameState.player.maxHp);
+                // 使用公共方法获取实际最大血量
+                const actualMaxHp = this.getActualStats().maxHp;
+                const healAmount = Math.floor(actualMaxHp * effect.value);
+                this.gameState.player.hp = Math.min(this.gameState.player.hp + healAmount, actualMaxHp);
                 this.addBattleLog(`恢复了${healAmount}点生命值！`);
                 this.showDamage(this.battle3D.player, healAmount, 'green');
                 break;
@@ -804,7 +1059,7 @@ EndlessWinterGame.prototype.processSkillEffects = function(effects) {
 };
 
 // 处理回合开始时的buff效果
-EndlessWinterGame.prototype.processBuffsAtTurnStart = function() {
+EndlessCultivationGame.prototype.processBuffsAtTurnStart = function() {
     if (!this.gameState.player.buffs || this.gameState.player.buffs.length === 0) {
         return;
     }
@@ -828,7 +1083,7 @@ EndlessWinterGame.prototype.processBuffsAtTurnStart = function() {
 };
 
 // 处理回合结束时的buff/debuff衰减
-EndlessWinterGame.prototype.processBuffDecay = function() {
+EndlessCultivationGame.prototype.processBuffDecay = function() {
     // 处理玩家buff衰减
     if (this.gameState.player.buffs) {
         this.gameState.player.buffs = this.gameState.player.buffs.filter(buff => {
@@ -858,4 +1113,67 @@ EndlessWinterGame.prototype.processBuffDecay = function() {
     this.gameState.player.tempDefenseBonus = 0;
     this.gameState.player.tempAccuracyBonus = 0;
     this.gameState.player.tempSkillCostReduce = 0;
+};
+
+/**
+ * 清理所有战斗临时状态（退出战斗时统一调用）
+ * 用途：战斗胜利、战斗失败、手动退出战斗时都会调用此函数
+ */
+EndlessCultivationGame.prototype.clearBattleStates = function() {
+    console.log('清理战斗临时状态...');
+
+    // ✅ 清理玩家战斗状态
+    if (this.gameState.player) {
+        this.gameState.player.shieldValue = 0;  // 护盾值
+        this.gameState.player.defenseActive = false;  // 防御姿态
+        this.gameState.player.defenseBonusValue = 0;  // 防御加成
+        this.gameState.player.dodgeActive = false;  // 闪避姿态
+        this.gameState.player.dodgeBonus = 0;  // 闪避加成
+        this.gameState.player.immuneNextAttack = false;  // 免疫下次攻击
+        this.gameState.player.buffs = [];  // 持续增益
+        this.gameState.player.tempAttackBonus = 0;  // 临时攻击加成
+        this.gameState.player.tempDefenseBonus = 0;  // 临时防御加成
+        this.gameState.player.tempAccuracyBonus = 0;  // 临时命中加成
+        this.gameState.player.tempSkillCostReduce = 0;  // 临时技能消耗减少
+    }
+
+    // ✅ 清理敌人战斗状态
+    if (this.gameState.enemy) {
+        this.gameState.enemy.debuffs = [];  // 持续减益
+    }
+
+    // ✅ 移除防御特效（护盾等）
+    if (typeof this.removeDefenseEffect === 'function') {
+        this.removeDefenseEffect();
+    }
+};
+
+// ==================== 技能特效辅助函数 ====================
+
+/**
+ * 根据技能属性获取元素类型（用于特效）
+ * @param {Object} skill - 技能对象
+ * @returns {string} 元素类型 ('fire', 'ice', 'thunder', 'wind')
+ */
+EndlessCultivationGame.prototype.getSkillElementType = function(skill) {
+    if (!skill || !skill.effectColor) return 'wind';
+
+    const color = skill.effectColor;
+
+    // 红色系 -> 火元素
+    if (color.r > 0.7 && color.g < 0.5 && color.b < 0.5) {
+        return 'fire';
+    }
+    // 蓝色系 -> 冰元素
+    else if (color.b > 0.7 && color.r < 0.5 && color.g < 0.7) {
+        return 'ice';
+    }
+    // 黄色/紫色系 -> 雷元素
+    else if ((color.r > 0.7 && color.g > 0.7) || (color.r > 0.5 && color.b > 0.5)) {
+        return 'thunder';
+    }
+    // 绿色/白色系 -> 风元素
+    else {
+        return 'wind';
+    }
 };

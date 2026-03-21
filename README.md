@@ -1,4 +1,4 @@
-# 无尽战斗 (Endless Winter)
+# 无尽修仙 (Endless Cultivation)
 
 <div align="center">
 
@@ -32,7 +32,7 @@
 
 ## 🎮 项目简介
 
-**无尽战斗 (Endless Winter)** 是一款以修仙为题材的 3D 网页游戏。玩家从"武者境"开始修炼，通过战斗、升级技能、装备强化等方式不断提升境界，最终达到"化神境"的巅峰。
+**无尽修仙 (Endless Cultivation)** 是一款以修仙为题材的 3D 网页游戏。玩家从"武者境"开始修炼，通过战斗、升级技能、装备强化等方式不断提升境界，最终达到"化神境"的巅峰。
 
 ### 核心玩法
 - 🗡️ **回合制战斗**：策略性的技能释放和战斗系统
@@ -449,7 +449,7 @@ npm start
 #### 使用 PM2
 ```bash
 npm install -g pm2
-pm2 start server.js --name endless-winter
+pm2 start server.js --name endless-cultivation
 ```
 
 #### 使用 Docker

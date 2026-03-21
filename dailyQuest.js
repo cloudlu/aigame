@@ -11,11 +11,16 @@ class DailyQuestSystem {
      * 初始化每日任务（登录时调用）
      */
     initDailyQuests() {
-        if (!this.game.metadata.dailyQuestConfig) return;
+        console.log('[每日任务] initDailyQuests 被调用');
+        if (!this.game.metadata.dailyQuestConfig) {
+            console.log('[每日任务] 没有dailyQuestConfig，跳过初始化');
+            return;
+        }
 
         const needsRefresh = this.checkDailyQuestRefresh();
 
         if (needsRefresh) {
+            console.log('[每日任务] 正在生成新任务...');
             this.generateDailyQuests();
             this.game.gameState.dailyQuests.completedToday = false;
         }
@@ -28,17 +33,34 @@ class DailyQuestSystem {
      */
     checkDailyQuestRefresh() {
         const dq = this.game.gameState.dailyQuests;
-        const today = new Date().toISOString().split('T')[0];
+        // 使用本地日期而非UTC日期，避免时区问题
+        const today = this.getLocalDateString();
+
+        console.log(`[每日任务] 检查刷新: today=${today}, lastRefreshDate=${dq?.lastRefreshDate}`);
 
         if (!dq || dq.lastRefreshDate !== today) {
+            console.log(`[每日任务] 需要刷新 (dq=${!dq ? '不存在' : '日期不同'})`);
             return true;
         }
 
         if (!dq.quests || dq.quests.length === 0) {
+            console.log(`[每日任务] 需要刷新 (没有任务)`);
             return true;
         }
 
+        console.log(`[每日任务] 不需要刷新`);
         return false;
+    }
+
+    /**
+     * 获取本地日期字符串 (YYYY-MM-DD)
+     */
+    getLocalDateString() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     }
 
     // ========== 每日任务生成 ==========
@@ -79,7 +101,7 @@ class DailyQuestSystem {
             quests.push(quest);
         }
 
-        const today = new Date().toISOString().split('T')[0];
+        const today = this.getLocalDateString();
         this.game.gameState.dailyQuests = {
             lastRefreshDate: today,
             quests,
@@ -88,6 +110,8 @@ class DailyQuestSystem {
             totalCompleted: dq.totalCompleted || 0,
             completedToday: false
         };
+
+        console.log(`[每日任务] 已生成 ${quests.length} 个新任务，lastRefreshDate=${today}`);
 
         this.game.saveGameState();
     }
@@ -111,10 +135,55 @@ class DailyQuestSystem {
                 target = Math.max(3, Math.floor(baseValues.collect * stageMult));
                 description = template.descTemplate.replace('{target}', target);
                 break;
-            case 'visit_map':
-                target = 1;
-                description = template.descTemplate;
-                break;
+            case 'visit_map': {
+                // 从玩家当前可进入的地图中随机选择一个
+                const availableMaps = this.game.getAvailableMaps();
+                const unlockedMaps = availableMaps.filter(m => m.isUnlocked && !m.isCurrent);
+                if (unlockedMaps.length > 0) {
+                    const randomMap = unlockedMaps[Math.floor(Math.random() * unlockedMaps.length)];
+                    target = 1;
+                    description = `前往${randomMap.name}探索`;
+                    return {
+                        id: template.id,
+                        type: template.type,
+                        subType: template.subType || null,
+                        resource: template.resource || null,
+                        targetMap: randomMap.type,
+                        name: template.name,
+                        description,
+                        target,
+                        current: 0,
+                        completed: false,
+                        claimed: false,
+                        rewards: {
+                            exp: Math.floor(baseValues.exp * stageMult * realmMult),
+                            gold: Math.floor(baseValues.gold * stageMult * realmMult),
+                            activityPoints: Math.floor(baseValues.activity * stageMult * realmMult)
+                        }
+                    };
+                } else {
+                    // 如果没有其他可探索地图，改为击杀任务
+                    target = Math.max(3, Math.floor(baseValues.kill * stageMult));
+                    description = `击败${target}只妖兽`;
+                    return {
+                        id: 'daily_kill_fallback',
+                        type: 'kill',
+                        subType: null,
+                        resource: null,
+                        name: '妖兽讨伐',
+                        description,
+                        target,
+                        current: 0,
+                        completed: false,
+                        claimed: false,
+                        rewards: {
+                            exp: Math.floor(baseValues.exp * stageMult * realmMult),
+                            gold: Math.floor(baseValues.gold * stageMult * realmMult),
+                            activityPoints: Math.floor(baseValues.activity * stageMult * realmMult)
+                        }
+                    };
+                }
+            }
         }
 
         const expReward = Math.floor(baseValues.exp * stageMult * realmMult);
@@ -182,7 +251,7 @@ class DailyQuestSystem {
                     break;
 
                 case 'visit_map':
-                    if (eventType === 'map_visited') {
+                    if (eventType === 'map_visited' && eventData.mapType === quest.targetMap) {
                         quest.current = 1;
                         changed = true;
                     }
@@ -274,6 +343,179 @@ class DailyQuestSystem {
         this.game.saveGameState();
     }
 
+    // ========== 仙玉速通功能 ==========
+
+    /**
+     * 仙玉速通单个任务
+     */
+    instantCompleteQuest(questIndex) {
+        const dq = this.game.gameState.dailyQuests;
+        if (!dq || !dq.quests[questIndex]) {
+            this.game.addBattleLog('❌ 任务不存在！');
+            return { success: false };
+        }
+
+        const quest = dq.quests[questIndex];
+
+        if (quest.completed || quest.claimed) {
+            this.game.addBattleLog('❌ 任务已完成，无需速通！');
+            return { success: false };
+        }
+
+        const JADE_COST = 80;
+        const jade = this.game.gameState.resources?.jade || 0;
+
+        if (jade < JADE_COST) {
+            this.game.addBattleLog(`❌ 仙玉不足！速通需要 ${JADE_COST} 仙玉，当前 ${jade} 仙玉`);
+            return { success: false };
+        }
+
+        // 扣除仙玉
+        this.game.gameState.resources.jade -= JADE_COST;
+
+        // 完成任务
+        quest.current = quest.target;
+        quest.completed = true;
+
+        this.game.addBattleLog(`💎 消耗 ${JADE_COST} 仙玉，速通任务【${quest.name}】完成！`);
+        this.game.addBattleLog(`📋 每日任务【${quest.name}】已完成！点击领取奖励。`);
+
+        this.updateDailyQuestUI();
+        this.game.updateUI();
+        this.game.saveGameState();
+
+        return { success: true };
+    }
+
+    /**
+     * 仙玉速通所有未完成的任务
+     */
+    instantCompleteAll() {
+        const dq = this.game.gameState.dailyQuests;
+        if (!dq || !dq.quests) {
+            this.game.addBattleLog('❌ 没有每日任务！');
+            return { success: false };
+        }
+
+        // 找出未完成的任务
+        const incompleteQuests = dq.quests.filter(q => !q.completed && !q.claimed);
+
+        if (incompleteQuests.length === 0) {
+            this.game.addBattleLog('❌ 所有任务已完成，无需速通！');
+            return { success: false };
+        }
+
+        const JADE_COST_PER_QUEST = 80;
+        const JADE_COST_ALL = 200; // 一键速通优惠价
+
+        const totalCost = incompleteQuests.length > 1 ? JADE_COST_ALL : JADE_COST_PER_QUEST;
+        const jade = this.game.gameState.resources?.jade || 0;
+
+        if (jade < totalCost) {
+            this.game.addBattleLog(`❌ 仙玉不足！一键速通需要 ${totalCost} 仙玉，当前 ${jade} 仙玉`);
+            return { success: false };
+        }
+
+        // 扣除仙玉
+        this.game.gameState.resources.jade -= totalCost;
+
+        // 完成所有未完成任务
+        let completedCount = 0;
+        for (const quest of dq.quests) {
+            if (!quest.completed && !quest.claimed) {
+                quest.current = quest.target;
+                quest.completed = true;
+                completedCount++;
+                this.game.addBattleLog(`📋 每日任务【${quest.name}】已完成！`);
+            }
+        }
+
+        this.game.addBattleLog(`💎 消耗 ${totalCost} 仙玉，一键速通 ${completedCount} 个任务完成！`);
+
+        this.updateDailyQuestUI();
+        this.game.updateUI();
+        this.game.saveGameState();
+
+        return { success: true };
+    }
+
+    /**
+     * 获取速通所需仙玉数量
+     */
+    getInstantCompleteCost() {
+        const dq = this.game.gameState.dailyQuests;
+        if (!dq || !dq.quests) return { single: 80, all: 200, hasIncomplete: false };
+
+        const incompleteCount = dq.quests.filter(q => !q.completed && !q.claimed).length;
+
+        return {
+            single: 80,
+            all: incompleteCount > 1 ? 200 : 80,
+            hasIncomplete: incompleteCount > 0,
+            incompleteCount
+        };
+    }
+
+    /**
+     * 确认单个任务速通（显示确认弹窗）
+     */
+    confirmInstantComplete(questIndex) {
+        const dq = this.game.gameState.dailyQuests;
+        if (!dq || !dq.quests[questIndex]) return;
+
+        const quest = dq.quests[questIndex];
+        const JADE_COST = 80;
+        const jade = this.game.gameState.resources?.jade || 0;
+
+        if (jade < JADE_COST) {
+            this.game.addBattleLog(`❌ 仙玉不足！速通需要 ${JADE_COST} 仙玉，当前 ${jade} 仙玉`);
+            return;
+        }
+
+        // 显示确认弹窗
+        const modal = document.getElementById('instant-complete-modal');
+        if (modal) {
+            document.getElementById('instant-complete-quest-name').textContent = quest.name;
+            document.getElementById('instant-complete-cost').textContent = JADE_COST;
+            document.getElementById('instant-complete-confirm-btn').onclick = () => {
+                this.instantCompleteQuest(questIndex);
+                modal.classList.add('hidden');
+            };
+            modal.classList.remove('hidden');
+        } else {
+            // 如果没有弹窗，直接执行
+            this.instantCompleteQuest(questIndex);
+        }
+    }
+
+    /**
+     * 确认一键速通全部（显示确认弹窗）
+     */
+    confirmInstantCompleteAll() {
+        const costInfo = this.getInstantCompleteCost();
+        const jade = this.game.gameState.resources?.jade || 0;
+
+        if (jade < costInfo.all) {
+            this.game.addBattleLog(`❌ 仙玉不足！一键速通需要 ${costInfo.all} 仙玉，当前 ${jade} 仙玉`);
+            return;
+        }
+
+        // 显示确认弹窗
+        const modal = document.getElementById('instant-complete-modal');
+        if (modal) {
+            document.getElementById('instant-complete-quest-name').textContent = `全部 ${costInfo.incompleteCount} 个任务`;
+            document.getElementById('instant-complete-cost').textContent = costInfo.all;
+            document.getElementById('instant-complete-confirm-btn').onclick = () => {
+                this.instantCompleteAll();
+                modal.classList.add('hidden');
+            };
+            modal.classList.remove('hidden');
+        } else {
+            // 如果没有弹窗，直接执行
+            this.instantCompleteAll();
+        }
+    }
+
     /**
      * 获取当前连续完成奖励配置
      */
@@ -289,6 +531,26 @@ class DailyQuestSystem {
             }
         }
         return bestMatch;
+    }
+
+    /**
+     * 获取下一个连续完成奖励配置（用于UI显示）
+     */
+    getNextStreakBonus() {
+        const dq = this.game.gameState.dailyQuests;
+        if (!dq) return null;
+
+        const streakDays = dq.streak || 0;
+        const streakRewards = this.game.metadata.dailyQuestConfig.streakRewards;
+
+        // 找到第一个未达成的里程碑
+        for (const sr of streakRewards) {
+            if (streakDays < sr.days) {
+                return sr;
+            }
+        }
+        // 所有里程碑都已达成
+        return null;
     }
 
     /**
@@ -339,14 +601,15 @@ class DailyQuestSystem {
         const stageLabel = stageConfig?.name || '';
         const stageDisplay = `${realmNames[realmIndex]}${stageLabel}`;
 
-        const streakConfig = this.getStreakBonus();
         const streakDays = dq.streak || 0;
         const allClaimed = dq.quests.every(q => q.claimed);
+        const currentStreakConfig = this.getStreakBonus();
+        const nextStreakConfig = this.getNextStreakBonus();
 
         let questsHtml = '';
         for (let i = 0; i < dq.quests.length; i++) {
             const q = dq.quests[i];
-            const progressPercent = Math.min(100, (q.current / q.target) * 100);
+            let progressPercent = Math.min(100, (q.current / q.target) * 100);
             const isComplete = q.completed;
             const isClaimed = q.claimed;
 
@@ -366,6 +629,12 @@ class DailyQuestSystem {
                 (isComplete ? 'bg-green-500 hover:bg-green-600' : 'bg-white/10 hover:bg-white/20');
             const btnText = isClaimed ? '已领取' : '领取';
 
+            // 速通按钮（仅未完成任务显示）
+            const instantBtn = (!isComplete && !isClaimed) ?
+                `<button class="px-2 py-1 rounded text-xs font-medium bg-purple-600/80 hover:bg-purple-500 text-white transition-colors flex items-center gap-1" onclick="game.dailyQuestSystem.confirmInstantComplete(${i})">
+                    <i class="fa fa-bolt"></i> 80仙玉
+                </button>` : '';
+
             questsHtml += `
                 <div class="bg-white/5 rounded-xl p-3 mb-2 border ${isClaimed ? 'border-white/5 opacity-50' : isComplete ? 'border-green-500/30' : 'border-white/10'}">
                     <div class="flex items-center justify-between mb-2">
@@ -379,7 +648,17 @@ class DailyQuestSystem {
                         </div>
                         <span class="text-xs text-white/60">${progressText}</span>
                     </div>
-                    ${!isClaimed && isComplete ? `<button class="w-full py-1.5 rounded-lg text-sm font-medium ${btnClass} text-white transition-colors" onclick="game.dailyQuestSystem.claimDailyQuestReward(${i})">${btnText}</button>` : ''}
+                    <!-- 奖励预览 -->
+                    <div class="flex items-center gap-3 mb-2 text-xs text-white/50">
+                        <span><i class="fa fa-star text-yellow-400"></i> ${q.rewards.exp}经验</span>
+                        <span><i class="fa fa-coins text-gold"></i> ${q.rewards.gold}灵石</span>
+                        <span><i class="fa fa-fire text-orange-400"></i> ${q.rewards.activityPoints}活跃度</span>
+                        ${currentStreakConfig ? `<span class="text-green-400">(+${Math.floor(currentStreakConfig.bonusPercent * 100)}%加成)</span>` : ''}
+                    </div>
+                    <div class="flex gap-2">
+                        ${!isClaimed && isComplete ? `<button class="flex-1 py-1.5 rounded-lg text-sm font-medium ${btnClass} text-white transition-colors" onclick="game.dailyQuestSystem.claimDailyQuestReward(${i})">${btnText}</button>` : ''}
+                        ${instantBtn}
+                    </div>
                 </div>
             `;
         }
@@ -390,6 +669,19 @@ class DailyQuestSystem {
                 <div class="text-xs text-white/40">${dq.lastRefreshDate || '未刷新'}</div>
             </div>
 
+            <!-- 系统说明 -->
+            <div class="bg-gradient-to-r from-indigo-900/30 to-purple-900/30 rounded-lg p-2 mb-3 border border-indigo-500/20">
+                <div class="text-xs text-white/70 mb-1">
+                    <i class="fa fa-info-circle text-indigo-400 mr-1"></i>
+                    <strong>每日任务系统</strong>
+                </div>
+                <ul class="text-xs text-white/50 space-y-0.5 ml-4">
+                    <li>• 完成任务获得经验、灵石、活跃度奖励</li>
+                    <li>• 连续完成天数获得奖励加成</li>
+                    <li>• 可用仙玉速通任务（忙时功能）</li>
+                </ul>
+            </div>
+
             <div class="bg-white/5 rounded-lg p-3 mb-3 border border-white/10">
                 <div class="flex items-center justify-between mb-2">
                     <div class="flex items-center gap-2">
@@ -398,19 +690,37 @@ class DailyQuestSystem {
                     </div>
                     <div class="flex items-center gap-1">
                         <i class="fa fa-fire text-orange-400 text-xs"></i>
-                        <span class="text-xs text-orange-300">连续 ${streakDays} 天</span>
+                        <span class="text-xs text-orange-300">连续 ${streakDays} 天${currentStreakConfig ? ` (${currentStreakConfig.title})` : ''}</span>
                     </div>
                 </div>
-                ${streakConfig ? `
+                ${nextStreakConfig ? `
                     <div class="mt-1 pt-2 border-t border-white/10">
-                        <div class="text-xs text-gold/70">下一个里程碑: ${streakConfig.title} (${streakConfig.days}天)</div>
+                        <div class="text-xs text-gold/70">下一个里程碑: ${nextStreakConfig.title} (${nextStreakConfig.days}天) - 奖励+${Math.floor(nextStreakConfig.bonusPercent * 100)}%</div>
                         <div class="h-1.5 bg-white/10 rounded-full mt-1 overflow-hidden">
-                            <div class="h-full bg-orange-400 rounded-full transition-all" style="width: ${Math.min(100, (streakDays / streakConfig.days) * 100)}%"></div>
+                            <div class="h-full bg-orange-400 rounded-full transition-all" style="width: ${Math.min(100, (streakDays / nextStreakConfig.days) * 100)}%"></div>
                         </div>
                     </div>
                 ` : ''}
             </div>
         `;
+
+        // 一键速通按钮（有未完成任务时显示）
+        const costInfo = this.getInstantCompleteCost();
+        if (!allClaimed && costInfo.hasIncomplete) {
+            const jadeBalance = this.game.gameState.resources?.jade || 0;
+            const canAfford = jadeBalance >= costInfo.all;
+            headerHtml += `
+                <button
+                    class="w-full py-2 rounded-lg text-sm font-medium ${canAfford ? 'bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400' : 'bg-white/10 text-white/30 cursor-not-allowed'} text-white transition-all mb-2 flex items-center justify-center gap-2"
+                    onclick="${canAfford ? 'game.dailyQuestSystem.confirmInstantCompleteAll()' : ''}"
+                    ${!canAfford ? 'disabled' : ''}>
+                    <i class="fa fa-bolt"></i>
+                    一键速通全部
+                    <span class="px-1.5 py-0.5 bg-white/20 rounded text-xs">${costInfo.all}仙玉</span>
+                    ${costInfo.incompleteCount > 1 ? '<span class="text-xs text-white/60">(优惠价)</span>' : ''}
+                </button>
+            `;
+        }
 
         if (allClaimed) {
             headerHtml += `<div class="text-center text-xs text-green-400 mb-2 py-1">今日任务已全部完成</div>`;

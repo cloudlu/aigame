@@ -1,5 +1,5 @@
 // 游戏核心数据结构和状态管理
-class EndlessWinterGame {
+class EndlessCultivationGame {
     // ========== 战力系统配置 ==========
     // 战力基数（调大此值可整体放大战力数字，提升爽感）
     static COMBAT_POWER_BASE = 100;
@@ -10,22 +10,25 @@ class EndlessWinterGame {
         defense: 2.0,
         hp: 0.15,
         speed: 1.0,
-        luck: 0.5
+        luck: 0.5,
+        critDamage: 0.5  // 暴击伤害值权重（v2.3新增）
     };
 
     // 百分比属性权重（只计算超出基础值的部分）
+    // 注意：stats使用小数格式（0.05表示5%），权重相应调整为原来的100倍
     static COMBAT_POWER_PCT_WEIGHTS = {
-        criticalRate: 50,
-        dodgeRate: 50,
-        accuracy: 40,
-        tenacity: 30
+        criticalRate: 2500,
+        dodgeRate: 2500,
+        accuracy: 2000,
+        tenacity: 1500
     };
 
     // 百分比属性基础值（低于此部分不计入战力）
+    // 注意：使用小数格式（0.05表示5%），与getActualStats()返回格式一致
     static COMBAT_POWER_PCT_BASELINE = {
-        criticalRate: 5,
-        dodgeRate: 5,
-        accuracy: 100,
+        criticalRate: 0.05,  // 5%
+        dodgeRate: 0.05,     // 5%
+        accuracy: 1.0,       // 100%
         tenacity: 0
     };
 
@@ -107,6 +110,12 @@ class EndlessWinterGame {
     
     // 登录成功后初始化游戏
     initAfterLogin() {
+        // ✅ 重置战斗状态（防止页面刷新后残留战斗状态）
+        if (this.gameState.battle) {
+            this.gameState.battle.inBattle = false;
+            console.log('✅ 重置战斗状态为 false');
+        }
+
         // 登录和加载完成后继续初始化
         this.preloadImages();
         
@@ -247,7 +256,7 @@ class EndlessWinterGame {
     async fetchGameMetadata() {
         try {
             // 获取token
-            const token = localStorage.getItem('endlessWinterToken');
+            const token = localStorage.getItem('cultivationToken');
             if (!token) {
                 throw new Error('用户未登录，无法获取游戏数据');
             }
@@ -796,8 +805,8 @@ class EndlessWinterGame {
     async loadUserFromSession() {
         try {
             // 从 localStorage 中获取 token 和用户信息
-            const token = localStorage.getItem('endlessWinterToken');
-            const userStr = localStorage.getItem('endlessWinterUser');
+            const token = localStorage.getItem('cultivationToken');
+            const userStr = localStorage.getItem('cultivationUser');
 
             if (token && userStr) {
                 try {
@@ -933,20 +942,25 @@ class EndlessWinterGame {
         
         // 计算装备效果
         this.equipmentSystem.calculateEquipmentEffects();
-        
-        // 计算境界加成
-        let realmBonus = { attack: 0, defense: 0, hp: 0, luck: 0 };
-        if (this.metadata.realmConfig) {
-            realmBonus = this.calculateRealmBonus();
-        }
-        
-        // 计算最终属性（基础属性 + 装备效果 + 境界加成）
-        const finalAttack = this.gameState.player.attack + this.gameState.player.equipmentEffects.attack + realmBonus.attack;
-        const finalDefense = this.gameState.player.defense + this.gameState.player.equipmentEffects.defense + realmBonus.defense;
-        const finalHp = this.gameState.player.hp + this.gameState.player.equipmentEffects.hp + realmBonus.hp;
-        const finalLuck = this.gameState.player.luck + this.gameState.player.equipmentEffects.luck + realmBonus.luck;
-        const finalSpeed = this.gameState.player.speed + (this.gameState.player.equipmentEffects.speed || 0) + (realmBonus.speed || 0);
-        
+
+        // 使用统一方法获取最终属性
+        const stats = this.getActualStats();
+        const statsBreakdown = this.getStatsBreakdown();  // 用于获取各部分加成
+        const realmBonus = {
+            attack: statsBreakdown.attack.realm,
+            defense: statsBreakdown.defense.realm,
+            hp: statsBreakdown.maxHp.realm,
+            luck: statsBreakdown.luck.realm,
+            speed: statsBreakdown.speed.realm
+        };
+
+        const finalAttack = stats.attack;
+        const finalDefense = stats.defense;
+        const finalHp = this.gameState.player.hp;  // 当前血量直接使用
+        const finalLuck = stats.luck;
+        const finalSpeed = stats.speed;
+        const finalMaxHp = stats.maxHp;
+
         // 更新玩家属性显示
             const levelElement = document.getElementById('level');
             if (levelElement) {
@@ -1022,6 +1036,8 @@ class EndlessWinterGame {
                 } else {
                     attackElement.textContent = Math.floor(finalAttack);
                 }
+                // 主UI使用简化版tooltip（纯文本）
+                attackElement.title = this.getStatTooltipPlain('attack');
             }
             const defenseElement = document.getElementById('defense');
             if (defenseElement) {
@@ -1032,11 +1048,12 @@ class EndlessWinterGame {
                 } else {
                     defenseElement.textContent = Math.floor(finalDefense);
                 }
+                // 主UI使用简化版tooltip（纯文本）
+                defenseElement.title = this.getStatTooltipPlain('defense');
             }
             const hpDisplayElement = document.getElementById('hp-display');
-            const maxHp = this.gameState.player.maxHp + this.gameState.player.equipmentEffects.hp + realmBonus.hp;
             if (hpDisplayElement) {
-                hpDisplayElement.textContent = `${Math.floor(finalHp)}/${Math.floor(maxHp)}`;
+                hpDisplayElement.textContent = `${Math.floor(finalHp)}/${Math.floor(finalMaxHp)}`;
             }
 
             // 保留旧的 hp 元素兼容性（某些地方可能还在使用）
@@ -1046,13 +1063,13 @@ class EndlessWinterGame {
             }
 
             // 更新血条（使用统一函数更新主页面和人物面板）
-            this.updateProgressBar('hp', finalHp, maxHp);  // 主页面
-            this.updateProgressBar('hp', finalHp, maxHp, { bar: '-bar-modal', display: '-display-modal' });  // 人物面板
+            this.updateProgressBar('hp', finalHp, finalMaxHp);  // 主页面
+            this.updateProgressBar('hp', finalHp, finalMaxHp, { bar: '-bar-modal', display: '-display-modal' });  // 人物面板
 
             // 新增：更新max-hp显示
             const maxHpElement = document.getElementById('max-hp');
             if (maxHpElement) {
-                maxHpElement.textContent = Math.floor(maxHp);
+                maxHpElement.textContent = Math.floor(finalMaxHp);
             }
 
             // 新增：更新导航栏境界显示
@@ -1104,11 +1121,11 @@ class EndlessWinterGame {
                 }
             }
 
-            // 更新暴击率显示
+            // 更新暴击率显示（使用getActualStats获取小数格式，乘100显示百分比）
             const criticalRateElement = document.getElementById('critical-rate');
             if (criticalRateElement) {
-                const criticalRate = (this.gameState.player.criticalRate || 5) + (this.gameState.player.equipmentEffects.criticalRate || 0);
-                criticalRateElement.textContent = Math.floor(criticalRate);
+                const criticalRate = stats.criticalRate;
+                criticalRateElement.textContent = Math.floor(criticalRate * 100);
             }
 
         // 更新战力显示
@@ -1185,24 +1202,31 @@ class EndlessWinterGame {
         // 生成灵石
         this.gameState.resources.spiritCrystal += spiritCrystalRate;
         
-        // 生命自动恢复
-        if (this.gameState.player.hp < this.gameState.player.maxHp) {
-            // 使用元数据中的回复速率，如果没有则使用默认值0.5
-            const hpRegenRate = this.metadata.player?.regenRates?.hp || 0.5;
+        // 生命自动恢复（百分比恢复）
+        const actualMaxHp = this.getActualStats().maxHp;
+        if (this.gameState.player.hp < actualMaxHp) {
+            // 基础恢复0.5% + 装备加成百分比
+            const hpRegenPercent = 0.5 + (this.gameState.player.equipmentEffects?.hpRegen || 0);
+            const hpRegenRate = actualMaxHp * hpRegenPercent / 100;
             this.gameState.player.hp = Math.min(
                 this.gameState.player.hp + hpRegenRate,
-                this.gameState.player.maxHp
+                actualMaxHp
             );
         }
-        
-        // 灵力自动恢复
-        if (this.gameState.player && this.gameState.player.energy !== undefined && this.gameState.player.maxEnergy !== undefined) {
-            if (this.gameState.player.energy < this.gameState.player.maxEnergy) {
-                // 使用元数据中的回复速率，如果没有则使用默认值2
-                const energyRegenRate = this.metadata.player?.regenRates?.energy || 2;
+
+        // 灵力自动恢复（百分比恢复）
+        const actualMaxEnergy = this.getActualStats().maxEnergy || this.gameState.player.maxEnergy;
+        if (this.gameState.player && this.gameState.player.energy !== undefined) {
+            if (this.gameState.player.energy < actualMaxEnergy) {
+                // 基础恢复2% + 装备加成（energyRegen已是小数格式，乘100转为百分比）
+                const stats = this.getActualStats();
+                const baseRegenPercent = 2;
+                const equipRegenBonus = (stats.energyRegen || 0) * 100; // 小数转百分比
+                const energyRegenPercent = baseRegenPercent + equipRegenBonus;
+                const energyRegenRate = actualMaxEnergy * energyRegenPercent / 100;
                 this.gameState.player.energy = Math.min(
                     this.gameState.player.energy + energyRegenRate,
-                    this.gameState.player.maxEnergy
+                    actualMaxEnergy
                 );
             }
         } else {
@@ -2071,6 +2095,328 @@ class EndlessWinterGame {
         return totalBonus;
     }
 
+    /**
+     * 获取玩家的所有实际属性（包含装备、境界和VIP加成）
+     * @returns {Object} 包含所有实际属性的对象
+     */
+    getActualStats() {
+        // 确保装备效果已计算（包含VIP加成）
+        if (this.equipmentSystem && typeof this.equipmentSystem.calculateEquipmentEffects === 'function') {
+            this.equipmentSystem.calculateEquipmentEffects();
+        }
+
+        const p = this.gameState.player;
+        const ee = p.equipmentEffects || {};
+        const rb = this.metadata.realmConfig ? this.calculateRealmBonus() : { attack: 0, defense: 0, hp: 0, luck: 0, speed: 0 };
+
+                // 百分比属性列表
+        const percentageStats = ['criticalRate', 'dodgeRate', 'accuracy', 'tenacity', 'moveSpeed', 'energyRegen'];
+
+        // 先计算基础+装备+境界的属性
+        // 注意：内部统一使用小数格式（0.05表示5%），显示时才转换为百分比
+        const baseStats = {
+            attack: p.attack + (ee.attack || 0) + rb.attack,
+            defense: p.defense + (ee.defense || 0) + rb.defense,
+            hp: p.hp,  // 当前血量（无加成）
+            maxHp: p.maxHp + (ee.hp || 0) + rb.hp,
+            speed: (p.speed || 0) + (ee.speed || 0) + (rb.speed || 0),
+            luck: p.luck + (ee.luck || 0) + rb.luck,
+            // 百分比属性：玩家基础需要转换为小数格式（除以100），装备已是小数格式
+            // 幸运加成：命中率 +luck×0.001(每点幸运+0.1%)，暴击率 +luck×0.0005(每点幸运+0.05%)
+            criticalRate: ((p.criticalRate || 5) / 100) + (ee.criticalRate || 0) + ((p.luck + (ee.luck || 0) + rb.luck) * 0.0005),
+            // 速度加成：闪避率 +(speed-10)×0.0025 (每10点速度超基础+2.5%闪避)
+            dodgeRate: ((p.dodgeRate || 0) / 100) + (ee.dodgeRate || 0) + Math.max(0, ((p.speed || 0) + (ee.speed || 0) + (rb.speed || 0) - 10) * 0.0025),
+            // 幸运加成：命中率 +luck×0.001
+            accuracy: ((p.accuracy || 100) / 100) + (ee.accuracy || 0) + ((p.luck + (ee.luck || 0) + rb.luck) * 0.001),
+            tenacity: ((p.tenacity || 0) / 100) + (ee.tenacity || 0),
+            moveSpeed: ((p.moveSpeed || 0) / 100) + (ee.moveSpeed || 0),
+            energyRegen: ((p.energyRegen || 0) / 100) + (ee.energyRegen || 0),
+            maxEnergy: (p.maxEnergy || 100) + (ee.maxEnergy || 0),  // 最大灵力（含装备加成）
+            critDamage: (p.critDamage || 0) + (ee.critDamage || 0)  // 暴击伤害值（用于计算暴击倍率）
+        };
+
+        // 注意：VIP加成已在 equipmentSystem.calculateEquipmentEffects() 中
+        // 叠加到 equipmentEffects 上，因此这里不需要再单独计算
+        return baseStats;
+    }
+
+    /**
+     * 获取敌人的实际属性（统一属性计算）
+     * 敌人没有装备，只有基础属性
+     * @returns {Object} 包含所有实际属性的对象
+     */
+    getEnemyActualStats() {
+        const e = this.gameState.enemy;
+        if (!e) return null;
+
+        // 敌人属性：直接使用基础值，但需要转换百分比属性为小数格式
+        // 注意：敌人的 accuracy/dodge/criticalRate 存储的是百分比格式（如90表示90%）
+        // 速度和幸运也会影响命中、暴击和闪避
+        const speed = e.speed || 10;
+        const luck = e.luck || 0;
+
+        return {
+            attack: e.attack || 0,
+            defense: e.defense || 0,
+            hp: e.hp || 0,
+            maxHp: e.maxHp || 0,
+            speed: speed,
+            luck: luck,
+            // 百分比属性转换为小数格式（90% → 0.9）
+            // 幸运加成：命中率 +luck×0.001，暴击率 +luck×0.0005
+            criticalRate: ((e.criticalRate || 0) / 100) + (luck * 0.0005),
+            // 速度加成：闪避率 +(speed-10)×0.0025
+            dodgeRate: ((e.dodge || 0) / 100) + Math.max(0, (speed - 10) * 0.0025),
+            // 幸运加成：命中率 +luck×0.001
+            accuracy: ((e.accuracy || 90) / 100) + (luck * 0.001),
+            tenacity: ((e.tenacity || 0) / 100),
+            moveSpeed: ((e.moveSpeed || 0) / 100),
+            energyRegen: ((e.energyRegen || 0) / 100),
+            maxEnergy: e.maxEnergy || 100,
+            critDamage: e.critDamage || 0  // 敌人暴击伤害值
+        };
+    }
+
+    /**
+     * 计算暴击倍率（线性公式）
+     * critDamage值越高，暴击倍率越高
+     * 公式：暴击倍率 = 1.5 + (critDamage / 100)
+     * @param {number} critDamageValue - 暴击伤害值
+     * @returns {Object} { multiplier, name }
+     */
+    rollCritDamage(critDamageValue) {
+        const critDmg = critDamageValue || 0;
+        // 线性公式：基础1.5倍，每100点暴伤增加1倍
+        const multiplier = 1.5 + (critDmg / 100);
+        return { multiplier: Math.round(multiplier * 100) / 100, name: '暴击' };
+    }
+
+    /**
+     * 绑定自定义tooltip到元素（与背包tooltip风格一致）
+     * @param {HTMLElement} element - 目标元素
+     * @param {Function} contentGetter - 获取tooltip内容的函数
+     */
+    bindCustomTooltip(element, contentGetter) {
+        if (!element) return;
+
+        // 移除原生title属性
+        const originalTitle = element.title;
+        element.removeAttribute('title');
+        element.dataset.originalTitle = originalTitle || '';
+
+        // 鼠标进入 - 显示tooltip
+        element.addEventListener('mouseenter', (e) => {
+            // ✅ 清理旧的tooltip（防止多个tooltip同时存在）
+            document.querySelectorAll('#custom-stat-tooltip').forEach(tooltip => tooltip.remove());
+
+            const content = typeof contentGetter === 'function' ? contentGetter() : contentGetter;
+            if (!content) return;
+
+            const tooltip = document.createElement('div');
+            tooltip.className = 'fixed z-[9999] bg-dark/95 border border-accent/50 rounded-lg px-3 py-2 text-xs text-white shadow-xl backdrop-blur-sm max-w-xs';
+            tooltip.id = 'custom-stat-tooltip';
+            tooltip.innerHTML = content;
+            tooltip.style.pointerEvents = 'none';
+
+            document.body.appendChild(tooltip);
+
+            // 计算位置（确保不超出屏幕）
+            const rect = element.getBoundingClientRect();
+            const tooltipRect = tooltip.getBoundingClientRect();
+
+            let left = rect.left;
+            let top = rect.bottom + 8;
+
+            // 如果右边超出屏幕，向左对齐
+            if (left + tooltipRect.width > window.innerWidth - 10) {
+                left = window.innerWidth - tooltipRect.width - 10;
+            }
+
+            // 如果下边超出屏幕，显示在上方
+            if (top + tooltipRect.height > window.innerHeight - 10) {
+                top = rect.top - tooltipRect.height - 8;
+            }
+
+            tooltip.style.left = `${Math.max(10, left)}px`;
+            tooltip.style.top = `${top}px`;
+        });
+
+        // 鼠标离开 - 隐藏tooltip
+        element.addEventListener('mouseleave', () => {
+            const tooltip = document.getElementById('custom-stat-tooltip');
+            if (tooltip) {
+                tooltip.remove();
+            }
+        });
+    }
+
+    /**
+     * 获取属性详细来源（用于UI显示）
+     * @returns {Object} 包含各部分加成详情
+     */
+    getStatsBreakdown() {
+        const p = this.gameState.player;
+        const ee = p.equipmentEffects || {};
+        const rb = this.metadata.realmConfig ? this.calculateRealmBonus() : { attack: 0, defense: 0, hp: 0, luck: 0, speed: 0 };
+        const vipBonus = this.vipSystem ? this.vipSystem.getBonus() : { attackBonus: 0, defenseBonus: 0, hpBonus: 0, critBonus: 0 };
+
+        return {
+            attack: {
+                base: p.attack,
+                equipment: ee.attack || 0,
+                realm: rb.attack,
+                vipPercent: vipBonus.attackBonus,
+                final: p.attack + (ee.attack || 0) + rb.attack
+            },
+            defense: {
+                base: p.defense,
+                equipment: ee.defense || 0,
+                realm: rb.defense,
+                vipPercent: vipBonus.defenseBonus,
+                final: p.defense + (ee.defense || 0) + rb.defense
+            },
+            maxHp: {
+                base: p.maxHp,
+                equipment: ee.hp || 0,
+                realm: rb.hp,
+                vipPercent: vipBonus.hpBonus,
+                final: p.maxHp + (ee.hp || 0) + rb.hp
+            },
+            luck: {
+                base: p.luck,
+                equipment: ee.luck || 0,
+                realm: rb.luck,
+                final: p.luck + (ee.luck || 0) + rb.luck
+            },
+            speed: {
+                base: p.speed || 0,
+                equipment: ee.speed || 0,
+                realm: rb.speed || 0,
+                final: (p.speed || 0) + (ee.speed || 0) + (rb.speed || 0)
+            },
+            criticalRate: {
+                base: (p.criticalRate || 5) / 100,  // 转换为小数
+                equipment: ee.criticalRate || 0,
+                luckBonus: ((p.luck + (ee.luck || 0) + (rb.luck || 0)) * 0.001),  // 幸运加成
+                vip: (vipBonus.critBonus || 0) / 100,  // VIP加成也转为小数
+                final: ((p.criticalRate || 5) / 100) + (ee.criticalRate || 0) + ((p.luck + (ee.luck || 0) + (rb.luck || 0)) * 0.001)
+            },
+            dodgeRate: {
+                base: (p.dodgeRate || 0) / 100,
+                equipment: ee.dodgeRate || 0,
+                speedBonus: Math.max(0, ((p.speed || 0) + (ee.speed || 0) + (rb.speed || 0) - 10) * 0.005),  // 速度加成
+                final: ((p.dodgeRate || 0) / 100) + (ee.dodgeRate || 0) + Math.max(0, ((p.speed || 0) + (ee.speed || 0) + (rb.speed || 0) - 10) * 0.005)
+            },
+            accuracy: {
+                base: (p.accuracy || 100) / 100,
+                equipment: ee.accuracy || 0,
+                luckBonus: ((p.luck + (ee.luck || 0) + (rb.luck || 0)) * 0.002),  // 幸运加成
+                final: ((p.accuracy || 100) / 100) + (ee.accuracy || 0) + ((p.luck + (ee.luck || 0) + (rb.luck || 0)) * 0.002)
+            },
+            tenacity: {
+                base: (p.tenacity || 0) / 100,
+                equipment: ee.tenacity || 0,
+                final: ((p.tenacity || 0) / 100) + (ee.tenacity || 0)
+            },
+            moveSpeed: {
+                base: (p.moveSpeed || 0) / 100,
+                equipment: ee.moveSpeed || 0,
+                final: ((p.moveSpeed || 0) / 100) + (ee.moveSpeed || 0)
+            },
+            energyRegen: {
+                base: (p.energyRegen || 0) / 100,
+                equipment: ee.energyRegen || 0,
+                final: ((p.energyRegen || 0) / 100) + (ee.energyRegen || 0)
+            },
+            maxEnergy: {
+                base: p.maxEnergy || 100,
+                equipment: ee.maxEnergy || 0,
+                final: (p.maxEnergy || 100) + (ee.maxEnergy || 0)
+            },
+            critDamage: {
+                base: p.critDamage || 0,
+                equipment: ee.critDamage || 0,
+                final: (p.critDamage || 0) + (ee.critDamage || 0)
+            }
+        };
+    }
+
+    /**
+     * 生成属性详情提示文本
+     * @param {string} statName - 属性名称 (attack/defense/maxHp等)
+     * @returns {string} 提示文本
+     */
+    getStatTooltip(statName) {
+        const breakdown = this.getStatsBreakdown();
+        const stat = breakdown[statName];
+        if (!stat) return '';
+
+        // 百分比属性列表（内部使用小数，显示时乘100）
+        const percentageStats = ['criticalRate', 'dodgeRate', 'accuracy', 'tenacity', 'moveSpeed', 'energyRegen'];
+        const isPercentage = percentageStats.includes(statName);
+
+        // 格式化函数：百分比属性乘100显示
+        const formatValue = (val) => isPercentage ? (val * 100).toFixed(1) : Math.floor(val);
+        // 单位后缀
+        const unit = isPercentage ? '%' : '';
+
+        const lines = [];
+        lines.push(`<div class="flex justify-between gap-4"><span class="text-light/60">基础</span><span class="text-white font-medium">${formatValue(stat.base)}${unit}</span></div>`);
+
+        if (stat.equipment > 0) {
+            lines.push(`<div class="flex justify-between gap-4"><span class="text-light/60">装备</span><span class="text-accent">+${formatValue(stat.equipment)}${unit}</span></div>`);
+        }
+
+        if (stat.realm > 0) {
+            lines.push(`<div class="flex justify-between gap-4"><span class="text-light/60">境界</span><span class="text-spirit">+${formatValue(stat.realm)}${unit}</span></div>`);
+        }
+
+        // 显示幸运加成（暴击率、命中率）
+        if (stat.luckBonus && stat.luckBonus > 0) {
+            lines.push(`<div class="flex justify-between gap-4"><span class="text-light/60">幸运加成</span><span class="text-yellow-400">+${formatValue(stat.luckBonus)}${unit}</span></div>`);
+        }
+
+        // 显示速度加成（闪避率）
+        if (stat.speedBonus && stat.speedBonus > 0) {
+            lines.push(`<div class="flex justify-between gap-4"><span class="text-light/60">速度加成</span><span class="text-cyan-400">+${formatValue(stat.speedBonus)}${unit}</span></div>`);
+        }
+
+        if (stat.vip && stat.vip > 0) {
+            lines.push(`<div class="flex justify-between gap-4"><span class="text-light/60">VIP</span><span class="text-gold">+${formatValue(stat.vip)}${unit}</span></div>`);
+        }
+
+        lines.push(`<div class="border-t border-white/10 my-1"></div>`);
+        lines.push(`<div class="flex justify-between gap-4"><span class="text-light/70 font-medium">最终</span><span class="text-white font-bold">${formatValue(stat.final)}${unit}</span></div>`);
+
+        return lines.join('');
+    }
+
+    /**
+     * 获取属性tooltip纯文本版本（用于主UI的title属性）
+     */
+    getStatTooltipPlain(statName) {
+        const breakdown = this.getStatsBreakdown();
+        const stat = breakdown[statName];
+        if (!stat) return '';
+
+        const percentageStats = ['criticalRate', 'dodgeRate', 'accuracy', 'tenacity', 'moveSpeed', 'energyRegen'];
+        const isPercentage = percentageStats.includes(statName);
+        const formatValue = (val) => isPercentage ? (val * 100).toFixed(1) : Math.floor(val);
+        const unit = isPercentage ? '%' : '';
+
+        const lines = [];
+        lines.push(`基础: ${formatValue(stat.base)}${unit}`);
+        if (stat.equipment > 0) lines.push(`装备: +${formatValue(stat.equipment)}${unit}`);
+        if (stat.realm > 0) lines.push(`境界: +${formatValue(stat.realm)}${unit}`);
+        if (stat.luckBonus > 0) lines.push(`幸运: +${formatValue(stat.luckBonus)}${unit}`);
+        if (stat.speedBonus > 0) lines.push(`速度: +${formatValue(stat.speedBonus)}${unit}`);
+        if (stat.vip > 0) lines.push(`VIP: +${formatValue(stat.vip)}${unit}`);
+        lines.push(`──────`);
+        lines.push(`最终: ${formatValue(stat.final)}${unit}`);
+
+        return lines.join('\n');
+    }
+
     // ========== 战力系统 ==========
 
     /**
@@ -2078,11 +2424,26 @@ class EndlessWinterGame {
      * @param {Object} stats - 含 attack/defense/hp/speed/luck/criticalRate/dodgeRate/accuracy/tenacity
      * @returns {number} 战力值
      */
+    /**
+     * 递减收益函数（类似韧性公式）
+     * 基础值内的部分正常计算，超出部分收益减半
+     */
+    calculateDiminishingValue(value, baseline, weightAbove, weightBelow) {
+        if (value <= baseline) {
+            return value * weightBelow;
+        }
+        return baseline * weightBelow + (value - baseline) * weightAbove;
+    }
+
+    /**
+     * 计算战力（基于属性）
+     * 百分比属性使用递减收益：超过阈值后收益减半
+     */
     calculateCombatPower(stats) {
-        const BASE = EndlessWinterGame.COMBAT_POWER_BASE;
-        const W = EndlessWinterGame.COMBAT_POWER_WEIGHTS;
-        const PW = EndlessWinterGame.COMBAT_POWER_PCT_WEIGHTS;
-        const PB = EndlessWinterGame.COMBAT_POWER_PCT_BASELINE;
+        const BASE = EndlessCultivationGame.COMBAT_POWER_BASE;
+        const W = EndlessCultivationGame.COMBAT_POWER_WEIGHTS;
+        const PW = EndlessCultivationGame.COMBAT_POWER_PCT_WEIGHTS;
+        const PB = EndlessCultivationGame.COMBAT_POWER_PCT_BASELINE;
 
         let power = 0;
 
@@ -2092,13 +2453,51 @@ class EndlessWinterGame {
         power += (stats.hp || 0) * W.hp;
         power += (stats.speed || 0) * W.speed;
         power += (stats.luck || 0) * W.luck;
+        power += (stats.critDamage || 0) * (W.critDamage || 0.5);  // v2.3新增
 
-        // 百分比属性：只计算超出基础值的部分
-        for (const stat in PW) {
-            const value = (stats[stat] || 0) - (PB[stat] || 0);
-            if (value > 0) {
-                power += value * PW[stat];
-            }
+        // 百分比属性：使用递减收益
+        // 暴击率：0-50%正常权重，50%以上收益减半
+        const critValue = (stats.criticalRate || 0) - (PB.criticalRate || 0);
+        if (critValue > 0) {
+            power += this.calculateDiminishingValue(
+                critValue + PB.criticalRate,
+                0.50,  // 50%是分界点
+                PW.criticalRate * 0.5,  // 超出部分权重减半
+                PW.criticalRate
+            ) - PB.criticalRate * PW.criticalRate;
+        }
+
+        // 闪避率：0-50%正常权重，50%以上收益减半
+        const dodgeValue = (stats.dodgeRate || 0) - (PB.dodgeRate || 0);
+        if (dodgeValue > 0) {
+            power += this.calculateDiminishingValue(
+                dodgeValue + PB.dodgeRate,
+                0.50,
+                PW.dodgeRate * 0.5,
+                PW.dodgeRate
+            ) - PB.dodgeRate * PW.dodgeRate;
+        }
+
+        // 命中率：0-120%正常权重，120%以上收益减半
+        const accValue = (stats.accuracy || 0) - (PB.accuracy || 0);
+        if (accValue > 0) {
+            power += this.calculateDiminishingValue(
+                accValue + PB.accuracy,
+                1.20,  // 120%是分界点
+                PW.accuracy * 0.5,
+                PW.accuracy
+            ) - PB.accuracy * PW.accuracy;
+        }
+
+        // 韧性：0-50%正常权重，50%以上收益减半
+        const tenacityValue = (stats.tenacity || 0) - (PB.tenacity || 0);
+        if (tenacityValue > 0) {
+            power += this.calculateDiminishingValue(
+                tenacityValue + PB.tenacity,
+                0.50,
+                PW.tenacity * 0.5,
+                PW.tenacity
+            );
         }
 
         return Math.floor(power * BASE / 100);
@@ -2108,21 +2507,18 @@ class EndlessWinterGame {
      * 计算玩家总战力（基础 + 装备 + 境界加成）
      */
     calculatePlayerCombatPower() {
-        this.equipmentSystem.calculateEquipmentEffects();
-        const realmBonus = this.metadata.realmConfig ? this.calculateRealmBonus() : { attack: 0, defense: 0, hp: 0, luck: 0, speed: 0 };
-        const ee = this.gameState.player.equipmentEffects;
-        const p = this.gameState.player;
-
+        const stats = this.getActualStats();
         return this.calculateCombatPower({
-            attack: p.attack + ee.attack + realmBonus.attack,
-            defense: p.defense + ee.defense + realmBonus.defense,
-            hp: p.maxHp + ee.hp + realmBonus.hp,
-            speed: (p.speed || 0) + (ee.speed || 0) + (realmBonus.speed || 0),
-            luck: p.luck + ee.luck + realmBonus.luck,
-            criticalRate: (p.criticalRate || 5) + (ee.criticalRate || 0),
-            dodgeRate: (p.dodge || 5) + (ee.dodgeRate || 0),
-            accuracy: (p.accuracy || 100) + (ee.accuracy || 0),
-            tenacity: ee.tenacity || 0
+            attack: stats.attack,
+            defense: stats.defense,
+            hp: stats.maxHp,
+            speed: stats.speed,
+            luck: stats.luck,
+            criticalRate: stats.criticalRate,
+            dodgeRate: stats.dodgeRate,
+            accuracy: stats.accuracy,
+            tenacity: stats.tenacity,
+            critDamage: stats.critDamage  // v2.3新增
         });
     }
 
@@ -2412,16 +2808,14 @@ class EndlessWinterGame {
 
         // 更新属性
         this.equipmentSystem.calculateEquipmentEffects();
-        let realmBonus = { attack: 0, defense: 0, hp: 0, luck: 0, speed: 0 };
-        if (this.metadata.realmConfig) {
-            realmBonus = this.calculateRealmBonus();
-        }
 
-        const finalAttack = this.gameState.player.attack + this.gameState.player.equipmentEffects.attack + realmBonus.attack;
-        const finalDefense = this.gameState.player.defense + this.gameState.player.equipmentEffects.defense + realmBonus.defense;
-        const finalHp = this.gameState.player.hp + this.gameState.player.equipmentEffects.hp + realmBonus.hp;
-        const finalLuck = this.gameState.player.luck + this.gameState.player.equipmentEffects.luck + realmBonus.luck;
-        const finalSpeed = this.gameState.player.speed + (this.gameState.player.equipmentEffects.speed || 0) + (realmBonus.speed || 0);
+        // 使用统一方法获取最终属性
+        const stats = this.getActualStats();
+
+        const finalAttack = stats.attack;
+        const finalDefense = stats.defense;
+        const finalLuck = stats.luck;
+        const finalSpeed = stats.speed;
 
         const attackModalEl = document.getElementById('attack-modal');
         if (attackModalEl) {
@@ -2431,6 +2825,8 @@ class EndlessWinterGame {
             } else {
                 attackModalEl.textContent = Math.floor(finalAttack);
             }
+            // 使用自定义tooltip
+            this.bindCustomTooltip(attackModalEl, () => this.getStatTooltip('attack'));
         }
 
         const defenseModalEl = document.getElementById('defense-modal');
@@ -2441,12 +2837,15 @@ class EndlessWinterGame {
             } else {
                 defenseModalEl.textContent = Math.floor(finalDefense);
             }
+            // 使用自定义tooltip
+            this.bindCustomTooltip(defenseModalEl, () => this.getStatTooltip('defense'));
         }
 
         const maxHpAttrModal = document.getElementById('max-hp-attr-modal');
         if (maxHpAttrModal) {
-            const maxHp = this.gameState.player.maxHp + this.gameState.player.equipmentEffects.hp + realmBonus.hp;
-            maxHpAttrModal.textContent = Math.floor(maxHp);
+            maxHpAttrModal.textContent = Math.floor(stats.maxHp);
+            // 使用自定义tooltip
+            this.bindCustomTooltip(maxHpAttrModal, () => this.getStatTooltip('maxHp'));
         }
 
         const speedModalEl = document.getElementById('speed-modal');
@@ -2456,6 +2855,8 @@ class EndlessWinterGame {
             } else {
                 speedModalEl.textContent = Math.floor(finalSpeed);
             }
+            // 使用自定义tooltip
+            this.bindCustomTooltip(speedModalEl, () => this.getStatTooltip('speed'));
         }
 
         const luckModalEl = document.getElementById('luck-modal');
@@ -2465,25 +2866,51 @@ class EndlessWinterGame {
             } else {
                 luckModalEl.textContent = Math.floor(finalLuck);
             }
+            // 使用自定义tooltip
+            this.bindCustomTooltip(luckModalEl, () => this.getStatTooltip('luck'));
         }
 
         const criticalRateModal = document.getElementById('critical-rate-modal');
         if (criticalRateModal) {
-            const criticalRate = (this.gameState.player.criticalRate || 5) + (this.gameState.player.equipmentEffects.criticalRate || 0);
-            criticalRateModal.textContent = Math.floor(criticalRate);
+            // 百分比属性：显示时乘100转换为百分比格式
+            criticalRateModal.textContent = Math.floor(stats.criticalRate * 100);
+            // 使用自定义tooltip
+            this.bindCustomTooltip(criticalRateModal, () => this.getStatTooltip('criticalRate'));
         }
 
         // 更新命中和闪避
         const accuracyModal = document.getElementById('accuracy-modal');
         if (accuracyModal) {
-            const accuracy = (this.gameState.player.accuracy || 100) + (this.gameState.player.equipmentEffects.accuracy || 0);
-            accuracyModal.textContent = Math.floor(accuracy);
+            // 百分比属性：显示时乘100转换为百分比格式
+            accuracyModal.textContent = Math.floor(stats.accuracy * 100);
+            // 使用自定义tooltip
+            this.bindCustomTooltip(accuracyModal, () => this.getStatTooltip('accuracy'));
         }
 
         const dodgeModal = document.getElementById('dodge-modal');
         if (dodgeModal) {
-            const dodge = (this.gameState.player.dodge || 5) + (this.gameState.player.equipmentEffects.dodgeRate || 0);
-            dodgeModal.textContent = Math.floor(dodge);
+            // 百分比属性：显示时乘100转换为百分比格式
+            dodgeModal.textContent = Math.floor(stats.dodgeRate * 100);
+            // 使用自定义tooltip
+            this.bindCustomTooltip(dodgeModal, () => this.getStatTooltip('dodgeRate'));
+        }
+
+        // 更新韧性显示
+        const tenacityModal = document.getElementById('tenacity-modal');
+        if (tenacityModal) {
+            tenacityModal.textContent = Math.floor((stats.tenacity || 0) * 100);
+            this.bindCustomTooltip(tenacityModal, () => this.getStatTooltip('tenacity'));
+        }
+
+        // 更新暴击伤害显示
+        const critDamageModal = document.getElementById('crit-damage-modal');
+        if (critDamageModal) {
+            critDamageModal.textContent = stats.critDamage || 0;
+            this.bindCustomTooltip(critDamageModal, () => `
+                <div class="font-bold text-rose-400 mb-1">暴击伤害值</div>
+                <div class="text-light/70">影响高倍率暴击的概率</div>
+                <div class="text-light/60 text-[10px] mt-1">每10点提升1%高倍率概率</div>
+            `);
         }
 
         // 更新人物立绘
@@ -3189,6 +3616,27 @@ class EndlessWinterGame {
             totalEl.textContent = `已解锁 ${totalUnlocked}/${totalAll} (${(totalAll > 0 ? (totalUnlocked / totalAll * 100).toFixed(1) : 0)}%)`;
         }
 
+        // 添加说明面板（只在首次渲染时显示）
+        let helpHtml = `
+            <div class="bg-gradient-to-r from-indigo-900/30 to-purple-900/30 rounded-lg p-3 mb-4 border border-indigo-500/20">
+                <div class="text-xs text-white/70 mb-1">
+                    <i class="fa fa-info-circle text-indigo-400 mr-1"></i>
+                    <strong>图鉴系统</strong>
+                </div>
+                <ul class="text-xs text-white/50 space-y-0.5 ml-4">
+                    <li>• <span class="text-yellow-300">敌人图鉴</span>：收集各地图敌人，全解锁获得经验和资源奖励</li>
+                    <li>• <span class="text-purple-300">装备图鉴</span>：收集各境界品质装备，全解锁获得保底装备箱</li>
+                    <li>• 奖励自动发放到背包，请注意查收</li>
+                </ul>
+            </div>
+        `;
+
+        // 将说明添加到content的上方
+        const helpContainer = document.getElementById('collection-help');
+        if (helpContainer) {
+            helpContainer.innerHTML = helpHtml;
+        }
+
         // Tab内容
         if (tab === 'enemy') {
             this.renderEnemyCollection(content, subtabsContainer, realmIdx);
@@ -3243,8 +3691,8 @@ class EndlessWinterGame {
                 const rewardBadge = rewarded
                     ? '<span class="text-green-400 text-xs">✅奖励已领</span>'
                     : allComplete
-                    ? '<span class="text-yellow-300 text-xs">🎉可领取</span>'
-                    : '';
+                    ? '<span class="text-yellow-300 text-xs cursor-help" title="奖励：经验+2500，灵木+100">🎉可领取</span>'
+                    : '<span class="text-white/30 text-xs" title="全解锁奖励：经验+2500，灵木+100">🎁经验+2500</span>';
 
                 html += `<div class="mb-4">
                     <div class="flex items-center justify-between mb-2 px-2">
@@ -3355,7 +3803,7 @@ class EndlessWinterGame {
                 <span class="${rarityColors[currentRarity.name]?.text || 'text-gray-300'} text-sm font-medium">
                     ${realmConfig[selectedRealmIdx]?.name || ''}境 · ${currentRarity.displayName}品质 (${unlocked}/${total})
                 </span>
-                ${rewarded ? '<span class="text-green-400 text-xs">✅奖励已领</span>' : allComplete ? '<span class="text-yellow-300 text-xs">🎉可领取</span>' : ''}
+                ${rewarded ? '<span class="text-green-400 text-xs">✅奖励已领</span>' : allComplete ? '<span class="text-yellow-300 text-xs cursor-help" title="奖励：保底该品质装备箱×1">🎉可领取</span>' : `<span class="text-white/30 text-xs cursor-help" title="全解锁奖励：保底${currentRarity.displayName}装备箱×1">🎁${currentRarity.displayName}装备</span>`}
             </div>
             <div class="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
                 <div class="h-full ${rarityColors[currentRarity.name]?.bg || 'bg-gray-500'}" style="width: ${progressPercent}%"></div>
@@ -3415,12 +3863,13 @@ class EndlessWinterGame {
                 if (this.collectionSystem) {
                     this.collectionSystem.recordEquipment(result.equipment);
                 }
-                const equipped = this.checkAndEquipBetterGear(result.equipment);
+                // 检查并提示用户是否装备更好的装备（非战斗场景）
+                const equipped = this.checkAndEquipBetterGearWithPrompt(result.equipment);
                 if (!equipped) {
                     this.gameState.player.inventory.items.push(result.equipment);
                     this.addBattleLog(`获得${result.equipment.rarityDisplayName} ${result.equipment.name}，已放入背包！`);
                 } else {
-                    this.addBattleLog(`获得${result.equipment.rarityDisplayName} ${result.equipment.name}，已自动装备！`);
+                    this.addBattleLog(`获得${result.equipment.rarityDisplayName} ${result.equipment.name}！`);
                 }
             }
             // 更新UI
@@ -3555,10 +4004,8 @@ class EndlessWinterGame {
                 if (this.gameState.settings.autoBattleSettings.enabled && this.gameState.player.energy >= 10) {
                     // 检查当前敌人是否符合目标颜色
                     const enemyPower = this.gameState.enemy.attack * 2 + this.gameState.enemy.defense * 1.5 + this.gameState.enemy.maxHp * 0.1;
-                    const playerAttack = this.gameState.player.attack + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.attack : 0);
-                    const playerDefense = this.gameState.player.defense + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.defense : 0);
-                    const playerHp = this.gameState.player.maxHp + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.hp : 0);
-                    const playerPower = playerAttack * 2 + playerDefense * 1.5 + playerHp * 0.1;
+                    const playerStats = this.getActualStats();
+                    const playerPower = playerStats.attack * 2 + playerStats.defense * 1.5 + playerStats.maxHp * 0.1;
                     
                     let enemyColor = 'red'; // 默认红色
                     if (this.gameState.enemy.isBoss) {
@@ -3648,10 +4095,8 @@ class EndlessWinterGame {
                 if (this.gameState.settings.autoBattleSettings.enabled && this.gameState.player.energy >= 10) {
                     // 检查当前敌人是否符合目标颜色
                     const enemyPower = this.gameState.enemy.attack * 2 + this.gameState.enemy.defense * 1.5 + this.gameState.enemy.maxHp * 0.1;
-                    const playerAttack = this.gameState.player.attack + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.attack : 0);
-                    const playerDefense = this.gameState.player.defense + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.defense : 0);
-                    const playerHp = this.gameState.player.maxHp + (this.gameState.player.equipmentEffects ? this.gameState.player.equipmentEffects.hp : 0);
-                    const playerPower = playerAttack * 2 + playerDefense * 1.5 + playerHp * 0.1;
+                    const playerStats = this.getActualStats();
+                    const playerPower = playerStats.attack * 2 + playerStats.defense * 1.5 + playerStats.maxHp * 0.1;
                     
                     let enemyColor = 'red'; // 默认红色
                     if (this.gameState.enemy.isBoss) {
@@ -4129,6 +4574,15 @@ class EndlessWinterGame {
                             };
                         }
 
+                        // 背包分页状态初始化（兼容旧存档）
+                        if (!this.inventoryPagination) {
+                            this.inventoryPagination = {
+                                currentPage: 1,
+                                totalPages: 1,
+                                itemsPerPage: SIZES.INVENTORY_PAGE_SIZE || 50
+                            };
+                        }
+
                         // 检查临时状态是否过期
                         this.checkTemporaryStats();
                     } else {
@@ -4166,7 +4620,7 @@ class EndlessWinterGame {
             if (this.gameState.user.loggedIn) {
                 const currentUserId = this.gameState.user.userId;
                 // 只使用服务器端保存
-                const token = localStorage.getItem('endlessWinterToken');
+                const token = localStorage.getItem('cultivationToken');
 
                 const response = await fetch('http://localhost:3002/api/save', {
                     method: 'POST',
@@ -4194,7 +4648,7 @@ class EndlessWinterGame {
     // 从服务器加载
     async loadFromServer() {
         try {
-            const token = localStorage.getItem('endlessWinterToken');
+            const token = localStorage.getItem('cultivationToken');
             
             const response = await fetch('http://localhost:3002/api/load', {
                 headers: {
@@ -4295,8 +4749,15 @@ class EndlessWinterGame {
             rewardedCategories: []
         };
 
+        // 13. 初始化背包分页状态
+        this.inventoryPagination = {
+            currentPage: 1,
+            totalPages: 1,
+            itemsPerPage: SIZES.INVENTORY_PAGE_SIZE || 50
+        };
+
         console.log('新玩家初始化完成');
-        this.addBattleLog('欢迎来到无尽寒冬的世界！');
+        this.addBattleLog('欢迎来到无尽修仙的世界！踏入修仙之路，成就无上仙道！');
     }
 
     // 显示合成菜单
@@ -4313,23 +4774,45 @@ class EndlessWinterGame {
             slot.innerHTML = '<div class="text-xs text-light/60">拖放装备</div>';
             slot.dataset.itemId = '';
         });
-        
+
         // 清空结果槽位
         const resultSlot = document.getElementById('craft-result-slot');
         resultSlot.innerHTML = '<div class="text-xs text-light/60">合成结果</div>';
-        
+
         // 重置成功率
         document.getElementById('craft-success-rate').textContent = '0%';
-        
+
+        // 更新合成石数量显示
+        this.updateFusionStoneCount();
+
+        // 重置合成石复选框
+        const useFusionStoneCheckbox = document.getElementById('use-fusion-stone');
+        if (useFusionStoneCheckbox) {
+            useFusionStoneCheckbox.checked = false;
+            // 绑定复选框变化事件
+            useFusionStoneCheckbox.onchange = () => {
+                this.updateCraftSuccessRate();
+            };
+        }
+
         // 禁用合成按钮
         const confirmCraftBtn = document.getElementById('confirm-craft');
         if (confirmCraftBtn) {
             confirmCraftBtn.disabled = true;
             confirmCraftBtn.classList.add('opacity-50', 'cursor-not-allowed');
         }
-        
+
         // 绑定拖放事件
         this.bindDragAndDrop();
+    }
+
+    // 更新合成石数量显示
+    updateFusionStoneCount() {
+        const fusionStoneCount = this.gameState.player.inventory.consumables?.fusion_stone || 0;
+        const countElement = document.getElementById('fusion-stone-count');
+        if (countElement) {
+            countElement.textContent = `拥有: ${fusionStoneCount}`;
+        }
     }
     
     // 绑定拖放事件
@@ -4469,12 +4952,22 @@ class EndlessWinterGame {
                     successRate = 60;
                     break;
                 case 'rainbow':
-                    successRate = 50;
+                    successRate = 30;  // 彩色合成成功率降低（原50%）
                     break;
             }
 
-            rateElement.textContent = `${successRate}%`;
-            rateElement.title = '';
+            // 检查是否使用合成石
+            const useFusionStoneCheckbox = document.getElementById('use-fusion-stone');
+            const fusionStones = this.gameState.player.inventory.consumables?.fusion_stone || 0;
+            let bonusRate = 0;
+
+            if (useFusionStoneCheckbox && useFusionStoneCheckbox.checked && fusionStones > 0) {
+                bonusRate = 20;  // 合成石提供20%加成
+            }
+
+            const totalRate = Math.min(successRate + bonusRate, 100);  // 最高100%
+            rateElement.textContent = bonusRate > 0 ? `${totalRate}% (+${bonusRate}%)` : `${successRate}%`;
+            rateElement.title = bonusRate > 0 ? `基础${successRate}% + 合成石${bonusRate}%` : '';
             // 启用合成按钮
             if (confirmCraftBtn) {
                 confirmCraftBtn.disabled = false;
@@ -4496,7 +4989,18 @@ class EndlessWinterGame {
         const slots = document.querySelectorAll('[craft-data-slot]');
         const itemIds = [];
         const items = [];
-        
+
+        // 检查是否使用合成石
+        const useFusionStoneCheckbox = document.getElementById('use-fusion-stone');
+        const fusionStones = this.gameState.player.inventory.consumables?.fusion_stone || 0;
+        let useFusionStone = false;
+        let bonusRate = 0;
+
+        if (useFusionStoneCheckbox && useFusionStoneCheckbox.checked && fusionStones > 0) {
+            useFusionStone = true;
+            bonusRate = 20;
+        }
+
         // 收集所有放入槽位的物品
         slots.forEach(slot => {
             const itemId = slot.dataset.itemId;
@@ -4508,7 +5012,7 @@ class EndlessWinterGame {
                 }
             }
         });
-        
+
         // 检查是否有3个物品
         if (items.length !== 3) {
             this.addBattleLog('需要3个装备才能合成！');
@@ -4546,7 +5050,13 @@ class EndlessWinterGame {
             this.addBattleLog(`合成失败！${mismatchReason}`);
             return;
         }
-        
+
+        // ✅ 检查是否为彩色装备（最高品质，无法继续合成）
+        if (firstRarity === 'rainbow') {
+            this.addBattleLog('彩色装备已经是最高品质，无法继续合成！');
+            return;
+        }
+
         // 计算成功率
         let successRate = 70;
         switch (firstRarity) {
@@ -4563,24 +5073,33 @@ class EndlessWinterGame {
                 successRate = 60;
                 break;
             case 'rainbow':
-                successRate = 50;
+                successRate = 30;  // 彩色合成成功率30%
                 break;
         }
-        
+
+        // 添加合成石加成
+        const totalRate = Math.min(successRate + bonusRate, 100);
+
         // 从背包中移除物品（从后往前移除，避免索引混乱）
         itemIds.sort((a, b) => b - a);
         itemIds.forEach(id => {
             this.gameState.player.inventory.splice(id, 1);
         });
-        
+
+        // 消耗合成石
+        if (useFusionStone) {
+            this.gameState.player.inventory.consumables.fusion_stone -= 1;
+            this.addBattleLog('使用了合成石，成功率+20%！');
+        }
+
         // 生成新装备
         const newRarity = this.getNextRarity(firstRarity);
         const newEquipment = this.equipmentSystem.generateEquipment(firstType, firstLevel, newRarity);
-        
+
         // 合成结果
         const resultSlot = document.getElementById('craft-result-slot');
-        
-        if (Math.random() * 100 < successRate) {
+
+        if (Math.random() * 100 < totalRate) {
             // 合成成功
             this.gameState.player.inventory.push(newEquipment);
             this.addBattleLog(`合成成功！获得了${newEquipment.rarityDisplayName} ${newEquipment.name}！`);
@@ -4666,6 +5185,12 @@ class EndlessWinterGame {
                 const type = item.equipmentType || item.type;
                 const level = item.level || 1;
                 const rarity = item.rarity || 'white';
+
+                // ✅ 跳过彩色装备（已经是最高品质，无法继续升级）
+                if (rarity === 'rainbow') {
+                    return;
+                }
+
                 const key = `${type}_${level}_${rarity}`;
 
                 if (!equipmentGroups[key]) {
@@ -4699,7 +5224,7 @@ class EndlessWinterGame {
         const selectedIndices = this.getCraftableEquipmentIndices(inventory);
 
         if (!selectedIndices) {
-            this.addBattleLog('没有找到符合条件的3件装备（相同类型、等级、品质且未穿戴）！');
+            this.addBattleLog('没有找到符合条件的3件装备（相同类型、等级、品质且未穿戴，彩色装备除外）！');
             return;
         }
 
@@ -4813,9 +5338,9 @@ class EndlessWinterGame {
             }
             
             if (craftedCount > 0) {
-                this.addBattleLog(`一键合成完成！共合成了${craftedCount}次装备。`);
+                this.addBattleLog(`一键合成完成！共合成了${craftedCount}次装备。（彩色装备已跳过）`);
             } else {
-                this.addBattleLog('没有足够的装备进行合成！');
+                this.addBattleLog('没有足够的装备进行合成！（彩色装备无法合成）');
             }
         } finally {
             // 恢复一键合成按钮
@@ -4897,58 +5422,77 @@ class EndlessWinterGame {
     }
     
     // 合成装备
-    craftEquipment(craftable) {
+    craftEquipment(craftable, useFusionStone = false) {
         // 从背包中取出3个装备
         const inventory = this.gameState.player.inventory;
         const itemsToRemove = [];
         const originalItems = [];
-        
+
+        // 检查是否使用合成石
+        let bonusRate = 0;
+        let fusionStoneUsed = false;
+        if (useFusionStone) {
+            const fusionStones = this.gameState.player.inventory.consumables?.fusion_stone || 0;
+            if (fusionStones > 0) {
+                bonusRate = 0.2; // 合成石提供20%成功率加成
+                fusionStoneUsed = true;
+            }
+        }
+
         for (let i = 0; i < inventory.length && itemsToRemove.length < 3; i++) {
             const item = inventory[i];
-            if ((item.type === 'equipment' || item.equipmentType) && 
-                (item.equipmentType || item.type) === craftable.type && 
+            if ((item.type === 'equipment' || item.equipmentType) &&
+                (item.equipmentType || item.type) === craftable.type &&
                 (item.level || 1) === craftable.level &&
                 (item.rarity || 'white') === craftable.rarity) {
                 itemsToRemove.push(i);
                 originalItems.push(item);
             }
         }
-        
+
         // 移除选中的装备（从后往前移除，避免索引混乱）
         itemsToRemove.reverse().forEach(index => {
             inventory.splice(index, 1);
         });
-        
+
         // 确定合成后的品质（根据原始装备品质升级）
         const baseRarity = craftable.rarity || 'white';
         const newRarity = this.getNextRarity(baseRarity);
-        
+
         // 检查合成是否成功
-        const success = this.checkCraftSuccess(baseRarity);
-        
+        const success = this.checkCraftSuccess(baseRarity, bonusRate);
+
+        // 消耗合成石（在合成前消耗，无论成功失败）
+        if (fusionStoneUsed) {
+            this.gameState.player.inventory.consumables.fusion_stone -= 1;
+        }
+
         if (success) {
             // 合成成功：生成新装备（同等级，更高品质）
             const newEquipment = this.generateCraftedEquipment(craftable.type, craftable.level, newRarity);
-            
-            // 检查并自动穿戴更好的装备
-            const equipped = this.checkAndEquipBetterGear(newEquipment);
+
+            // 检查并提示用户是否装备更好的装备（非战斗场景）
+            const equipped = this.checkAndEquipBetterGearWithPrompt(newEquipment);
             if (!equipped) {
                 // 将新装备添加到背包
                 inventory.push(newEquipment);
                 this.addBattleLog(`成功合成${craftable.typeName}！`);
-                this.addBattleLog(`消耗了3个${craftable.level}级${this.getRarityDisplayName(baseRarity)}${craftable.typeName}，获得了1个${craftable.level}级${this.getRarityDisplayName(newRarity)}${newEquipment.name}，已放入背包！`);
+                const stoneMsg = fusionStoneUsed ? '（使用了合成石）' : '';
+                this.addBattleLog(`消耗了3个${craftable.level}级${this.getRarityDisplayName(baseRarity)}${craftable.typeName}，获得了1个${craftable.level}级${this.getRarityDisplayName(newRarity)}${newEquipment.name}，已放入背包！${stoneMsg}`);
             } else {
                 this.addBattleLog(`成功合成${craftable.typeName}！`);
-                this.addBattleLog(`消耗了3个${craftable.level}级${this.getRarityDisplayName(baseRarity)}${craftable.typeName}，获得了1个${craftable.level}级${this.getRarityDisplayName(newRarity)}${newEquipment.name}，属性更好，已自动装备！`);
+                const stoneMsg = fusionStoneUsed ? '（使用了合成石）' : '';
+                this.addBattleLog(`消耗了3个${craftable.level}级${this.getRarityDisplayName(baseRarity)}${craftable.typeName}，获得了1个${craftable.level}级${this.getRarityDisplayName(newRarity)}${newEquipment.name}！${stoneMsg}`);
             }
         } else {
             // 合成失败：返还一个原品质的装备
             const failedEquipment = this.generateCraftedEquipment(craftable.type, craftable.level, baseRarity);
             inventory.push(failedEquipment);
             this.addBattleLog(`合成${craftable.typeName}失败！`);
-            this.addBattleLog(`消耗了3个${craftable.level}级${this.getRarityDisplayName(baseRarity)}${craftable.typeName}，只获得了1个${craftable.level}级${this.getRarityDisplayName(baseRarity)}${failedEquipment.name}！`);
+            const stoneMsg = fusionStoneUsed ? '（使用了合成石）' : '';
+            this.addBattleLog(`消耗了3个${craftable.level}级${this.getRarityDisplayName(baseRarity)}${craftable.typeName}，只获得了1个${craftable.level}级${this.getRarityDisplayName(baseRarity)}${failedEquipment.name}！${stoneMsg}`);
         }
-        
+
     }
     
     // 自动合成装备
@@ -5046,17 +5590,17 @@ class EndlessWinterGame {
     }
     
     // 检查合成是否成功
-    checkCraftSuccess(currentRarity) {
+    checkCraftSuccess(currentRarity, bonusRate = 0) {
         const successRates = {
             white: 1.0,    // 白色到蓝色：100%成功
             blue: 0.8,     // 蓝色到紫色：80%成功
             purple: 0.6,   // 紫色到黄金：60%成功
-            gold: 0.4,     // 黄金到彩色：40%成功
+            gold: 0.3,     // 黄金到彩色：30%成功
             rainbow: 1.0   // 彩色已经是最高品质，返回当前品质
         };
 
         const successRate = successRates[currentRarity] || 1.0;
-        return Math.random() < successRate;
+        return Math.random() < (successRate + bonusRate);
     }
     
     // 登出
@@ -5069,7 +5613,7 @@ class EndlessWinterGame {
             }
             
             // 调用服务器端登出API
-            const token = localStorage.getItem('endlessWinterToken');
+            const token = localStorage.getItem('cultivationToken');
             if (token) {
                 await fetch('http://localhost:3002/api/logout', {
                     method: 'POST',
@@ -5080,8 +5624,8 @@ class EndlessWinterGame {
             }
             
             // 清除localStorage中的token和用户信息
-            localStorage.removeItem('endlessWinterToken');
-            localStorage.removeItem('endlessWinterUser');
+            localStorage.removeItem('cultivationToken');
+            localStorage.removeItem('cultivationUser');
             
             // 立即重定向到登录页面，添加logout参数以触发强制清除
             // 使用 replace 方法避免浏览器历史记录问题
@@ -5092,8 +5636,8 @@ class EndlessWinterGame {
         } catch (error) {
             console.error('登出错误:', error);
             // 即使出错，也要清除本地存储并重定向到登录页面
-            localStorage.removeItem('endlessWinterToken');
-            localStorage.removeItem('endlessWinterUser');
+            localStorage.removeItem('cultivationToken');
+            localStorage.removeItem('cultivationUser');
             window.location.replace('login.html?logout=true');
         }
     }
@@ -5158,7 +5702,7 @@ class EndlessWinterGame {
                     return;
                 }
 
-                const token = localStorage.getItem('endlessWinterToken');
+                const token = localStorage.getItem('cultivationToken');
 
                 try {
                     const response = await fetch('http://localhost:3002/api/delete-account', {
@@ -5176,8 +5720,8 @@ class EndlessWinterGame {
                     if (result.success) {
                         self.addBattleLog('账号注销成功！');
                         // 清除本地存储的token和用户信息
-                        localStorage.removeItem('endlessWinterToken');
-                        localStorage.removeItem('endlessWinterUser');
+                        localStorage.removeItem('cultivationToken');
+                        localStorage.removeItem('cultivationUser');
                         // 重定向到登录页面
                         setTimeout(() => {
                             window.location.href = 'login.html';
@@ -5423,6 +5967,123 @@ class EndlessWinterGame {
     }
 
     /**
+     * 检查并提示用户是否装备更好的装备（非战斗场景使用）
+     * @param {Object} item - 新装备
+     * @returns {boolean} - true表示处理完成（装备或显示提示），false表示应放入背包
+     */
+    checkAndEquipBetterGearWithPrompt(item) {
+        const currentItem = this.gameState.player.equipment[item.type];
+
+        // 没有当前装备，直接穿上
+        if (!currentItem) {
+            this.showEquipReplacePrompt(item, null);
+            return true;
+        }
+
+        // 比较总战力（含精炼）
+        const newItemPower = this.calculateEquipmentCombatPower(item);
+        const currentItemPower = this.calculateEquipmentCombatPower(currentItem);
+
+        if (newItemPower > currentItemPower) {
+            // 新装备战力更高，显示替换提示
+            this.showEquipReplacePrompt(item, currentItem);
+            return true;
+        }
+
+        // 总战力不如当前，但基础战力更高 → 提示潜力装备
+        const newItemBase = this.calculateEquipmentCombatPower({ ...item, refineLevel: 0 });
+        const currentItemBase = this.calculateEquipmentCombatPower({ ...currentItem, refineLevel: 0 });
+
+        if (newItemBase > currentItemBase) {
+            this.showEquipUpgradePrompt(item, currentItem);
+            return true; // 不放入背包，等用户确认
+        }
+
+        return false;
+    }
+
+    /**
+     * 显示装备替换确认弹窗（非战斗场景，新装备更强时）
+     */
+    showEquipReplacePrompt(newItem, currentItem) {
+        const newItemPower = this.calculateEquipmentCombatPower(newItem);
+        const currentItemPower = currentItem ? this.calculateEquipmentCombatPower(currentItem) : 0;
+
+        const newStats = this.equipmentSystem.getStatsDescription(newItem.stats);
+        const curStats = currentItem ? this.equipmentSystem.getStatsDescription(currentItem.stats) : '无';
+        const newColor = this.equipmentSystem.getEquipmentColorClass(newItem);
+        const curColor = currentItem ? this.equipmentSystem.getEquipmentColorClass(currentItem) : '';
+        const slotName = this.equipmentSystem.getSlotDisplayName(newItem.type);
+
+        const overlay = document.createElement('div');
+        overlay.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-[200]';
+        overlay.innerHTML = `
+            <div class="bg-dark-card border border-gold/40 rounded-xl p-5 max-w-sm w-full mx-4 shadow-2xl">
+                <h3 class="text-gold font-bold text-base mb-3 text-center">
+                    <i class="fa fa-star mr-1"></i> 获得更好的${slotName}
+                </h3>
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    ${currentItem ? `
+                    <div class="bg-black/40 rounded-lg p-3 border border-red-500/30">
+                        <div class="text-xs text-red-400 mb-1">当前装备</div>
+                        <div class="text-sm ${curColor} font-bold mb-1">${currentItem.name}</div>
+                        <div class="text-xs text-white/70">精炼: +${currentItem.refineLevel || 0}</div>
+                        <div class="text-xs text-white/70">${curStats}</div>
+                        <div class="text-xs text-gold mt-1">⚔ 战力: ${currentItemPower}</div>
+                    </div>
+                    ` : `
+                    <div class="bg-black/40 rounded-lg p-3 border border-gray-500/30">
+                        <div class="text-xs text-gray-400 mb-1">当前装备</div>
+                        <div class="text-sm text-gray-500 font-bold mb-1">无装备</div>
+                    </div>
+                    `}
+                    <div class="bg-black/40 rounded-lg p-3 border border-green-500/30">
+                        <div class="text-xs text-green-400 mb-1">新装备</div>
+                        <div class="text-sm ${newColor} font-bold mb-1">${newItem.name}</div>
+                        <div class="text-xs text-white/70">精炼: +${newItem.refineLevel || 0}</div>
+                        <div class="text-xs text-white/70">${newStats}</div>
+                        <div class="text-xs text-gold mt-1">⚔ 战力: ${newItemPower}</div>
+                    </div>
+                </div>
+                <p class="text-xs text-green-400 text-center mb-4">
+                    <i class="fa fa-check-circle mr-1"></i>
+                    新装备战力更高，推荐替换${currentItem ? '' : '装备'}
+                </p>
+                <div class="flex gap-3">
+                    <button id="equip-replace-cancel" class="flex-1 px-3 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm transition-colors">
+                        放入背包
+                    </button>
+                    <button id="equip-replace-confirm" class="flex-1 px-3 py-2 rounded-lg bg-gradient-to-r from-gold-dark to-gold hover:opacity-80 text-black text-sm font-bold transition-colors">
+                        ${currentItem ? '替换装备' : '装备'}
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        overlay.querySelector('#equip-replace-cancel').addEventListener('click', () => {
+            this.gameState.player.inventory.push(newItem);
+            this.addBattleLog(`${newItem.name} 已放入背包`);
+            this.updateUI();
+            overlay.remove();
+        });
+
+        overlay.querySelector('#equip-replace-confirm').addEventListener('click', () => {
+            // 旧装备放入背包
+            if (currentItem) {
+                this.gameState.player.inventory.push(currentItem);
+            }
+            // 卸下旧装备
+            this.gameState.player.equipment[newItem.type] = null;
+            // 穿上新装备
+            this.equipItem(newItem);
+            this.addBattleLog(`${newItem.name}${currentItem ? '替换了 ' + currentItem.name : '已装备'}！`);
+            overlay.remove();
+        });
+    }
+
+    /**
      * 显示潜力装备替换确认弹窗
      */
     showEquipUpgradePrompt(newItem, currentItem) {
@@ -5538,13 +6199,13 @@ class EndlessWinterGame {
 
             // 显示获得装备的弹框
             this.showEquipmentObtainModal(equipment, item.name, (confirmed) => {
-                // 检查并自动穿戴更好的装备
-                const equipped = this.checkAndEquipBetterGear(equipment);
+                // 检查并提示用户是否装备更好的装备（非战斗场景）
+                const equipped = this.checkAndEquipBetterGearWithPrompt(equipment);
                 if (!equipped) {
                     this.gameState.player.inventory.push(equipment);
                     this.addBattleLog(`${equipment.name} 已放入背包！`);
                 } else {
-                    this.addBattleLog(`${equipment.name} 属性更好，已自动装备！`);
+                    this.addBattleLog(`${equipment.name}！`);
                 }
 
                 // 更新UI
@@ -5571,13 +6232,13 @@ class EndlessWinterGame {
             rarityMultiplier: 1
             };
 
-            // 检查并自动穿戴更好的装备
-            const equipped = this.checkAndEquipBetterGear(equipment);
+            // 检查并提示用户是否装备更好的装备（非战斗场景）
+            const equipped = this.checkAndEquipBetterGearWithPrompt(equipment);
             if (!equipped) {
                 this.gameState.player.inventory.push(equipment);
                 this.addBattleLog(`购买了 ${item.name}，已放入背包！`);
             } else {
-                this.addBattleLog(`购买了 ${item.name}，属性更好，已自动装备！`);
+                this.addBattleLog(`购买了 ${item.name}！`);
             }
         }
         
@@ -5928,43 +6589,116 @@ class EndlessWinterGame {
     // 显示背包
     showInventory() {
         try {
+            // ✅ 清理所有旧的tooltip（防止残留）
+            document.querySelectorAll('#item-tooltip').forEach(tooltip => tooltip.remove());
+
             // 确保背包存在
             if (!this.gameState.player.inventory) {
                 this.gameState.player.inventory = [];
             }
-            
+
+            // 重置分页到第1页
+            this.inventoryPagination.currentPage = 1;
+
             const inventory = this.gameState.player.inventory;
             const inventoryModal = document.getElementById('inventory-modal');
             const inventoryEquipment = document.getElementById('inventory-equipment');
             const inventoryConsumables = document.getElementById('inventory-consumables');
-            
+
+            // ✅ 显示背包容量
+            this.updateInventoryCapacity();
+
             // 清空物品列表
             inventoryEquipment.innerHTML = '';
             inventoryConsumables.innerHTML = '';
-            
+
             if (inventory.length === 0) {
                 // 显示空背包消息
                 const emptyMessage = document.createElement('div');
                 emptyMessage.className = 'col-span-full text-center py-16 text-light/70';
                 emptyMessage.textContent = '背包是空的！';
                 inventoryEquipment.appendChild(emptyMessage);
+
+                // 隐藏分页控件
+                const paginationDiv = document.getElementById('inventory-pagination');
+                if (paginationDiv) paginationDiv.classList.add('hidden');
             } else {
                 // 分类物品
                 const equipmentItems = inventory.filter(item => item.type !== 'consumable');
                 const consumableItems = inventory.filter(item => item.type === 'consumable');
-                
-                // 创建装备物品格子
+
+                // ✅ 创建装备物品格子（按类型分组 + 分页）
                 if (equipmentItems.length === 0) {
                     const emptyMessage = document.createElement('div');
                     emptyMessage.className = 'col-span-full text-center py-16 text-light/70';
                     emptyMessage.textContent = '没有装备！';
                     inventoryEquipment.appendChild(emptyMessage);
+
+                    // 隐藏分页控件
+                    const paginationDiv = document.getElementById('inventory-pagination');
+                    if (paginationDiv) paginationDiv.classList.add('hidden');
                 } else {
-                    equipmentItems.forEach((item, index) => {
-                        // 找到原始索引
-                        const originalIndex = inventory.indexOf(item);
-                        this.createItemElement(item, originalIndex, inventoryEquipment);
+                    // 按装备类型分组
+                    const groupedEquipment = {};
+                    equipmentItems.forEach(item => {
+                        const equipmentType = item.equipmentType || item.type;
+                        if (!groupedEquipment[equipmentType]) {
+                            groupedEquipment[equipmentType] = [];
+                        }
+                        groupedEquipment[equipmentType].push(item);
                     });
+
+                    // 获取槽位类型（按order排序）
+                    const slotTypes = this.equipmentSystem.getAllSlotTypes();
+
+                    // ✅ 计算分页信息（按类型分页，每页显示一定数量的类型）
+                    const typesWithItems = slotTypes.filter(slotType => {
+                        const items = groupedEquipment[slotType];
+                        return items && items.length > 0;
+                    });
+
+                    // 添加未分类装备类型
+                    const unclassifiedTypes = Object.keys(groupedEquipment).filter(type => !slotTypes.includes(type));
+                    typesWithItems.push(...unclassifiedTypes);
+
+                    const totalTypes = typesWithItems.length;
+                    const typesPerPage = 4; // 每页显示4种装备类型
+                    this.inventoryPagination.totalPages = Math.ceil(totalTypes / typesPerPage);
+
+                    // 确保当前页在有效范围内
+                    if (this.inventoryPagination.currentPage > this.inventoryPagination.totalPages) {
+                        this.inventoryPagination.currentPage = 1;
+                    }
+
+                    const startIndex = (this.inventoryPagination.currentPage - 1) * typesPerPage;
+                    const endIndex = Math.min(startIndex + typesPerPage, totalTypes);
+                    const currentTypes = typesWithItems.slice(startIndex, endIndex);
+
+                    // 显示当前页的装备类型
+                    currentTypes.forEach(slotType => {
+                        const items = groupedEquipment[slotType];
+                        if (!items || items.length === 0) return;
+
+                        // 获取槽位配置
+                        const slotConfig = this.equipmentSystem.getSlotConfig(slotType);
+                        const typeName = slotConfig.name || slotType;
+                        const typeIcon = slotConfig.icon || 'fa-box';
+
+                        // 创建类型标题
+                        const typeHeader = document.createElement('div');
+                        typeHeader.className = 'col-span-full mt-4 mb-2 flex items-center gap-2 text-sm font-medium text-light/70';
+                        typeHeader.innerHTML = `<i class="fa ${typeIcon} text-primary"></i> ${typeName} (${items.length})`;
+                        inventoryEquipment.appendChild(typeHeader);
+
+                        // 创建该类型的装备格子
+                        items.forEach(item => {
+                            const originalIndex = inventory.indexOf(item);
+                            this.createItemElement(item, originalIndex, inventoryEquipment);
+                        });
+                    });
+
+                    // ✅ 更新分页控件
+                    this.updateInventoryPagination();
                 }
                 
                 // 创建消耗品物品格子
@@ -5989,22 +6723,30 @@ class EndlessWinterGame {
                 document.getElementById('tab-equipment').classList.remove('text-light/60');
                 document.getElementById('tab-consumables').classList.add('text-light/60');
                 document.getElementById('tab-consumables').classList.remove('text-accent', 'border-accent');
-                
+
                 // 显示装备区域，隐藏消耗品区域
                 document.getElementById('inventory-equipment').classList.remove('hidden');
                 document.getElementById('inventory-consumables').classList.add('hidden');
+
+                // ✅ 显示分页控件（装备有分页）
+                const paginationDiv = document.getElementById('inventory-pagination');
+                if (paginationDiv) paginationDiv.classList.remove('hidden');
             };
-            
+
             document.getElementById('tab-consumables').onclick = () => {
                 // 切换到消耗品Tab
                 document.getElementById('tab-consumables').classList.add('text-accent', 'border-accent');
                 document.getElementById('tab-consumables').classList.remove('text-light/60');
                 document.getElementById('tab-equipment').classList.add('text-light/60');
                 document.getElementById('tab-equipment').classList.remove('text-accent', 'border-accent');
-                
+
                 // 显示消耗品区域，隐藏装备区域
                 document.getElementById('inventory-consumables').classList.remove('hidden');
                 document.getElementById('inventory-equipment').classList.add('hidden');
+
+                // ✅ 隐藏分页控件（消耗品无分页）
+                const paginationDiv = document.getElementById('inventory-pagination');
+                if (paginationDiv) paginationDiv.classList.add('hidden');
             };
             
             // 显示模态框
@@ -6035,12 +6777,25 @@ class EndlessWinterGame {
             
             // 绑定关闭按钮事件
             document.getElementById('close-inventory').addEventListener('click', () => {
+                // ✅ 清理所有tooltip
+                document.querySelectorAll('#item-tooltip').forEach(tooltip => tooltip.remove());
                 inventoryModal.classList.add('hidden');
             });
-            
+
+            // ✅ 绑定分页按钮事件
+            document.getElementById('inventory-prev-page')?.addEventListener('click', () => {
+                this.inventoryPrevPage();
+            });
+
+            document.getElementById('inventory-next-page')?.addEventListener('click', () => {
+                this.inventoryNextPage();
+            });
+
             // 点击模态框外部关闭
             inventoryModal.addEventListener('click', (e) => {
                 if (e.target === inventoryModal) {
+                    // ✅ 清理所有tooltip
+                    document.querySelectorAll('#item-tooltip').forEach(tooltip => tooltip.remove());
                     inventoryModal.classList.add('hidden');
                 }
             });
@@ -6090,6 +6845,9 @@ class EndlessWinterGame {
 
         // 绑定鼠标悬停事件
         itemElement.addEventListener('mouseenter', (e) => {
+            // ✅ 清理旧的tooltip（防止多个tooltip同时存在）
+            document.querySelectorAll('#item-tooltip').forEach(tooltip => tooltip.remove());
+
             // 创建提示框
             const tooltip = document.createElement('div');
             tooltip.className = 'absolute z-50 bg-dark/90 border border-accent/50 rounded p-2 text-xs text-white shadow-lg';
@@ -6315,12 +7073,132 @@ class EndlessWinterGame {
             });
         });
     }
+
+    /**
+     * 检查背包是否已满
+     * @returns {boolean} - true表示背包已满
+     */
+    isInventoryFull() {
+        if (!this.gameState.player.inventory) {
+            this.gameState.player.inventory = [];
+        }
+        const maxSize = SIZES.MAX_INVENTORY_SIZE || 50;
+        return this.gameState.player.inventory.length >= maxSize;
+    }
+
+    /**
+     * 统一添加物品到背包（带容量检查）
+     * @param {Object} item - 要添加的物品
+     * @returns {boolean} - true表示添加成功，false表示背包已满
+     */
+    addToInventory(item) {
+        if (!this.gameState.player.inventory) {
+            this.gameState.player.inventory = [];
+        }
+
+        // 检查背包是否已满
+        if (this.isInventoryFull()) {
+            this.addBattleLog('⚠️ 背包已满！无法添加更多物品！');
+            return false;
+        }
+
+        // 添加物品
+        this.gameState.player.inventory.push(item);
+        return true;
+    }
+
+    /**
+     * 获取背包容量信息
+     * @returns {Object} - {current: 当前数量, max: 最大容量, percent: 使用百分比}
+     */
+    getInventoryCapacity() {
+        if (!this.gameState.player.inventory) {
+            this.gameState.player.inventory = [];
+        }
+        const current = this.gameState.player.inventory.length;
+        const max = SIZES.MAX_INVENTORY_SIZE || 50;
+        const percent = Math.floor((current / max) * 100);
+        return { current, max, percent };
+    }
+
+    /**
+     * 更新背包容量显示
+     */
+    updateInventoryCapacity() {
+        const capacity = this.getInventoryCapacity();
+        const capacityElement = document.getElementById('inventory-capacity');
+
+        if (capacityElement) {
+            // 根据容量使用情况显示不同颜色
+            let colorClass = 'text-green-400';
+            if (capacity.percent >= 90) {
+                colorClass = 'text-red-400';
+            } else if (capacity.percent >= 70) {
+                colorClass = 'text-yellow-400';
+            }
+
+            capacityElement.innerHTML = `
+                <span class="${colorClass}">${capacity.current}</span>
+                <span class="text-light/50">/</span>
+                <span class="text-light/70">${capacity.max}</span>
+            `;
+        }
+    }
+
+    /**
+     * 更新背包分页控件
+     */
+    updateInventoryPagination() {
+        const paginationDiv = document.getElementById('inventory-pagination');
+        const pageInfo = document.getElementById('inventory-page-info');
+        const prevBtn = document.getElementById('inventory-prev-page');
+        const nextBtn = document.getElementById('inventory-next-page');
+
+        if (!paginationDiv) return;
+
+        // 显示分页控件
+        paginationDiv.classList.remove('hidden');
+
+        // 更新页码信息
+        if (pageInfo) {
+            pageInfo.textContent = `第 ${this.inventoryPagination.currentPage} 页 / 共 ${this.inventoryPagination.totalPages} 页`;
+        }
+
+        // 更新按钮状态
+        if (prevBtn) {
+            prevBtn.disabled = this.inventoryPagination.currentPage <= 1;
+        }
+
+        if (nextBtn) {
+            nextBtn.disabled = this.inventoryPagination.currentPage >= this.inventoryPagination.totalPages;
+        }
+    }
+
+    /**
+     * 背包上一页
+     */
+    inventoryPrevPage() {
+        if (this.inventoryPagination.currentPage > 1) {
+            this.inventoryPagination.currentPage--;
+            this.showInventory();
+        }
+    }
+
+    /**
+     * 背包下一页
+     */
+    inventoryNextPage() {
+        if (this.inventoryPagination.currentPage < this.inventoryPagination.totalPages) {
+            this.inventoryPagination.currentPage++;
+            this.showInventory();
+        }
+    }
 };
 
 // 检查Babylon.js是否加载完成
 function checkBabylonJsLoaded() {
     if (typeof BABYLON !== 'undefined') {
-        window.game = new EndlessWinterGame();
+        window.game = new EndlessCultivationGame();
     } else {
         setTimeout(checkBabylonJsLoaded, 100);
     }

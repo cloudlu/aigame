@@ -2,7 +2,7 @@
 // 包含所有3D模型的创建逻辑，供探险和战斗场景共享
 
 // 创建玩家3D模型
-EndlessWinterGame.prototype.createPlayerModel = function() {
+EndlessCultivationGame.prototype.createPlayerModel = function() {
     if (!this.battle3D || !this.battle3D.scene) return;
 
     // 创建玩家身体
@@ -157,7 +157,7 @@ EndlessWinterGame.prototype.createPlayerModel = function() {
 };
 
 // 创建敌人3D模型
-EndlessWinterGame.prototype.createEnemyModel = function() {
+EndlessCultivationGame.prototype.createEnemyModel = function() {
     if (!this.battle3D || !this.battle3D.scene) return;
 
     const scene = this.battle3D.scene;
@@ -252,7 +252,7 @@ EndlessWinterGame.prototype.createEnemyModel = function() {
 };
 
 // 创建血条
-EndlessWinterGame.prototype.createHealthBars = function() {
+EndlessCultivationGame.prototype.createHealthBars = function() {
     // 确保battle3D存在
     if (!this.battle3D) {
         console.error('createHealthBars: battle3D不存在');
@@ -326,7 +326,7 @@ EndlessWinterGame.prototype.createHealthBars = function() {
 };
 
 // 创建单个血条（简单的2D平面血条）
-EndlessWinterGame.prototype.createHealthBar = function(color = 0xff0000) {
+EndlessCultivationGame.prototype.createHealthBar = function(color = 0xff0000) {
     if (!this.battle3D || !this.battle3D.scene) {
         console.error('createHealthBar: battle3D或scene不存在');
         return;
@@ -370,13 +370,17 @@ EndlessWinterGame.prototype.createHealthBar = function(color = 0xff0000) {
 };
 
 // 更新血条显示
-EndlessWinterGame.prototype.updateHealthBars = function() {
+EndlessCultivationGame.prototype.updateHealthBars = function() {
     if (!this.battle3D) {
         return;
     }
+
+    // 使用公共方法获取实际最大血量
+    const actualMaxHp = this.getActualStats().maxHp;
+
     // 更新玩家血条
     if (this.battle3D.playerHealthBar) {
-        const playerHealthPercent = Math.max(0, this.gameState.player.hp / this.gameState.player.maxHp);
+        const playerHealthPercent = Math.max(0, this.gameState.player.hp / actualMaxHp);
         this.battle3D.playerHealthBar.scaling.x = playerHealthPercent;
         this.battle3D.playerHealthBar.position.x = 0; // 固定位置，从左边开始减少
     }
@@ -418,6 +422,19 @@ EndlessWinterGame.prototype.updateHealthBars = function() {
             const enemyEnergyPercent = Math.max(0, this.gameState.enemy.energy / (this.gameState.enemy.maxEnergy || 100));
             this.battle3D.enemyEnergyBar.scaling.x = enemyEnergyPercent / bScale;
             this.battle3D.enemyEnergyBar.position.x = 0;
+        }
+    }
+
+    // ✅ 更新护盾特效显示/隐藏
+    if (this.gameState.player.shieldValue && this.gameState.player.shieldValue > 0) {
+        // 有护盾值，确保护盾特效存在
+        if (!this.battle3D.defenseShield && typeof this.createDefenseEffect === 'function') {
+            this.createDefenseEffect();
+        }
+    } else {
+        // 没有护盾值，移除护盾特效
+        if (this.battle3D.defenseShield && typeof this.removeDefenseEffect === 'function') {
+            this.removeDefenseEffect();
         }
     }
 };

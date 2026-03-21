@@ -10,7 +10,7 @@ class VIPSystem {
     // 从服务端加载充值套餐信息（不含密码）
     async loadRechargeCodes() {
         try {
-            const token = localStorage.getItem('endlessWinterToken');
+            const token = localStorage.getItem('cultivationToken');
             if (!token) return;
 
             const response = await fetch('/api/recharge/packages', {
@@ -86,7 +86,7 @@ class VIPSystem {
     // 验证充值码（调用服务端API）
     async recharge(code) {
         try {
-            const token = localStorage.getItem('endlessWinterToken');
+            const token = localStorage.getItem('cultivationToken');
             if (!token) {
                 return { success: false, jade: 0, message: '请先登录！' };
             }
