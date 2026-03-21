@@ -335,6 +335,25 @@
                 filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.8));
             }
         }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* 角色立绘特效样式 */
+        #story-speaker-image {
+            filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.4))
+                    drop-shadow(0 0 40px rgba(251, 191, 36, 0.2));
+            -webkit-mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+            mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+        }
     </style>
 </head>
 <body class="font-game text-light overflow-x-hidden">
@@ -617,44 +636,95 @@
         </footer>
     </div>
 
-    <!-- 音频元素 -->
+    <!-- ========== 音频元素 ========== -->
+    <!-- 所有音效均为程序合成，基于 TODO.md 音效生成建议 -->
+
+    <!-- 战斗音效 -->
     <audio id="attack-sound" preload="auto" volume="1" loop="false">
-        <source src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3" type="audio/mpeg">
-     </audio>
+        <source src="assets/audio/attack_sword.wav" type="audio/wav">
+    </audio>
+
+    <audio id="hit-impact-sound" preload="auto" volume="1" loop="false">
+        <source src="assets/audio/hit_impact.wav" type="audio/wav">
+    </audio>
+
+    <audio id="critical-explosion-sound" preload="auto" volume="1" loop="false">
+        <source src="assets/audio/critical_explosion.wav" type="audio/wav">
+    </audio>
+
+    <!-- 技能音效 -->
     <audio id="skill-0-sound" preload="auto" volume="1" loop="false">
-        <source src="https://assets.mixkit.co/active_storage/sfx/2569/2569-preview.mp3" type="audio/mpeg">
-     </audio>
+        <source src="assets/audio/skill_cast.wav" type="audio/wav">
+    </audio>
+
     <audio id="skill-1-sound" preload="auto" volume="1" loop="false">
-        <source src="https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3" type="audio/mpeg">
-     </audio>
+        <source src="assets/audio/element_burst.wav" type="audio/wav">
+    </audio>
+
     <audio id="skill-2-sound" preload="auto" volume="1" loop="false">
-        <source src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3" type="audio/mpeg">
-     </audio>
+        <source src="assets/audio/skill_ice.wav" type="audio/wav">
+    </audio>
+
     <audio id="skill-3-sound" preload="auto" volume="1" loop="false">
-        <source src="https://assets.mixkit.co/active_storage/sfx/2572/2572-preview.mp3" type="audio/mpeg">
-     </audio>
+        <source src="assets/audio/skill_thunder.wav" type="audio/wav">
+    </audio>
+
+    <audio id="skill-defense-sound" preload="auto" volume="1" loop="false">
+        <source src="assets/audio/skill_defense.wav" type="audio/wav">
+    </audio>
+
+    <audio id="skill-heal-sound" preload="auto" volume="1" loop="false">
+        <source src="assets/audio/skill_heal.wav" type="audio/wav">
+    </audio>
+
+    <audio id="skill-special-sound" preload="auto" volume="1" loop="false">
+        <source src="assets/audio/skill_special.wav" type="audio/wav">
+    </audio>
+
+    <!-- 战斗反馈音效 -->
+    <audio id="dodge-sound" preload="auto" volume="1" loop="false">
+        <source src="assets/audio/dodge_whoosh.wav" type="audio/wav">
+    </audio>
+
+    <audio id="shield-break-sound" preload="auto" volume="1" loop="false">
+        <source src="assets/audio/shield_break.wav" type="audio/wav">
+    </audio>
+
+    <audio id="enemy-death-sound" preload="auto" volume="1" loop="false">
+        <source src="assets/audio/enemy_death.wav" type="audio/wav">
+    </audio>
+
+    <!-- 战斗结果音效 -->
     <audio id="victory-sound" preload="auto" volume="1" loop="false">
-        <source src="https://assets.mixkit.co/active_storage/sfx/2560/2560-preview.mp3" type="audio/mpeg">
-     </audio>
+        <source src="assets/audio/victory.wav" type="audio/wav">
+    </audio>
+
     <audio id="defeat-sound" preload="auto" volume="1" loop="false">
-        <source src="https://assets.mixkit.co/active_storage/sfx/2567/2567-preview.mp3" type="audio/mpeg">
-     </audio>
-    <audio id="levelup-sound" preload="auto" volume="1" loop="false">
-        <source src="https://assets.mixkit.co/active_storage/sfx/2561/2561-preview.mp3" type="audio/mpeg">
-     </audio>
-    <audio id="battle-music" preload="auto" volume="1" loop="true">
-        <source src="https://assets.mixkit.co/active_storage/sfx/2587/2587-preview.mp3" type="audio/mpeg">
-        <source src="https://freesound.org/data/previews/369/369773_6473717-lq.mp3" type="audio/mpeg">
-        </audio>
+        <source src="assets/audio/defeat.wav" type="audio/wav">
+    </audio>
+
+    <!-- 背景音乐 -->
+    <audio id="battle-music" preload="auto" volume="0.05" loop="true">
+        <source src="assets/audio/battle_music.wav" type="audio/wav">
+    </audio>
+
     <audio id="battle-end-sound" preload="auto" volume="1" loop="false">
-        <source src="https://assets.mixkit.co/active_storage/sfx/2560/2560-preview.mp3" type="audio/mpeg">
-      </audio>
+        <source src="assets/audio/battle_end.wav" type="audio/wav">
+    </audio>
+
+    <!-- 系统音效 -->
+    <audio id="levelup-sound" preload="auto" volume="1" loop="false">
+        <source src="assets/audio/levelup.wav" type="audio/wav">
+    </audio>
+
     <audio id="craft-success-sound" preload="auto" volume="1" loop="false">
-        <source src="https://assets.mixkit.co/active_storage/sfx/2004/2004-preview.mp3" type="audio/mpeg">
-      </audio>
+        <source src="assets/audio/craft_success.wav" type="audio/wav">
+    </audio>
+
     <audio id="craft-fail-sound" preload="auto" volume="1" loop="false">
-        <source src="https://assets.mixkit.co/active_storage/sfx/2567/2567-preview.mp3" type="audio/mpeg">
-      </audio>
+        <source src="assets/audio/craft_fail.wav" type="audio/wav">
+    </audio>
+
 
     <!-- 人物详情弹框 -->
     <div id="character-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
@@ -1528,7 +1598,7 @@
             <div id="battle-modal-3d-container" class="flex-1 relative mt-3 bg-black/50 rounded-lg overflow-hidden">
                 <!-- 3D场景将在这里渲染 -->
             </div>
-            <div class="flex space-x-2" id="attack-skills">
+            <div class="flex justify-end space-x-2" id="attack-skills">
                 <!-- 战斗模式下的技能 -->
             </div>
         </div>
@@ -1681,11 +1751,22 @@
     <!-- ========== 剧情覆盖层 ========== -->
     <div id="story-overlay" class="fixed inset-0 bg-black/85 flex flex-col items-center justify-center z-[200] hidden cursor-pointer">
         <div id="story-chapter-title" class="text-gold text-2xl font-bold mb-8 opacity-80"></div>
-        <div class="max-w-2xl w-full mx-6 bg-dark-card/90 border border-gold/30 rounded-xl p-8 shadow-2xl">
-            <div id="story-speaker" class="text-gold/80 text-sm font-medium mb-3 h-5"></div>
-            <div id="story-text" class="text-white/90 text-base leading-relaxed min-h-[80px]"></div>
-            <div id="story-page-indicator" class="text-white/30 text-xs mt-4 text-right"></div>
+
+        <!-- 文本框+立绘组合布局 -->
+        <div class="flex items-end gap-6 max-w-5xl w-full mx-6">
+            <!-- 角色立绘（左侧） -->
+            <div id="story-speaker-image-container" class="flex-shrink-0 w-auto">
+                <img id="story-speaker-image" class="max-h-[40vh] max-w-[280px] object-contain rounded-2xl shadow-2xl" style="display: none;">
+            </div>
+
+            <!-- 文本框（右侧） -->
+            <div class="flex-1 bg-dark-card/95 backdrop-blur-sm border border-gold/30 rounded-xl p-8 shadow-2xl min-w-[400px] min-h-[40vh] flex flex-col justify-center">
+                <div id="story-speaker" class="text-gold/80 text-sm font-medium mb-3 h-5"></div>
+                <div id="story-text" class="text-white/90 text-base leading-relaxed"></div>
+                <div id="story-page-indicator" class="text-white/30 text-xs mt-4 text-right"></div>
+            </div>
         </div>
+
         <div class="mt-8 text-white/40 text-sm animate-pulse">点击继续</div>
     </div>
 

@@ -3741,50 +3741,50 @@ const gameMetadata = {
                 chapter: 0,
                 title: '第一卷 · 武者之路',
                 pages: [
-                    { text: '在遥远的极北之地，一个被永恒寒冬笼罩的世界里，修仙者们为了突破境界、追求永生而不断奋斗。', speaker: '旁白' },
-                    { text: '你是一个普通山村少年，今天村庄突然传来警报——妖兽来袭！', speaker: '旁白' },
-                    { text: '快！保护村民们！拿起你的武器，击退这些妖兽！', speaker: '村长' }
+                    { text: '在遥远的极北之地，一个被永恒寒冬笼罩的世界里，修仙者们为了突破境界、追求永生而不断奋斗。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
+                    { text: '你是一个普通山村少年，今天村庄突然传来警报——妖兽来袭！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
+                    { text: '快！保护村民们！拿起你的武器，击退这些妖兽！', speaker: '村长', speakerImage: 'assets/characters/character_02_village_chief.jpg' }
                 ]
             },
             'awaken_complete': {
                 chapter: 0,
                 title: '觉醒',
                 pages: [
-                    { text: '你成功击退了妖兽！但你体内突然涌出一股奇异的力量...', speaker: '旁白' },
-                    { text: '这是...修仙者的灵力！想不到在这偏远山村竟然有修仙资质出众之人。', speaker: '神秘旅者' },
-                    { text: '少年，你可愿随我修仙问道？前方的路虽然艰险，但也许能打破这永恒寒冬的诅咒。', speaker: '神秘旅者' }
+                    { text: '你成功击退了妖兽！但你体内突然涌出一股奇异的力量...', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
+                    { text: '这是...修仙者的灵力！想不到在这偏远山村竟然有修仙资质出众之人。', speaker: '神秘旅者', speakerImage: 'assets/characters/character_03_mysterious_traveler.jpg' },
+                    { text: '少年，你可愿随我修仙问道？前方的路虽然艰险，但也许能打破这永恒寒冬的诅咒。', speaker: '神秘旅者', speakerImage: 'assets/characters/character_03_mysterious_traveler.jpg' }
                 ]
             },
             'seek_master_complete': {
                 chapter: 0,
                 title: '拜师',
                 pages: [
-                    { text: '你来到了山顶的门派，云雾缭绕中，一座古朴的大殿矗立眼前。', speaker: '旁白' },
-                    { text: '入门弟子先从基础功法修炼起，等到武者初期修炼有成，便可下山历练。', speaker: '师尊' }
+                    { text: '你来到了山顶的门派，云雾缭绕中，一座古朴的大殿矗立眼前。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
+                    { text: '入门弟子先从基础功法修炼起，等到武者初期修炼有成，便可下山历练。', speaker: '师尊', speakerImage: 'assets/characters/character_04_master.jpg' }
                 ]
             },
             'train_complete': {
                 chapter: 0,
                 title: '初窥门径',
                 pages: [
-                    { text: '经过刻苦修炼，你终于掌握了基础功法的精髓！', speaker: '旁白' },
-                    { text: '不错，根基已稳。是时候下山历练一番了，记住：实战才是最好的老师。', speaker: '师尊' }
+                    { text: '经过刻苦修炼，你终于掌握了基础功法的精髓！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
+                    { text: '不错，根基已稳。是时候下山历练一番了，记住：实战才是最好的老师。', speaker: '师尊', speakerImage: 'assets/characters/character_04_master.jpg' }
                 ]
             },
             'first_battle_complete': {
                 chapter: 0,
                 title: '实战归来',
                 pages: [
-                    { text: '战斗归来，你浑身是伤，但眼神愈发坚定。', speaker: '旁白' },
-                    { text: '你已经有了武者的资格。但要真正突破武者巅峰，你需要不断历练，最终击败冰霜巨人！', speaker: '师尊' }
+                    { text: '战斗归来，你浑身是伤，但眼神愈发坚定。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
+                    { text: '你已经有了武者的资格。但要真正突破武者巅峰，你需要不断历练，最终击败冰霜巨人！', speaker: '师尊', speakerImage: 'assets/characters/character_04_master.jpg' }
                 ]
             },
             'warrior_peak_complete': {
                 chapter: 0,
                 title: '武者巅峰',
                 pages: [
-                    { text: '冰霜巨人倒下了！你感到体内灵力涌动，武者境已达巅峰！', speaker: '旁白' },
-                    { text: '你已经准备好突破到炼气境了。当你准备好时，前往角色面板进行突破。', speaker: '师尊' }
+                    { text: '冰霜巨人倒下了！你感到体内灵力涌动，武者境已达巅峰！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
+                    { text: '你已经准备好突破到炼气境了。当你准备好时，前往角色面板进行突破。', speaker: '师尊', speakerImage: 'assets/characters/character_04_master.jpg' }
                 ]
             },
 
@@ -3793,46 +3793,46 @@ const gameMetadata = {
                 chapter: 1,
                 title: '第二卷 · 炼气有成',
                 pages: [
-                    { text: '一股强大的灵力在你体内爆发，你的修为突破了武者境的桎梏！', speaker: '旁白' },
-                    { text: '恭喜你踏入了炼气境，更广阔的修仙世界正在等待你探索。', speaker: '师尊' }
+                    { text: '一股强大的灵力在你体内爆发，你的修为突破了武者境的桎梏！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
+                    { text: '恭喜你踏入了炼气境，更广阔的修仙世界正在等待你探索。', speaker: '师尊', speakerImage: 'assets/characters/character_04_master.jpg' }
                 ]
             },
             'sect_mission_complete': {
                 chapter: 1,
                 title: '门派贡献',
                 pages: [
-                    { text: '你完成了门派分配的任务，获得了资源和声望。', speaker: '旁白' },
-                    { text: '很好，你已经证明了自己的价值。接下来前往海滩秘境探索，炼气境的路还很长。', speaker: '师尊' }
+                    { text: '你完成了门派分配的任务，获得了资源和声望。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
+                    { text: '很好，你已经证明了自己的价值。接下来前往海滩秘境探索，炼气境的路还很长。', speaker: '师尊', speakerImage: 'assets/characters/character_04_master.jpg' }
                 ]
             },
             'beach_explore_complete': {
                 chapter: 1,
                 title: '海滩初探',
                 pages: [
-                    { text: '你来到了海滩，海浪拍打着礁石，远处有强大的气息。', speaker: '旁白' }
+                    { text: '你来到了海滩，海浪拍打着礁石，远处有强大的气息。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
             'secret_realm_complete': {
                 chapter: 1,
                 title: '秘境之战',
                 pages: [
-                    { text: '你击败了秘境守卫，获得了珍贵的宝物！', speaker: '旁白' }
+                    { text: '你击败了秘境守卫，获得了珍贵的宝物！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
             'compete_complete': {
                 chapter: 1,
                 title: '同门切磋',
                 pages: [
-                    { text: '你与同门弟子切磋武艺，实力大增！', speaker: '旁白' },
-                    { text: '你的进步很快，炼气境的路已经走了一半。继续修炼，突破大圆满就在前方。', speaker: '师尊' }
+                    { text: '你与同门弟子切磋武艺，实力大增！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
+                    { text: '你的进步很快，炼气境的路已经走了一半。继续修炼，突破大圆满就在前方。', speaker: '师尊', speakerImage: 'assets/characters/character_04_master.jpg' }
                 ]
             },
             'qi_peak_complete': {
                 chapter: 1,
                 title: '炼气巅峰',
                 pages: [
-                    { text: '你击败了海滩的BOSS，炼气境已达到巅峰！', speaker: '旁白' },
-                    { text: '你已经准备好突破到筑基境了。', speaker: '师尊' }
+                    { text: '你击败了海滩的BOSS，炼气境已达到巅峰！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
+                    { text: '你已经准备好突破到筑基境了。', speaker: '师尊', speakerImage: 'assets/characters/character_04_master.jpg' }
                 ]
             },
 
@@ -3841,42 +3841,42 @@ const gameMetadata = {
                 chapter: 2,
                 title: '第三卷 · 筑基求真',
                 pages: [
-                    { text: '你的修为再次突破，踏入了筑基境！', speaker: '旁白' }
+                    { text: '你的修为再次突破，踏入了筑基境！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
             'foundation_establish_complete': {
                 chapter: 2,
                 title: '开山立派',
                 pages: [
-                    { text: '你收集了足够的资源，开始在门派中建立自己的势力。', speaker: '旁白' }
+                    { text: '你收集了足够的资源，开始在门派中建立自己的势力。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
             'foundation_plains_complete': {
                 chapter: 2,
                 title: '平原探索',
                 pages: [
-                    { text: '你来到了广阔的平原，风中带着青草的芬芳。', speaker: '旁白' }
+                    { text: '你来到了广阔的平原，风中带着青草的芬芳。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
             'foundation_resource_complete': {
                 chapter: 2,
                 title: '资源充足',
                 pages: [
-                    { text: '你收集了大量的灵石，修为更加稳固！', speaker: '旁白' }
+                    { text: '你收集了大量的灵石，修为更加稳固！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
             'foundation_challenge_complete': {
                 chapter: 2,
                 title: '秘境挑战',
                 pages: [
-                    { text: '你击败了秘境守卫，获得了珍贵的传承！', speaker: '旁白' }
+                    { text: '你击败了秘境守卫，获得了珍贵的传承！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
             'foundation_peak_complete': {
                 chapter: 2,
                 title: '筑基巅峰',
                 pages: [
-                    { text: '你的筑基境已达到巅峰，是时候冲击金丹境了！', speaker: '旁白' }
+                    { text: '你的筑基境已达到巅峰，是时候冲击金丹境了！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
 
@@ -3885,42 +3885,42 @@ const gameMetadata = {
                 chapter: 3,
                 title: '第四卷 · 金丹大道',
                 pages: [
-                    { text: '金丹已成，大道可期！你踏入了金丹境！', speaker: '旁白' }
+                    { text: '金丹已成，大道可期！你踏入了金丹境！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
             'golden_sect_status_complete': {
                 chapter: 3,
                 title: '门派地位',
                 pages: [
-                    { text: '你在门派中的地位越来越高，获得了更多的资源和支持。', speaker: '旁白' }
+                    { text: '你在门派中的地位越来越高，获得了更多的资源和支持。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
             'golden_canyon_complete': {
                 chapter: 3,
                 title: '峡谷探索',
                 pages: [
-                    { text: '你来到了险峻的峡谷，四周是悬崖峭壁。', speaker: '旁白' }
+                    { text: '你来到了险峻的峡谷，四周是悬崖峭壁。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
             'golden_desert_complete': {
                 chapter: 3,
                 title: '沙漠寻宝',
                 pages: [
-                    { text: '你穿越了茫茫沙漠，发现了传说中的遗迹！', speaker: '旁白' }
+                    { text: '你穿越了茫茫沙漠，发现了传说中的遗迹！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
             'golden_evil_complete': {
                 chapter: 3,
                 title: '正道守护',
                 pages: [
-                    { text: '你击败了邪恶修士，保护了正道的尊严！', speaker: '旁白' }
+                    { text: '你击败了邪恶修士，保护了正道的尊严！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
             'golden_peak_complete': {
                 chapter: 3,
                 title: '金丹巅峰',
                 pages: [
-                    { text: '你的金丹境已达到巅峰，元婴境就在眼前！', speaker: '旁白' }
+                    { text: '你的金丹境已达到巅峰，元婴境就在眼前！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
 
@@ -3929,42 +3929,42 @@ const gameMetadata = {
                 chapter: 4,
                 title: '第五卷 · 元婴无双',
                 pages: [
-                    { text: '元婴出世，神通无量！你踏入了元婴境！', speaker: '旁白' }
+                    { text: '元婴出世，神通无量！你踏入了元婴境！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
             'nascent_explore_complete': {
                 chapter: 4,
                 title: '探索世界',
                 pages: [
-                    { text: '你离开了门派，开始探索这个广阔的世界。', speaker: '旁白' }
+                    { text: '你离开了门派，开始探索这个广阔的世界。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
             'nascent_volcano_complete': {
                 chapter: 4,
                 title: '火山探索',
                 pages: [
-                    { text: '你来到了炽热的火山，岩浆在脚下流淌。', speaker: '旁白' }
+                    { text: '你来到了炽热的火山，岩浆在脚下流淌。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
             'nascent_demon_complete': {
                 chapter: 4,
                 title: '斩妖除魔',
                 pages: [
-                    { text: '你击败了强大的妖兽，保护了人类的安宁！', speaker: '旁白' }
+                    { text: '你击败了强大的妖兽，保护了人类的安宁！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
             'nascent_trial_complete': {
                 chapter: 4,
                 title: '天道考验',
                 pages: [
-                    { text: '你通过了天道的考验，距离化神只有一步之遥！', speaker: '旁白' }
+                    { text: '你通过了天道的考验，距离化神只有一步之遥！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
             'nascent_peak_complete': {
                 chapter: 4,
                 title: '元婴巅峰',
                 pages: [
-                    { text: '你的元婴境已达到巅峰，化神境的门槛已经打开！', speaker: '旁白' }
+                    { text: '你的元婴境已达到巅峰，化神境的门槛已经打开！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
 
@@ -3973,35 +3973,35 @@ const gameMetadata = {
                 chapter: 5,
                 title: '第六卷 · 化神超脱',
                 pages: [
-                    { text: '化神已成，超脱凡俗！你踏入了化神境！', speaker: '旁白' }
+                    { text: '化神已成，超脱凡俗！你踏入了化神境！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
             'deity_truth_complete': {
                 chapter: 5,
                 title: '世界真相',
                 pages: [
-                    { text: '你发现了永恒寒冬的真相——这是一个被古老封印笼罩的世界！', speaker: '旁白' }
+                    { text: '你发现了永恒寒冬的真相——这是一个被古老封印笼罩的世界！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
             'deity_heaven_complete': {
                 chapter: 5,
                 title: '对抗天道',
                 pages: [
-                    { text: '你击败了天道的使者，向着自由迈出了重要一步！', speaker: '旁白' }
+                    { text: '你击败了天道的使者，向着自由迈出了重要一步！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
             'deity_challenge_complete': {
                 chapter: 5,
                 title: '终极挑战',
                 pages: [
-                    { text: '你击败了最终守护者，只剩下最后一步了！', speaker: '旁白' }
+                    { text: '你击败了最终守护者，只剩下最后一步了！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
             'deity_lock_complete': {
                 chapter: 5,
                 title: '突破枷锁',
                 pages: [
-                    { text: '你打破了世界的束缚，天空裂开一道金光！', speaker: '旁白' }
+                    { text: '你打破了世界的束缚，天空裂开一道金光！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
 
@@ -4010,10 +4010,10 @@ const gameMetadata = {
                 chapter: 5,
                 title: '飞升',
                 pages: [
-                    { text: '你击败了元始天尊，打破了永恒寒冬的枷锁，天空裂开一道金光...', speaker: '旁白' },
-                    { text: '无尽的修仙之路，终于迎来了终点...或者说，新的起点。', speaker: '旁白' },
-                    { text: '恭喜你飞升成功！感谢你的旅途！', speaker: '旁白' },
-                    { text: '【游戏通关】你已完成了无尽战斗的全部主线内容！', speaker: '系统' }
+                    { text: '你击败了元始天尊，打破了永恒寒冬的枷锁，天空裂开一道金光...', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
+                    { text: '无尽的修仙之路，终于迎来了终点...或者说，新的起点。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
+                    { text: '恭喜你飞升成功！感谢你的旅途！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
+                    { text: '【游戏通关】你已完成了无尽战斗的全部主线内容！', speaker: '系统', speakerImage: 'assets/characters/character_10_system.jpg' }
                 ]
             },
 
@@ -4022,246 +4022,246 @@ const gameMetadata = {
                 chapter: 1,
                 title: '突破！炼气境',
                 pages: [
-                    { text: '恭喜你突破到炼气境！新的冒险正在等待你。', speaker: '旁白' }
+                    { text: '恭喜你突破到炼气境！新的冒险正在等待你。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
             'realm_breakthrough_2': {
                 chapter: 2,
                 title: '突破！筑基境',
                 pages: [
-                    { text: '恭喜你突破到筑基境！你的修为更加深厚了。', speaker: '旁白' }
+                    { text: '恭喜你突破到筑基境！你的修为更加深厚了。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
             'realm_breakthrough_3': {
                 chapter: 3,
                 title: '突破！金丹境',
                 pages: [
-                    { text: '恭喜你突破到金丹境！金丹已成，大道可期！', speaker: '旁白' }
+                    { text: '恭喜你突破到金丹境！金丹已成，大道可期！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
             'realm_breakthrough_4': {
                 chapter: 4,
                 title: '突破！元婴境',
                 pages: [
-                    { text: '恭喜你突破到元婴境！元婴出世，神通无量！', speaker: '旁白' }
+                    { text: '恭喜你突破到元婴境！元婴出世，神通无量！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
             'realm_breakthrough_5': {
                 chapter: 5,
                 title: '突破！化神境',
                 pages: [
-                    { text: '恭喜你突破到化神境！你已经是这个世界最强大的存在之一！', speaker: '旁白' }
+                    { text: '恭喜你突破到化神境！你已经是这个世界最强大的存在之一！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
 
             // ===== 模板系统：阶段转换里程碑剧情 =====
             // 初期→中期 (stage 4 第1级触发)
             'r0_stage_4_start': { chapter: 0, title: '武者·踏入中期', pages: [
-                { text: '经过初期的磨练，你的身体越来越强健。师尊点了点头，"是时候面对更强的对手了。"', speaker: '师尊' },
-                { text: '山峰深处的妖兽更加凶猛，但你已经有了足够的实力。中期修炼，正式开始！', speaker: '旁白' }
+                { text: '经过初期的磨练，你的身体越来越强健。师尊点了点头，"是时候面对更强的对手了。"', speaker: '师尊', speakerImage: 'assets/characters/character_04_master.jpg' },
+                { text: '山峰深处的妖兽更加凶猛，但你已经有了足够的实力。中期修炼，正式开始！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
             ]},
             'r1_stage_4_start': { chapter: 1, title: '炼气·踏入中期', pages: [
-                { text: '炼气前期的修炼已告一段落，你体内的灵力流转更加顺畅。', speaker: '旁白' },
+                { text: '炼气前期的修炼已告一段落，你体内的灵力流转更加顺畅。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
                 { text: '"海滩深处的妖兽越来越强，正好拿来磨砺你的灵力。"师兄递给你一瓶丹药。', speaker: '师兄' }
             ]},
             'r2_stage_4_start': { chapter: 2, title: '筑基·踏入中期', pages: [
-                { text: '筑基的基础已经稳固，你可以感受到灵力在经脉中奔涌。', speaker: '旁白' },
-                { text: '弟子来报："师尊，平原深处发现了大量妖兽活动，需要您前去查看！"', speaker: '弟子' }
+                { text: '筑基的基础已经稳固，你可以感受到灵力在经脉中奔涌。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
+                { text: '弟子来报："师尊，平原深处发现了大量妖兽活动，需要您前去查看！"', speaker: '弟子', speakerImage: 'assets/characters/character_06_disciple.jpg' }
             ]},
             'r3_stage_4_start': { chapter: 3, title: '金丹·踏入中期', pages: [
-                { text: '金丹前期的修炼让你的内丹更加凝实，金光隐隐透体而出。', speaker: '旁白' },
-                { text: '长老捋了捋胡须："金丹中期是修炼的关键节点，峡谷和沙漠中的机缘不可错过。"', speaker: '长老' }
+                { text: '金丹前期的修炼让你的内丹更加凝实，金光隐隐透体而出。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
+                { text: '长老捋了捋胡须："金丹中期是修炼的关键节点，峡谷和沙漠中的机缘不可错过。"', speaker: '长老', speakerImage: 'assets/characters/character_07_elder.jpg' }
             ]},
             'r4_stage_4_start': { chapter: 4, title: '元婴·踏入中期', pages: [
-                { text: '元婴前期的探索让你对这个世界有了更深的了解。', speaker: '旁白' },
-                { text: '故友传讯："你在湖泊和森林的探索引起了某些势力的注意，小心行事。"', speaker: '故友' }
+                { text: '元婴前期的探索让你对这个世界有了更深的了解。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
+                { text: '故友传讯："你在湖泊和森林的探索引起了某些势力的注意，小心行事。"', speaker: '故友', speakerImage: 'assets/characters/character_08_old_friend.jpg' }
             ]},
             'r5_stage_4_start': { chapter: 5, title: '化神·踏入中期', pages: [
-                { text: '化神前期的修炼让你感受到了天道的力量。', speaker: '旁白' },
-                { text: '一个声音在你脑海中回荡："你已经触碰到了世界真相的边缘，继续前进..."', speaker: '天道之音' }
+                { text: '化神前期的修炼让你感受到了天道的力量。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
+                { text: '一个声音在你脑海中回荡："你已经触碰到了世界真相的边缘，继续前进..."', speaker: '天道之音', speakerImage: 'assets/characters/character_09_heavenly_dao.jpg' }
             ]},
 
             // 中期→后期 (stage 7 第1级触发)
             'r0_stage_7_start': { chapter: 0, title: '武者·踏入后期', pages: [
-                { text: '中期的战斗让你脱胎换骨，肌肉中蕴含着惊人的力量。', speaker: '旁白' },
+                { text: '中期的战斗让你脱胎换骨，肌肉中蕴含着惊人的力量。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
                 { text: '"你的进步超出了我的预期。"师尊露出欣慰的笑容，"武者巅峰就在前方！"', speaker: '师尊' }
             ]},
             'r1_stage_7_start': { chapter: 1, title: '炼气·踏入后期', pages: [
-                { text: '灵力在体内运转自如，你已经可以操控灵力进行各种攻击。', speaker: '旁白' },
+                { text: '灵力在体内运转自如，你已经可以操控灵力进行各种攻击。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
                 { text: '"后期的修炼需要更多的灵石支持。"师兄为你指点了几个灵石丰富的地点。', speaker: '师兄' }
             ]},
             'r2_stage_7_start': { chapter: 2, title: '筑基·踏入后期', pages: [
-                { text: '筑基后期的修炼让你对灵力有了全新的感悟。', speaker: '旁白' },
+                { text: '筑基后期的修炼让你对灵力有了全新的感悟。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
                 { text: '"师尊，前方有一处秘境，据说藏有筑基突破的机缘！"弟子带来了好消息。', speaker: '弟子' }
             ]},
             'r3_stage_7_start': { chapter: 3, title: '金丹·踏入后期', pages: [
-                { text: '金丹后期，你的丹田中金光大盛，修为已臻化境。', speaker: '旁白' },
-                { text: '长老严肃道："金丹后期是结婴的关键，务必小心应对每一次战斗。"', speaker: '长老' }
+                { text: '金丹后期，你的丹田中金光大盛，修为已臻化境。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
+                { text: '长老严肃道："金丹后期是结婴的关键，务必小心应对每一次战斗。"', speaker: '长老', speakerImage: 'assets/characters/character_07_elder.jpg' }
             ]},
             'r4_stage_7_start': { chapter: 4, title: '元婴·踏入后期', pages: [
-                { text: '元婴后期的你，已经可以感应到方圆百里的灵力波动。', speaker: '旁白' },
+                { text: '元婴后期的你，已经可以感应到方圆百里的灵力波动。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
                 { text: '"火山深处有远古遗迹的消息，你打算亲自去探一探。"故友为你整理了情报。', speaker: '故友' }
             ]},
             'r5_stage_7_start': { chapter: 5, title: '化神·踏入后期', pages: [
-                { text: '化神后期的你，已经可以与天道进行初步的沟通。', speaker: '旁白' },
-                { text: '天道之音再次响起："你距离真相越来越近了，但最后的考验也最为凶险。"', speaker: '天道之音' }
+                { text: '化神后期的你，已经可以与天道进行初步的沟通。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
+                { text: '天道之音再次响起："你距离真相越来越近了，但最后的考验也最为凶险。"', speaker: '天道之音', speakerImage: 'assets/characters/character_09_heavenly_dao.jpg' }
             ]},
 
             // 后期→巅峰 (stage 10 第1级触发)
             'r0_stage_10_start': { chapter: 0, title: '武者·巅峰之路', pages: [
-                { text: '后期的磨练让你拥有了远超常人的实力，武者巅峰就在眼前！', speaker: '旁白' },
+                { text: '后期的磨练让你拥有了远超常人的实力，武者巅峰就在眼前！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
                 { text: '"武者巅峰是通往更高境界的关键。"师尊目光深邃，"击败冰霜巨人，你的修仙之路才算真正开始。"', speaker: '师尊' }
             ]},
             'r1_stage_10_start': { chapter: 1, title: '炼气·大圆满', pages: [
-                { text: '炼气大圆满的境界近在咫尺，你的灵力已经精纯到了极致。', speaker: '旁白' },
+                { text: '炼气大圆满的境界近在咫尺，你的灵力已经精纯到了极致。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
                 { text: '"海滩深处有一只远古海怪，击败它，你就能突破到筑基境！"师兄为你打气。', speaker: '师兄' }
             ]},
             'r2_stage_10_start': { chapter: 2, title: '筑基·大圆满', pages: [
-                { text: '筑基大圆满，你的灵力根基稳如磐石。', speaker: '旁白' },
+                { text: '筑基大圆满，你的灵力根基稳如磐石。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
                 { text: '"师尊，平原之王出现了！它就在东方！"弟子的声音中带着一丝紧张。', speaker: '弟子' }
             ]},
             'r3_stage_10_start': { chapter: 3, title: '金丹·大圆满', pages: [
-                { text: '金丹大圆满，丹田中的金丹散发出璀璨光芒。', speaker: '旁白' },
-                { text: '长老沉声道："峡谷领主是金丹境最终的考验，战胜它，元婴可期。"', speaker: '长老' }
+                { text: '金丹大圆满，丹田中的金丹散发出璀璨光芒。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
+                { text: '长老沉声道："峡谷领主是金丹境最终的考验，战胜它，元婴可期。"', speaker: '长老', speakerImage: 'assets/characters/character_07_elder.jpg' }
             ]},
             'r4_stage_10_start': { chapter: 4, title: '元婴·大圆满', pages: [
-                { text: '元婴大圆满的境界让你拥有了移山填海的力量。', speaker: '旁白' },
-                { text: '故友："火山领主是这个世界最强大的妖兽之一，也是你通往化神的最后考验。"', speaker: '故友' }
+                { text: '元婴大圆满的境界让你拥有了移山填海的力量。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
+                { text: '故友："火山领主是这个世界最强大的妖兽之一，也是你通往化神的最后考验。"', speaker: '故友', speakerImage: 'assets/characters/character_08_old_friend.jpg' }
             ]},
             'r5_stage_10_start': { chapter: 5, title: '化神·大圆满', pages: [
-                { text: '化神大圆满——你已经是这个世界上最接近仙的存在了。', speaker: '旁白' },
-                { text: '天道之音轰然响起："元始天尊是永恒寒冬的守护者，击败他，你就能打破枷锁，飞升成仙！"', speaker: '天道之音' }
+                { text: '化神大圆满——你已经是这个世界上最接近仙的存在了。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
+                { text: '天道之音轰然响起："元始天尊是永恒寒冬的守护者，击败他，你就能打破枷锁，飞升成仙！"', speaker: '天道之音', speakerImage: 'assets/characters/character_09_heavenly_dao.jpg' }
             ]},
 
             // ===== 模板系统：Boss 战后剧情 =====
             // 武者境 Boss
             'r0_boss_冰霜巨人': { chapter: 0, title: '冰霜巨人之战', pages: [
-                { text: '冰霜巨人轰然倒地，冰屑飞溅！你在武者境的实力已经无人能敌。', speaker: '旁白' },
-                { text: '"好！很好！"师尊眼中闪过光芒，"你已经做好了踏入炼气境的准备。"', speaker: '师尊' }
+                { text: '冰霜巨人轰然倒地，冰屑飞溅！你在武者境的实力已经无人能敌。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
+                { text: '"好！很好！"师尊眼中闪过光芒，"你已经做好了踏入炼气境的准备。"', speaker: '师尊', speakerImage: 'assets/characters/character_04_master.jpg' }
             ]},
             // 炼气境 Boss
             'r1_boss_龙王': { chapter: 1, title: '龙王之战', pages: [
-                { text: '龙王发出最后的咆哮，倒在了你的脚下。海面的波涛渐渐平息。', speaker: '旁白' },
+                { text: '龙王发出最后的咆哮，倒在了你的脚下。海面的波涛渐渐平息。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
                 { text: '"龙王的内丹是炼气的绝佳材料！"师兄兴奋地捡起战利品。', speaker: '师兄' }
             ]},
             'r1_boss_海怪': { chapter: 1, title: '海怪之战', pages: [
-                { text: '海怪巨大的身躯沉入海底，溅起滔天巨浪。炼气境，圆满！', speaker: '旁白' },
+                { text: '海怪巨大的身躯沉入海底，溅起滔天巨浪。炼气境，圆满！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
                 { text: '"你已经准备好突破到筑基境了。"师兄为你递上突破丹药。', speaker: '师兄' }
             ]},
             // 筑基境 Boss
             'r2_boss_草原之王': { chapter: 2, title: '草原之王之战', pages: [
-                { text: '草原之王倒下了，平原上的妖兽纷纷逃散。筑基境，圆满！', speaker: '旁白' },
+                { text: '草原之王倒下了，平原上的妖兽纷纷逃散。筑基境，圆满！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
                 { text: '"师尊威武！"弟子们欢呼雀跃，你的声望在门派中达到了顶峰。', speaker: '弟子' }
             ]},
             // 金丹境 Boss
             'r3_boss_峡谷领主': { chapter: 3, title: '峡谷领主之战', pages: [
-                { text: '峡谷领主的巨大身躯轰然倒塌，峡谷中回荡着胜利的回声。', speaker: '旁白' },
-                { text: '长老捋须微笑："金丹圆满，元婴可期。你的成就已经超过了我的预期。"', speaker: '长老' }
+                { text: '峡谷领主的巨大身躯轰然倒塌，峡谷中回荡着胜利的回声。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
+                { text: '长老捋须微笑："金丹圆满，元婴可期。你的成就已经超过了我的预期。"', speaker: '长老', speakerImage: 'assets/characters/character_07_elder.jpg' }
             ]},
             'r3_boss_沙漠之王': { chapter: 3, title: '沙漠之王之战', pages: [
-                { text: '沙漠之王在烈日下化为飞灰，沙漠恢复了往日的宁静。', speaker: '旁白' },
+                { text: '沙漠之王在烈日下化为飞灰，沙漠恢复了往日的宁静。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
                 { text: '"金丹境的考验你已经全部通过了。"长老为你指引前方的道路。', speaker: '长老' }
             ]},
             // 元婴境 Boss
             'r4_boss_湖龙王': { chapter: 4, title: '湖龙王之战', pages: [
-                { text: '湖龙王的咆哮声渐渐消失在湖面上。湖水晶莹如镜。', speaker: '旁白' },
+                { text: '湖龙王的咆哮声渐渐消失在湖面上。湖水晶莹如镜。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
                 { text: '"元婴的力量果然非同凡响。"故友感叹道，"你已经是这个世界最顶尖的强者之一了。"', speaker: '故友' }
             ]},
             'r4_boss_妖狐王': { chapter: 4, title: '妖狐王之战', pages: [
-                { text: '妖狐王的幻术在你面前土崩瓦解，它化作一缕青烟消散。', speaker: '旁白' },
+                { text: '妖狐王的幻术在你面前土崩瓦解，它化作一缕青烟消散。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
                 { text: '"妖狐王已除，森林恢复了安宁。"故友望着远方，"火山领主还在等着你。"', speaker: '故友' }
             ]},
             'r4_boss_火山领主': { chapter: 4, title: '火山领主之战', pages: [
-                { text: '火山领主的火焰在你面前熄灭！岩浆凝固，火山归于沉寂。元婴境，圆满！', speaker: '旁白' },
+                { text: '火山领主的火焰在你面前熄灭！岩浆凝固，火山归于沉寂。元婴境，圆满！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
                 { text: '"化神境的考验才是真正的挑战。"故友的眼中闪过一丝担忧。', speaker: '故友' }
             ]},
             // 化神境 Boss
             'r5_boss_地下蠕虫': { chapter: 5, title: '地下蠕虫之战', pages: [
-                { text: '巨大的蠕虫在洞穴中化为灰烬，洞穴恢复了光明。', speaker: '旁白' },
-                { text: '天道之音："这个世界的守护者不止一个，真正的考验才刚刚开始。"', speaker: '天道之音' }
+                { text: '巨大的蠕虫在洞穴中化为灰烬，洞穴恢复了光明。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
+                { text: '天道之音："这个世界的守护者不止一个，真正的考验才刚刚开始。"', speaker: '天道之音', speakerImage: 'assets/characters/character_09_heavenly_dao.jpg' }
             ]},
             'r5_boss_麒麟': { chapter: 5, title: '麒麟之战', pages: [
-                { text: '远古神兽麒麟发出最后的咆哮，化作金色光点消散。', speaker: '旁白' },
-                { text: '天道之音："你打破了世界的第二层封印...元始天尊正在等待你。"', speaker: '天道之音' }
+                { text: '远古神兽麒麟发出最后的咆哮，化作金色光点消散。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
+                { text: '天道之音："你打破了世界的第二层封印...元始天尊正在等待你。"', speaker: '天道之音', speakerImage: 'assets/characters/character_09_heavenly_dao.jpg' }
             ]},
             'r5_boss_元始天尊': { chapter: 5, title: '最终之战', pages: [
-                { text: '元始天尊的身影在天空中渐渐消散，永恒寒冬的枷锁出现了裂痕...', speaker: '旁白' },
-                { text: '天空裂开一道金光，温暖的阳光洒落大地。寒冬，终于要结束了。', speaker: '旁白' }
+                { text: '元始天尊的身影在天空中渐渐消散，永恒寒冬的枷锁出现了裂痕...', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
+                { text: '天空裂开一道金光，温暖的阳光洒落大地。寒冬，终于要结束了。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
             ]},
 
             // ===== 模板系统：境界最终剧情 =====
             'r0_realm_final': { chapter: 0, title: '武者圆满', pages: [
-                { text: '武者境的修炼已经圆满！你的身体和意志都达到了凡人的巅峰。', speaker: '旁白' },
+                { text: '武者境的修炼已经圆满！你的身体和意志都达到了凡人的巅峰。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
                 { text: '"从今天起，你正式踏入修仙者的行列。"师尊将一枚令牌递给你。', speaker: '师尊' }
             ]},
             'r1_realm_final': { chapter: 1, title: '炼气圆满', pages: [
-                { text: '炼气境的修炼已经圆满！你的灵力已经精纯到了极致。', speaker: '旁白' },
+                { text: '炼气境的修炼已经圆满！你的灵力已经精纯到了极致。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
                 { text: '"筑基境的修炼需要更多悟性，但我相信你一定可以。"师兄拍了拍你的肩膀。', speaker: '师兄' }
             ]},
             'r2_realm_final': { chapter: 2, title: '筑基圆满', pages: [
-                { text: '筑基圆满！你的灵力根基已经稳如磐石。', speaker: '旁白' },
+                { text: '筑基圆满！你的灵力根基已经稳如磐石。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
                 { text: '"师尊，我一定会成为门派的骄傲！"你的弟子眼中满是崇敬。', speaker: '弟子' }
             ]},
             'r3_realm_final': { chapter: 3, title: '金丹圆满', pages: [
-                { text: '金丹圆满！丹田中金光万丈，你的修为已经达到了一个全新的高度。', speaker: '旁白' },
-                { text: '长老感慨："老夫当年修炼到金丹境用了三百年，你只用了不到一年...后生可畏！"', speaker: '长老' }
+                { text: '金丹圆满！丹田中金光万丈，你的修为已经达到了一个全新的高度。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
+                { text: '长老感慨："老夫当年修炼到金丹境用了三百年，你只用了不到一年...后生可畏！"', speaker: '长老', speakerImage: 'assets/characters/character_07_elder.jpg' }
             ]},
             'r4_realm_final': { chapter: 4, title: '元婴圆满', pages: [
-                { text: '元婴圆满！你拥有了移山填海的力量，已经站上了这个世界的顶端。', speaker: '旁白' },
-                { text: '故友望着你："化神境...那是传说中的领域。去完成你的使命吧！"', speaker: '故友' }
+                { text: '元婴圆满！你拥有了移山填海的力量，已经站上了这个世界的顶端。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
+                { text: '故友望着你："化神境...那是传说中的领域。去完成你的使命吧！"', speaker: '故友', speakerImage: 'assets/characters/character_08_old_friend.jpg' }
             ]},
             'r5_realm_final': { chapter: 5, title: '化神圆满', pages: [
-                { text: '化神圆满！你已经达到了这个世界修仙者的巅峰。', speaker: '旁白' },
-                { text: '天道之音："永恒寒冬的真相即将揭开...你准备好了吗？"', speaker: '天道之音' }
+                { text: '化神圆满！你已经达到了这个世界修仙者的巅峰。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' },
+                { text: '天道之音："永恒寒冬的真相即将揭开...你准备好了吗？"', speaker: '天道之音', speakerImage: 'assets/characters/character_09_heavenly_dao.jpg' }
             ]},
 
             // ===== 武者卷新增场景 (Q4-Q9) =====
-            'realm0_Q4': { chapter: 0, title: '实战归来', pages: [{ text: '战斗归来，你的武者修为又精进了不少。', speaker: '旁白' }] },
-            'realm0_Q5': { chapter: 0, title: '精英挑战', pages: [{ text: '精英怪物比普通妖兽强大不少，但你也变得更强了！', speaker: '旁白' }] },
-            'realm0_Q6': { chapter: 0, title: '资源充足', pages: [{ text: '充足的修炼资源是突破的基础，你已经准备好了。', speaker: '旁白' }] },
-            'realm0_Q7': { chapter: 0, title: '进阶修炼', pages: [{ text: '你的修为更进一步，武者境的巅峰就在眼前。', speaker: '旁白' }] },
-            'realm0_Q8': { chapter: 0, title: '战斗历练', pages: [{ text: '在与妖兽的战斗中，你的实力不断提升。', speaker: '旁白' }] },
-            'realm0_Q9': { chapter: 0, title: '精英猎手', pages: [{ text: '你已经可以轻松击败精英怪物了，是时候挑战最终BOSS！', speaker: '师尊' }] },
+            'realm0_Q4': { chapter: 0, title: '实战归来', pages: [{ text: '战斗归来，你的武者修为又精进了不少。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] },
+            'realm0_Q5': { chapter: 0, title: '精英挑战', pages: [{ text: '精英怪物比普通妖兽强大不少，但你也变得更强了！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] },
+            'realm0_Q6': { chapter: 0, title: '资源充足', pages: [{ text: '充足的修炼资源是突破的基础，你已经准备好了。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] },
+            'realm0_Q7': { chapter: 0, title: '进阶修炼', pages: [{ text: '你的修为更进一步，武者境的巅峰就在眼前。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] },
+            'realm0_Q8': { chapter: 0, title: '战斗历练', pages: [{ text: '在与妖兽的战斗中，你的实力不断提升。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] },
+            'realm0_Q9': { chapter: 0, title: '精英猎手', pages: [{ text: '你已经可以轻松击败精英怪物了，是时候挑战最终BOSS！', speaker: '师尊', speakerImage: 'assets/characters/character_04_master.jpg' }] },
 
             // ===== 炼气卷新增场景 (Q3-Q9) =====
-            'realm1_Q3': { chapter: 1, title: '修炼提升', pages: [{ text: '炼气境的修炼比武者境更加精深，你感受到了灵力的流动。', speaker: '旁白' }] },
-            'realm1_Q4': { chapter: 1, title: '海滩战斗', pages: [{ text: '海滩上的妖兽比山峰的更加强大，但你应对自如。', speaker: '旁白' }] },
-            'realm1_Q6': { chapter: 1, title: '灵石猎人', pages: [{ text: '灵石是高级修仙的必备资源，你已经学会了如何高效收集。', speaker: '旁白' }] },
-            'realm1_Q8': { chapter: 1, title: '深入修炼', pages: [{ text: '你的灵力越来越精纯，炼气境的巅峰即将到来。', speaker: '旁白' }] },
-            'realm1_Q9': { chapter: 1, title: '战斗提升', pages: [{ text: '你已经准备好挑战海滩的最终BOSS了。', speaker: '师尊' }] },
+            'realm1_Q3': { chapter: 1, title: '修炼提升', pages: [{ text: '炼气境的修炼比武者境更加精深，你感受到了灵力的流动。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] },
+            'realm1_Q4': { chapter: 1, title: '海滩战斗', pages: [{ text: '海滩上的妖兽比山峰的更加强大，但你应对自如。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] },
+            'realm1_Q6': { chapter: 1, title: '灵石猎人', pages: [{ text: '灵石是高级修仙的必备资源，你已经学会了如何高效收集。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] },
+            'realm1_Q8': { chapter: 1, title: '深入修炼', pages: [{ text: '你的灵力越来越精纯，炼气境的巅峰即将到来。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] },
+            'realm1_Q9': { chapter: 1, title: '战斗提升', pages: [{ text: '你已经准备好挑战海滩的最终BOSS了。', speaker: '师尊', speakerImage: 'assets/characters/character_04_master.jpg' }] },
 
             // ===== 筑基卷场景 (Q1-Q9) =====
-            '2_chapter_start': { chapter: 2, title: '第三卷 · 筑基求真', pages: [{ text: '你的修为再次突破，踏入了筑基境！', speaker: '旁白' }] },
-            'realm2_Q1': { chapter: 2, title: '开山立派', pages: [{ text: '你收集了足够的资源，开始在门派中建立自己的势力。', speaker: '旁白' }] },
-            'realm2_Q2': { chapter: 2, title: '平原探索', pages: [{ text: '你来到了广阔的平原，风中带着青草的芬芳。', speaker: '旁白' }] },
-            'realm2_Q3': { chapter: 2, title: '修炼突破', pages: [{ text: '筑基境的修炼更加深入，你感受到了灵力的质变。', speaker: '旁白' }] },
-            'realm2_Q7': { chapter: 2, title: '精英猎手', pages: [{ text: '平原上的精英怪物已经被你一一击败。', speaker: '旁白' }] },
-            'realm2_Q8': { chapter: 2, title: '深入修炼', pages: [{ text: '你距离筑基境的巅峰只差一步了。', speaker: '旁白' }] },
-            'realm2_Q9': { chapter: 2, title: '战斗历练', pages: [{ text: '你已经准备好挑战平原的最终BOSS了。', speaker: '师尊' }] },
+            '2_chapter_start': { chapter: 2, title: '第三卷 · 筑基求真', pages: [{ text: '你的修为再次突破，踏入了筑基境！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] },
+            'realm2_Q1': { chapter: 2, title: '开山立派', pages: [{ text: '你收集了足够的资源，开始在门派中建立自己的势力。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] },
+            'realm2_Q2': { chapter: 2, title: '平原探索', pages: [{ text: '你来到了广阔的平原，风中带着青草的芬芳。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] },
+            'realm2_Q3': { chapter: 2, title: '修炼突破', pages: [{ text: '筑基境的修炼更加深入，你感受到了灵力的质变。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] },
+            'realm2_Q7': { chapter: 2, title: '精英猎手', pages: [{ text: '平原上的精英怪物已经被你一一击败。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] },
+            'realm2_Q8': { chapter: 2, title: '深入修炼', pages: [{ text: '你距离筑基境的巅峰只差一步了。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] },
+            'realm2_Q9': { chapter: 2, title: '战斗历练', pages: [{ text: '你已经准备好挑战平原的最终BOSS了。', speaker: '师尊', speakerImage: 'assets/characters/character_04_master.jpg' }] },
 
             // ===== 金丹卷场景 (Q1-Q9) =====
-            '3_chapter_start': { chapter: 3, title: '第四卷 · 金丹大道', pages: [{ text: '金丹已成，大道可期！你踏入了金丹境！', speaker: '旁白' }] },
-            'realm3_Q1': { chapter: 3, title: '门派地位', pages: [{ text: '你在门派中的地位越来越高，获得了更多的资源和支持。', speaker: '旁白' }] },
-            'realm3_Q2': { chapter: 3, title: '峡谷探索', pages: [{ text: '你来到了险峻的峡谷，四周是悬崖峭壁。', speaker: '旁白' }] },
-            'realm3_Q3': { chapter: 3, title: '沙漠寻宝', pages: [{ text: '你穿越了茫茫沙漠，发现了传说中的遗迹！', speaker: '旁白' }] },
-            'realm3_Q7': { chapter: 3, title: '精英挑战', pages: [{ text: '金丹境的精英怪物实力强大，但你也不弱。', speaker: '旁白' }] },
-            'realm3_Q8': { chapter: 3, title: '修炼突破', pages: [{ text: '金丹的修炼接近圆满，元婴境的大门即将打开。', speaker: '旁白' }] },
-            'realm3_Q9': { chapter: 3, title: '秘境守卫', pages: [{ text: '击败了两位秘境守卫，你已准备好最终挑战。', speaker: '旁白' }] },
+            '3_chapter_start': { chapter: 3, title: '第四卷 · 金丹大道', pages: [{ text: '金丹已成，大道可期！你踏入了金丹境！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] },
+            'realm3_Q1': { chapter: 3, title: '门派地位', pages: [{ text: '你在门派中的地位越来越高，获得了更多的资源和支持。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] },
+            'realm3_Q2': { chapter: 3, title: '峡谷探索', pages: [{ text: '你来到了险峻的峡谷，四周是悬崖峭壁。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] },
+            'realm3_Q3': { chapter: 3, title: '沙漠寻宝', pages: [{ text: '你穿越了茫茫沙漠，发现了传说中的遗迹！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] },
+            'realm3_Q7': { chapter: 3, title: '精英挑战', pages: [{ text: '金丹境的精英怪物实力强大，但你也不弱。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] },
+            'realm3_Q8': { chapter: 3, title: '修炼突破', pages: [{ text: '金丹的修炼接近圆满，元婴境的大门即将打开。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] },
+            'realm3_Q9': { chapter: 3, title: '秘境守卫', pages: [{ text: '击败了两位秘境守卫，你已准备好最终挑战。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] },
 
             // ===== 元婴卷场景 (Q1-Q9) =====
-            '4_chapter_start': { chapter: 4, title: '第五卷 · 元婴无双', pages: [{ text: '元婴出世，神通无量！你踏入了元婴境！', speaker: '旁白' }] },
-            'realm4_Q1': { chapter: 4, title: '探索世界', pages: [{ text: '你离开了门派，开始探索这个广阔的世界。', speaker: '旁白' }] },
-            'realm4_Q2': { chapter: 4, title: '火山探索', pages: [{ text: '你来到了炽热的火山，岩浆在脚下流淌。', speaker: '旁白' }] },
-            'realm4_Q5': { chapter: 4, title: '战斗提升', pages: [{ text: '元婴境的战斗让你实力大增。', speaker: '旁白' }] },
-            'realm4_Q6': { chapter: 4, title: '精英猎手', pages: [{ text: '你已经可以轻松应对各种精英挑战。', speaker: '旁白' }] },
-            'realm4_Q8': { chapter: 4, title: '深入修炼', pages: [{ text: '元婴境的巅峰就在眼前，化神境的门槛已经打开。', speaker: '旁白' }] },
-            'realm4_Q9': { chapter: 4, title: '战斗历练', pages: [{ text: '一切准备就绪，最终之战即将到来。', speaker: '旁白' }] },
+            '4_chapter_start': { chapter: 4, title: '第五卷 · 元婴无双', pages: [{ text: '元婴出世，神通无量！你踏入了元婴境！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] },
+            'realm4_Q1': { chapter: 4, title: '探索世界', pages: [{ text: '你离开了门派，开始探索这个广阔的世界。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] },
+            'realm4_Q2': { chapter: 4, title: '火山探索', pages: [{ text: '你来到了炽热的火山，岩浆在脚下流淌。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] },
+            'realm4_Q5': { chapter: 4, title: '战斗提升', pages: [{ text: '元婴境的战斗让你实力大增。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] },
+            'realm4_Q6': { chapter: 4, title: '精英猎手', pages: [{ text: '你已经可以轻松应对各种精英挑战。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] },
+            'realm4_Q8': { chapter: 4, title: '深入修炼', pages: [{ text: '元婴境的巅峰就在眼前，化神境的门槛已经打开。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] },
+            'realm4_Q9': { chapter: 4, title: '战斗历练', pages: [{ text: '一切准备就绪，最终之战即将到来。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] },
 
             // ===== 化神卷新增场景 (Q2-Q9) =====
-            'realm5_Q2': { chapter: 5, title: '探索收集', pages: [{ text: '在化神境的修炼中，每一份资源都至关重要。', speaker: '旁白' }] },
-            'realm5_Q5': { chapter: 5, title: '战斗提升', pages: [{ text: '化神境的战斗已经接近神级。', speaker: '旁白' }] },
-            'realm5_Q8': { chapter: 5, title: '修炼巅峰', pages: [{ text: '你已达到化神境的修炼巅峰。', speaker: '旁白' }] },
-            'realm5_Q9': { chapter: 5, title: '突破枷锁', pages: [{ text: '你击败了麒麟，打破了世界的一层封印！', speaker: '旁白' }] }
+            'realm5_Q2': { chapter: 5, title: '探索收集', pages: [{ text: '在化神境的修炼中，每一份资源都至关重要。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] },
+            'realm5_Q5': { chapter: 5, title: '战斗提升', pages: [{ text: '化神境的战斗已经接近神级。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] },
+            'realm5_Q8': { chapter: 5, title: '修炼巅峰', pages: [{ text: '你已达到化神境的修炼巅峰。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] },
+            'realm5_Q9': { chapter: 5, title: '突破枷锁', pages: [{ text: '你击败了麒麟，打破了世界的一层封印！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }] }
         }
     }
 };

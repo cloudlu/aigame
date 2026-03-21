@@ -10,6 +10,8 @@
 - **[README.md](../README.md)** - 项目总览和快速开始指南
 
 ### 系统设计 ([docs/systems/](./systems/))
+- **[角色立绘系统](./systems/character-system.md)** - 10个主要角色、AI生成立绘、剧情对话显示
+- **[音效系统](./systems/audio-system.md)** - Web Audio合成、17个音效、6层战斗音乐
 - **[VIP充值系统](./systems/vip-system.md)** - 密码充值、仙玉商店、VIP等级特权
 - **[图鉴系统](./systems/collection-system.md)** - 敌人图鉴、装备图鉴、分类全解锁奖励
 - **[技能系统](./systems/skill-system.md)** - 24个技能树详细设计、伤害公式、境界压制机制
@@ -38,6 +40,8 @@
 ### 游戏系统
 | 系统 | 文档 |
 |------|------|
+| 角色立绘 | [character-system.md](./systems/character-system.md) |
+| 音效系统 | [audio-system.md](./systems/audio-system.md) |
 | VIP充值 | [vip-system.md](./systems/vip-system.md) |
 | 图鉴系统 | [collection-system.md](./systems/collection-system.md) |
 | 技能系统 | [skill-system.md](./systems/skill-system.md) |
@@ -84,6 +88,8 @@
 修改代码时请同步更新相关文档：
 - 修改API → 更新 `docs/api/rest-api.md`
 - 添加功能 → 更新 `README.md` 和 `CHANGELOG.md`
+- 修改角色立绘 → 更新 `docs/systems/character-system.md`
+- 修改音效 → 更新 `docs/systems/audio-system.md`
 - 修改技能 → 更新 `docs/systems/skill-system.md`
 - 修改地图 → 更新 `docs/systems/map-system.md`
 - 修改平衡性 → 更新 `docs/systems/balance.md`
@@ -92,4 +98,4 @@
 
 ---
 
-**最后更新**: 2026-03-16
+**最后更新**: 2026-03-21

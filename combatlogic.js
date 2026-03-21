@@ -290,12 +290,37 @@ EndlessCultivationGame.prototype.useSkill = function(skillType = 'attack') {
         return;
     }
 
-    // 播放技能声音 - 使用技能特定的音效
+    // 播放技能声音 - 根据技能类型和元素选择音效
     if (skill.soundUrl) {
+        // 如果有自定义音效URL，使用自定义音效
         this.audioSystem.playSkillSound(skill.soundUrl);
     } else {
-        // 后备音效
-        this.audioSystem.playSound('skill-0-sound', 1, 300);
+        // 根据技能类型选择音效
+        const skillTreeType = skillTree.type; // 'attack', 'defense', 'heal', 'special'
+        const skillElement = this.getSkillElementType(skill);
+
+        if (skillTreeType === 'defense') {
+            // 防御系：低沉护盾音效
+            this.audioSystem.playSound('skill-defense-sound', 0.7, 300);
+        } else if (skillTreeType === 'heal') {
+            // 恢复系：轻柔治疗音效
+            this.audioSystem.playSound('skill-heal-sound', 0.6, 300);
+        } else if (skillTreeType === 'special') {
+            // 特殊系：风属性音效
+            this.audioSystem.playSound('skill-special-sound', 0.6, 300);
+        } else {
+            // 攻击系：根据元素类型选择音效
+            if (skillElement === 'fire') {
+                this.audioSystem.playSound('skill-1-sound', 0.8, 300);
+            } else if (skillElement === 'ice') {
+                this.audioSystem.playSound('skill-2-sound', 0.7, 300);
+            } else if (skillElement === 'thunder') {
+                this.audioSystem.playSound('skill-3-sound', 0.7, 300);
+            } else {
+                // 默认攻击音效
+                this.audioSystem.playSound('skill-0-sound', 0.7, 300);
+            }
+        }
     }
 
     // 获取实际属性（包含装备和境界加成）
@@ -506,10 +531,21 @@ EndlessCultivationGame.prototype.useSkill = function(skillType = 'attack') {
             this.gameState.player.hp = Math.min(this.gameState.player.hp + healAmount, actualMaxHp);
             this.addBattleLog(`你使用了${skillDisplayName}，恢复了${healAmount}点生命值！`);
             this.showDamage(this.battle3D.player, healAmount, 'green');
+            // ✅ 创建治疗特效（绿色光华）
+            if (typeof this.createHealEffect === 'function') {
+                this.createHealEffect();
+            }
         } else if (skill.dodgeBonus) {
             this.gameState.player.dodgeActive = true;
             this.gameState.player.dodgeBonus = skill.dodgeBonus;
             this.addBattleLog(`你使用了${skillDisplayName}，提高了闪避率！`);
+            // ✅ 创建闪避技能释放特效（风属性残影）
+            if (this.battle3D && this.battle3D.player && typeof this.createDodgeEffect === 'function') {
+                const playerPosition = this.battle3D.player.position.clone();
+                playerPosition.y = 1.0;
+                console.log('🌪️ 释放闪避技能，创建特效位置:', playerPosition);
+                this.createDodgeEffect(playerPosition);
+            }
         }
 
         if (skill.energyRecover) {

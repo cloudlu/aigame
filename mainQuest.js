@@ -592,6 +592,7 @@ class MainQuestSystem {
         const speakerEl = document.getElementById('story-speaker');
         const textEl = document.getElementById('story-text');
         const indicatorEl = document.getElementById('story-page-indicator');
+        const speakerImageEl = document.getElementById('story-speaker-image');
 
         if (!overlay || !scene.pages[pageIndex]) return;
 
@@ -613,6 +614,20 @@ class MainQuestSystem {
 
         if (indicatorEl) {
             indicatorEl.textContent = `${pageIndex + 1} / ${scene.pages.length}`;
+        }
+
+        // 显示角色立绘
+        if (speakerImageEl) {
+            if (page.speakerImage) {
+                speakerImageEl.src = page.speakerImage;
+                speakerImageEl.style.display = 'block';
+                speakerImageEl.style.animation = 'none';
+                // 触发重新播放动画（缩放淡入）
+                speakerImageEl.offsetHeight; // 触发重排
+                speakerImageEl.style.animation = 'fadeIn 0.5s ease-out';
+            } else {
+                speakerImageEl.style.display = 'none';
+            }
         }
 
         this.storyPageIndex = pageIndex;
@@ -649,8 +664,14 @@ class MainQuestSystem {
      */
     closeStoryOverlay() {
         const overlay = document.getElementById('story-overlay');
+        const speakerImageEl = document.getElementById('story-speaker-image');
+
         if (overlay) {
             overlay.classList.add('hidden');
+        }
+
+        if (speakerImageEl) {
+            speakerImageEl.style.display = 'none';
         }
 
         if (this.typewriterTimer) {

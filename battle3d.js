@@ -436,9 +436,9 @@ EndlessCultivationGame.prototype.createBattleScene = function(enemyInfo) {
         // 创建普通攻击按钮
         const attackButton = document.createElement('button');
         attackButton.id = 'attack-btn';
-        attackButton.className = 'btn-primary bg-primary hover:bg-primary/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all';
+        attackButton.className = 'btn-primary bg-primary hover:bg-primary/80 w-12 h-12 rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all relative';
         attackButton.setAttribute('data-tooltip', '对敌人进行普通攻击，不消耗灵力');
-        attackButton.innerHTML = '<img src="Images/skill-0.jpg" alt="普通攻击" class="w-full h-full object-cover">';
+        attackButton.innerHTML = '<img src="Images/skill-0.jpg" alt="普通攻击" class="w-full h-full object-cover rounded-full">';
         attackButton.addEventListener('click', () => this.attackEnemy());
         attackSkillsContainer.appendChild(attackButton);
 
@@ -474,20 +474,20 @@ EndlessCultivationGame.prototype.createBattleScene = function(enemyInfo) {
 
             // 创建技能按钮
             const skillButton = document.createElement('button');
-            skillButton.className = 'btn-primary bg-accent hover:bg-accent/80 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-all';
+            skillButton.className = 'btn-primary bg-accent hover:bg-accent/80 w-12 h-12 rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all relative';
             skillButton.setAttribute('data-skill-type', skillType);
 
             if (skill && skillTree) {
                 // 有装备的技能
                 const realmName = this.metadata.realmConfig?.[skillTree.realmRequired]?.name || '未知境界';
-                const skillDisplayName = skill.displayName || skill.name;
+                const skillDisplayName = skillTree.baseDisplayName || skill.displayName || skill.name;
                 skillButton.setAttribute('data-tooltip', `${skillDisplayName}: ${skill.description || ''}，消耗${skill.energyCost}灵力，${realmName} (右键切换)`);
-                const skillImage = skill.imageId ? `Images/skill-${skill.imageId}.jpg` : `Images/${skillTypeConfig.icon}`;
-                skillButton.innerHTML = `<img src="${skillImage}" alt="${skillDisplayName}" class="w-full h-full object-cover">`;
+                const skillImage = skill.imageId ? `Images/skill-${skill.imageId}.jpg` : (skillTree.baseImageId ? `Images/skill-${skillTree.baseImageId}.jpg` : `Images/${skillTypeConfig.icon}`);
+                skillButton.innerHTML = `<img src="${skillImage}" alt="${skillDisplayName}" class="w-full h-full object-cover rounded-full">`;
             } else {
                 // 没有装备技能
                 skillButton.setAttribute('data-tooltip', `${skillTypeConfig.defaultName}（未装备）- 点击或右键选择技能`);
-                skillButton.innerHTML = `<img src="Images/${skillTypeConfig.icon}" alt="${skillTypeConfig.defaultName}" class="w-full h-full object-cover opacity-50">`;
+                skillButton.innerHTML = `<img src="Images/${skillTypeConfig.icon}" alt="${skillTypeConfig.defaultName}" class="w-full h-full object-cover rounded-full opacity-50">`;
             }
 
             // 左键点击 - 使用技能（或提示选择技能）
@@ -976,6 +976,197 @@ EndlessCultivationGame.prototype.removeDefenseEffect = function() {
         this.battle3D.defenseEffect = null;
     }
 };
+
+// 创建治疗特效（绿色光华上升）
+EndlessCultivationGame.prototype.createHealEffect = function() {
+    if (!this.battle3D || !this.battle3D.player) return;
+
+    const player = this.battle3D.player;
+    const scene = this.battle3D.scene;
+
+    // 创建粒子系统
+    const particleSystem = new BABYLON.ParticleSystem("healParticles", 50, scene);
+
+    // 使用程序化创建圆形纹理
+    const textureSize = 64;
+    const dynamicTexture = new BABYLON.DynamicTexture("healParticleTexture", textureSize, scene);
+    const ctx = dynamicTexture.getContext();
+
+    // 绘制渐变圆
+    const gradient = ctx.createRadialGradient(textureSize/2, textureSize/2, 0, textureSize/2, textureSize/2, textureSize/2);
+    gradient.addColorStop(0, "rgba(100, 255, 150, 1)");
+    gradient.addColorStop(0.5, "rgba(80, 255, 130, 0.6)");
+    gradient.addColorStop(1, "rgba(50, 200, 100, 0)");
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, textureSize, textureSize);
+    dynamicTexture.update();
+
+    particleSystem.particleTexture = dynamicTexture;
+
+    // 发射器位置（玩家脚下）
+    particleSystem.emitter = player.position.clone();
+    particleSystem.emitter.y = 0;
+
+    // 粒子颜色（绿色）
+    particleSystem.color1 = new BABYLON.Color4(0.2, 1.0, 0.3, 0.8);
+    particleSystem.color2 = new BABYLON.Color4(0.4, 1.0, 0.5, 0.6);
+    particleSystem.colorDead = new BABYLON.Color4(0.1, 0.8, 0.2, 0.0);
+
+    // 粒子大小
+    particleSystem.minSize = 0.1;
+    particleSystem.maxSize = 0.3;
+
+    // 粒子生命周期
+    particleSystem.minLifeTime = 0.8;
+    particleSystem.maxLifeTime = 1.2;
+
+    // 发射速率
+    particleSystem.emitRate = 30;
+
+    // 向上运动
+    particleSystem.direction1 = new BABYLON.Vector3(-0.5, 2, -0.5);
+    particleSystem.direction2 = new BABYLON.Vector3(0.5, 3, 0.5);
+
+    // 重力（向上飘）
+    particleSystem.gravity = new BABYLON.Vector3(0, 1, 0);
+
+    // 持续时间
+    particleSystem.targetStopDuration = 1.0;
+
+    // 开始粒子系统
+    particleSystem.start();
+
+    // 存储以便清理
+    if (!this.battle3D.particleSystems) this.battle3D.particleSystems = [];
+    this.battle3D.particleSystems.push(particleSystem);
+};
+
+// 创建闪避特效（风属性残影）
+EndlessCultivationGame.prototype.createDodgeEffect = function(position) {
+    if (!this.battle3D || !this.battle3D.scene) {
+        console.warn('⚠️ battle3D未初始化，无法创建闪避特效');
+        return;
+    }
+
+    const scene = this.battle3D.scene;
+
+    // 确定位置：如果有传入位置使用传入的，否则使用玩家位置
+    let emitterPosition;
+    if (position) {
+        emitterPosition = position;
+        console.log('🌪️ 使用传入位置创建闪避特效:', position);
+    } else if (this.battle3D.player) {
+        emitterPosition = this.battle3D.player.position.clone();
+        emitterPosition.y = 1.0;
+        console.log('🌪️ 使用玩家位置创建闪避特效:', emitterPosition);
+    } else {
+        console.warn('⚠️ 没有有效位置，无法创建闪避特效');
+        return;
+    }
+
+    console.log('✨ 开始创建闪避特效...');
+
+    // 创建主粒子系统（风属性残影）
+    const particleSystem = new BABYLON.ParticleSystem("dodgeParticles", 200, scene);
+
+    // 使用程序化创建圆形纹理
+    const textureSize = 64;
+    const dynamicTexture = new BABYLON.DynamicTexture("dodgeParticleTexture", textureSize, scene);
+    const ctx = dynamicTexture.getContext();
+
+    // 绘制渐变圆（青白色）
+    const gradient = ctx.createRadialGradient(textureSize/2, textureSize/2, 0, textureSize/2, textureSize/2, textureSize/2);
+    gradient.addColorStop(0, "rgba(220, 255, 255, 1)");
+    gradient.addColorStop(0.5, "rgba(180, 240, 255, 0.8)");
+    gradient.addColorStop(1, "rgba(150, 220, 240, 0)");
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, textureSize, textureSize);
+    dynamicTexture.update();
+
+    particleSystem.particleTexture = dynamicTexture;
+
+    // 发射器位置
+    particleSystem.emitter = emitterPosition;
+
+    // 粒子颜色（青色/白色，风属性）- 更亮更明显
+    particleSystem.color1 = new BABYLON.Color4(0.9, 1.0, 1.0, 0.9);
+    particleSystem.color2 = new BABYLON.Color4(0.7, 0.95, 1.0, 0.7);
+    particleSystem.colorDead = new BABYLON.Color4(0.6, 0.85, 0.95, 0.0);
+
+    // 粒子大小（增大）
+    particleSystem.minSize = 0.15;
+    particleSystem.maxSize = 0.35;
+
+    // 粒子生命周期（延长）
+    particleSystem.minLifeTime = 0.5;
+    particleSystem.maxLifeTime = 0.8;
+
+    // 高速发射（增加粒子数量）
+    particleSystem.emitRate = 250;
+
+    // 随机方向（模拟风，范围更大）
+    particleSystem.direction1 = new BABYLON.Vector3(-3, 1, -3);
+    particleSystem.direction2 = new BABYLON.Vector3(3, 2, 3);
+
+    // 速度（更快）
+    particleSystem.minEmitPower = 4;
+    particleSystem.maxEmitPower = 6;
+
+    // 持续时间
+    particleSystem.targetStopDuration = 0.5;
+
+    // 开始粒子系统
+    particleSystem.start();
+
+    // 存储以便清理
+    if (!this.battle3D.particleSystems) this.battle3D.particleSystems = [];
+    this.battle3D.particleSystems.push(particleSystem);
+
+    // ✅ 额外添加光环效果（增强可见度）
+    setTimeout(() => {
+        if (!this.battle3D || !this.battle3D.scene) return;
+
+        // 创建光环粒子（第二个粒子系统）
+        const ringSystem = new BABYLON.ParticleSystem("dodgeRing", 100, scene);
+        ringSystem.particleTexture = dynamicTexture;
+
+        ringSystem.emitter = emitterPosition.clone();
+
+        // 光环颜色（白色/青色）
+        ringSystem.color1 = new BABYLON.Color4(1.0, 1.0, 1.0, 0.6);
+        ringSystem.color2 = new BABYLON.Color4(0.8, 1.0, 1.0, 0.4);
+        ringSystem.colorDead = new BABYLON.Color4(0.7, 0.9, 1.0, 0.0);
+
+        // 光环大小（大圆环）
+        ringSystem.minSize = 0.3;
+        ringSystem.maxSize = 0.6;
+
+        // 生命周期
+        ringSystem.minLifeTime = 0.3;
+        ringSystem.maxLifeTime = 0.5;
+
+        // 发射速率
+        ringSystem.emitRate = 80;
+
+        // 向外扩散
+        ringSystem.direction1 = new BABYLON.Vector3(-2, 0.5, -2);
+        ringSystem.direction2 = new BABYLON.Vector3(2, 1, 2);
+
+        // 速度
+        ringSystem.minEmitPower = 5;
+        ringSystem.maxEmitPower = 7;
+
+        // 持续时间
+        ringSystem.targetStopDuration = 0.3;
+
+        ringSystem.start();
+
+        this.battle3D.particleSystems.push(ringSystem);
+    }, 100);
+};
+
 
 // 创建火焰特效（✅ 改用粒子系统，移除丑陋的圆锥体）
 EndlessCultivationGame.prototype.createFireEffects = function() {
