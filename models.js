@@ -161,7 +161,7 @@ EndlessCultivationGame.prototype.createEnemyModel = function() {
     if (!this.battle3D || !this.battle3D.scene) return;
 
     const scene = this.battle3D.scene;
-    const enemy = this.gameState.enemy;
+    const enemy = this.transientState.enemy;
     const enemyName = enemy ? String(enemy.name || '') : '';
     const isBoss = enemyName.startsWith('BOSS') || (enemy && enemy.isBoss);
     const isElite = enemyName.startsWith('精英') || (enemy && enemy.isElite);
@@ -258,7 +258,7 @@ EndlessCultivationGame.prototype.createHealthBars = function() {
         console.error('createHealthBars: battle3D不存在');
         return;
     }
-    
+
     // 创建玩家血条（红色）
     const playerHealthBar = this.createHealthBar(0xff0000); // 红色血条
     playerHealthBar.position.x = 0;
@@ -284,7 +284,7 @@ EndlessCultivationGame.prototype.createHealthBars = function() {
     // 创建敌人血条（红色）
     if (this.battle3D.enemy) {
         // 根据敌人类型获取缩放倍率（用于反缩放血条）
-        const enemy = this.gameState.enemy;
+        const enemy = this.transientState.enemy;
         const isBoss = enemy && (enemy.name.startsWith('BOSS') || enemy.isBoss);
         const isElite = enemy && (enemy.name.startsWith('精英') || enemy.isElite);
         const scale = isBoss ? SIZES.ENEMY_SCALE_BOSS : (isElite ? SIZES.ENEMY_SCALE_ELITE : SIZES.ENEMY_SCALE_NORMAL);
@@ -307,7 +307,7 @@ EndlessCultivationGame.prototype.createHealthBars = function() {
         this.battle3D.enemyHealthBar = enemyHealthBar;
 
         // 创建敌人灵力条（蓝色，Boss专用）
-        if (this.gameState.enemy && (this.gameState.enemy.isBoss || this.gameState.enemy.energy > 0)) {
+        if (this.transientState.enemy && (this.transientState.enemy.isBoss || this.transientState.enemy.energy > 0)) {
             const enemyEnergyBar = this.createHealthBar(0x0000ff);
             enemyEnergyBar.scaling.x = 0.5 / scale;
             enemyEnergyBar.scaling.y = 1.0 / scale;
@@ -322,7 +322,7 @@ EndlessCultivationGame.prototype.createHealthBars = function() {
     }
 
     this.updateHealthBars();
-    
+
 };
 
 // 创建单个血条（简单的2D平面血条）
@@ -375,25 +375,29 @@ EndlessCultivationGame.prototype.updateHealthBars = function() {
         return;
     }
 
+    // ✅ 区分探险场景和战斗场景
+    const isExplorationScene = this.battle3D.enemies && this.battle3D.enemies.length > 0;
+    const isBattleScene = this.transientState.battle && this.transientState.battle.inBattle;
+
     // 使用公共方法获取实际最大血量
     const actualMaxHp = this.getActualStats().maxHp;
 
     // 更新玩家血条
     if (this.battle3D.playerHealthBar) {
-        const playerHealthPercent = Math.max(0, this.gameState.player.hp / actualMaxHp);
+        const playerHealthPercent = Math.max(0, this.persistentState.player.hp / actualMaxHp);
         this.battle3D.playerHealthBar.scaling.x = playerHealthPercent;
         this.battle3D.playerHealthBar.position.x = 0; // 固定位置，从左边开始减少
     }
 
     // 更新玩家灵力条
     if (this.battle3D.playerEnergyBar) {
-        const playerEnergyPercent = Math.max(0, this.gameState.player.energy / this.gameState.player.maxEnergy);
+        const playerEnergyPercent = Math.max(0, this.persistentState.player.energy / this.persistentState.player.maxEnergy);
         this.battle3D.playerEnergyBar.scaling.x = playerEnergyPercent;
         this.battle3D.playerEnergyBar.position.x = 0; // 固定位置，从左边开始减少
     }
 
-    // 更新所有敌人血条（探险场景）
-    if (this.battle3D.enemies && this.battle3D.enemies.length > 0) {
+    // ✅ 探险场景：更新所有敌人血条
+    if (isExplorationScene) {
         this.battle3D.enemies.forEach(enemy => {
             if (enemy.healthBar && enemy.info) {
                 const enemyHealthPercent = Math.max(0, enemy.info.hp / enemy.info.maxHp);
@@ -404,29 +408,46 @@ EndlessCultivationGame.prototype.updateHealthBars = function() {
                 enemy.healthBar.position.x = 0;
             }
         });
+        return; // 探险场景只更新玩家和敌人列表，不更新gameState.enemy
     }
 
-    // 更新当前选中敌人的血条（战斗场景）
-    if (this.gameState.enemy && this.gameState.enemy.name) {
+    // ✅ 战斗场景：更新当前选中敌人的血条
+    if (isBattleScene && this.transientState.enemy && this.transientState.enemy.name) {
+        // 如果敌人已被击败，跳过血条更新
+        if (this.battle3D && this.battle3D.enemyDefeated) {
+            return;
+        }
+
         // 获取战斗场景敌人缩放倍率
-        const bScale = String(this.gameState.enemy.name).startsWith('BOSS') ? SIZES.ENEMY_SCALE_BOSS :
-                      (String(this.gameState.enemy.name).startsWith('精英') ? SIZES.ENEMY_SCALE_ELITE : SIZES.ENEMY_SCALE_NORMAL);
+        const bScale = String(this.transientState.enemy.name).startsWith('BOSS') ? SIZES.ENEMY_SCALE_BOSS :
+                      (String(this.transientState.enemy.name).startsWith('精英') ? SIZES.ENEMY_SCALE_ELITE : SIZES.ENEMY_SCALE_NORMAL);
 
         if (this.battle3D.enemyHealthBar) {
-            const enemyHealthPercent = Math.max(0, this.gameState.enemy.hp / this.gameState.enemy.maxHp);
+            // 检查HP是否有效（注意：hp=0是有效值，只有null/undefined才无效）
+            if (this.transientState.enemy.hp === null || this.transientState.enemy.hp === undefined ||
+                this.transientState.enemy.maxHp === null || this.transientState.enemy.maxHp === undefined) {
+                // 只在首次发现时输出警告
+                if (!this._invalidEnemyHpWarned) {
+                    console.warn('敌人HP数据无效:', this.transientState.enemy.name, this.transientState.enemy);
+                    this._invalidEnemyHpWarned = true;
+                }
+                return;
+            }
+
+            const enemyHealthPercent = Math.max(0, this.transientState.enemy.hp / this.transientState.enemy.maxHp);
             this.battle3D.enemyHealthBar.scaling.x = enemyHealthPercent / bScale;
             this.battle3D.enemyHealthBar.position.x = 0;
         }
 
         if (this.battle3D.enemyEnergyBar) {
-            const enemyEnergyPercent = Math.max(0, this.gameState.enemy.energy / (this.gameState.enemy.maxEnergy || 100));
+            const enemyEnergyPercent = Math.max(0, this.transientState.enemy.energy / (this.transientState.enemy.maxEnergy || 100));
             this.battle3D.enemyEnergyBar.scaling.x = enemyEnergyPercent / bScale;
             this.battle3D.enemyEnergyBar.position.x = 0;
         }
     }
 
     // ✅ 更新护盾特效显示/隐藏
-    if (this.gameState.player.shieldValue && this.gameState.player.shieldValue > 0) {
+    if (this.persistentState.player.shieldValue && this.persistentState.player.shieldValue > 0) {
         // 有护盾值，确保护盾特效存在
         if (!this.battle3D.defenseShield && typeof this.createDefenseEffect === 'function') {
             this.createDefenseEffect();

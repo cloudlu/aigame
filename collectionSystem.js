@@ -8,8 +8,8 @@ class CollectionSystem {
 
     // 初始化（旧存档兼容）
     init() {
-        if (!this.game.gameState.collection) {
-            this.game.gameState.collection = {
+        if (!this.game.persistentState.collection) {
+            this.game.persistentState.collection = {
                 enemies: [],
                 equipmentTypes: [],
                 rewardedCategories: []
@@ -52,7 +52,7 @@ class CollectionSystem {
 
     // 记录击杀敌人
     recordEnemy(enemy) {
-        const collection = this.game.gameState.collection;
+        const collection = this.game.persistentState.collection;
         if (!collection) return;
 
         let key;
@@ -72,13 +72,13 @@ class CollectionSystem {
 
     // 查询敌人是否已解锁
     isEnemyUnlocked(key) {
-        return this.game.gameState.collection?.enemies?.includes(key) || false;
+        return this.game.persistentState.collection?.enemies?.includes(key) || false;
     }
 
     // 获取敌人图鉴进度
     getEnemyProgress() {
         return {
-            unlocked: (this.game.gameState.collection?.enemies?.length) || 0,
+            unlocked: (this.game.persistentState.collection?.enemies?.length) || 0,
             total: this.getEnemyTotal()
         };
     }
@@ -126,7 +126,7 @@ class CollectionSystem {
 
     // 记录获取装备
     recordEquipment(equipment) {
-        const collection = this.game.gameState.collection;
+        const collection = this.game.persistentState.collection;
         if (!collection || !equipment) return;
 
         const key = `${equipment.type}_${equipment.rarity}_${equipment.suffix}`;
@@ -138,13 +138,13 @@ class CollectionSystem {
 
     // 查询装备是否已解锁
     isEquipmentUnlocked(key) {
-        return this.game.gameState.collection?.equipmentTypes?.includes(key) || false;
+        return this.game.persistentState.collection?.equipmentTypes?.includes(key) || false;
     }
 
     // 获取装备图鉴进度
     getEquipmentProgress() {
         return {
-            unlocked: (this.game.gameState.collection?.equipmentTypes?.length) || 0,
+            unlocked: (this.game.persistentState.collection?.equipmentTypes?.length) || 0,
             total: this.getEquipmentTotal()
         };
     }
@@ -153,7 +153,7 @@ class CollectionSystem {
 
     // 检查并发放敌人图鉴奖励（按地图分类全解锁）
     checkAndGrantEnemyRewards() {
-        const collection = this.game.gameState.collection;
+        const collection = this.game.persistentState.collection;
         if (!collection) return;
 
         const categories = this.getEnemyCategories();
@@ -169,19 +169,19 @@ class CollectionSystem {
             this.game.addBattleLog(`[图鉴] ${cat.name} 全解锁奖励：经验+2500，灵木+100！`);
 
             // 增加经验
-            if (this.game.gameState.player) {
-                this.game.gameState.player.exp = (this.game.gameState.player.exp || 0) + 2500;
+            if (this.game.persistentState.player) {
+                this.game.persistentState.player.exp = (this.game.persistentState.player.exp || 0) + 2500;
             }
             // 增加资源
-            if (this.game.gameState.resources) {
-                this.game.gameState.resources.wood = (this.game.gameState.resources.wood || 0) + 100;
+            if (this.game.persistentState.resources) {
+                this.game.persistentState.resources.wood = (this.game.persistentState.resources.wood || 0) + 100;
             }
         }
     }
 
     // 检查并发放装备图鉴奖励（按境界×品质分类全解锁）
     checkAndGrantEquipmentRewards() {
-        const collection = this.game.gameState.collection;
+        const collection = this.game.persistentState.collection;
         if (!collection) return;
 
         const categories = this.getEquipmentCategories();
@@ -205,13 +205,13 @@ class CollectionSystem {
                     templates[templateIdx].type, level, cat.rarity.name
                 );
                 // 放入背包
-                if (!this.game.gameState.player.inventory) {
-                    this.game.gameState.player.inventory = [];
+                if (!this.game.persistentState.player.inventory) {
+                    this.game.persistentState.player.inventory = [];
                 }
-                if (!this.game.gameState.player.inventory.items) {
-                    this.game.gameState.player.inventory.items = [];
+                if (!this.game.persistentState.player.inventory.items) {
+                    this.game.persistentState.player.inventory.items = [];
                 }
-                this.game.gameState.player.inventory.items.push(equipment);
+                this.game.persistentState.player.inventory.items.push(equipment);
                 this.game.addBattleLog(`[图鉴] 获得保底装备：${equipment.rarityDisplayName} ${equipment.name}`);
             }
         }
@@ -219,7 +219,7 @@ class CollectionSystem {
 
     // 查询分类是否已领奖
     isCategoryRewarded(categoryKey) {
-        return this.game.gameState.collection?.rewardedCategories?.includes(categoryKey) || false;
+        return this.game.persistentState.collection?.rewardedCategories?.includes(categoryKey) || false;
     }
 }
 

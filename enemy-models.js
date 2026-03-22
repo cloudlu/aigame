@@ -562,30 +562,27 @@ EndlessCultivationGame.prototype.replaceEnemyInBattle = function(newEnemy) {
     }
 
     // 2. 更新游戏状态中的敌人数据
-    this.gameState.enemy = newEnemy;
+    this.transientState.enemy = newEnemy;
 
-    // 3. 创建新敌人模型（复用createEnemyGroup逻辑）
-    const enemyInfo = {
-        name: newEnemy.name,
-        isBoss: newEnemy.isBoss,
-        isElite: newEnemy.isElite,
-        position: {
-            x: this.battle3D.enemyStartX || 5,
-            y: 0,
-            z: 0
-        }
-    };
+    // ✅ Debug: 输出敌人完整数据
+    console.log('=== [replaceEnemyInBattle] 更新敌人数据 ===');
+    console.log('敌人完整数据:', JSON.stringify(newEnemy, null, 2));
 
-    // 使用统一的敌人创建方法
-    this.battle3D.enemy = this.createEnemyGroup(enemyInfo);
+    // 3. 创建新敌人模型（使用战斗场景专用方法）
+    this.createEnemyModel();
+    console.log('敌人模型创建完成:', this.battle3D.enemy ? '成功' : '失败');
 
-    // 4. 重新创建血条（旧血条已随旧敌人模型一起被销毁）
+    // 4. 重新创建血条
     this.createHealthBars();
+    console.log('血条创建完成 - 玩家血条:', this.battle3D.playerHealthBar ? '存在' : '不存在',
+                '敌人血条:', this.battle3D.enemyHealthBar ? '存在' : '不存在');
 
     // 5. 重置战斗状态
     if (this.battle3D.isAttacking) {
         this.battle3D.isAttacking = false;
     }
+    // ✅ 重置敌人击败标志（关键！否则新敌人血条不会更新）
+    this.battle3D.enemyDefeated = false;
 
     console.log(`✅ 敌人已替换为: ${newEnemy.name} (Lv.${newEnemy.level})`);
 };

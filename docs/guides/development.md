@@ -87,10 +87,19 @@ docs/
 ```javascript
 class EndlessCultivationGame {
     constructor() {
-        this.gameState = {}  // 游戏状态
-        this.timers = {}     // 计时器
-        this.metadata = null // 元数据
+        // 数据按生命周期分类
+        this.persistentState = {}  // 持久化数据（保存到服务器）
+        this.transientState = {}   // 临时数据（运行时生成，不保存）
+        this._computedCache = {}   // 计算属性缓存（不保存）
+        this.timers = {}           // 计时器
+        this.metadata = null       // 元数据（从服务器加载）
     }
+
+    // 计算属性 getter（懒加载 + 缓存）
+    get equipmentEffects() { ... }
+
+    // 清除装备效果缓存（装备变化时调用）
+    invalidateEquipmentEffectsCache() { ... }
 }
 ```
 
@@ -188,11 +197,20 @@ equipment = {
 ### 浏览器控制台
 
 ```javascript
-// 查看游戏状态
-game.gameState
+// 查看持久化数据（保存到服务器的数据）
+game.persistentState
+
+// 查看临时数据（运行时数据，不保存）
+game.transientState
+
+// 查看计算属性缓存（运行时计算，不保存）
+game._computedCache
 
 // 修改属性
-game.gameState.player.attack = 1000
+game.persistentState.player.attack = 1000
+
+// 清除装备效果缓存（下次访问时重新计算）
+game.invalidateEquipmentEffectsCache()
 
 // 更新界面
 game.updateUI()

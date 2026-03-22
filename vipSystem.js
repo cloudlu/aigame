@@ -54,7 +54,7 @@ class VIPSystem {
 
     // 获取当前VIP等级
     getLevel() {
-        const totalRecharged = this.game.gameState?.vip?.totalRecharged || 0;
+        const totalRecharged = this.game.persistentState?.vip?.totalRecharged || 0;
         let currentLevel = 0;
         for (const vipLevel of VIPSystem.VIP_LEVELS) {
             if (totalRecharged >= vipLevel.requiredJade) {
@@ -104,9 +104,9 @@ class VIPSystem {
 
             if (result.success) {
                 // 更新本地gameState
-                this.game.gameState.resources.jade = result.totalJade;
-                this.game.gameState.vip.level = result.vipLevel;
-                this.game.gameState.vip.totalRecharged += result.jade;
+                this.game.persistentState.resources.jade = result.totalJade;
+                this.game.persistentState.vip.level = result.vipLevel;
+                this.game.persistentState.vip.totalRecharged += result.jade;
 
                 // VIP升级提示
                 if (result.vipLeveledUp) {
@@ -123,18 +123,18 @@ class VIPSystem {
 
     // 增加仙玉并自动升级VIP
     addJade(amount) {
-        if (!this.game.gameState.vip) {
-            this.game.gameState.vip = { level: 0, totalRecharged: 0 };
+        if (!this.game.persistentState.vip) {
+            this.game.persistentState.vip = { level: 0, totalRecharged: 0 };
         }
-        this.game.gameState.resources.jade = (this.game.gameState.resources.jade || 0) + amount;
-        this.game.gameState.vip.totalRecharged += amount;
+        this.game.persistentState.resources.jade = (this.game.persistentState.resources.jade || 0) + amount;
+        this.game.persistentState.vip.totalRecharged += amount;
         const newLevel = this.getLevel();
-        if (newLevel > this.game.gameState.vip.level) {
-            const oldLevel = this.game.gameState.vip.level;
-            this.game.gameState.vip.level = newLevel;
+        if (newLevel > this.game.persistentState.vip.level) {
+            const oldLevel = this.game.persistentState.vip.level;
+            this.game.persistentState.vip.level = newLevel;
             return { leveledUp: true, oldLevel, newLevel, info: VIPSystem.VIP_LEVELS[newLevel] };
         }
-        this.game.gameState.vip.level = newLevel;
+        this.game.persistentState.vip.level = newLevel;
         return { leveledUp: false };
     }
 

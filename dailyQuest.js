@@ -11,7 +11,6 @@ class DailyQuestSystem {
      * 初始化每日任务（登录时调用）
      */
     initDailyQuests() {
-        console.log('[每日任务] initDailyQuests 被调用');
         if (!this.game.metadata.dailyQuestConfig) {
             console.log('[每日任务] 没有dailyQuestConfig，跳过初始化');
             return;
@@ -22,7 +21,7 @@ class DailyQuestSystem {
         if (needsRefresh) {
             console.log('[每日任务] 正在生成新任务...');
             this.generateDailyQuests();
-            this.game.gameState.dailyQuests.completedToday = false;
+            this.game.persistentState.dailyQuests.completedToday = false;
         }
 
         this.updateDailyQuestUI();
@@ -32,23 +31,23 @@ class DailyQuestSystem {
      * 检查是否需要刷新每日任务（日期对比）
      */
     checkDailyQuestRefresh() {
-        const dq = this.game.gameState.dailyQuests;
+        const dq = this.game.persistentState.dailyQuests;
         // 使用本地日期而非UTC日期，避免时区问题
         const today = this.getLocalDateString();
 
-        console.log(`[每日任务] 检查刷新: today=${today}, lastRefreshDate=${dq?.lastRefreshDate}`);
+        console.debug(`[每日任务] 检查刷新: today=${today}, lastRefreshDate=${dq?.lastRefreshDate}`);
 
         if (!dq || dq.lastRefreshDate !== today) {
-            console.log(`[每日任务] 需要刷新 (dq=${!dq ? '不存在' : '日期不同'})`);
+            console.debug(`[每日任务] 需要刷新 (dq=${!dq ? '不存在' : '日期不同'})`);
             return true;
         }
 
         if (!dq.quests || dq.quests.length === 0) {
-            console.log(`[每日任务] 需要刷新 (没有任务)`);
+            console.debug(`[每日任务] 需要刷新 (没有任务)`);
             return true;
         }
 
-        console.log(`[每日任务] 不需要刷新`);
+        console.debug(`[每日任务] 不需要刷新`);
         return false;
     }
 
@@ -71,8 +70,8 @@ class DailyQuestSystem {
     generateDailyQuests() {
         const config = this.game.metadata.dailyQuestConfig;
         const templates = config.templates;
-        const realmIndex = this.game.gameState.player.realm?.currentRealm || 0;
-        const stageNum = this.game.gameState.player.realm?.currentStage || 1;
+        const realmIndex = this.game.persistentState.player.realm?.currentRealm || 0;
+        const stageNum = this.game.persistentState.player.realm?.currentStage || 1;
         const theme = config.baseValues;
         const tc = this.game.metadata.questTemplateConfig;
         const stageMult = tc.stageMultiplier[stageNum - 1];
@@ -81,7 +80,7 @@ class DailyQuestSystem {
         const shuffled = [...templates].sort(() => Math.random() - 0.5);
         const selected = shuffled.slice(0, config.questsPerDay);
 
-        const dq = this.game.gameState.dailyQuests;
+        const dq = this.game.persistentState.dailyQuests;
 
         if (dq.lastRefreshDate) {
             const lastDate = new Date(dq.lastRefreshDate);
@@ -102,7 +101,7 @@ class DailyQuestSystem {
         }
 
         const today = this.getLocalDateString();
-        this.game.gameState.dailyQuests = {
+        this.game.persistentState.dailyQuests = {
             lastRefreshDate: today,
             quests,
             activityPoints: dq.activityPoints || 0,
@@ -215,7 +214,7 @@ class DailyQuestSystem {
      * 每日任务进度追踪（被主线事件钩子调用）
      */
     trackDailyQuestProgress(eventType, eventData) {
-        const dq = this.game.gameState.dailyQuests;
+        const dq = this.game.persistentState.dailyQuests;
         if (!dq || !dq.quests) return;
 
         let changed = false;
@@ -276,7 +275,7 @@ class DailyQuestSystem {
      * 领取每日任务奖励
      */
     claimDailyQuestReward(questIndex) {
-        const dq = this.game.gameState.dailyQuests;
+        const dq = this.game.persistentState.dailyQuests;
         if (!dq || !dq.quests[questIndex]) return;
 
         const quest = dq.quests[questIndex];
@@ -297,8 +296,8 @@ class DailyQuestSystem {
         const goldReward = Math.floor(quest.rewards.gold * (1 + bonusMult));
         const activityReward = quest.rewards.activityPoints;
 
-        if (expReward) this.game.gameState.player.exp += expReward;
-        if (goldReward) this.game.gameState.resources.gold = (this.game.gameState.resources.gold || 0) + goldReward;
+        if (expReward) this.game.persistentState.player.exp += expReward;
+        if (goldReward) this.game.persistentState.resources.gold = (this.game.persistentState.resources.gold || 0) + goldReward;
         dq.activityPoints = (dq.activityPoints || 0) + activityReward;
         dq.totalCompleted = (dq.totalCompleted || 0) + 1;
         quest.claimed = true;
@@ -323,7 +322,7 @@ class DailyQuestSystem {
      * 检查今日所有每日任务是否全部完成
      */
     checkDailyAllComplete() {
-        const dq = this.game.gameState.dailyQuests;
+        const dq = this.game.persistentState.dailyQuests;
         if (!dq || dq.completedToday) return;
 
         const allClaimed = dq.quests.every(q => q.claimed);
@@ -349,7 +348,7 @@ class DailyQuestSystem {
      * 仙玉速通单个任务
      */
     instantCompleteQuest(questIndex) {
-        const dq = this.game.gameState.dailyQuests;
+        const dq = this.game.persistentState.dailyQuests;
         if (!dq || !dq.quests[questIndex]) {
             this.game.addBattleLog('❌ 任务不存在！');
             return { success: false };
@@ -363,7 +362,7 @@ class DailyQuestSystem {
         }
 
         const JADE_COST = 80;
-        const jade = this.game.gameState.resources?.jade || 0;
+        const jade = this.game.persistentState.resources?.jade || 0;
 
         if (jade < JADE_COST) {
             this.game.addBattleLog(`❌ 仙玉不足！速通需要 ${JADE_COST} 仙玉，当前 ${jade} 仙玉`);
@@ -371,7 +370,7 @@ class DailyQuestSystem {
         }
 
         // 扣除仙玉
-        this.game.gameState.resources.jade -= JADE_COST;
+        this.game.persistentState.resources.jade -= JADE_COST;
 
         // 完成任务
         quest.current = quest.target;
@@ -391,7 +390,7 @@ class DailyQuestSystem {
      * 仙玉速通所有未完成的任务
      */
     instantCompleteAll() {
-        const dq = this.game.gameState.dailyQuests;
+        const dq = this.game.persistentState.dailyQuests;
         if (!dq || !dq.quests) {
             this.game.addBattleLog('❌ 没有每日任务！');
             return { success: false };
@@ -409,7 +408,7 @@ class DailyQuestSystem {
         const JADE_COST_ALL = 200; // 一键速通优惠价
 
         const totalCost = incompleteQuests.length > 1 ? JADE_COST_ALL : JADE_COST_PER_QUEST;
-        const jade = this.game.gameState.resources?.jade || 0;
+        const jade = this.game.persistentState.resources?.jade || 0;
 
         if (jade < totalCost) {
             this.game.addBattleLog(`❌ 仙玉不足！一键速通需要 ${totalCost} 仙玉，当前 ${jade} 仙玉`);
@@ -417,7 +416,7 @@ class DailyQuestSystem {
         }
 
         // 扣除仙玉
-        this.game.gameState.resources.jade -= totalCost;
+        this.game.persistentState.resources.jade -= totalCost;
 
         // 完成所有未完成任务
         let completedCount = 0;
@@ -443,7 +442,7 @@ class DailyQuestSystem {
      * 获取速通所需仙玉数量
      */
     getInstantCompleteCost() {
-        const dq = this.game.gameState.dailyQuests;
+        const dq = this.game.persistentState.dailyQuests;
         if (!dq || !dq.quests) return { single: 80, all: 200, hasIncomplete: false };
 
         const incompleteCount = dq.quests.filter(q => !q.completed && !q.claimed).length;
@@ -460,12 +459,12 @@ class DailyQuestSystem {
      * 确认单个任务速通（显示确认弹窗）
      */
     confirmInstantComplete(questIndex) {
-        const dq = this.game.gameState.dailyQuests;
+        const dq = this.game.persistentState.dailyQuests;
         if (!dq || !dq.quests[questIndex]) return;
 
         const quest = dq.quests[questIndex];
         const JADE_COST = 80;
-        const jade = this.game.gameState.resources?.jade || 0;
+        const jade = this.game.persistentState.resources?.jade || 0;
 
         if (jade < JADE_COST) {
             this.game.addBattleLog(`❌ 仙玉不足！速通需要 ${JADE_COST} 仙玉，当前 ${jade} 仙玉`);
@@ -493,7 +492,7 @@ class DailyQuestSystem {
      */
     confirmInstantCompleteAll() {
         const costInfo = this.getInstantCompleteCost();
-        const jade = this.game.gameState.resources?.jade || 0;
+        const jade = this.game.persistentState.resources?.jade || 0;
 
         if (jade < costInfo.all) {
             this.game.addBattleLog(`❌ 仙玉不足！一键速通需要 ${costInfo.all} 仙玉，当前 ${jade} 仙玉`);
@@ -520,7 +519,7 @@ class DailyQuestSystem {
      * 获取当前连续完成奖励配置
      */
     getStreakBonus() {
-        const dq = this.game.gameState.dailyQuests;
+        const dq = this.game.persistentState.dailyQuests;
         if (!dq || !dq.streak) return null;
 
         const streakRewards = this.game.metadata.dailyQuestConfig.streakRewards;
@@ -537,7 +536,7 @@ class DailyQuestSystem {
      * 获取下一个连续完成奖励配置（用于UI显示）
      */
     getNextStreakBonus() {
-        const dq = this.game.gameState.dailyQuests;
+        const dq = this.game.persistentState.dailyQuests;
         if (!dq) return null;
 
         const streakDays = dq.streak || 0;
@@ -587,7 +586,7 @@ class DailyQuestSystem {
         const contentEl = document.getElementById('quest-tab-daily-content');
         if (!contentEl) return;
 
-        const dq = this.game.gameState.dailyQuests;
+        const dq = this.game.persistentState.dailyQuests;
         if (!dq || !dq.quests || dq.quests.length === 0) {
             contentEl.innerHTML = '<div class="text-white/50 text-center py-8">暂无每日任务</div>';
             return;
@@ -595,8 +594,8 @@ class DailyQuestSystem {
 
         const tc = this.game.metadata.questTemplateConfig;
         const realmNames = ['武者', '炼气', '筑基', '金丹', '元婴', '化神'];
-        const realmIndex = this.game.gameState.player.realm?.currentRealm || 0;
-        const stageNum = this.game.gameState.player.realm?.currentStage || 1;
+        const realmIndex = this.game.persistentState.player.realm?.currentRealm || 0;
+        const stageNum = this.game.persistentState.player.realm?.currentStage || 1;
         const stageConfig = this.game.metadata.realmConfig[realmIndex]?.stages[stageNum - 1];
         const stageLabel = stageConfig?.name || '';
         const stageDisplay = `${realmNames[realmIndex]}${stageLabel}`;
@@ -707,7 +706,7 @@ class DailyQuestSystem {
         // 一键速通按钮（有未完成任务时显示）
         const costInfo = this.getInstantCompleteCost();
         if (!allClaimed && costInfo.hasIncomplete) {
-            const jadeBalance = this.game.gameState.resources?.jade || 0;
+            const jadeBalance = this.game.persistentState.resources?.jade || 0;
             const canAfford = jadeBalance >= costInfo.all;
             headerHtml += `
                 <button
@@ -738,7 +737,7 @@ class DailyQuestSystem {
         const badge = document.getElementById('daily-quest-badge');
         if (!badge) return;
 
-        const dq = this.game.gameState.dailyQuests;
+        const dq = this.game.persistentState.dailyQuests;
         if (!dq || !dq.quests) {
             badge.classList.add('hidden');
             return;

@@ -242,27 +242,22 @@ function verifyToken(req, res, next) {
 // 保存游戏状态
 app.post('/api/save', verifyToken, (req, res) => {
     try {
-        let { gameState } = req.body;
+        const { gameState } = req.body;
         const userId = req.user.userId;
-        
+
         if (!gameState) {
             return res.status(400).json({ error: 'Missing gameState' });
         }
-        
-        // 过滤掉元数据部分和不需要存储的临时数据
-        const metadataFields = ['equipmentRarities', 'equipmentTemplates', 'dropRates', 'enemyTypes', 'skills', 'shop', 'mapBackgrounds', 'sceneMonsters', 'user', 'metadata'];
-        metadataFields.forEach(field => {
-            if (gameState[field]) {
-                delete gameState[field];
-            }
-        });
-                
-        // 生成保存文件路径
+
+        // 验证必需字段
+        if (!gameState.player) {
+            return res.status(400).json({ error: 'Missing player data' });
+        }
+
+        // 直接保存，客户端已过滤临时数据
         const saveFilePath = path.join(SAVE_DIR, `${userId}.json`);
-        
-        // 保存游戏状态到文件
         fs.writeFileSync(saveFilePath, JSON.stringify(gameState, null, 2));
-        
+
         res.json({ success: true, message: 'Game state saved successfully' });
     } catch (error) {
         console.error('Error saving game:', error);

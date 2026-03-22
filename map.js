@@ -20,7 +20,7 @@ EndlessCultivationGame.prototype.refreshEnemies = function() {
     console.log('刷新敌人分布...');
 
     // 清空场景怪物数据
-    this.gameState.sceneMonsters = [];
+    this.transientState.sceneMonsters = [];
 
     // 重新生成小地图
     this.generateMiniMap();
@@ -58,9 +58,9 @@ EndlessCultivationGame.prototype.showEnemyInfo = function(enemyInfo) {
     // 更新敌人图标
     const enemyIconElement = document.querySelector('#enemy-icon i');
     if (enemyIconElement) {
-        if (this.gameState.enemy?.name) {
+        if (this.transientState.enemy?.name) {
             // 使用新的战力计算方法
-            const enemyPower = this.calculateEnemyCombatPower(this.gameState.enemy);
+            const enemyPower = this.calculateEnemyCombatPower(this.transientState.enemy);
             const playerPower = this.calculatePlayerCombatPower();
 
             // 更新敌人战力显示
@@ -69,9 +69,9 @@ EndlessCultivationGame.prototype.showEnemyInfo = function(enemyInfo) {
 
             // 根据战斗力对比确定敌人颜色
             let enemyColorClass = 'text-danger'; // 默认红色
-            if (this.gameState.enemy.isBoss) {
+            if (this.transientState.enemy.isBoss) {
                 enemyColorClass = 'text-purple-500'; // BOSS显示紫色
-            } else if (this.gameState.enemy.isElite) {
+            } else if (this.transientState.enemy.isElite) {
                 enemyColorClass = 'text-yellow-500'; // 精英怪显示黄色
             } else {
                 const powerRatio = enemyPower / playerPower;
@@ -83,7 +83,7 @@ EndlessCultivationGame.prototype.showEnemyInfo = function(enemyInfo) {
                     enemyColorClass = 'text-red-500'; // 比玩家厉害显示红色
                 }
             }
-            enemyIconElement.className = `fa ${this.gameState.enemy.icon} text-xl ${enemyColorClass}`;
+            enemyIconElement.className = `fa ${this.transientState.enemy.icon} text-xl ${enemyColorClass}`;
         }
     }
     
@@ -96,12 +96,12 @@ EndlessCultivationGame.prototype.showEnemyInfo = function(enemyInfo) {
     eliteBadge.className = 'ml-2 text-xs bg-yellow-500 text-black px-1.5 py-0.5 rounded hidden font-bold';
     enemyInfoElement.classList.remove('border-yellow-500', 'bg-yellow-900/20', 'border-purple-500', 'bg-purple-900/20');
  
-    if (this.gameState.enemy.isElite) {
+    if (this.transientState.enemy.isElite) {
         eliteBadge.classList.remove('hidden');
         // 为精英怪添加特殊样式
         enemyInfoElement.classList.add('border-yellow-500');
         enemyInfoElement.classList.add('bg-yellow-900/20');
-    } else if (this.gameState.enemy.isBoss) {
+    } else if (this.transientState.enemy.isBoss) {
         eliteBadge.classList.remove('hidden');
         eliteBadge.textContent = 'BOSS';
         eliteBadge.className = 'ml-2 text-xs bg-purple-500 text-white px-1.5 py-0.5 rounded font-bold';
@@ -115,22 +115,22 @@ EndlessCultivationGame.prototype.showEnemyInfo = function(enemyInfo) {
 
     // 更新敌人装备掉率信息
     const enemyDropRatesElement = document.getElementById('enemy-drop-rates');
-    if (this.gameState.enemy?.name) {
+    if (this.transientState.enemy?.name) {
         // 从 metadata 获取掉率配置
         const dropRatesConfig = this.metadata.dropRates;
 
         // 根据怪物类型选择对应的掉率表
         let dropRates;
-        if (this.gameState.enemy.isBoss) {
+        if (this.transientState.enemy.isBoss) {
             dropRates = dropRatesConfig.boss;
-        } else if (this.gameState.enemy.isElite) {
+        } else if (this.transientState.enemy.isElite) {
             dropRates = dropRatesConfig.elite;
         } else {
             dropRates = dropRatesConfig.normal;
         }
 
         // 考虑幸运值影响（每点幸运值提高0.5%的高品质装备掉率）
-        const luck = this.gameState.player.luck || 0;
+        const luck = this.persistentState.player.luck || 0;
         const luckBonus = luck * 0.005;
 
         // 调整掉率，提高高品质装备的概率
@@ -261,7 +261,7 @@ EndlessCultivationGame.prototype.clearEnemyInfo = function() {
 EndlessCultivationGame.prototype.showAttackConfirmation = function(enemyInfo) {
 
     // 设置游戏状态中的敌人信息
-    this.gameState.enemy = enemyInfo;
+    this.transientState.enemy = enemyInfo;
     
     // 显示敌人信息
     this.showEnemyInfo(enemyInfo);
@@ -284,12 +284,12 @@ EndlessCultivationGame.prototype.encounterEnemy = function(enemyInfo, initScene 
         this.saveMapState();
         
         // 从场景怪物数据中移除该敌人
-        if (this.gameState.sceneMonsters) {
-            const index = this.gameState.sceneMonsters.findIndex(monster => 
+        if (this.transientState.sceneMonsters) {
+            const index = this.transientState.sceneMonsters.findIndex(monster => 
                 monster.cellIndex === enemyInfo.cellIndex
             );
             if (index > -1) {
-                this.gameState.sceneMonsters.splice(index, 1);
+                this.transientState.sceneMonsters.splice(index, 1);
             }
         }
         
@@ -318,7 +318,7 @@ EndlessCultivationGame.prototype.encounterEnemy = function(enemyInfo, initScene 
     }
         
     // 创建完整的战斗场景
-    this.createBattleScene(this.gameState.enemy);
+    this.createBattleScene(this.transientState.enemy);
 
 }
 
@@ -451,8 +451,8 @@ EndlessCultivationGame.prototype.initMap3DScene = function() {
     groundMaterial.diffuseTexture.vScale = 4.0;
 
     // 根据地图类型设置不同的地面颜色
-    if (this.metadata.mapBackgrounds.length > 0 && this.gameState.currentBackgroundIndex !== undefined) {
-        const currentBackground = this.metadata.mapBackgrounds[this.gameState.currentBackgroundIndex];
+    if (this.metadata.mapBackgrounds.length > 0 && this.persistentState.currentBackgroundIndex !== undefined) {
+        const currentBackground = this.metadata.mapBackgrounds[this.persistentState.currentBackgroundIndex];
         const mapType = currentBackground.type;
 
         // 为不同地图类型设置不同的地面颜色
@@ -522,7 +522,7 @@ EndlessCultivationGame.prototype.initMap3DScene = function() {
                         this.handleMouseClick();
                         
                         // 点击后检查敌人碰撞
-                        if (!this.gameState.battle.inBattle) {
+                        if (!this.transientState.battle.inBattle) {
                             this.checkSceneMonsterCollision();
                         }
                     }
@@ -629,7 +629,7 @@ EndlessCultivationGame.prototype.generateMiniMap = function() {
 
     const SKY_SIZE = this.battle3D ? this.battle3D.SKY_SIZE : SIZES.SKY_SIZE;
 
-    this.gameState.sceneMonsters = [];
+    this.transientState.sceneMonsters = [];
     const totalCells = 49;  // 7x7 网格
     const enemyDistribution = this.createEnemyDistribution(totalCells);
     const playerCell = 24;  // 7x7 中心格
@@ -652,7 +652,7 @@ EndlessCultivationGame.prototype.generateMiniMap = function() {
 
             const enemyInfo = this.createEnemy(enemyDistribution, enemyIndex, enemyX, enemyZ, i);
             enemyIndex++;
-            this.gameState.sceneMonsters.push(enemyInfo);
+            this.transientState.sceneMonsters.push(enemyInfo);
             const enemyIcon = this.createEnemyIcon(enemyInfo);
             gridCell.appendChild(enemyIcon);
         }
@@ -669,7 +669,7 @@ EndlessCultivationGame.prototype.createEnemyDistribution = function(totalCells) 
     const totalEnemies = Math.max(30, Math.floor(availableCells * 0.9));
 
     // 获取当前地图的境界需求
-    const mapType = this.metadata.mapBackgrounds[this.gameState.currentBackgroundIndex]?.type;
+    const mapType = this.metadata.mapBackgrounds[this.persistentState.currentBackgroundIndex]?.type;
     const realmReq = this.metadata.mapRealmRequirements[mapType];
     const realmLevel = realmReq ? realmReq.realm : 0; // 0-5
 
@@ -722,7 +722,7 @@ EndlessCultivationGame.prototype.renderMiniMap = function() {
         gridCell.className = 'bg-dark/30 rounded flex items-center justify-center';
         gridCell.dataset.cellIndex = i;
 
-        const enemyInCell = this.gameState.sceneMonsters.find(monster => monster.cellIndex === i);
+        const enemyInCell = this.transientState.sceneMonsters.find(monster => monster.cellIndex === i);
         if (enemyInCell) {
             const icon = this.createEnemyIcon(enemyInCell);
             gridCell.appendChild(icon);
@@ -778,7 +778,7 @@ EndlessCultivationGame.prototype.createEnemyIcon = function(enemyInfo) {
 
 // 创建敌人实体并返回信息对象
 EndlessCultivationGame.prototype.createEnemy = function(enemyDistribution, enemyIndex, x, z, i) {
-    const playerLevel = this.calculateTotalLevel(this.gameState.player);
+    const playerLevel = this.calculateTotalLevel(this.persistentState.player);
     const enemyLevel = Math.max(1, Math.min(playerLevel + 3, playerLevel + Math.floor(Math.random() * 3) - 1));
 
     const enemyType = enemyDistribution[enemyIndex];
@@ -795,13 +795,13 @@ EndlessCultivationGame.prototype.createEnemy = function(enemyDistribution, enemy
     }
 
     // 获取当前地图类型
-    const currentBackground = this.metadata.mapBackgrounds && this.gameState.currentBackgroundIndex !== undefined ?
-        this.metadata.mapBackgrounds[this.gameState.currentBackgroundIndex] : null;
+    const currentBackground = this.metadata.mapBackgrounds && this.persistentState.currentBackgroundIndex !== undefined ?
+        this.metadata.mapBackgrounds[this.persistentState.currentBackgroundIndex] : null;
     const mapType = currentBackground ? currentBackground.type : null;
 
     if (!mapType) {
         console.error('createEnemy: 当前地图类型未定义', {
-            currentBackgroundIndex: this.gameState.currentBackgroundIndex,
+            currentBackgroundIndex: this.persistentState.currentBackgroundIndex,
             mapBackgroundsLength: this.metadata.mapBackgrounds?.length
         });
         return null;
@@ -886,7 +886,7 @@ EndlessCultivationGame.prototype.saveMapState = function() {
     this.mapState = {
         playerPosition: this.battle3D ? this.battle3D.player.position.clone() : null,
         enemies: this.battle3D ? this.battle3D.enemies.filter(e => e.active) : [],
-        sceneMonsters: JSON.parse(JSON.stringify(this.gameState.sceneMonsters)),
+        sceneMonsters: JSON.parse(JSON.stringify(this.transientState.sceneMonsters)),
         needsRefresh: false
     };
 };
@@ -900,11 +900,11 @@ EndlessCultivationGame.prototype.checkSceneMonsterCollision = function() {
     }
 
     // 检查场景怪物数据是否存在
-    if (!this.gameState.sceneMonsters || this.gameState.sceneMonsters.length === 0) {
+    if (!this.transientState.sceneMonsters || this.transientState.sceneMonsters.length === 0) {
         console.warn('checkSceneMonsterCollision: sceneMonsters 为空');
-        this.gameState.battle.inBattle = false;
+        this.transientState.battle.inBattle = false;
         this.clearEnemyInfo();
-        this.gameState.enemy = null;
+        this.transientState.enemy = null;
         return;
     }
 
@@ -918,8 +918,8 @@ EndlessCultivationGame.prototype.checkSceneMonsterCollision = function() {
     let enemyInCollision = false;
 
     // 遍历所有场景怪物，找到最近的敌人
-    for (let i = 0; i < this.gameState.sceneMonsters.length; i++) {
-        const monster = this.gameState.sceneMonsters[i];
+    for (let i = 0; i < this.transientState.sceneMonsters.length; i++) {
+        const monster = this.transientState.sceneMonsters[i];
 
         // 飞行敌人：垂直距离太远则跳过
         if (monster.isFlying) {
@@ -956,9 +956,9 @@ EndlessCultivationGame.prototype.checkSceneMonsterCollision = function() {
     } else {
         // 玩家离开了所有敌人的感知范围，清除敌人信息
         console.log('玩家离开敌人感知范围，清除敌人信息');
-        this.gameState.battle.inBattle = false;
+        this.transientState.battle.inBattle = false;
         this.clearEnemyInfo();
-        this.gameState.enemy = null;
+        this.transientState.enemy = null;
     }
 };
 
@@ -999,14 +999,14 @@ EndlessCultivationGame.prototype.restoreMapScene = function() {
     }
 
     this.battle3D = null;
-    this.gameState.battle.inBattle = false;
+    this.transientState.battle.inBattle = false;
 
     // 恢复场景怪物状态
     if (this.mapState && this.mapState.sceneMonsters) {
-        const enemyDefeated = this.gameState.enemy && this.gameState.enemy.hp <= 0;
+        const enemyDefeated = this.transientState.enemy && this.transientState.enemy.hp <= 0;
 
         if (enemyDefeated) {
-            const currentEnemyCellIndex = this.gameState.enemy.cellIndex;
+            const currentEnemyCellIndex = this.transientState.enemy.cellIndex;
             if (currentEnemyCellIndex !== undefined) {
                 this.mapState.sceneMonsters = this.mapState.sceneMonsters.filter(monster =>
                     monster.cellIndex !== currentEnemyCellIndex
@@ -1014,9 +1014,9 @@ EndlessCultivationGame.prototype.restoreMapScene = function() {
             }
         }
 
-        this.gameState.sceneMonsters = JSON.parse(JSON.stringify(this.mapState.sceneMonsters));
+        this.transientState.sceneMonsters = JSON.parse(JSON.stringify(this.mapState.sceneMonsters));
 
-        if (this.gameState.sceneMonsters.length === 0) {
+        if (this.transientState.sceneMonsters.length === 0) {
             // 所有敌人都被击败，刷新地图
             this.generateMiniMap();
         } else {
@@ -1075,7 +1075,7 @@ EndlessCultivationGame.prototype.handleKeyPress = function(e) {
     console.log('检测到键盘按键:', e.key);
 
     // 优先处理战斗中的技能快捷键
-    if (this.gameState.battle.inBattle) {
+    if (this.transientState.battle.inBattle) {
         const attackSkillsContainer = document.getElementById('attack-skills');
         if (attackSkillsContainer) {
             const skillButtons = attackSkillsContainer.querySelectorAll('button');
@@ -1179,7 +1179,7 @@ EndlessCultivationGame.prototype.handleKeyPress = function(e) {
             break;
         case 'Escape':
             // 按ESC键退出战斗或停止移动
-            if (this.gameState.battle.inBattle) {
+            if (this.transientState.battle.inBattle) {
                 this.stopAutoBattle();
                 this.stopAutoPlay();
             }
@@ -1244,7 +1244,7 @@ EndlessCultivationGame.prototype.handleKeyPress = function(e) {
 
 // 切换飞行模式
 EndlessCultivationGame.prototype.toggleFlight = function() {
-    if (this.gameState.battle.inBattle) return;
+    if (this.transientState.battle.inBattle) return;
     if (!this.battle3D || !this.battle3D.player) return;
 
     this.isFlying = !this.isFlying;
@@ -1272,7 +1272,7 @@ EndlessCultivationGame.prototype.handleMouseClick = function() {
         console.log('player 不存在');
         return;
     }
-    if (this.gameState.battle.inBattle) {
+    if (this.transientState.battle.inBattle) {
         console.log('正在战斗中，无法移动');
         return;
     }
@@ -1343,7 +1343,7 @@ EndlessCultivationGame.prototype.movePlayerTo = function(targetPos, onArrival, f
 
     const step = (currentTime) => {
         // 检查是否在战斗中，如果是则停止移动
-        if (this.gameState.battle.inBattle) {
+        if (this.transientState.battle.inBattle) {
             this.isMoving = false;
             this.moveAnimationId = null;
             return;
@@ -1424,7 +1424,7 @@ EndlessCultivationGame.prototype.movePlayerToEnemy = function(enemyInfo) {
         return;
     }
 
-    if (this.gameState.battle.inBattle) {
+    if (this.transientState.battle.inBattle) {
         // 如果正在战斗，直接显示敌人信息
         this.showAttackConfirmation(enemyInfo);
         return;
@@ -1484,7 +1484,7 @@ EndlessCultivationGame.prototype.applySceneAtmosphere = function(scene, backgrou
 // 更新地图背景（UI + 3D场景统一入口）
 EndlessCultivationGame.prototype.updateMapBackground = function() {
     if (this.metadata.mapBackgrounds.length === 0) return;
-    const currentBackground = this.metadata.mapBackgrounds[this.gameState.currentBackgroundIndex];
+    const currentBackground = this.metadata.mapBackgrounds[this.persistentState.currentBackgroundIndex];
     if (!currentBackground) return;
 
     // 更新地图名称显示
@@ -1663,7 +1663,7 @@ EndlessCultivationGame.prototype.createSpiritParticles = function() {
 
 // 创建落叶粒子系统（森林地图）
 EndlessCultivationGame.prototype.createLeafParticles = function() {
-    const mapType = this.metadata.mapBackgrounds[this.gameState.currentBackgroundIndex]?.type;
+    const mapType = this.metadata.mapBackgrounds[this.persistentState.currentBackgroundIndex]?.type;
 
     // 只在森林地图显示
     if (mapType !== 'xianxia-forest' || !this.battle3D || !this.battle3D.scene) return;
@@ -1705,9 +1705,9 @@ EndlessCultivationGame.prototype.createPreGeneratedEnemies = function() {
     this.battle3D.enemies = [];
 
     // 使用场景怪物数据生成敌人
-    if (this.gameState.sceneMonsters && this.gameState.sceneMonsters.length > 0) {
+    if (this.transientState.sceneMonsters && this.transientState.sceneMonsters.length > 0) {
         // 遍历场景怪物数据
-        for (const enemyInfo of this.gameState.sceneMonsters) {
+        for (const enemyInfo of this.transientState.sceneMonsters) {
             // 创建简单的敌人模型（不使用复杂的模型创建函数，避免冲突）
             const enemyGroup = this.createEnemyGroup(enemyInfo);
 
@@ -1832,7 +1832,7 @@ EndlessCultivationGame.prototype.forceSpawnQuestBoss = function() {
     const targetBossName = bossObjective.targetBoss;
 
     // 检查场景中是否已有该Boss
-    const existingBoss = this.gameState.sceneMonsters.find(
+    const existingBoss = this.transientState.sceneMonsters.find(
         m => m.name && m.name.includes(targetBossName) && m.isBoss
     );
     if (existingBoss) {
@@ -1849,7 +1849,7 @@ EndlessCultivationGame.prototype.forceSpawnQuestBoss = function() {
     }
 
     // 创建Boss数据（参考createEnemy逻辑）
-    const playerLevel = this.calculateTotalLevel(this.gameState.player);
+    const playerLevel = this.calculateTotalLevel(this.persistentState.player);
     const enemyLevel = Math.max(1, playerLevel + 2);
 
     const baseHp = selectedEnemyType.baseHp || 30;
@@ -1879,7 +1879,7 @@ EndlessCultivationGame.prototype.forceSpawnQuestBoss = function() {
     const enemyZ = playerPos ? playerPos.z + Math.sin(spawnAngle) * spawnDist : Math.sin(spawnAngle) * spawnDist;
 
     // 找一个空闲的小地图格子
-    const usedCells = new Set(this.gameState.sceneMonsters.map(m => m.cellIndex));
+    const usedCells = new Set(this.transientState.sceneMonsters.map(m => m.cellIndex));
     let cellIndex = -1;
     for (let i = 0; i < 49; i++) {
         if (i === 24 || !usedCells.has(i)) { cellIndex = i; break; }
@@ -1912,7 +1912,7 @@ EndlessCultivationGame.prototype.forceSpawnQuestBoss = function() {
     };
 
     // 添加到场景怪物数据
-    this.gameState.sceneMonsters.push(enemyInfo);
+    this.transientState.sceneMonsters.push(enemyInfo);
 
     // 创建3D模型
     if (this.battle3D && this.battle3D.scene) {
@@ -1981,7 +1981,7 @@ EndlessCultivationGame.prototype.createSkyDome = function() {
     if (!this.battle3D || !this.battle3D.scene) return;
 
     const scene = this.battle3D.scene;
-    const currentIndex = this.gameState.currentBackgroundIndex;
+    const currentIndex = this.persistentState.currentBackgroundIndex;
 
     console.log('创建修仙场景背景，地图索引:', currentIndex);
 
@@ -2243,7 +2243,7 @@ EndlessCultivationGame.prototype.createGradientBackground = function(scene) {
     const SKY_SIZE = this.battle3D ? this.battle3D.SKY_SIZE : SIZES.SKY_SIZE;
 
     // 根据地图类型设置天空颜色
-    const mapType = this.metadata.mapBackgrounds[this.gameState.currentBackgroundIndex]?.type || 'default';
+    const mapType = this.metadata.mapBackgrounds[this.persistentState.currentBackgroundIndex]?.type || 'default';
     let skyColorTop, fogColor, mountainColorFar, mountainColorNear;
 
     // 不同地图类型的配色方案
@@ -2441,7 +2441,7 @@ EndlessCultivationGame.prototype.createTrees = function() {
     const scene = this.battle3D.scene;
 
     // 根据地图类型调整装饰
-    const mapType = this.metadata.mapBackgrounds[this.gameState.currentBackgroundIndex]?.type || 'default';
+    const mapType = this.metadata.mapBackgrounds[this.persistentState.currentBackgroundIndex]?.type || 'default';
 
     // ===== 树木材质 =====
     const trunkMaterial = new BABYLON.StandardMaterial("trunkMaterial", scene);

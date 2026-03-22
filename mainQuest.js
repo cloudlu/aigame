@@ -5,6 +5,9 @@ class MainQuestSystem {
         this.game = game;
         this.storyPageIndex = 0;
         this.typewriterTimer = null;
+
+        // 任务缓存（运行时，不存储）
+        this._questCache = {};
     }
 
     // ========== 任务模板生成引擎 ==========
@@ -209,17 +212,18 @@ class MainQuestSystem {
      * 获取/缓存当前等级的任务
      */
     getCurrentLevelQuests() {
-        const mq = this.game.gameState.mainQuest;
+        const mq = this.game.persistentState.mainQuest;
         const levelKey = `r${mq.currentRealm}_s${mq.currentStage}_l${mq.currentLevel}`;
 
-        if (mq.generatedCache && mq.generatedCache[levelKey]) {
-            return mq.generatedCache[levelKey];
+        // 使用内存缓存（不存储到存档）
+        if (this._questCache[levelKey]) {
+            return this._questCache[levelKey];
         }
 
         const quests = this.generateQuestForLevel(mq.currentRealm, mq.currentStage, mq.currentLevel);
 
-        if (!mq.generatedCache) mq.generatedCache = {};
-        mq.generatedCache[levelKey] = quests;
+        // 缓存到内存
+        this._questCache[levelKey] = quests;
         return quests;
     }
 
@@ -227,7 +231,7 @@ class MainQuestSystem {
      * 初始化当前等级的任务
      */
     initLevelQuests(realmIndex, stageNum, levelInStage) {
-        const mq = this.game.gameState.mainQuest;
+        const mq = this.game.persistentState.mainQuest;
         mq.currentRealm = realmIndex;
         mq.currentStage = stageNum;
         mq.currentLevel = levelInStage;
@@ -242,9 +246,9 @@ class MainQuestSystem {
                     if (o.type === 'visit_map' || o.type === 'kill_boss') {
                         currentVal = false;
                     } else if (o.type === 'reach_level') {
-                        currentVal = this.game.gameState.player.realm?.currentLevel || 1;
+                        currentVal = this.game.persistentState.player.realm?.currentLevel || 1;
                     } else if (o.type === 'reach_stage') {
-                        currentVal = this.game.gameState.player.realm?.currentStage || 1;
+                        currentVal = this.game.persistentState.player.realm?.currentStage || 1;
                     } else {
                         currentVal = 0;
                     }
@@ -311,7 +315,7 @@ class MainQuestSystem {
      * 初始化主线任务（新玩家/境界突破后调用）
      */
     initMainQuest(realmIndex) {
-        const realm = this.game.gameState.player.realm;
+        const realm = this.game.persistentState.player.realm;
         const stageNum = realm?.currentStage || 1;
         const levelInStage = realm?.currentLevel || 1;
 
@@ -373,7 +377,7 @@ class MainQuestSystem {
 
                 case 'reach_level':
                     {
-                        const currentLevel = this.game.gameState.player.realm?.currentLevel || 1;
+                        const currentLevel = this.game.persistentState.player.realm?.currentLevel || 1;
                         if (currentLevel !== objective.current) {
                             objective.current = Math.min(currentLevel, objective.target);
                             changed = true;
@@ -383,7 +387,7 @@ class MainQuestSystem {
 
                 case 'reach_stage':
                     {
-                        const currentStage = this.game.gameState.player.realm?.currentStage || 1;
+                        const currentStage = this.game.persistentState.player.realm?.currentStage || 1;
                         if (currentStage !== objective.current) {
                             objective.current = Math.min(currentStage, objective.target);
                             changed = true;
@@ -412,7 +416,7 @@ class MainQuestSystem {
      * 任务完成处理
      */
     onMainQuestComplete(questDef) {
-        const mq = this.game.gameState.mainQuest;
+        const mq = this.game.persistentState.mainQuest;
 
         if (!mq.completedQuests.includes(questDef.id)) {
             mq.completedQuests.push(questDef.id);
@@ -456,9 +460,9 @@ class MainQuestSystem {
                     if (o.type === 'visit_map' || o.type === 'kill_boss') {
                         currentVal = false;
                     } else if (o.type === 'reach_level') {
-                        currentVal = this.game.gameState.player.realm?.currentLevel || 1;
+                        currentVal = this.game.persistentState.player.realm?.currentLevel || 1;
                     } else if (o.type === 'reach_stage') {
-                        currentVal = this.game.gameState.player.realm?.currentStage || 1;
+                        currentVal = this.game.persistentState.player.realm?.currentStage || 1;
                     } else {
                         currentVal = 0;
                     }
@@ -471,7 +475,7 @@ class MainQuestSystem {
             this.game.addBattleLog(`📚 当前等级任务已全部完成，继续修炼升级以解锁新任务！`);
 
             // 玩家可能已经升到更高等级（通过每日任务奖励等），直接初始化新任务
-            const realm = this.game.gameState.player.realm;
+            const realm = this.game.persistentState.player.realm;
             if (realm && (realm.currentLevel > mq.currentLevel || realm.currentStage !== mq.currentStage || realm.currentRealm !== mq.currentRealm)) {
                 this.initLevelQuests(realm.currentRealm, realm.currentStage, realm.currentLevel);
             }
@@ -486,15 +490,15 @@ class MainQuestSystem {
         if (!rewards) return;
 
         if (rewards.exp) {
-            this.game.gameState.player.exp += rewards.exp;
+            this.game.persistentState.player.exp += rewards.exp;
         }
 
         if (rewards.gold) {
-            this.game.gameState.resources.gold = (this.game.gameState.resources.gold || 0) + rewards.gold;
+            this.game.persistentState.resources.gold = (this.game.persistentState.resources.gold || 0) + rewards.gold;
         }
 
         if (rewards.skillPoints) {
-            this.game.gameState.player.skillPoints = (this.game.gameState.player.skillPoints || 0) + rewards.skillPoints;
+            this.game.persistentState.player.skillPoints = (this.game.persistentState.player.skillPoints || 0) + rewards.skillPoints;
         }
 
         if (questDef.rewardItems && this.game.equipmentSystem) {
@@ -517,7 +521,7 @@ class MainQuestSystem {
      * 境界任务线完成 → 通知玩家可以突破
      */
     onRealmQuestLineComplete() {
-        const currentRealm = this.game.gameState.mainQuest.currentRealm;
+        const currentRealm = this.game.persistentState.mainQuest.currentRealm;
 
         if (currentRealm >= 5) {
             return;
@@ -552,14 +556,14 @@ class MainQuestSystem {
         const questDef = this.getCurrentQuestDef();
         if (!questDef) return null;
 
-        return this.game.gameState.mainQuest.questData[questDef.id] || null;
+        return this.game.persistentState.mainQuest.questData[questDef.id] || null;
     }
 
     /**
      * 获取当前任务定义
      */
     getCurrentQuestDef() {
-        const mq = this.game.gameState.mainQuest;
+        const mq = this.game.persistentState.mainQuest;
         const currentQuests = this.getCurrentLevelQuests();
 
         if (!currentQuests || mq.currentLevelQuestIndex >= currentQuests.length) return null;
@@ -572,12 +576,12 @@ class MainQuestSystem {
      * 触发剧情播放
      */
     triggerStory(sceneId) {
-        if (this.game.gameState.mainStory.currentScene) return;
+        if (this.game.persistentState.mainStory.currentScene) return;
 
         const scene = this.game.metadata.storyScenes?.scenes?.[sceneId];
         if (!scene) return;
 
-        this.game.gameState.mainStory.currentScene = sceneId;
+        this.game.persistentState.mainStory.currentScene = sceneId;
         this.storyPageIndex = 0;
 
         this.showStoryOverlay(scene, 0);
@@ -637,7 +641,7 @@ class MainQuestSystem {
      * 剧情页面切换
      */
     nextStoryPage() {
-        const sceneId = this.game.gameState.mainStory.currentScene;
+        const sceneId = this.game.persistentState.mainStory.currentScene;
         if (!sceneId) return;
 
         const scene = this.game.metadata.storyScenes?.scenes?.[sceneId];
@@ -648,11 +652,11 @@ class MainQuestSystem {
         if (nextIndex >= scene.pages.length) {
             this.closeStoryOverlay();
 
-            if (!this.game.gameState.mainStory.viewedScenes.includes(sceneId)) {
-                this.game.gameState.mainStory.viewedScenes.push(sceneId);
+            if (!this.game.persistentState.mainStory.viewedScenes.includes(sceneId)) {
+                this.game.persistentState.mainStory.viewedScenes.push(sceneId);
             }
 
-            this.game.gameState.mainStory.currentScene = null;
+            this.game.persistentState.mainStory.currentScene = null;
             this.game.saveGameState();
         } else {
             this.showStoryOverlay(scene, nextIndex);
@@ -711,7 +715,7 @@ class MainQuestSystem {
         const container = document.getElementById('quest-tab-story-content');
         if (!container) return;
 
-        const viewedScenes = this.game.gameState.mainStory.viewedScenes || [];
+        const viewedScenes = this.game.persistentState.mainStory.viewedScenes || [];
 
         const chapters = {};
         for (const sceneId of viewedScenes) {
@@ -763,7 +767,7 @@ class MainQuestSystem {
         if (modal) modal.classList.add('hidden');
 
         setTimeout(() => {
-            this.game.gameState.mainStory.currentScene = sceneId;
+            this.game.persistentState.mainStory.currentScene = sceneId;
             this.storyPageIndex = 0;
             this.showStoryOverlay(scene, 0);
         }, 300);
@@ -775,12 +779,12 @@ class MainQuestSystem {
      * 获取当前境界的阶段显示名称
      */
     getStageDisplay(stageNum) {
-        const realmIndex = this.game.gameState.mainQuest.currentRealm;
+        const realmIndex = this.game.persistentState.mainQuest.currentRealm;
         const realmNames = ['武者', '炼气', '筑基', '金丹', '元婴', '化神'];
         const realm = this.game.metadata.realmConfig[realmIndex];
         if (!realm) return '';
 
-        const st = stageNum || (this.game.gameState.player.realm?.currentStage || 1);
+        const st = stageNum || (this.game.persistentState.player.realm?.currentStage || 1);
         const stage = realm.stages[st - 1];
         if (!stage) return `${realmNames[realmIndex]}第${st}阶`;
         return `${realmNames[realmIndex]}${stage.name}${st}阶`;
@@ -790,7 +794,7 @@ class MainQuestSystem {
      * 获取阶段的简短名称（不含境界前缀）
      */
     getStageShortName(stageNum) {
-        const realmIndex = this.game.gameState.mainQuest.currentRealm;
+        const realmIndex = this.game.persistentState.mainQuest.currentRealm;
         const realm = this.game.metadata.realmConfig[realmIndex];
         if (!realm) return '';
         const stage = realm.stages[stageNum - 1];
@@ -804,7 +808,7 @@ class MainQuestSystem {
      * 更新主线任务 UI
      */
     updateMainQuestUI() {
-        const mq = this.game.gameState.mainQuest;
+        const mq = this.game.persistentState.mainQuest;
         const questDef = this.getCurrentQuestDef();
         const questState = this.getCurrentQuestState();
 
@@ -876,12 +880,12 @@ class MainQuestSystem {
                 progressText = current ? `已到达 ${mapNames[obj.targetMap] || obj.targetMap}` : `前往 ${mapNames[obj.targetMap] || obj.targetMap}`;
                 progressPercent = current ? 100 : 0;
             } else if (obj.type === 'reach_level') {
-                const currentLevel = this.game.gameState.player.realm?.currentLevel || 1;
+                const currentLevel = this.game.persistentState.player.realm?.currentLevel || 1;
                 const stageLabel = this.getStageDisplay();
                 progressText = currentLevel >= target ? `${stageLabel} 已达到 ${target} 级` : `${stageLabel} 达到 ${target} 级 (当前: ${currentLevel}级)`;
                 progressPercent = Math.min(100, (currentLevel / target) * 100);
             } else if (obj.type === 'reach_stage') {
-                const currentStage = this.game.gameState.player.realm?.currentStage || 1;
+                const currentStage = this.game.persistentState.player.realm?.currentStage || 1;
                 const targetLabel = this.getStageDisplay(target);
                 const currentLabel = this.getStageDisplay(currentStage);
                 progressText = currentStage >= target ? `已突破到 ${targetLabel}` : `突破到 ${targetLabel} (当前: ${currentLabel})`;
@@ -955,13 +959,13 @@ class MainQuestSystem {
                 <div id="completed-quests-list" class="hidden mt-2 space-y-1 max-h-40 overflow-y-auto">
                     ${mq.completedQuests.map(id => {
                         let name = id;
-                        if (mq.generatedCache) {
-                            for (const key in mq.generatedCache) {
-                                const cached = mq.generatedCache[key];
-                                const found = cached.find(q => q.id === id);
-                                if (found) { name = found.name; break; }
-                            }
+                        // 从内存缓存中查找任务名称
+                        for (const key in this._questCache) {
+                            const cached = this._questCache[key];
+                            const found = cached.find(q => q.id === id);
+                            if (found) { name = found.name; break; }
                         }
+                        // 回退到 metadata 查找
                         if (name === id) {
                             for (let r = 0; r <= 5; r++) {
                                 const quests = this.game.metadata.mainStoryQuests[r] || [];

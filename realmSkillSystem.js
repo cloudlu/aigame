@@ -21,24 +21,24 @@ class RealmSkillSystem {
         }
 
         // 检查境界要求
-        const currentRealm = this.game.gameState.player.realm.currentRealm;
+        const currentRealm = this.game.persistentState.player.realm.currentRealm;
         if (currentRealm < skillTree.realmRequired) {
             console.warn(`Skill tree ${skillTreeId} requires realm ${skillTree.realmRequired}, current realm ${currentRealm}`);
             return false;
         }
 
         // 初始化技能等级数据
-        if (!this.game.gameState.player.skills.levels) {
-            this.game.gameState.player.skills.levels = {};
+        if (!this.game.persistentState.player.skills.levels) {
+            this.game.persistentState.player.skills.levels = {};
         }
 
         // 解锁第一个技能等级
-        this.game.gameState.player.skills.levels[skillTreeId] = 1;
+        this.game.persistentState.player.skills.levels[skillTreeId] = 1;
         console.log(`学习了技能树: ${skillTree.name} (Lv.1: ${skillTree.levels[0].name})`);
 
         // 自动装备技能（按类型装备）
-        if (!this.game.gameState.player.skills.equipped) {
-            this.game.gameState.player.skills.equipped = {
+        if (!this.game.persistentState.player.skills.equipped) {
+            this.game.persistentState.player.skills.equipped = {
                 attack: null,
                 defense: null,
                 recovery: null,
@@ -48,8 +48,8 @@ class RealmSkillSystem {
 
         // 装备到对应类型的槽位
         const skillType = skillTree.type; // attack, defense, recovery, special
-        if (!this.game.gameState.player.skills.equipped[skillType]) {
-            this.game.gameState.player.skills.equipped[skillType] = skillTreeId;
+        if (!this.game.persistentState.player.skills.equipped[skillType]) {
+            this.game.persistentState.player.skills.equipped[skillType] = skillTreeId;
             console.log(`自动装备技能到 ${skillType} 槽位: ${skillTree.name}`);
         }
 
@@ -70,10 +70,10 @@ class RealmSkillSystem {
         }
 
         // 检查技能等级
-        if (!this.game.gameState.player.skills.levels) {
-            this.game.gameState.player.skills.levels = {};
+        if (!this.game.persistentState.player.skills.levels) {
+            this.game.persistentState.player.skills.levels = {};
         }
-        const currentLevel = this.game.gameState.player.skills.levels[skillTreeId] || 0;
+        const currentLevel = this.game.persistentState.player.skills.levels[skillTreeId] || 0;
 
         // 检查升级条件
         if (currentLevel >= skillTree.levels.length) {
@@ -82,7 +82,7 @@ class RealmSkillSystem {
         }
 
         // 检查阶段要求
-        const currentStage = this.game.gameState.player.realm.currentStage;
+        const currentStage = this.game.persistentState.player.realm.currentStage;
         const nextLevelData = skillTree.levels[currentLevel];
         if (nextLevelData && nextLevelData.stageRequired !== undefined && currentStage < nextLevelData.stageRequired) {
             console.warn(`技能树 ${skillTreeId} requires stage ${nextLevelData.stageRequired}, current stage ${currentStage}`);
@@ -91,26 +91,26 @@ class RealmSkillSystem {
 
         // 检查玩家境界是否满足升级条件
         const requiredRealm = skillTree.realmRequired;
-        if (this.game.gameState.player.realm.currentRealm < requiredRealm) {
-            console.warn(`Cannot upgrade ${skillTree.name}: 境界不足 (需要 ${requiredRealm}, 当前 ${this.game.gameState.player.realm.currentRealm})`);
+        if (this.game.persistentState.player.realm.currentRealm < requiredRealm) {
+            console.warn(`Cannot upgrade ${skillTree.name}: 境界不足 (需要 ${requiredRealm}, 当前 ${this.game.persistentState.player.realm.currentRealm})`);
             return false;
         }
 
         // 检查灵力消耗
         const upgradeCost = nextLevelData.energyCost;
-        if (this.game.gameState.player.energy < upgradeCost) {
-            console.warn(`Not enough energy to upgrade ${skillTree.name} (需要 ${upgradeCost}, current energy ${this.game.gameState.player.energy})`);
+        if (this.game.persistentState.player.energy < upgradeCost) {
+            console.warn(`Not enough energy to upgrade ${skillTree.name} (需要 ${upgradeCost}, current energy ${this.game.persistentState.player.energy})`);
             return false;
         }
 
         // 执行升级
-        this.game.gameState.player.energy -= upgradeCost;
-        this.game.gameState.player.skills.levels[skillTreeId] = currentLevel + 1;
+        this.game.persistentState.player.energy -= upgradeCost;
+        this.game.persistentState.player.skills.levels[skillTreeId] = currentLevel + 1;
 
         // 自动装备到对应类型的槽位（如果该槽位为空）
         const skillType = skillTree.type;
-        if (!this.game.gameState.player.skills.equipped[skillType]) {
-            this.game.gameState.player.skills.equipped[skillType] = skillTreeId;
+        if (!this.game.persistentState.player.skills.equipped[skillType]) {
+            this.game.persistentState.player.skills.equipped[skillType] = skillTreeId;
             console.log(`自动装备技能到 ${skillType} 槽位: ${skillTree.name}`);
         }
 
@@ -124,7 +124,7 @@ class RealmSkillSystem {
 
     // 获取指定类型的当前装备技能
     getCurrentSkill(skillType = 'attack') {
-        const equippedSkillId = this.game.gameState.player.skills.equipped?.[skillType];
+        const equippedSkillId = this.game.persistentState.player.skills.equipped?.[skillType];
 
         if (!equippedSkillId) {
             return null;
@@ -136,7 +136,7 @@ class RealmSkillSystem {
             return null;
         }
 
-        const skillLevel = this.game.gameState.player.skills.levels[equippedSkillId] || 0;
+        const skillLevel = this.game.persistentState.player.skills.levels[equippedSkillId] || 0;
         if (skillLevel === 0) {
             return null;
         }
@@ -168,7 +168,7 @@ class RealmSkillSystem {
 
     // 获取指定类型的所有可用技能（已学习且符合境界要求）
     getAvailableSkillsByType(skillType) {
-        const currentRealm = this.game.gameState.player.realm.currentRealm;
+        const currentRealm = this.game.persistentState.player.realm.currentRealm;
 
         return this.game.metadata.realmSkills.filter(tree => {
             // 检查类型
@@ -178,12 +178,12 @@ class RealmSkillSystem {
             if (tree.realmRequired > currentRealm) return false;
 
             // 检查是否已学习
-            const level = this.game.gameState.player.skills.levels[tree.id] || 0;
+            const level = this.game.persistentState.player.skills.levels[tree.id] || 0;
             if (level === 0) return false;
 
             return true;
         }).map(tree => {
-            const level = this.game.gameState.player.skills.levels[tree.id];
+            const level = this.game.persistentState.player.skills.levels[tree.id];
             const skillData = tree.levels[level - 1];
             const realmName = this.game.metadata.realmConfig?.[tree.realmRequired]?.name || '未知境界';
 
@@ -207,20 +207,20 @@ class RealmSkillSystem {
 
     // 获取指定技能树的当前等级
     getSkillTreeLevel(skillTreeId) {
-        return this.game.gameState.player.skills.levels[skillTreeId] || 0;
+        return this.game.persistentState.player.skills.levels[skillTreeId] || 0;
     }
 
     // 获取可用的技能树列表(当前境界已解锁且满足阶段要求)
     getAvailableSkillTrees() {
-        const currentRealm = this.game.gameState.player.realm.currentRealm;
-        const currentStage = this.game.gameState.player.realm.currentStage;
+        const currentRealm = this.game.persistentState.player.realm.currentRealm;
+        const currentStage = this.game.persistentState.player.realm.currentStage;
 
         return this.game.metadata.realmSkills.filter(tree => {
             // 检查境界要求
             if (tree.realmRequired > currentRealm) return false;
 
             // 检查是否已学习
-            const level = this.game.gameState.player.skills.levels[tree.id] || 0;
+            const level = this.game.persistentState.player.skills.levels[tree.id] || 0;
             if (level === 0) return false;
 
             // 检查是否有可升级的技能等级
@@ -241,13 +241,13 @@ class RealmSkillSystem {
     // 初始化默认技能树(新玩家)
     initializeDefaultSkillTrees() {
         // 初始化技能等级
-        if (!this.game.gameState.player.skills.levels) {
-            this.game.gameState.player.skills.levels = {};
+        if (!this.game.persistentState.player.skills.levels) {
+            this.game.persistentState.player.skills.levels = {};
         }
 
         // 初始化装备槽位（按类型）
-        if (!this.game.gameState.player.skills.equipped) {
-            this.game.gameState.player.skills.equipped = {
+        if (!this.game.persistentState.player.skills.equipped) {
+            this.game.persistentState.player.skills.equipped = {
                 attack: null,
                 defense: null,
                 recovery: null,
@@ -268,13 +268,13 @@ class RealmSkillSystem {
                     const firstSkill = skillsOfType[0];
 
                     // 如果还没学习，则学习
-                    if (!this.game.gameState.player.skills.levels[firstSkill.id]) {
+                    if (!this.game.persistentState.player.skills.levels[firstSkill.id]) {
                         this.learnSkillTree(firstSkill.id);
                     }
 
                     // 如果该类型槽位为空，则装备
-                    if (!this.game.gameState.player.skills.equipped[type]) {
-                        this.game.gameState.player.skills.equipped[type] = firstSkill.id;
+                    if (!this.game.persistentState.player.skills.equipped[type]) {
+                        this.game.persistentState.player.skills.equipped[type] = firstSkill.id;
                     }
                 }
             });

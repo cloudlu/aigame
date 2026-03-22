@@ -26,7 +26,7 @@ class JadeShop {
 
     // 获取当前仙玉余额
     getJadeBalance() {
-        return this.game.gameState?.resources?.jade || 0;
+        return this.game.persistentState?.resources?.jade || 0;
     }
 
     // 购买商品
@@ -42,7 +42,7 @@ class JadeShop {
         }
 
         // 扣除仙玉
-        this.game.gameState.resources.jade -= item.jade;
+        this.game.persistentState.resources.jade -= item.jade;
 
         // 根据类型发放商品
         let result = { success: true, message: `购买${item.name}成功！`, item: item };
@@ -56,15 +56,15 @@ class JadeShop {
 
             case 'item':
                 if (item.item === 'breakthrough_stone') {
-                    this.game.gameState.resources.breakthroughStones =
-                        (this.game.gameState.resources.breakthroughStones || 0) + item.amount;
+                    this.game.persistentState.resources.breakthroughStones =
+                        (this.game.persistentState.resources.breakthroughStones || 0) + item.amount;
                     result.message = `购买${item.name}成功！突破石+${item.amount}`;
                 }
                 break;
 
             case 'exp':
-                this.game.gameState.player.exp =
-                    (this.game.gameState.player.exp || 0) + item.expAmount;
+                this.game.persistentState.player.exp =
+                    (this.game.persistentState.player.exp || 0) + item.expAmount;
                 result.message = `购买${item.name}成功！获得${item.expAmount}经验值`;
                 // 检查升级
                 if (this.game.checkLevelUp) {
@@ -74,21 +74,21 @@ class JadeShop {
 
             case 'reforge':
                 // 重铸石放入背包，使用时选择装备
-                if (!this.game.gameState.player.inventory.consumables) {
-                    this.game.gameState.player.inventory.consumables = {};
+                if (!this.game.persistentState.player.inventory.consumables) {
+                    this.game.persistentState.player.inventory.consumables = {};
                 }
-                this.game.gameState.player.inventory.consumables.reforge_stone =
-                    (this.game.gameState.player.inventory.consumables.reforge_stone || 0) + 1;
+                this.game.persistentState.player.inventory.consumables.reforge_stone =
+                    (this.game.persistentState.player.inventory.consumables.reforge_stone || 0) + 1;
                 result.message = `购买${item.name}成功！可在背包中使用`;
                 break;
 
             case 'fusion':
                 // 合成石放入背包，合成装备时使用提高成功率
-                if (!this.game.gameState.player.inventory.consumables) {
-                    this.game.gameState.player.inventory.consumables = {};
+                if (!this.game.persistentState.player.inventory.consumables) {
+                    this.game.persistentState.player.inventory.consumables = {};
                 }
-                this.game.gameState.player.inventory.consumables.fusion_stone =
-                    (this.game.gameState.player.inventory.consumables.fusion_stone || 0) + 1;
+                this.game.persistentState.player.inventory.consumables.fusion_stone =
+                    (this.game.persistentState.player.inventory.consumables.fusion_stone || 0) + 1;
                 result.message = `购买${item.name}成功！合成装备时可使用`;
                 break;
         }
@@ -110,7 +110,7 @@ class JadeShop {
         const type = template.type;
 
         // 根据人物境界确定装备等级
-        const realm = this.game.gameState.player.realm;
+        const realm = this.game.persistentState.player.realm;
         const equipmentLevel = realm.currentRealm + 1;
 
         // 使用装备系统的生成函数
@@ -120,19 +120,19 @@ class JadeShop {
 
     // 重铸装备（重新随机属性，保留品质和等级）
     reforgeEquipment(slot) {
-        const equipment = this.game.gameState.player.equipment[slot];
+        const equipment = this.game.persistentState.player.equipment[slot];
         if (!equipment) {
             return { success: false, message: '该槽位没有装备！' };
         }
 
         // 检查重铸石
-        const reforgeStones = this.game.gameState.player.inventory.consumables?.reforge_stone || 0;
+        const reforgeStones = this.game.persistentState.player.inventory.consumables?.reforge_stone || 0;
         if (reforgeStones <= 0) {
             return { success: false, message: '没有重铸石！' };
         }
 
         // 消耗重铸石
-        this.game.gameState.player.inventory.consumables.reforge_stone -= 1;
+        this.game.persistentState.player.inventory.consumables.reforge_stone -= 1;
 
         // 获取模板
         const template = this.game.metadata.equipmentTemplates.find(t => t.type === equipment.type);

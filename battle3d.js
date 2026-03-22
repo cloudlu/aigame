@@ -108,7 +108,7 @@ EndlessCultivationGame.prototype.createBattleScene = function(enemyInfo) {
     }
 
     // 设置战斗状态
-    this.gameState.battle.inBattle = true;
+    this.transientState.battle.inBattle = true;
 
     // 清理当前场景
     if (this.battle3D) {
@@ -116,7 +116,7 @@ EndlessCultivationGame.prototype.createBattleScene = function(enemyInfo) {
             try {
                 this.battle3D.engine.dispose();
             } catch (e) {
-                console.log('清理旧引擎时出错:', e);
+                console.error('清理旧引擎时出错:', e);
             }
         }
     }
@@ -152,8 +152,7 @@ EndlessCultivationGame.prototype.createBattleScene = function(enemyInfo) {
     // ✅ 随机选择场景主题
     const sceneType = getRandomBattleScene();
     const sceneConfig = SCENE_CONFIGS[sceneType];
-    console.log(`战斗场景: ${sceneConfig.name}`);
-
+    
     // 设置场景背景色
     scene.clearColor = sceneConfig.skyColor;
 
@@ -284,10 +283,10 @@ EndlessCultivationGame.prototype.createBattleScene = function(enemyInfo) {
 
                 // 构建工具提示内容（含装备效果和境界加成）
                 playerTooltip.innerHTML = `
-                    <div class="font-bold">${this.gameState.user?.username || '玩家'}</div>
+                    <div class="font-bold">${this.persistentState.user?.username || '玩家'}</div>
                     <div>等级: ${this.calculateTotalLevel()}</div>
                     <div>生命值: ${stats.hp}/${stats.maxHp}</div>
-                    <div>灵力: ${this.gameState.player.energy}/${this.gameState.player.maxEnergy}</div>
+                    <div>灵力: ${this.persistentState.player.energy}/${this.persistentState.player.maxEnergy}</div>
                     <div>攻击: ${stats.attack}</div>
                     <div>防御: ${stats.defense}</div>
                     <div>速度: ${stats.speed}</div>
@@ -354,10 +353,10 @@ EndlessCultivationGame.prototype.createBattleScene = function(enemyInfo) {
 
                 // 构建工具提示内容
                 enemyTooltip.innerHTML = `
-                    <div class="font-bold">${this.gameState.enemy.name}</div>
-                    <div>等级: ${this.gameState.enemy.level}</div>
-                    <div>生命值: ${this.gameState.enemy.hp}/${this.gameState.enemy.maxHp}</div>
-                    ${this.gameState.enemy.isBoss || this.gameState.enemy.energy > 0 ? `<div>灵力: ${this.gameState.enemy.energy}/${this.gameState.enemy.maxEnergy || 100}</div>` : ''}
+                    <div class="font-bold">${this.transientState.enemy.name}</div>
+                    <div>等级: ${this.transientState.enemy.level}</div>
+                    <div>生命值: ${this.transientState.enemy.hp}/${this.transientState.enemy.maxHp}</div>
+                    ${this.transientState.enemy.isBoss || this.transientState.enemy.energy > 0 ? `<div>灵力: ${this.transientState.enemy.energy}/${this.transientState.enemy.maxEnergy || 100}</div>` : ''}
                     <div>攻击: ${enemyStats.attack}</div>
                     <div>防御: ${enemyStats.defense}</div>
                     <div>速度: ${enemyStats.speed}</div>
@@ -390,7 +389,6 @@ EndlessCultivationGame.prototype.createBattleScene = function(enemyInfo) {
     const sceneTitleElement = document.getElementById('battle-scene-title');
     if (sceneTitleElement) {
         sceneTitleElement.textContent = sceneConfig.name;
-        console.log(`✅ 战斗标题已更新为: ${sceneConfig.name}`);
     }
 
     // 创建玩家和敌人模型
@@ -423,7 +421,7 @@ EndlessCultivationGame.prototype.createBattleScene = function(enemyInfo) {
     });
 
     // 动态生成技能按钮（按类型生成4个技能按钮）
-    if (this.gameState.player && this.gameState.player.skills) {
+    if (this.persistentState.player && this.persistentState.player.skills) {
         const attackSkillsContainer = document.getElementById('attack-skills');
         if (!attackSkillsContainer) {
             console.error('attack-skills container not found');
@@ -455,15 +453,15 @@ EndlessCultivationGame.prototype.createBattleScene = function(enemyInfo) {
             const skillType = skillTypeConfig.type;
 
             // 获取当前装备的该类型技能
-            const equippedSkillId = this.gameState.player.skills.equipped?.[skillType];
+            const equippedSkillId = this.persistentState.player.skills.equipped?.[skillType];
             let skill = null;
             let skillTree = null;
 
             if (equippedSkillId) {
                 skillTree = this.metadata.realmSkills?.find(tree => tree.id === equippedSkillId);
                 if (skillTree) {
-                    const skillLevel = this.gameState.player.skills.levels[equippedSkillId] || 0;
-                    const playerRealm = this.gameState.player.realm.currentRealm;
+                    const skillLevel = this.persistentState.player.skills.levels[equippedSkillId] || 0;
+                    const playerRealm = this.persistentState.player.realm.currentRealm;
 
                     // 检查境界要求：只有境界满足时才显示技能
                     if (skillLevel > 0 && skillTree.realmRequired <= playerRealm) {
@@ -507,8 +505,6 @@ EndlessCultivationGame.prototype.createBattleScene = function(enemyInfo) {
 
             attackSkillsContainer.appendChild(skillButton);
         });
-
-        console.log(`生成了 1 个普通攻击按钮 + 4 个技能按钮`);
     }
 
     // 淡入效果
@@ -1055,17 +1051,13 @@ EndlessCultivationGame.prototype.createDodgeEffect = function(position) {
     let emitterPosition;
     if (position) {
         emitterPosition = position;
-        console.log('🌪️ 使用传入位置创建闪避特效:', position);
-    } else if (this.battle3D.player) {
+        } else if (this.battle3D.player) {
         emitterPosition = this.battle3D.player.position.clone();
         emitterPosition.y = 1.0;
-        console.log('🌪️ 使用玩家位置创建闪避特效:', emitterPosition);
     } else {
         console.warn('⚠️ 没有有效位置，无法创建闪避特效');
         return;
     }
-
-    console.log('✨ 开始创建闪避特效...');
 
     // 创建主粒子系统（风属性残影）
     const particleSystem = new BABYLON.ParticleSystem("dodgeParticles", 200, scene);
@@ -1174,11 +1166,9 @@ EndlessCultivationGame.prototype.createFireEffects = function() {
 
     // ✅ 只在熔岩地狱场景创建熔岩特效
     if (this.battle3D.sceneType !== BATTLE_SCENES.LAVA_HELL) {
-        console.log('当前场景不是熔岩地狱，跳过熔岩特效创建');
+        console.debug('当前场景不是熔岩地狱，跳过熔岩特效创建');
         return;
     }
-
-    console.log('🌋 创建熔岩地狱特效...');
 
     const scene = this.battle3D.scene;
     this.battle3D.fireEffects = []; // 保留数组结构以兼容现有代码
@@ -1196,8 +1186,6 @@ EndlessCultivationGame.prototype.createFireEffects = function() {
     // ✅ 创建地面岩浆流动效果
     const lavaFlowSystem = this.createLavaFlow(scene);
     this.battle3D.particleSystems.push(lavaFlowSystem);
-
-    console.log('✅ 熔岩地狱特效创建完成');
 };
 
 // 显示伤害数字
@@ -1484,7 +1472,7 @@ EndlessCultivationGame.prototype.showSkillSelectionMenu = function(skillType, ev
     menu.appendChild(title);
 
     // 当前装备的技能ID
-    const currentEquippedId = this.gameState.player.skills.equipped?.[skillType];
+    const currentEquippedId = this.persistentState.player.skills.equipped?.[skillType];
 
     // 技能列表
     availableSkills.forEach(skill => {
@@ -1554,15 +1542,15 @@ EndlessCultivationGame.prototype.showSkillSelectionMenu = function(skillType, ev
         // 点击选择技能
         skillItem.addEventListener('click', () => {
             // 装备技能
-            if (!this.gameState.player.skills.equipped) {
-                this.gameState.player.skills.equipped = {
+            if (!this.persistentState.player.skills.equipped) {
+                this.persistentState.player.skills.equipped = {
                     attack: null,
                     defense: null,
                     recovery: null,
                     special: null
                 };
             }
-            this.gameState.player.skills.equipped[skillType] = skill.skillTreeId;
+            this.persistentState.player.skills.equipped[skillType] = skill.skillTreeId;
 
             const skillDisplay = skill.displayName || skill.name;
             this.addBattleLog(`装备了技能: ${skillDisplay}`);
@@ -1641,7 +1629,7 @@ EndlessCultivationGame.prototype.updateBattleSkillButtons = function() {
 
     skillButtons.forEach(button => {
         const skillType = button.getAttribute('data-skill-type');
-        const equippedSkillId = this.gameState.player.skills.equipped?.[skillType];
+        const equippedSkillId = this.persistentState.player.skills.equipped?.[skillType];
 
         let skill = null;
         let skillTree = null;
@@ -1649,7 +1637,7 @@ EndlessCultivationGame.prototype.updateBattleSkillButtons = function() {
         if (equippedSkillId) {
             skillTree = this.metadata.realmSkills?.find(tree => tree.id === equippedSkillId);
             if (skillTree) {
-                const skillLevel = this.gameState.player.skills.levels[equippedSkillId] || 0;
+                const skillLevel = this.persistentState.player.skills.levels[equippedSkillId] || 0;
                 if (skillLevel > 0) {
                     skill = skillTree.levels[skillLevel - 1];
                 }
@@ -1799,7 +1787,6 @@ EndlessCultivationGame.prototype.createSpiritEnergyParticles = function(scene) {
  * ✅ 终极增强版：非常大且明显的粉红色花瓣，降低高度确保可见
  */
 EndlessCultivationGame.prototype.createFlyingFlowerParticles = function(scene) {
-    console.log('🌸 开始创建飞花粒子...');
 
     const particleSystem = new BABYLON.ParticleSystem("flyingFlowers", 500, scene); // ✅ 400 -> 500
 
@@ -1842,16 +1829,8 @@ EndlessCultivationGame.prototype.createFlyingFlowerParticles = function(scene) {
     // 启动
     particleSystem.start();
 
-    // ✅ 延迟500ms后检查粒子数量
-    setTimeout(() => {
-        const count = particleSystem.getActiveCount();
-        console.log(`🌸 飞花粒子运行中 - 当前粒子数: ${count}`);
-    }, 500);
-
     // 保存
     this.battle3D.particleSystems.push(particleSystem);
-
-    console.log('🌸 飞花粒子已启动（终极增强版）- 发射高度: 5米');
 
     return particleSystem;
 };
@@ -2044,8 +2023,6 @@ EndlessCultivationGame.prototype.createNebulaVortexParticles = function(scene) {
     // 启动
     particleSystem.start();
 
-    console.log('🌌 星云漩涡粒子已启动');
-
     // 保存
     this.battle3D.particleSystems.push(particleSystem);
 };
@@ -2194,8 +2171,6 @@ EndlessCultivationGame.prototype.createWaterRippleParticles = function(scene) {
 
     // 启动
     particleSystem.start();
-
-    console.log('🌊 水面波纹粒子已启动（柔和版）');
 
     // 保存
     this.battle3D.particleSystems.push(particleSystem);
@@ -2356,7 +2331,6 @@ EndlessCultivationGame.prototype.createLavaFlow = function(scene) {
  * ✅ 增强版：更大更亮的冰晶，更容易看到
  */
 EndlessCultivationGame.prototype.createIceCrystalParticles = function(scene) {
-    console.log('❄️ 开始创建冰晶粒子（深金色+ADD模式，超低亮度）...');
 
     const particleSystem = new BABYLON.ParticleSystem("iceCrystals", 150, scene);
 

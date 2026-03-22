@@ -36,9 +36,9 @@ class EquipmentSystem {
     generateEquipmentDrop() {
         // 计算掉落概率（普通、精英、BOSS怪物不同掉落概率）
         let baseDropChance;
-        if (this.game.gameState.enemy.isBoss) {
+        if (this.game.transientState.enemy.isBoss) {
             baseDropChance = 1.0; // BOSS必定掉落
-        } else if (this.game.gameState.enemy.isElite) {
+        } else if (this.game.transientState.enemy.isElite) {
             baseDropChance = 0.8; // 精英怪高掉落概率
         } else {
             baseDropChance = 0.5; // 普通怪物基础掉落概率
@@ -55,7 +55,7 @@ class EquipmentSystem {
         const type = template.type;
 
         // 根据人物境界确定装备等级
-        const realm = this.game.gameState.player.realm;
+        const realm = this.game.persistentState.player.realm;
         const equipmentLevel = realm.currentRealm + 1; // 境界从0开始，装备等级从1开始
 
         // 使用 getRandomRarity() 获取随机品质（考虑怪物类型和幸运值）
@@ -72,16 +72,16 @@ class EquipmentSystem {
 
         // 根据怪物类型选择对应的掉率表
         let dropRates;
-        if (this.game.gameState.enemy.isBoss) {
+        if (this.game.transientState.enemy.isBoss) {
             dropRates = dropRatesConfig.boss;
-        } else if (this.game.gameState.enemy.isElite) {
+        } else if (this.game.transientState.enemy.isElite) {
             dropRates = dropRatesConfig.elite;
         } else {
             dropRates = dropRatesConfig.normal;
         }
 
         // 考虑幸运值影响（每点幸运值提高0.5%的高品质装备掉率）
-        const luck = this.game.gameState.player.luck || 0;
+        const luck = this.game.persistentState.player.luck || 0;
         const luckBonus = luck * 0.005;
 
         // 调整掉率，提高高品质装备的概率（彩色幸运加成降低）
@@ -164,7 +164,7 @@ class EquipmentSystem {
     
     // 精炼装备
     refineEquipment(slot = 'weapon') {
-        const item = this.game.gameState.player.equipment[slot];
+        const item = this.game.persistentState.player.equipment[slot];
         if (!item) {
             this.game.addBattleLog(`没有装备${this.getSlotDisplayName(slot)}，无法精炼！`);
             return;
@@ -186,8 +186,8 @@ class EquipmentSystem {
         const cost = this.calculateRefineCost(item.refineLevel);
 
         // 检查资源是否足够（v2.0改为灵石+玄铁）
-        const player = this.game.gameState.player;
-        const resources = this.game.gameState.resources;
+        const player = this.game.persistentState.player;
+        const resources = this.game.persistentState.resources;
 
         if ((player.spiritStones || 0) < cost.spiritStones ||
             (resources.iron || 0) < cost.iron) {
@@ -206,8 +206,8 @@ class EquipmentSystem {
         // 记录精炼前战力
         const oldPower = this.game.calculatePlayerCombatPower();
 
-        // 重新计算装备效果
-        this.calculateEquipmentEffects();
+        // 清除装备效果缓存（下次访问时重新计算）
+        this.game.invalidateEquipmentEffectsCache();
 
         // 更新UI
         this.game.updateUI();
@@ -238,14 +238,14 @@ class EquipmentSystem {
 
     // 脱下装备
     unequipEquipment(slot = 'weapon') {
-        const item = this.game.gameState.player.equipment[slot];
+        const item = this.game.persistentState.player.equipment[slot];
         if (!item) {
             this.game.addBattleLog(`${this.getSlotDisplayName(slot)}槽位没有装备！`);
             return false;
         }
 
         // 检查背包是否有空位
-        if (this.game.gameState.player.inventory.length >= 50) {
+        if (this.game.persistentState.player.inventory.length >= 50) {
             this.game.addBattleLog('背包已满，无法脱下装备！');
             return false;
         }
@@ -254,11 +254,11 @@ class EquipmentSystem {
         const itemName = item.name;
 
         // 将装备从装备槽移到背包
-        if (!Array.isArray(this.game.gameState.player.inventory)) {
-            this.game.gameState.player.inventory = [];
+        if (!Array.isArray(this.game.persistentState.player.inventory)) {
+            this.game.persistentState.player.inventory = [];
         }
-        this.game.gameState.player.inventory.push(item);
-        this.game.gameState.player.equipment[slot] = null;
+        this.game.persistentState.player.inventory.push(item);
+        this.game.persistentState.player.equipment[slot] = null;
 
         // 更新UI
         this.game.updateUI();
@@ -391,9 +391,9 @@ class EquipmentSystem {
     // 清理装备的colorClass属性
     cleanupEquipmentColorClass() {
         // 清理已装备的装备
-        if (this.game.gameState.player && this.game.gameState.player.equipment) {
-            for (const slot in this.game.gameState.player.equipment) {
-                const item = this.game.gameState.player.equipment[slot];
+        if (this.game.persistentState.player && this.game.persistentState.player.equipment) {
+            for (const slot in this.game.persistentState.player.equipment) {
+                const item = this.game.persistentState.player.equipment[slot];
                 if (item && item.colorClass) {
                     delete item.colorClass;
                 }
@@ -401,8 +401,8 @@ class EquipmentSystem {
         }
 
         // 清理背包中的装备
-        if (this.game.gameState.player && this.game.gameState.player.inventory) {
-            const inventory = this.game.gameState.player.inventory;
+        if (this.game.persistentState.player && this.game.persistentState.player.inventory) {
+            const inventory = this.game.persistentState.player.inventory;
 
             // 兼容旧版本：如果 inventory 是数组
             if (Array.isArray(inventory)) {
@@ -425,11 +425,11 @@ class EquipmentSystem {
     
     // 更新人物装备显示
     updateCharacterEquipmentDisplay() {
-        if (!this.game.gameState.player?.equipment) {
+        if (!this.game.persistentState.player?.equipment) {
             return;
         }
 
-        const equipment = this.game.gameState.player.equipment;
+        const equipment = this.game.persistentState.player.equipment;
 
         // 遍历所有装备槽位（从统一配置获取）
         for (const slot of this.getAllSlotTypes()) {
@@ -491,11 +491,11 @@ class EquipmentSystem {
 
     // 更新弹框内的装备槽显示
     updateCharacterEquipmentDisplayModal() {
-        if (!this.game.gameState.player?.equipment) {
+        if (!this.game.persistentState.player?.equipment) {
             return;
         }
 
-        const equipment = this.game.gameState.player.equipment;
+        const equipment = this.game.persistentState.player.equipment;
 
         // 从统一配置获取所有槽位
         for (const slot of this.getAllSlotTypes()) {
@@ -512,7 +512,7 @@ class EquipmentSystem {
 
     // 更新精炼信息UI
     updateRefineInfo(selectedSlot = 'weapon') {
-        const item = this.game.gameState.player.equipment[selectedSlot];
+        const item = this.game.persistentState.player.equipment[selectedSlot];
         const refineInfo = document.getElementById('refine-info');
 
         // 如果主界面的精炼面板不存在，直接返回（新界面设计）
@@ -585,7 +585,7 @@ class EquipmentSystem {
 
     // 更新弹框内的精炼信息
     updateRefineInfoModal(selectedSlot = 'weapon') {
-        const item = this.game.gameState.player.equipment[selectedSlot];
+        const item = this.game.persistentState.player.equipment[selectedSlot];
         const refineInfoModal = document.getElementById('refine-info-modal');
 
         // 装备类型图片映射
@@ -871,7 +871,7 @@ class EquipmentSystem {
 
     // 刷新装备属性（预览模式）
     previewRefreshStats(slot = 'weapon') {
-        const item = this.game.gameState.player.equipment[slot];
+        const item = this.game.persistentState.player.equipment[slot];
         if (!item) {
             this.game.addBattleLog(`没有装备${this.getSlotDisplayName(slot)}，无法刷新属性！`);
             return false;
@@ -881,9 +881,9 @@ class EquipmentSystem {
         const cost = this.calculateRefreshCost(item);
 
         // 检查材料是否足够
-        if (this.game.gameState.resources.spiritWood < cost.spiritWood ||
-            this.game.gameState.resources.blackIron < cost.blackIron ||
-            this.game.gameState.resources.spiritCrystal < cost.spiritCrystal) {
+        if (this.game.persistentState.resources.spiritWood < cost.spiritWood ||
+            this.game.persistentState.resources.blackIron < cost.blackIron ||
+            this.game.persistentState.resources.spiritCrystal < cost.spiritCrystal) {
             this.game.addBattleLog('材料不足，无法刷新装备属性！');
             return false;
         }
@@ -902,9 +902,9 @@ class EquipmentSystem {
         const oldName = item.name;
 
         // 立即消耗材料（刷新即消耗，无论是否接受结果）
-        this.game.gameState.resources.spiritWood -= cost.spiritWood;
-        this.game.gameState.resources.blackIron -= cost.blackIron;
-        this.game.gameState.resources.spiritCrystal -= cost.spiritCrystal;
+        this.game.persistentState.resources.spiritWood -= cost.spiritWood;
+        this.game.persistentState.resources.blackIron -= cost.blackIron;
+        this.game.persistentState.resources.spiritCrystal -= cost.spiritCrystal;
 
         // 根据品质获取属性条数限制
         const statCount = rarityInfo ? rarityInfo.statCount : 1;
@@ -1160,7 +1160,7 @@ class EquipmentSystem {
         }
 
         const { slot, oldStats, newStats, newName } = this.pendingRefresh;
-        const item = this.game.gameState.player.equipment[slot];
+        const item = this.game.persistentState.player.equipment[slot];
 
         if (!item) {
             this.closeRefreshConfirmModal();
@@ -1174,8 +1174,8 @@ class EquipmentSystem {
         item.name = newName;
         item.id = `${item.type}_${item.level}_${item.rarity}_${Math.floor(Math.random() * 100000)}`;
 
-        // 重新计算装备效果
-        this.calculateEquipmentEffects();
+        // 清除装备效果缓存
+        this.game.invalidateEquipmentEffectsCache();
 
         // 更新UI
         this.game.updateUI();
@@ -1219,10 +1219,10 @@ class EquipmentSystem {
         }
     }
 
-    // 计算装备效果
+    // 计算装备效果（返回计算结果，不存储）
     calculateEquipmentEffects() {
         // 初始化装备效果，包含所有可能的属性
-        this.game.gameState.player.equipmentEffects = {
+        const effects = {
             attack: 0,
             defense: 0,
             hp: 0,
@@ -1237,14 +1237,17 @@ class EquipmentSystem {
             tenacity: 0,
             energyRegen: 0
         };
-        
+
         // 遍历所有装备槽位
-        for (const slot in this.game.gameState.player.equipment) {
-            const item = this.game.gameState.player.equipment[slot];
+        for (const slot in this.game.persistentState.player.equipment) {
+            const item = this.game.persistentState.player.equipment[slot];
             if (item && item.stats) {
                 // 计算基础属性
                 const percentageStats = ['criticalRate', 'dodgeRate', 'tenacity', 'accuracy', 'moveSpeed', 'energyRegen', 'critDamage'];
                 for (const stat in item.stats) {
+                    // 跳过 null 值
+                    if (item.stats[stat] === null) continue;
+
                     const refineLevel = item.refineLevel || 0;
                     let bonus = 0;
                     if (refineLevel > 0) {
@@ -1256,10 +1259,10 @@ class EquipmentSystem {
                             bonus = Math.max(refineLevel, Math.floor(item.stats[stat] * refineLevel * 0.1));
                         }
                     }
-                    if (this.game.gameState.player.equipmentEffects[stat] !== undefined) {
-                        this.game.gameState.player.equipmentEffects[stat] += item.stats[stat] + bonus;
+                    if (effects[stat] !== undefined) {
+                        effects[stat] += item.stats[stat] + bonus;
                     } else {
-                        this.game.gameState.player.equipmentEffects[stat] = item.stats[stat] + bonus;
+                        effects[stat] = item.stats[stat] + bonus;
                     }
                 }
             }
@@ -1268,7 +1271,6 @@ class EquipmentSystem {
         // 叠加VIP等级加成
         if (this.game.vipSystem) {
             const bonus = this.game.vipSystem.getBonus();
-            const effects = this.game.gameState.player.equipmentEffects;
             if (bonus.attackBonus > 0) {
                 effects.attack = Math.floor(effects.attack * (1 + bonus.attackBonus / 100));
             }
@@ -1283,6 +1285,8 @@ class EquipmentSystem {
                 effects.criticalRate = (effects.criticalRate || 0) + (bonus.critBonus / 100);
             }
         }
+
+        return effects;
     }
 
     // 获取属性描述
@@ -1329,7 +1333,7 @@ class EquipmentSystem {
     // 一键装备最好的装备
     autoEquipBestGear() {
         // 确保背包存在
-        if (!this.game.gameState.player.inventory) {
+        if (!this.game.persistentState.player.inventory) {
             this.game.addBattleLog('背包为空，无法一键装备！');
             return;
         }
@@ -1341,7 +1345,7 @@ class EquipmentSystem {
         // 遍历每个装备槽位
         for (const slot of equipmentSlots) {
             // 从背包中筛选出适合该槽位的装备
-            const suitableItems = this.game.gameState.player.inventory.filter(item =>
+            const suitableItems = this.game.persistentState.player.inventory.filter(item =>
                 item.type === slot &&
                 (!item.level || item.level <= this.game.calculateTotalLevel())
             );
@@ -1355,7 +1359,7 @@ class EquipmentSystem {
                 });
 
                 const bestItem = suitableItems[0];
-                const currentItem = this.game.gameState.player.equipment[slot];
+                const currentItem = this.game.persistentState.player.equipment[slot];
 
                 // 用战力比较：新装备战力 > 当前装备战力 才替换
                 const newItemPower = this.game.calculateEquipmentCombatPower(bestItem);
@@ -1365,16 +1369,16 @@ class EquipmentSystem {
 
                     // 卸下当前装备（如果有）
                     if (currentItem) {
-                        this.game.gameState.player.inventory.push(currentItem);
+                        this.game.persistentState.player.inventory.push(currentItem);
                     }
 
                     // 装备新装备
-                    this.game.gameState.player.equipment[slot] = bestItem;
+                    this.game.persistentState.player.equipment[slot] = bestItem;
 
                     // 从背包中移除新装备
-                    const itemIndex = this.game.gameState.player.inventory.indexOf(bestItem);
+                    const itemIndex = this.game.persistentState.player.inventory.indexOf(bestItem);
                     if (itemIndex > -1) {
-                        this.game.gameState.player.inventory.splice(itemIndex, 1);
+                        this.game.persistentState.player.inventory.splice(itemIndex, 1);
                     }
 
                     equippedCount++;
@@ -1382,10 +1386,10 @@ class EquipmentSystem {
             }
         }
 
-        // 重新计算装备效果
-        this.calculateEquipmentEffects();
+        // 清除装备效果缓存
+        this.game.invalidateEquipmentEffectsCache();
 
-        // 更新UI（会再次调用calculateEquipmentEffects）
+        // 更新UI
         this.game.updateUI();
 
         // 更新人物面板属性（内部会调用updateCharacterEquipmentDisplayModal）
@@ -1496,7 +1500,7 @@ class EquipmentSystem {
     
     // 检查装备是否已装备
     isEquipmentEquipped(item) {
-        const player = this.game.gameState.player;
+        const player = this.game.persistentState.player;
         if (!player || !player.equipment) return false;
         
         // 检查各个装备槽位

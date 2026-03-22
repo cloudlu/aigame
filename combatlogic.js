@@ -6,7 +6,7 @@
 // 攻击敌人（玩家回合）
 EndlessCultivationGame.prototype.attackEnemy = function() {
     // 只有在战斗模式中才能使用普通攻击
-    if (!this.gameState.battle.inBattle) {
+    if (!this.transientState.battle.inBattle) {
         this.addBattleLog('只有在战斗模式中才能使用普通攻击！');
         return;
     }
@@ -75,13 +75,22 @@ EndlessCultivationGame.prototype.attackEnemy = function() {
                     this.createAttackEffect(hitPosition, effectColor);
                 }
 
-                this.gameState.enemy.hp -= playerDamage;
-                if (this.gameState.enemy.hp < 0) this.gameState.enemy.hp = 0;
+                // ✅ Debug: 攻击前的敌人HP
+                console.log('=== [攻击敌人] 攻击前 ===');
+                console.log('敌人名称:', this.transientState.enemy.name);
+                console.log('敌人HP:', this.transientState.enemy.hp, '/', this.transientState.enemy.maxHp);
+                console.log('伤害值:', playerDamage);
+
+                this.transientState.enemy.hp -= playerDamage;
+                if (this.transientState.enemy.hp < 0) this.transientState.enemy.hp = 0;
+
+                console.log('攻击后HP:', this.transientState.enemy.hp);
+
                 // 暴击显示
                 if (playerCrit) {
                     this.showDamage(this.battle3D.enemy, playerDamage, 'crit');
                     const critPercent = Math.floor((playerCritResult.multiplier - 1) * 100);
-                    this.addBattleLog(`💥暴击！(+${critPercent}%) 你对${this.gameState.enemy.name}造成了${playerDamage}点伤害！`);
+                    this.addBattleLog(`💥暴击！(+${critPercent}%) 你对${this.transientState.enemy.name}造成了${playerDamage}点伤害！`);
 
                     // ✅ 暴击爆炸特效
                     if (this.battle3D && this.battle3D.enemy) {
@@ -95,10 +104,13 @@ EndlessCultivationGame.prototype.attackEnemy = function() {
                     this.lightFlash(3.0, 200, new BABYLON.Color3(1.0, 0.9, 0.6));
                 } else {
                     this.showDamage(this.battle3D.enemy, playerDamage, 'red');
-                    this.addBattleLog(`你对${this.gameState.enemy.name}造成了${playerDamage}点伤害！`);
+                    this.addBattleLog(`你对${this.transientState.enemy.name}造成了${playerDamage}点伤害！`);
                 }
                 this.playEnemyHitAnimation();
-                if (this.gameState.enemy.hp <= 0) {
+
+                console.log('检查敌人是否死亡，当前HP:', this.transientState.enemy.hp, '<= 0 ?', this.transientState.enemy.hp <= 0);
+                if (this.transientState.enemy.hp <= 0) {
+                    console.log('✅ 敌人HP归零，调用enemyDefeated');
                     // ✅ 敌人死亡爆炸特效
                     if (this.battle3D && this.battle3D.enemy) {
                         const deathPosition = this.battle3D.enemy.position.clone();
@@ -112,7 +124,7 @@ EndlessCultivationGame.prototype.attackEnemy = function() {
                     return;
                 }
             } else {
-                this.addBattleLog(`你的攻击被${this.gameState.enemy.name}闪避了！`);
+                this.addBattleLog(`你的攻击被${this.transientState.enemy.name}闪避了！`);
                 this.showDodge(this.battle3D.enemy, '闪避！');
                 // ✅ 闪避残影特效
                 if (this.battle3D && this.battle3D.enemy) {
@@ -124,7 +136,7 @@ EndlessCultivationGame.prototype.attackEnemy = function() {
         },
         // === 结束回调：玩家返回后，触发敌人反击 ===
         () => {
-            if (this.gameState.enemy.hp <= 0) return;
+            if (this.transientState.enemy.hp <= 0) return;
 
             // 播放敌人攻击动画（先播放动画，在碰撞回调中判定闪避/防御/伤害）
             this.playEnemyAttackAnimation(
@@ -132,39 +144,39 @@ EndlessCultivationGame.prototype.attackEnemy = function() {
                 () => {
                     if (!enemyHit) {
                         // 闪避成功，不消耗任何防御状态
-                        this.addBattleLog(`你闪避了${this.gameState.enemy.name}的攻击！`);
+                        this.addBattleLog(`你闪避了${this.transientState.enemy.name}的攻击！`);
                         this.showDodge(this.battle3D.player, '闪避！');
-                    } else if (this.gameState.player.immuneNextAttack) {
-                        this.gameState.player.immuneNextAttack = false;
-                        this.addBattleLog(`你完全免疫了${this.gameState.enemy.name}的攻击！`);
-                    } else if (this.gameState.player.defenseActive) {
+                    } else if (this.persistentState.player.immuneNextAttack) {
+                        this.persistentState.player.immuneNextAttack = false;
+                        this.addBattleLog(`你完全免疫了${this.transientState.enemy.name}的攻击！`);
+                    } else if (this.persistentState.player.defenseActive) {
                         let finalEnemyDamage = Math.max(1, Math.floor(enemyDamage * 0.5));
-                        if (this.gameState.enemy.isBoss && this.gameState.enemy.energy >= 50) {
+                        if (this.transientState.enemy.isBoss && this.transientState.enemy.energy >= 50) {
                             const skillDamage = Math.floor(enemyDamage * 1.5);
                             finalEnemyDamage = Math.max(1, Math.floor((skillDamage) * 0.5));
-                            this.gameState.enemy.energy -= 50;
-                            this.addBattleLog(`${this.gameState.enemy.name}释放了技能，对你造成了${finalEnemyDamage}点伤害！（防御减免50%）`);
+                            this.transientState.enemy.energy -= 50;
+                            this.addBattleLog(`${this.transientState.enemy.name}释放了技能，对你造成了${finalEnemyDamage}点伤害！（防御减免50%）`);
                         } else if (enemyCrit) {
                             const critPercent = Math.floor((enemyCritResult.multiplier - 1) * 100);
                             const reductionText = tenacityReduction > 0 ? ` 韧性减免${Math.floor(tenacityReduction * 100)}%` : '';
-                            this.addBattleLog(`💥暴击！(+${critPercent}%) ${this.gameState.enemy.name}！对你造成了${finalEnemyDamage}点伤害！（防御减免50%${reductionText}）`);
+                            this.addBattleLog(`💥暴击！(+${critPercent}%) ${this.transientState.enemy.name}！对你造成了${finalEnemyDamage}点伤害！（防御减免50%${reductionText}）`);
                         } else {
-                            this.addBattleLog(`${this.gameState.enemy.name}对你造成了${finalEnemyDamage}点伤害！（防御减免50%）`);
+                            this.addBattleLog(`${this.transientState.enemy.name}对你造成了${finalEnemyDamage}点伤害！（防御减免50%）`);
                         }
-                        this.gameState.player.defenseActive = false;
+                        this.persistentState.player.defenseActive = false;
                         this.removeDefenseEffect();
 
                         // 护盾吸收
                         let actualDamage = finalEnemyDamage;
-                        if (this.gameState.player.shieldValue && this.gameState.player.shieldValue > 0) {
-                            if (this.gameState.player.shieldValue >= actualDamage) {
-                                this.gameState.player.shieldValue -= actualDamage;
-                                this.addBattleLog(`护盾吸收了${actualDamage}点伤害！剩余护盾：${this.gameState.player.shieldValue}`);
+                        if (this.persistentState.player.shieldValue && this.persistentState.player.shieldValue > 0) {
+                            if (this.persistentState.player.shieldValue >= actualDamage) {
+                                this.persistentState.player.shieldValue -= actualDamage;
+                                this.addBattleLog(`护盾吸收了${actualDamage}点伤害！剩余护盾：${this.persistentState.player.shieldValue}`);
                                 actualDamage = 0;
                             } else {
-                                const absorbed = this.gameState.player.shieldValue;
-                                actualDamage -= this.gameState.player.shieldValue;
-                                this.gameState.player.shieldValue = 0;
+                                const absorbed = this.persistentState.player.shieldValue;
+                                actualDamage -= this.persistentState.player.shieldValue;
+                                this.persistentState.player.shieldValue = 0;
                                 this.addBattleLog(`护盾吸收了${absorbed}点伤害，护盾破碎！剩余伤害：${actualDamage}`);
 
                                 // ✅ 护盾破碎特效
@@ -176,37 +188,37 @@ EndlessCultivationGame.prototype.attackEnemy = function() {
                             }
                         }
                         if (actualDamage > 0) {
-                            this.gameState.player.hp -= actualDamage;
-                            if (this.gameState.player.hp < 0) this.gameState.player.hp = 0;
+                            this.persistentState.player.hp -= actualDamage;
+                            if (this.persistentState.player.hp < 0) this.persistentState.player.hp = 0;
                             this.playPlayerHitAnimation();
                             this.showDamage(this.battle3D.player, actualDamage, 'red');
                         }
                     } else {
                         let finalEnemyDamage = enemyDamage;
-                        if (this.gameState.enemy.isBoss && this.gameState.enemy.energy >= 50) {
+                        if (this.transientState.enemy.isBoss && this.transientState.enemy.energy >= 50) {
                             const skillDamage = Math.floor(enemyDamage * 1.5);
                             finalEnemyDamage = skillDamage;
-                            this.gameState.enemy.energy -= 50;
-                            this.addBattleLog(`${this.gameState.enemy.name}释放了技能，对你造成了${finalEnemyDamage}点伤害！`);
+                            this.transientState.enemy.energy -= 50;
+                            this.addBattleLog(`${this.transientState.enemy.name}释放了技能，对你造成了${finalEnemyDamage}点伤害！`);
                         } else if (enemyCrit) {
                             const critPercent = Math.floor((enemyCritResult.multiplier - 1) * 100);
                             const reductionText = tenacityReduction > 0 ? ` 韧性减免${Math.floor(tenacityReduction * 100)}%` : '';
-                            this.addBattleLog(`💥暴击！(+${critPercent}%) ${this.gameState.enemy.name}！对你造成了${finalEnemyDamage}点伤害！${reductionText}`);
+                            this.addBattleLog(`💥暴击！(+${critPercent}%) ${this.transientState.enemy.name}！对你造成了${finalEnemyDamage}点伤害！${reductionText}`);
                         } else {
-                            this.addBattleLog(`${this.gameState.enemy.name}对你造成了${finalEnemyDamage}点伤害！`);
+                            this.addBattleLog(`${this.transientState.enemy.name}对你造成了${finalEnemyDamage}点伤害！`);
                         }
 
                         // 护盾吸收
                         let actualDamage = finalEnemyDamage;
-                        if (this.gameState.player.shieldValue && this.gameState.player.shieldValue > 0) {
-                            if (this.gameState.player.shieldValue >= actualDamage) {
-                                this.gameState.player.shieldValue -= actualDamage;
-                                this.addBattleLog(`护盾吸收了${actualDamage}点伤害！剩余护盾：${this.gameState.player.shieldValue}`);
+                        if (this.persistentState.player.shieldValue && this.persistentState.player.shieldValue > 0) {
+                            if (this.persistentState.player.shieldValue >= actualDamage) {
+                                this.persistentState.player.shieldValue -= actualDamage;
+                                this.addBattleLog(`护盾吸收了${actualDamage}点伤害！剩余护盾：${this.persistentState.player.shieldValue}`);
                                 actualDamage = 0;
                             } else {
-                                const absorbed = this.gameState.player.shieldValue;
-                                actualDamage -= this.gameState.player.shieldValue;
-                                this.gameState.player.shieldValue = 0;
+                                const absorbed = this.persistentState.player.shieldValue;
+                                actualDamage -= this.persistentState.player.shieldValue;
+                                this.persistentState.player.shieldValue = 0;
                                 this.addBattleLog(`护盾吸收了${absorbed}点伤害，护盾破碎！剩余伤害：${actualDamage}`);
 
                                 // ✅ 护盾破碎特效
@@ -218,8 +230,8 @@ EndlessCultivationGame.prototype.attackEnemy = function() {
                             }
                         }
                         if (actualDamage > 0) {
-                            this.gameState.player.hp -= actualDamage;
-                            if (this.gameState.player.hp < 0) this.gameState.player.hp = 0;
+                            this.persistentState.player.hp -= actualDamage;
+                            if (this.persistentState.player.hp < 0) this.persistentState.player.hp = 0;
                             this.playPlayerHitAnimation();
                             this.showDamage(this.battle3D.player, actualDamage, 'red');
                         }
@@ -227,10 +239,10 @@ EndlessCultivationGame.prototype.attackEnemy = function() {
                 },
                 // 敌人结束回调
                 () => {
-                    if (this.gameState.enemy.isBoss) {
-                        this.gameState.enemy.energy = Math.min(this.gameState.enemy.energy + 20, this.gameState.enemy.maxEnergy);
+                    if (this.transientState.enemy.isBoss) {
+                        this.transientState.enemy.energy = Math.min(this.transientState.enemy.energy + 20, this.transientState.enemy.maxEnergy);
                     }
-                    if (this.gameState.player.hp <= 0) {
+                    if (this.persistentState.player.hp <= 0) {
                         this.playerDefeated();
                     }
                     this.updateUI();
@@ -246,13 +258,13 @@ EndlessCultivationGame.prototype.attackEnemy = function() {
 
 // 使用技能攻击敌人（按类型使用装备的技能）
 EndlessCultivationGame.prototype.useSkill = function(skillType = 'attack') {
-    if (!this.gameState.battle.inBattle) {
+    if (!this.transientState.battle.inBattle) {
         this.addBattleLog('只有在战斗模式中才能使用技能！');
         return;
     }
 
     // 获取指定类型的装备技能
-    const equippedSkillId = this.gameState.player.skills.equipped?.[skillType];
+    const equippedSkillId = this.persistentState.player.skills.equipped?.[skillType];
 
     if (!equippedSkillId) {
         const typeNames = { attack: '攻击', defense: '防御', recovery: '恢复', special: '特殊' };
@@ -261,7 +273,7 @@ EndlessCultivationGame.prototype.useSkill = function(skillType = 'attack') {
     }
 
     // 获取技能等级
-    const skillLevel = this.gameState.player.skills.levels?.[equippedSkillId] || 0;
+    const skillLevel = this.persistentState.player.skills.levels?.[equippedSkillId] || 0;
     if (skillLevel === 0) {
         this.addBattleLog(`技能尚未学习！`);
         return;
@@ -285,7 +297,7 @@ EndlessCultivationGame.prototype.useSkill = function(skillType = 'attack') {
     const skillDisplayName = skillTree.baseDisplayName || skill.name || '未知技能';
 
     // 确保有足够的灵力
-    if (this.gameState.player.energy < skill.energyCost) {
+    if (this.persistentState.player.energy < skill.energyCost) {
         this.addBattleLog(`灵力不足！需要${skill.energyCost}灵力`);
         return;
     }
@@ -354,7 +366,7 @@ EndlessCultivationGame.prototype.useSkill = function(skillType = 'attack') {
             if (skill.damageMultiplier) {
                 // 计算技能基础伤害
                 let baseSkillDamage = Math.floor(finalAttack * skill.damageMultiplier) - enemyDefense;
-                if (skill.extraDamagePercent) baseSkillDamage += Math.floor(this.gameState.enemy.maxHp * skill.extraDamagePercent);
+                if (skill.extraDamagePercent) baseSkillDamage += Math.floor(this.transientState.enemy.maxHp * skill.extraDamagePercent);
                 if (skill.ignoreDefense) baseSkillDamage += Math.floor(enemyDefense * skill.ignoreDefense);
 
                 // ✅ 暴击判定（使用玩家暴击率和暴击伤害）
@@ -398,7 +410,7 @@ EndlessCultivationGame.prototype.useSkill = function(skillType = 'attack') {
         this.playSkillAttackAnimation(isLuckyStrike, skillEffectColor,
             // 碰撞回调：到达敌人时显示伤害
             () => {
-                this.gameState.player.energy -= skill.energyCost;
+                this.persistentState.player.energy -= skill.energyCost;
                 this.showEnergyChange(this.battle3D.player, -skill.energyCost);
 
                 if (hit) {
@@ -417,7 +429,7 @@ EndlessCultivationGame.prototype.useSkill = function(skillType = 'attack') {
                     this.playEnemyHitAnimation();
                     if (playerCrit) {
                         const critPercent = Math.floor((playerCritResult.multiplier - 1) * 100);
-                        this.addBattleLog(`💥暴击！(+${critPercent}%) 你使用了${skillDisplayName}，对${this.gameState.enemy.name}造成了${playerDamage}点伤害！`);
+                        this.addBattleLog(`💥暴击！(+${critPercent}%) 你使用了${skillDisplayName}，对${this.transientState.enemy.name}造成了${playerDamage}点伤害！`);
 
                         // ✅ 暴击爆炸特效
                         if (this.battle3D && this.battle3D.enemy) {
@@ -430,7 +442,7 @@ EndlessCultivationGame.prototype.useSkill = function(skillType = 'attack') {
                         this.cameraShake(0.1, 280);
                         this.lightFlash(3.5, 220, new BABYLON.Color3(1.0, 0.7, 0.5));
                     } else if (isLuckyStrike) {
-                        this.addBattleLog(`你使用了${skillDisplayName}，触发了暴击！对${this.gameState.enemy.name}造成了${playerDamage}点伤害！`);
+                        this.addBattleLog(`你使用了${skillDisplayName}，触发了暴击！对${this.transientState.enemy.name}造成了${playerDamage}点伤害！`);
 
                         // ✅ 暴击爆炸特效
                         if (this.battle3D && this.battle3D.enemy) {
@@ -443,10 +455,10 @@ EndlessCultivationGame.prototype.useSkill = function(skillType = 'attack') {
                         this.cameraShake(0.1, 280);
                         this.lightFlash(3.5, 220, new BABYLON.Color3(1.0, 0.7, 0.5));
                     } else {
-                        this.addBattleLog(`你使用了${skillDisplayName}，对${this.gameState.enemy.name}造成了${playerDamage}点伤害！`);
+                        this.addBattleLog(`你使用了${skillDisplayName}，对${this.transientState.enemy.name}造成了${playerDamage}点伤害！`);
                     }
                 } else {
-                    this.addBattleLog(`你的${skillDisplayName}被${this.gameState.enemy.name}闪避了！`);
+                    this.addBattleLog(`你的${skillDisplayName}被${this.transientState.enemy.name}闪避了！`);
                     this.showDodge(this.battle3D.enemy, '闪避！');
                     // ✅ 闪避残影特效
                     if (this.battle3D && this.battle3D.enemy) {
@@ -459,9 +471,9 @@ EndlessCultivationGame.prototype.useSkill = function(skillType = 'attack') {
             // 结束回调：应用状态、触发反击
             () => {
                 if (playerDamage > 0 && hit) {
-                    this.gameState.enemy.hp -= playerDamage;
-                    if (this.gameState.enemy.hp < 0) this.gameState.enemy.hp = 0;
-                    if (this.gameState.enemy.hp <= 0) {
+                    this.transientState.enemy.hp -= playerDamage;
+                    if (this.transientState.enemy.hp < 0) this.transientState.enemy.hp = 0;
+                    if (this.transientState.enemy.hp <= 0) {
                         // ✅ 技能击杀特效
                         if (this.battle3D && this.battle3D.enemy) {
                             const killPosition = this.battle3D.enemy.position.clone();
@@ -481,14 +493,14 @@ EndlessCultivationGame.prototype.useSkill = function(skillType = 'attack') {
                 }
                 // 应用buff/debuff等效果
                 if (skill.energyRecover) {
-                    const recoverAmount = Math.min(skill.energyRecover, this.gameState.player.maxEnergy - this.gameState.player.energy);
-                    this.gameState.player.energy += recoverAmount;
+                    const recoverAmount = Math.min(skill.energyRecover, this.persistentState.player.maxEnergy - this.persistentState.player.energy);
+                    this.persistentState.player.energy += recoverAmount;
                     if (recoverAmount > 0) this.addBattleLog(`恢复了${recoverAmount}点灵力！`);
                 }
-                if (skill.immuneNextAttack) { this.gameState.player.immuneNextAttack = true; this.addBattleLog(`你获得了免疫状态，下次攻击将被完全抵挡！`); }
+                if (skill.immuneNextAttack) { this.persistentState.player.immuneNextAttack = true; this.addBattleLog(`你获得了免疫状态，下次攻击将被完全抵挡！`); }
                 if (skill.shield) {
-                    this.gameState.player.shieldValue = (this.gameState.player.shieldValue || 0) + skill.shield;
-                    this.addBattleLog(`获得了${skill.shield}点护盾！当前护盾：${this.gameState.player.shieldValue}`);
+                    this.persistentState.player.shieldValue = (this.persistentState.player.shieldValue || 0) + skill.shield;
+                    this.addBattleLog(`获得了${skill.shield}点护盾！当前护盾：${this.persistentState.player.shieldValue}`);
                     // ✅ 创建护盾特效
                     if (typeof this.createDefenseEffect === 'function') {
                         this.createDefenseEffect();
@@ -496,13 +508,13 @@ EndlessCultivationGame.prototype.useSkill = function(skillType = 'attack') {
                 }
                 if (skill.effects && skill.effects.length > 0) this.processSkillEffects(skill.effects);
                 if (skill.buffs && skill.buffs.length > 0) {
-                    if (!this.gameState.player.buffs) this.gameState.player.buffs = [];
-                    skill.buffs.forEach(b => this.gameState.player.buffs.push({ type: b.type, value: b.value, turns: b.turns }));
+                    if (!this.persistentState.player.buffs) this.persistentState.player.buffs = [];
+                    skill.buffs.forEach(b => this.persistentState.player.buffs.push({ type: b.type, value: b.value, turns: b.turns }));
                     this.addBattleLog(`获得了${skill.buffs.length}个持续增益效果！`);
                 }
                 if (skill.debuffs && skill.debuffs.length > 0) {
-                    if (!this.gameState.enemy.debuffs) this.gameState.enemy.debuffs = [];
-                    skill.debuffs.forEach(d => this.gameState.enemy.debuffs.push({ type: d.type, value: d.value, turns: d.turns }));
+                    if (!this.transientState.enemy.debuffs) this.transientState.enemy.debuffs = [];
+                    skill.debuffs.forEach(d => this.transientState.enemy.debuffs.push({ type: d.type, value: d.value, turns: d.turns }));
                     this.addBattleLog(`对敌人施加了${skill.debuffs.length}个减益效果！`);
                 }
                 // 敌人反击
@@ -516,19 +528,19 @@ EndlessCultivationGame.prototype.useSkill = function(skillType = 'attack') {
     // 技能效果处理函数
     const handleSkillEffect = () => {
         // 消耗灵力
-        this.gameState.player.energy -= skill.energyCost;
+        this.persistentState.player.energy -= skill.energyCost;
         // 显示灵力消耗
         this.showEnergyChange(this.battle3D.player, -skill.energyCost);
 
         if (skill.defenseBonus) {
-            this.gameState.player.defenseActive = true;
-            this.gameState.player.defenseBonusValue = skill.defenseBonus;
+            this.persistentState.player.defenseActive = true;
+            this.persistentState.player.defenseBonusValue = skill.defenseBonus;
             this.addBattleLog(`你使用了${skillDisplayName}，防御姿态已激活！下次受到的伤害减少${Math.floor(skill.defenseBonus * 100)}%！`);
         } else if (skill.healPercentage) {
             // 使用公共方法获取实际最大血量
             const actualMaxHp = this.getActualStats().maxHp;
             const healAmount = Math.floor(actualMaxHp * skill.healPercentage);
-            this.gameState.player.hp = Math.min(this.gameState.player.hp + healAmount, actualMaxHp);
+            this.persistentState.player.hp = Math.min(this.persistentState.player.hp + healAmount, actualMaxHp);
             this.addBattleLog(`你使用了${skillDisplayName}，恢复了${healAmount}点生命值！`);
             this.showDamage(this.battle3D.player, healAmount, 'green');
             // ✅ 创建治疗特效（绿色光华）
@@ -536,27 +548,26 @@ EndlessCultivationGame.prototype.useSkill = function(skillType = 'attack') {
                 this.createHealEffect();
             }
         } else if (skill.dodgeBonus) {
-            this.gameState.player.dodgeActive = true;
-            this.gameState.player.dodgeBonus = skill.dodgeBonus;
+            this.persistentState.player.dodgeActive = true;
+            this.persistentState.player.dodgeBonus = skill.dodgeBonus;
             this.addBattleLog(`你使用了${skillDisplayName}，提高了闪避率！`);
             // ✅ 创建闪避技能释放特效（风属性残影）
             if (this.battle3D && this.battle3D.player && typeof this.createDodgeEffect === 'function') {
                 const playerPosition = this.battle3D.player.position.clone();
                 playerPosition.y = 1.0;
-                console.log('🌪️ 释放闪避技能，创建特效位置:', playerPosition);
                 this.createDodgeEffect(playerPosition);
             }
         }
 
         if (skill.energyRecover) {
-            const recoverAmount = Math.min(skill.energyRecover, this.gameState.player.maxEnergy - this.gameState.player.energy);
-            this.gameState.player.energy += recoverAmount;
+            const recoverAmount = Math.min(skill.energyRecover, this.persistentState.player.maxEnergy - this.persistentState.player.energy);
+            this.persistentState.player.energy += recoverAmount;
             this.addBattleLog(`恢复了${recoverAmount}点灵力！`);
         }
-        if (skill.immuneNextAttack) { this.gameState.player.immuneNextAttack = true; this.addBattleLog(`你获得了免疫状态，下次攻击将被完全抵挡！`); }
+        if (skill.immuneNextAttack) { this.persistentState.player.immuneNextAttack = true; this.addBattleLog(`你获得了免疫状态，下次攻击将被完全抵挡！`); }
         if (skill.shield) {
-            this.gameState.player.shieldValue = (this.gameState.player.shieldValue || 0) + skill.shield;
-            this.addBattleLog(`获得了${skill.shield}点护盾！当前护盾：${this.gameState.player.shieldValue}`);
+            this.persistentState.player.shieldValue = (this.persistentState.player.shieldValue || 0) + skill.shield;
+            this.addBattleLog(`获得了${skill.shield}点护盾！当前护盾：${this.persistentState.player.shieldValue}`);
             // ✅ 创建护盾特效
             if (typeof this.createDefenseEffect === 'function') {
                 this.createDefenseEffect();
@@ -564,13 +575,13 @@ EndlessCultivationGame.prototype.useSkill = function(skillType = 'attack') {
         }
         if (skill.effects && skill.effects.length > 0) this.processSkillEffects(skill.effects);
         if (skill.buffs && skill.buffs.length > 0) {
-            if (!this.gameState.player.buffs) this.gameState.player.buffs = [];
-            skill.buffs.forEach(b => this.gameState.player.buffs.push({ type: b.type, value: b.value, turns: b.turns }));
+            if (!this.persistentState.player.buffs) this.persistentState.player.buffs = [];
+            skill.buffs.forEach(b => this.persistentState.player.buffs.push({ type: b.type, value: b.value, turns: b.turns }));
             this.addBattleLog(`获得了${skill.buffs.length}个持续增益效果！`);
         }
         if (skill.debuffs && skill.debuffs.length > 0) {
-            if (!this.gameState.enemy.debuffs) this.gameState.enemy.debuffs = [];
-            skill.debuffs.forEach(d => this.gameState.enemy.debuffs.push({ type: d.type, value: d.value, turns: d.turns }));
+            if (!this.transientState.enemy.debuffs) this.transientState.enemy.debuffs = [];
+            skill.debuffs.forEach(d => this.transientState.enemy.debuffs.push({ type: d.type, value: d.value, turns: d.turns }));
             this.addBattleLog(`对敌人施加了${skill.debuffs.length}个减益效果！`);
         }
 
@@ -609,11 +620,11 @@ EndlessCultivationGame.prototype.calculateEnemyAttack = function(finalDefense, e
     let enemyHitChance = Math.min(95, Math.max(5, (enemyAccuracy - finalDodge) * 100));
 
     // 闪避技能加成（仅在useDodgeBonus=true时生效）
-    if (useDodgeBonus && this.gameState.player.dodgeActive && this.gameState.player.dodgeBonus) {
-        enemyHitChance -= this.gameState.player.dodgeBonus * 100;
+    if (useDodgeBonus && this.persistentState.player.dodgeActive && this.persistentState.player.dodgeBonus) {
+        enemyHitChance -= this.persistentState.player.dodgeBonus * 100;
         enemyHitChance = Math.max(5, enemyHitChance);
-        this.gameState.player.dodgeActive = false;
-        this.gameState.player.dodgeBonus = 0;
+        this.persistentState.player.dodgeActive = false;
+        this.persistentState.player.dodgeBonus = 0;
     }
 
     const enemyHit = Math.random() * 100 < enemyHitChance;
@@ -658,57 +669,57 @@ EndlessCultivationGame.prototype.triggerEnemyCounterattack = function(finalDefen
         // 碰撞回调
         () => {
             if (!enemyHit) {
-                this.addBattleLog(`你闪避了${this.gameState.enemy.name}的攻击！`);
+                this.addBattleLog(`你闪避了${this.transientState.enemy.name}的攻击！`);
                 this.showDodge(this.battle3D.player, '闪避！');
-            } else if (this.gameState.player.immuneNextAttack) {
-                this.gameState.player.immuneNextAttack = false;
-                this.addBattleLog(`你完全免疫了${this.gameState.enemy.name}的攻击！`);
+            } else if (this.persistentState.player.immuneNextAttack) {
+                this.persistentState.player.immuneNextAttack = false;
+                this.addBattleLog(`你完全免疫了${this.transientState.enemy.name}的攻击！`);
                 isImmune = true;
-            } else if (this.gameState.player.defenseActive) {
-                const reductionRate = this.gameState.player.defenseBonusValue || 0.5;
+            } else if (this.persistentState.player.defenseActive) {
+                const reductionRate = this.persistentState.player.defenseBonusValue || 0.5;
                 finalEnemyDamage = Math.max(1, Math.floor(enemyDamage * (1 - reductionRate)));
-                if (this.gameState.enemy.isBoss && this.gameState.enemy.energy >= 50) {
+                if (this.transientState.enemy.isBoss && this.transientState.enemy.energy >= 50) {
                     finalEnemyDamage = Math.max(1, Math.floor(enemyDamage * 1.5 * (1 - reductionRate)));  // 技能伤害×1.5，然后防御减免
-                    this.gameState.enemy.energy -= 50;
-                    this.addBattleLog(`${this.gameState.enemy.name}释放了技能，对你造成了${finalEnemyDamage}点伤害！（防御减免${Math.floor(reductionRate * 100)}%）`);
+                    this.transientState.enemy.energy -= 50;
+                    this.addBattleLog(`${this.transientState.enemy.name}释放了技能，对你造成了${finalEnemyDamage}点伤害！（防御减免${Math.floor(reductionRate * 100)}%）`);
                 } else if (enemyCrit) {
                     const critPercent = Math.floor((enemyCritResult.multiplier - 1) * 100);
                     const reductionText = tenacityReduction > 0 ? ` 韧性减免${Math.floor(tenacityReduction * 100)}%` : '';
-                    this.addBattleLog(`💥暴击！(+${critPercent}%) ${this.gameState.enemy.name}！对你造成了${finalEnemyDamage}点伤害！（防御减免${Math.floor(reductionRate * 100)}%${reductionText}）`);
+                    this.addBattleLog(`💥暴击！(+${critPercent}%) ${this.transientState.enemy.name}！对你造成了${finalEnemyDamage}点伤害！（防御减免${Math.floor(reductionRate * 100)}%${reductionText}）`);
                 } else {
-                    this.addBattleLog(`${this.gameState.enemy.name}对你造成了${finalEnemyDamage}点伤害！（防御减免${Math.floor(reductionRate * 100)}%）`);
+                    this.addBattleLog(`${this.transientState.enemy.name}对你造成了${finalEnemyDamage}点伤害！（防御减免${Math.floor(reductionRate * 100)}%）`);
                 }
-                this.gameState.player.defenseActive = false;
-                this.gameState.player.defenseBonusValue = 0;
+                this.persistentState.player.defenseActive = false;
+                this.persistentState.player.defenseBonusValue = 0;
                 this.removeDefenseEffect();
             } else {
-                if (this.gameState.enemy.isBoss && this.gameState.enemy.energy >= 50) {
+                if (this.transientState.enemy.isBoss && this.transientState.enemy.energy >= 50) {
                     const skillDmg = Math.floor(enemyDamage * 1.5);
                     finalEnemyDamage = enemyDamage + skillDmg;
-                    this.gameState.enemy.energy -= 50;
-                    this.addBattleLog(`${this.gameState.enemy.name}释放了技能，对你造成了${finalEnemyDamage}点伤害！`);
+                    this.transientState.enemy.energy -= 50;
+                    this.addBattleLog(`${this.transientState.enemy.name}释放了技能，对你造成了${finalEnemyDamage}点伤害！`);
                 } else if (enemyCrit) {
                     finalEnemyDamage = enemyDamage;
                     const critPercent = Math.floor((enemyCritResult.multiplier - 1) * 100);
                     const reductionText = tenacityReduction > 0 ? ` 韧性减免${Math.floor(tenacityReduction * 100)}%` : '';
-                    this.addBattleLog(`💥暴击！(+${critPercent}%) ${this.gameState.enemy.name}！对你造成了${finalEnemyDamage}点伤害！${reductionText}`);
+                    this.addBattleLog(`💥暴击！(+${critPercent}%) ${this.transientState.enemy.name}！对你造成了${finalEnemyDamage}点伤害！${reductionText}`);
                 } else {
                     finalEnemyDamage = enemyDamage;
-                    this.addBattleLog(`${this.gameState.enemy.name}对你造成了${finalEnemyDamage}点伤害！`);
+                    this.addBattleLog(`${this.transientState.enemy.name}对你造成了${finalEnemyDamage}点伤害！`);
                 }
             }
 
             if (!isImmune && enemyHit) {
                 let actualDamage = finalEnemyDamage;
-                if (this.gameState.player.shieldValue && this.gameState.player.shieldValue > 0) {
-                    if (this.gameState.player.shieldValue >= actualDamage) {
-                        this.gameState.player.shieldValue -= actualDamage;
-                        this.addBattleLog(`护盾吸收了${actualDamage}点伤害！剩余护盾：${this.gameState.player.shieldValue}`);
+                if (this.persistentState.player.shieldValue && this.persistentState.player.shieldValue > 0) {
+                    if (this.persistentState.player.shieldValue >= actualDamage) {
+                        this.persistentState.player.shieldValue -= actualDamage;
+                        this.addBattleLog(`护盾吸收了${actualDamage}点伤害！剩余护盾：${this.persistentState.player.shieldValue}`);
                         actualDamage = 0;
                     } else {
-                        const absorbed = this.gameState.player.shieldValue;
-                        actualDamage -= this.gameState.player.shieldValue;
-                        this.gameState.player.shieldValue = 0;
+                        const absorbed = this.persistentState.player.shieldValue;
+                        actualDamage -= this.persistentState.player.shieldValue;
+                        this.persistentState.player.shieldValue = 0;
                         this.addBattleLog(`护盾吸收了${absorbed}点伤害，护盾破碎！剩余伤害：${actualDamage}`);
 
                         // ✅ 护盾破碎特效
@@ -720,8 +731,8 @@ EndlessCultivationGame.prototype.triggerEnemyCounterattack = function(finalDefen
                     }
                 }
                 if (actualDamage > 0) {
-                    this.gameState.player.hp -= actualDamage;
-                    if (this.gameState.player.hp < 0) this.gameState.player.hp = 0;
+                    this.persistentState.player.hp -= actualDamage;
+                    if (this.persistentState.player.hp < 0) this.persistentState.player.hp = 0;
                     this.playPlayerHitAnimation();
                     this.showDamage(this.battle3D.player, actualDamage, 'red');
                 }
@@ -729,10 +740,10 @@ EndlessCultivationGame.prototype.triggerEnemyCounterattack = function(finalDefen
         },
         // 结束回调
         () => {
-            if (this.gameState.enemy.isBoss) {
-                this.gameState.enemy.energy = Math.min(this.gameState.enemy.energy + 20, this.gameState.enemy.maxEnergy);
+            if (this.transientState.enemy.isBoss) {
+                this.transientState.enemy.energy = Math.min(this.transientState.enemy.energy + 20, this.transientState.enemy.maxEnergy);
             }
-            if (this.gameState.player.hp <= 0) this.playerDefeated();
+            if (this.persistentState.player.hp <= 0) this.playerDefeated();
             this.updateUI();
             this.updateHealthBars();
         }
@@ -743,7 +754,7 @@ EndlessCultivationGame.prototype.triggerEnemyCounterattack = function(finalDefen
 EndlessCultivationGame.prototype.enemyDefeated = function() {
     // 图鉴：记录击杀敌人
     if (this.collectionSystem) {
-        this.collectionSystem.recordEnemy(this.gameState.enemy);
+        this.collectionSystem.recordEnemy(this.transientState.enemy);
     }
 
     // 显示敌人倒地的画面
@@ -758,41 +769,41 @@ EndlessCultivationGame.prototype.enemyDefeated = function() {
     this.audioSystem.playSound('victory-sound', 1, 1000);
 
     // 获得经验
-    const expMultiplier = this.gameState.enemy.expMultiplier || 1;
-    const expGained = Math.floor(this.gameState.enemy.level * 20 * expMultiplier);
-    this.gameState.player.exp += expGained;
+    const expMultiplier = this.transientState.enemy.expMultiplier || 1;
+    const expGained = Math.floor(this.transientState.enemy.level * 20 * expMultiplier);
+    this.persistentState.player.exp += expGained;
 
     // 精英怪额外提示
-    if (this.gameState.enemy.isElite) {
-        this.addBattleLog(`你击败了${this.gameState.enemy.name}！`);
+    if (this.transientState.enemy.isElite) {
+        this.addBattleLog(`你击败了${this.transientState.enemy.name}！`);
         this.addBattleLog(`精英敌人奖励翻倍！获得了${expGained}点经验！`);
     } else {
-        this.addBattleLog(`你击败了${this.gameState.enemy.name}，获得了${expGained}点经验！`);
+        this.addBattleLog(`你击败了${this.transientState.enemy.name}，获得了${expGained}点经验！`);
     }
 
     // 获得资源
-    const resourceMultiplier = this.gameState.enemy.resourceMultiplier || 1;
-    const woodGained = Math.floor((this.gameState.enemy.level * 5 + Math.random() * 5) * resourceMultiplier);
-    const ironGained = Math.floor((this.gameState.enemy.level * 2 + Math.random() * 3) * resourceMultiplier);
-    const crystalGained = Math.floor((this.gameState.enemy.level * 1 + Math.random() * 2) * resourceMultiplier);
+    const resourceMultiplier = this.transientState.enemy.resourceMultiplier || 1;
+    const woodGained = Math.floor((this.transientState.enemy.level * 5 + Math.random() * 5) * resourceMultiplier);
+    const ironGained = Math.floor((this.transientState.enemy.level * 2 + Math.random() * 3) * resourceMultiplier);
+    const crystalGained = Math.floor((this.transientState.enemy.level * 1 + Math.random() * 2) * resourceMultiplier);
 
-    this.gameState.resources.spiritWood += woodGained;
-    this.gameState.resources.blackIron += ironGained;
-    this.gameState.resources.spiritCrystal += crystalGained;
+    this.persistentState.resources.spiritWood += woodGained;
+    this.persistentState.resources.blackIron += ironGained;
+    this.persistentState.resources.spiritCrystal += crystalGained;
 
     this.addBattleLog(`获得了${woodGained}灵木，${ironGained}玄铁，${crystalGained}灵石！`);
 
     // 杀死敌人恢复灵力
     const killEnergyRecovery = 15;
-    this.gameState.player.energy = Math.min(this.gameState.player.energy + killEnergyRecovery, this.gameState.player.maxEnergy);
+    this.persistentState.player.energy = Math.min(this.persistentState.player.energy + killEnergyRecovery, this.persistentState.player.maxEnergy);
     this.addBattleLog(`杀死敌人恢复了${killEnergyRecovery}点灵力！`);
 
     // 杀死敌人恢复生命值
     const hpRecoveryPercent = 0.35; // 恢复35%最大HP（从20%提升）
-    const hpRecovery = Math.floor(this.gameState.player.maxHp * hpRecoveryPercent);
-    const actualHpRecovered = Math.min(hpRecovery, this.gameState.player.maxHp - this.gameState.player.hp);
+    const hpRecovery = Math.floor(this.persistentState.player.maxHp * hpRecoveryPercent);
+    const actualHpRecovered = Math.min(hpRecovery, this.persistentState.player.maxHp - this.persistentState.player.hp);
     if (actualHpRecovered > 0) {
-        this.gameState.player.hp += actualHpRecovered;
+        this.persistentState.player.hp += actualHpRecovered;
         this.addBattleLog(`战斗胜利恢复了${actualHpRecovered}点生命值！`);
         this.showDamage(this.battle3D.player, actualHpRecovered, 'green');
     }
@@ -806,7 +817,7 @@ EndlessCultivationGame.prototype.enemyDefeated = function() {
         }
         const equipped = this.checkAndEquipBetterGear(droppedEquipment);
         if (!equipped) {
-            this.gameState.player.inventory.push(droppedEquipment);
+            this.persistentState.player.inventory.push(droppedEquipment);
             this.addBattleLog(`获得了${droppedEquipment.rarityDisplayName} ${droppedEquipment.name}，已放入背包！`);
         } else {
             this.addBattleLog(`获得了${droppedEquipment.rarityDisplayName} ${droppedEquipment.name}，属性更好，已自动装备！`);
@@ -816,8 +827,8 @@ EndlessCultivationGame.prototype.enemyDefeated = function() {
     }
 
     // 突破石掉落（只有BOSS有几率掉落）
-    if (this.gameState.enemy.isBoss) {
-        const realm = this.gameState.player.realm;
+    if (this.transientState.enemy.isBoss) {
+        const realm = this.persistentState.player.realm;
         let dropChance = 0;
         
         // 根据境界和阶段计算掉落概率
@@ -840,14 +851,14 @@ EndlessCultivationGame.prototype.enemyDefeated = function() {
         if (Math.random() < dropChance) {
             // 掉落1-3个突破石
             const stonesGained = Math.floor(Math.random() * 3) + 1;
-            this.gameState.resources.breakthroughStones = (this.gameState.resources.breakthroughStones || 0) + stonesGained;
+            this.persistentState.resources.breakthroughStones = (this.persistentState.resources.breakthroughStones || 0) + stonesGained;
             this.addBattleLog(`获得了${stonesGained}个突破石！`);
         }
     }
 
     // 主线任务进度追踪 - 击杀敌人
     if (this.mainQuestSystem) {
-        const enemy = this.gameState.enemy;
+        const enemy = this.transientState.enemy;
         this.mainQuestSystem.trackMainQuestProgress('enemy_killed', {
             name: enemy.name,
             isBoss: enemy.isBoss || false,
@@ -858,7 +869,7 @@ EndlessCultivationGame.prototype.enemyDefeated = function() {
 
     // 每日任务进度追踪 - 击杀敌人
     if (this.dailyQuestSystem) {
-        const enemy = this.gameState.enemy;
+        const enemy = this.transientState.enemy;
         this.dailyQuestSystem.trackDailyQuestProgress('enemy_killed', {
             name: enemy.name,
             isBoss: enemy.isBoss || false,
@@ -901,20 +912,20 @@ EndlessCultivationGame.prototype.playerDefeated = function() {
     // 播放失败声音
     this.audioSystem.playSound('defeat-sound', 1, 1000);
 
-    this.addBattleLog(`你被${this.gameState.enemy.name}击败了！`);
+    this.addBattleLog(`你被${this.transientState.enemy.name}击败了！`);
 
     // 经验损失惩罚（损失20%经验）
-    const expLoss = Math.floor(this.gameState.player.exp * 0.2);
-    this.gameState.player.exp = Math.floor(this.gameState.player.exp * 0.8);
+    const expLoss = Math.floor(this.persistentState.player.exp * 0.2);
+    this.persistentState.player.exp = Math.floor(this.persistentState.player.exp * 0.8);
     this.addBattleLog(`你失去了 ${expLoss} 点经验！(20%)`);
 
     // 重置玩家HP和灵力
-    this.gameState.player.hp = this.gameState.player.maxHp;
-    this.gameState.player.energy = this.gameState.player.maxEnergy;
+    this.persistentState.player.hp = this.persistentState.player.maxHp;
+    this.persistentState.player.energy = this.persistentState.player.maxEnergy;
 
     // 重置敌人HP/灵力
-    this.gameState.enemy.hp = this.gameState.enemy.maxHp;
-    this.gameState.enemy.energy = this.gameState.enemy.maxEnergy;
+    this.transientState.enemy.hp = this.transientState.enemy.maxHp;
+    this.transientState.enemy.energy = this.transientState.enemy.maxEnergy;
 
     // 更新UI
     this.updateUI();
@@ -989,8 +1000,8 @@ EndlessCultivationGame.prototype.closeBattleModal = function() {
     this.battle3D = null;
 
     // ✅ 最后重置战斗状态
-    if (this.gameState.battle) {
-        this.gameState.battle.inBattle = false;
+    if (this.transientState.battle) {
+        this.transientState.battle.inBattle = false;
     }
 
     // 恢复地图场景
@@ -1030,9 +1041,9 @@ EndlessCultivationGame.prototype.showEnemyDefeatedAnimation = function() {
 
 // 切换自动战斗
 EndlessCultivationGame.prototype.toggleAutoBattle = function() {
-    this.gameState.settings.autoBattle = !this.gameState.settings.autoBattle;
+    this.persistentState.settings.autoBattle = !this.persistentState.settings.autoBattle;
 
-    if (this.gameState.settings.autoBattle) {
+    if (this.persistentState.settings.autoBattle) {
         this.startAutoBattle();
         this.addBattleLog('已开启自动战斗');
     } else {
@@ -1043,10 +1054,10 @@ EndlessCultivationGame.prototype.toggleAutoBattle = function() {
 
 // 开始自动战斗
 EndlessCultivationGame.prototype.startAutoBattle = function() {
-    if (!this.gameState.battle.inBattle) return;
+    if (!this.transientState.battle.inBattle) return;
 
-    this.gameState.settings.autoBattle = true;
-    this.gameState.battle.autoBattleLoop = setInterval(() => {
+    this.persistentState.settings.autoBattle = true;
+    this.transientState.battle.autoBattleLoop = setInterval(() => {
         // 简单的自动攻击逻辑
         if (Math.random() < 0.3) {
             this.attackEnemy();
@@ -1056,10 +1067,10 @@ EndlessCultivationGame.prototype.startAutoBattle = function() {
 
 // 停止自动战斗
 EndlessCultivationGame.prototype.stopAutoBattle = function() {
-    this.gameState.settings.autoBattle = false;
-    if (this.gameState.battle.autoBattleLoop) {
-        clearInterval(this.gameState.battle.autoBattleLoop);
-        this.gameState.battle.autoBattleLoop = null;
+    this.persistentState.settings.autoBattle = false;
+    if (this.transientState.battle.autoBattleLoop) {
+        clearInterval(this.transientState.battle.autoBattleLoop);
+        this.transientState.battle.autoBattleLoop = null;
     }
 };
 
@@ -1070,38 +1081,38 @@ EndlessCultivationGame.prototype.processSkillEffects = function(effects) {
     for (const effect of effects) {
         switch (effect.type) {
             case 'dodgeBonus':
-                this.gameState.player.dodgeActive = true;
-                this.gameState.player.dodgeBonus = effect.value;
+                this.persistentState.player.dodgeActive = true;
+                this.persistentState.player.dodgeBonus = effect.value;
                 this.addBattleLog(`闪避率提升${Math.floor(effect.value * 100)}%！`);
                 break;
             case 'energyRecover':
-                const recoverAmount = Math.min(effect.value, this.gameState.player.maxEnergy - this.gameState.player.energy);
-                this.gameState.player.energy += recoverAmount;
+                const recoverAmount = Math.min(effect.value, this.persistentState.player.maxEnergy - this.persistentState.player.energy);
+                this.persistentState.player.energy += recoverAmount;
                 this.addBattleLog(`恢复了${recoverAmount}点灵力！`);
                 break;
             case 'defenseBonus':
-                this.gameState.player.defenseActive = true;
-                this.gameState.player.defenseBonusValue = effect.value;
+                this.persistentState.player.defenseActive = true;
+                this.persistentState.player.defenseBonusValue = effect.value;
                 this.addBattleLog(`防御提升，下次受伤减少${Math.floor(effect.value * 100)}%！`);
                 break;
             case 'accuracyBonus':
-                this.gameState.player.tempAccuracyBonus = (this.gameState.player.tempAccuracyBonus || 0) + effect.value;
+                this.persistentState.player.tempAccuracyBonus = (this.persistentState.player.tempAccuracyBonus || 0) + effect.value;
                 this.addBattleLog(`命中提升${Math.floor(effect.value * 100)}%！`);
                 break;
             case 'healPercentage':
                 // 使用公共方法获取实际最大血量
                 const actualMaxHp = this.getActualStats().maxHp;
                 const healAmount = Math.floor(actualMaxHp * effect.value);
-                this.gameState.player.hp = Math.min(this.gameState.player.hp + healAmount, actualMaxHp);
+                this.persistentState.player.hp = Math.min(this.persistentState.player.hp + healAmount, actualMaxHp);
                 this.addBattleLog(`恢复了${healAmount}点生命值！`);
                 this.showDamage(this.battle3D.player, healAmount, 'green');
                 break;
             case 'allStatsBonus':
                 // 全属性加成
-                if (!this.gameState.player.buffs) {
-                    this.gameState.player.buffs = [];
+                if (!this.persistentState.player.buffs) {
+                    this.persistentState.player.buffs = [];
                 }
-                this.gameState.player.buffs.push({
+                this.persistentState.player.buffs.push({
                     type: 'allStatsBonus',
                     value: effect.value,
                     turns: effect.turns || 3
@@ -1114,23 +1125,23 @@ EndlessCultivationGame.prototype.processSkillEffects = function(effects) {
 
 // 处理回合开始时的buff效果
 EndlessCultivationGame.prototype.processBuffsAtTurnStart = function() {
-    if (!this.gameState.player.buffs || this.gameState.player.buffs.length === 0) {
+    if (!this.persistentState.player.buffs || this.persistentState.player.buffs.length === 0) {
         return;
     }
 
-    for (const buff of this.gameState.player.buffs) {
+    for (const buff of this.persistentState.player.buffs) {
         switch (buff.type) {
             case 'damageBonus':
                 // 伤害加成已在使用技能时应用
                 break;
             case 'allStatsBonus':
                 // 全属性加成
-                this.gameState.player.tempAttackBonus = (this.gameState.player.tempAttackBonus || 0) + buff.value;
-                this.gameState.player.tempDefenseBonus = (this.gameState.player.tempDefenseBonus || 0) + buff.value;
+                this.persistentState.player.tempAttackBonus = (this.persistentState.player.tempAttackBonus || 0) + buff.value;
+                this.persistentState.player.tempDefenseBonus = (this.persistentState.player.tempDefenseBonus || 0) + buff.value;
                 break;
             case 'skillCostReduce':
                 // 技能消耗减少
-                this.gameState.player.tempSkillCostReduce = buff.value;
+                this.persistentState.player.tempSkillCostReduce = buff.value;
                 break;
         }
     }
@@ -1139,8 +1150,8 @@ EndlessCultivationGame.prototype.processBuffsAtTurnStart = function() {
 // 处理回合结束时的buff/debuff衰减
 EndlessCultivationGame.prototype.processBuffDecay = function() {
     // 处理玩家buff衰减
-    if (this.gameState.player.buffs) {
-        this.gameState.player.buffs = this.gameState.player.buffs.filter(buff => {
+    if (this.persistentState.player.buffs) {
+        this.persistentState.player.buffs = this.persistentState.player.buffs.filter(buff => {
             buff.turns--;
             if (buff.turns <= 0) {
                 this.addBattleLog(`${buff.type}效果已消失`);
@@ -1151,8 +1162,8 @@ EndlessCultivationGame.prototype.processBuffDecay = function() {
     }
 
     // 处理敌人debuff衰减
-    if (this.gameState.enemy.debuffs) {
-        this.gameState.enemy.debuffs = this.gameState.enemy.debuffs.filter(debuff => {
+    if (this.transientState.enemy.debuffs) {
+        this.transientState.enemy.debuffs = this.transientState.enemy.debuffs.filter(debuff => {
             debuff.turns--;
             if (debuff.turns <= 0) {
                 this.addBattleLog(`敌人的${debuff.type}效果已消失`);
@@ -1163,10 +1174,10 @@ EndlessCultivationGame.prototype.processBuffDecay = function() {
     }
 
     // 清除临时加成
-    this.gameState.player.tempAttackBonus = 0;
-    this.gameState.player.tempDefenseBonus = 0;
-    this.gameState.player.tempAccuracyBonus = 0;
-    this.gameState.player.tempSkillCostReduce = 0;
+    this.persistentState.player.tempAttackBonus = 0;
+    this.persistentState.player.tempDefenseBonus = 0;
+    this.persistentState.player.tempAccuracyBonus = 0;
+    this.persistentState.player.tempSkillCostReduce = 0;
 };
 
 /**
@@ -1177,23 +1188,23 @@ EndlessCultivationGame.prototype.clearBattleStates = function() {
     console.log('清理战斗临时状态...');
 
     // ✅ 清理玩家战斗状态
-    if (this.gameState.player) {
-        this.gameState.player.shieldValue = 0;  // 护盾值
-        this.gameState.player.defenseActive = false;  // 防御姿态
-        this.gameState.player.defenseBonusValue = 0;  // 防御加成
-        this.gameState.player.dodgeActive = false;  // 闪避姿态
-        this.gameState.player.dodgeBonus = 0;  // 闪避加成
-        this.gameState.player.immuneNextAttack = false;  // 免疫下次攻击
-        this.gameState.player.buffs = [];  // 持续增益
-        this.gameState.player.tempAttackBonus = 0;  // 临时攻击加成
-        this.gameState.player.tempDefenseBonus = 0;  // 临时防御加成
-        this.gameState.player.tempAccuracyBonus = 0;  // 临时命中加成
-        this.gameState.player.tempSkillCostReduce = 0;  // 临时技能消耗减少
+    if (this.persistentState.player) {
+        this.persistentState.player.shieldValue = 0;  // 护盾值
+        this.persistentState.player.defenseActive = false;  // 防御姿态
+        this.persistentState.player.defenseBonusValue = 0;  // 防御加成
+        this.persistentState.player.dodgeActive = false;  // 闪避姿态
+        this.persistentState.player.dodgeBonus = 0;  // 闪避加成
+        this.persistentState.player.immuneNextAttack = false;  // 免疫下次攻击
+        this.persistentState.player.buffs = [];  // 持续增益
+        this.persistentState.player.tempAttackBonus = 0;  // 临时攻击加成
+        this.persistentState.player.tempDefenseBonus = 0;  // 临时防御加成
+        this.persistentState.player.tempAccuracyBonus = 0;  // 临时命中加成
+        this.persistentState.player.tempSkillCostReduce = 0;  // 临时技能消耗减少
     }
 
     // ✅ 清理敌人战斗状态
-    if (this.gameState.enemy) {
-        this.gameState.enemy.debuffs = [];  // 持续减益
+    if (this.transientState.enemy) {
+        this.transientState.enemy.debuffs = [];  // 持续减益
     }
 
     // ✅ 移除防御特效（护盾等）

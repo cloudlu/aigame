@@ -33,21 +33,35 @@ class EndlessCultivationGame {
     };
 
     constructor() {
-        // 游戏状态 - 只初始化基本结构
-        this.gameState = {
-            // 用户信息
-            user: [],
-            // 玩家属性 - 留空，由登录获取或创建新用户时初始化
-            player: {},
-            // 资源系统 - 留空，由登录获取或创建新用户时初始化
-            resources: {},
-            // 游戏设置 - 留空，由登录获取或创建新用户时从metadata初始化
-            settings: {},
-            // 战斗状态
-            battle: {
+        // ========== 新架构：数据按生命周期分类 ==========
+
+        // 持久化数据 - 需要保存到服务器
+        this.persistentState = {
+            user: {},           // 用户信息
+            player: {},         // 玩家属性
+            resources: {},      // 资源系统
+            settings: {},       // 游戏设置
+            mainQuest: {},      // 主线任务
+            mainStory: {},      // 主线剧情
+            dailyQuests: {},    // 每日任务
+            vip: {},            // VIP系统
+            collection: {}      // 图鉴系统
+        };
+
+        // 临时数据 - 不保存，运行时生成
+        this.transientState = {
+            enemy: null,        // 当前敌人
+            sceneMonsters: [],  // 场景怪物
+            battle: {           // 战斗状态
                 inBattle: false,
                 battleLog: []
             }
+        };
+
+        // 计算属性缓存 - 不保存，运行时计算
+        this._computedCache = {
+            equipmentEffects: null,
+            questCache: null
         };
 
         // 游戏计时器
@@ -94,7 +108,23 @@ class EndlessCultivationGame {
         // 初始化游戏
         this.initGame();
     }
-    
+
+    // ==================== 计算属性 Getter ====================
+
+    // 获取装备效果（懒加载 + 缓存）
+    get equipmentEffects() {
+        if (this._computedCache.equipmentEffects) {
+            return this._computedCache.equipmentEffects;
+        }
+        this._computedCache.equipmentEffects = this.equipmentSystem.calculateEquipmentEffects();
+        return this._computedCache.equipmentEffects;
+    }
+
+    // 清除装备效果缓存（装备变化时调用）
+    invalidateEquipmentEffectsCache() {
+        this._computedCache.equipmentEffects = null;
+    }
+
     // 初始化游戏
     initGame() {
         // 设置默认选中的装备槽位
@@ -119,8 +149,8 @@ class EndlessCultivationGame {
         }
 
         // ✅ 重置战斗状态（防止页面刷新后残留战斗状态）
-        if (this.gameState.battle) {
-            this.gameState.battle.inBattle = false;
+        if (this.transientState.battle) {
+            this.transientState.battle.inBattle = false;
             console.log('✅ 重置战斗状态为 false');
         }
 
@@ -131,28 +161,28 @@ class EndlessCultivationGame {
         this.loadTextures();
         
         // 确保所有装备都有refineLevel属性
-            for (const slot in this.gameState.player.equipment) {
-                const item = this.gameState.player.equipment[slot];
+            for (const slot in this.persistentState.player.equipment) {
+                const item = this.persistentState.player.equipment[slot];
                 if (item && item.refineLevel === undefined) {
                     item.refineLevel = 0;
                 }
             }
 
             // 数据迁移：确保玩家有 inventory 结构（v1.15+ 新增）
-            if (!this.gameState.player.inventory) {
-                this.gameState.player.inventory = {
+            if (!this.persistentState.player.inventory) {
+                this.persistentState.player.inventory = {
                     consumables: {},
                     waypoints: []
                 };
             }
 
-            if (!this.gameState.player.inventory.waypoints) {
-                this.gameState.player.inventory.waypoints = [];
+            if (!this.persistentState.player.inventory.waypoints) {
+                this.persistentState.player.inventory.waypoints = [];
             }
 
             // 自动解锁起始地图的传送点
-            if (!this.gameState.player.inventory.waypoints.includes('xianxia-mountain')) {
-                this.gameState.player.inventory.waypoints.push('xianxia-mountain');
+            if (!this.persistentState.player.inventory.waypoints.includes('xianxia-mountain')) {
+                this.persistentState.player.inventory.waypoints.push('xianxia-mountain');
             }
 
             // 初始化地图邻接表
@@ -177,8 +207,8 @@ class EndlessCultivationGame {
             }
             
             // 更新 UI 和绑定事件
-            if (this.gameState.currentBackgroundIndex === undefined) {
-                this.gameState.currentBackgroundIndex = 0; // 默认山峰（武者起始地图）
+            if (this.persistentState.currentBackgroundIndex === undefined) {
+                this.persistentState.currentBackgroundIndex = 0; // 默认山峰（武者起始地图）
             }
             this.updateMapBackground(); // 设置初始地图背景
             this.updateCharacterBodyImage();
@@ -195,11 +225,11 @@ class EndlessCultivationGame {
 
             // 初始化主线任务系统
             // 始终验证当前等级的任务是否正确初始化
-            if (this.gameState.mainQuest && this.mainQuestSystem) {
-                const mq = this.gameState.mainQuest;
-                const realm = this.gameState.player.realm?.currentRealm || 0;
-                const stage = this.gameState.player.realm?.currentStage || 1;
-                const level = this.gameState.player.realm?.currentLevel || 1;
+            if (this.persistentState.mainQuest && this.mainQuestSystem) {
+                const mq = this.persistentState.mainQuest;
+                const realm = this.persistentState.player.realm?.currentRealm || 0;
+                const stage = this.persistentState.player.realm?.currentStage || 1;
+                const level = this.persistentState.player.realm?.currentLevel || 1;
 
                 // 检查是否需要重新初始化任务（保留已有进度）
                 const hasQuestData = mq.questData && Object.keys(mq.questData).length > 0;
@@ -207,7 +237,6 @@ class EndlessCultivationGame {
                 if (!hasQuestData) {
                     // 无存档数据，初始化新任务
                     mq.questData = {};
-                    mq.generatedCache = {};
                     try {
                         this.mainQuestSystem.initLevelQuests(realm, stage, level);
                         console.log('[主线任务] 初始化新任务 -', realm, '境', stage, '阶', level, '级');
@@ -223,31 +252,26 @@ class EndlessCultivationGame {
                     if (allCompleted) {
                         // 旧任务已全部完成，初始化新等级任务
                         mq.questData = {};
-                        mq.generatedCache = {};
                         try {
                             this.mainQuestSystem.initLevelQuests(realm, stage, level);
-                            console.log('[主线任务] 升级后初始化新任务 -', realm, '境', stage, '阶', level, '级');
+                            console.debug('[主线任务] 升级后初始化新任务 -', realm, '境', stage, '阶', level, '级');
                         } catch (e) {
                             console.error('[主线任务] 初始化失败:', e);
                         }
                     } else {
                         // 旧任务未完成，保留当前任务进度
-                        console.log('[主线任务] 保留未完成任务 - 当前等级', level, '任务等级', mq.currentLevel);
+                        console.debug('[主线任务] 保留未完成任务 - 当前等级', level, '任务等级', mq.currentLevel);
                         this.mainQuestSystem.updateMainQuestUI();
                     }
                 } else {
-                    // 同等级，恢复已有进度
-                    const levelKey = `r${realm}_s${stage}_l${level}`;
-                    if (!mq.generatedCache) mq.generatedCache = {};
-                    if (!mq.generatedCache[levelKey]) {
-                        this.mainQuestSystem.getCurrentLevelQuests();
-                    }
+                    // 同等级，恢复已有进度（任务缓存会在首次访问时自动生成）
+                    this.mainQuestSystem.getCurrentLevelQuests();
                     this.mainQuestSystem.updateMainQuestUI();
                     console.log('[主线任务] 恢复任务进度 -', realm, '境', stage, '阶', level, '级');
                 }
 
                 // 检查当前位置是否已满足 visit_map 类型的目标
-                const currentMapType = this.metadata.mapBackgrounds[this.gameState.currentBackgroundIndex]?.type;
+                const currentMapType = this.metadata.mapBackgrounds[this.persistentState.currentBackgroundIndex]?.type;
                 if (currentMapType && this.mainQuestSystem) {
                     this.mainQuestSystem.trackMainQuestProgress('map_visited', { mapType: currentMapType });
                 }
@@ -408,10 +432,10 @@ class EndlessCultivationGame {
             teleportType = null           // 'waypoint', 'item', 'admin', null
         } = options;
 
-        const playerRealm = this.gameState.player.realm.currentRealm;
+        const playerRealm = this.persistentState.player.realm.currentRealm;
         const realmRequirement = this.metadata.mapRealmRequirements[targetMapType];
         const currentMapType = this.metadata.mapBackgrounds[
-            this.gameState.currentBackgroundIndex
+            this.persistentState.currentBackgroundIndex
         ]?.type;
 
         // 检查1：境界限制
@@ -447,7 +471,7 @@ class EndlessCultivationGame {
         // 检查3：能量消耗（传送点免费，正常移动消耗10点）
         const energyCost = teleportType === 'waypoint' ? 0 : 10;
 
-        if (this.gameState.player.energy < energyCost) {
+        if (this.persistentState.player.energy < energyCost) {
             this.addBattleLog(`灵力不足！需要 ${energyCost} 点灵力才能移动。`);
             return false;
         }
@@ -463,8 +487,8 @@ class EndlessCultivationGame {
         }
 
         // 执行移动
-        this.gameState.player.energy -= energyCost;
-        this.gameState.currentBackgroundIndex = targetIndex;
+        this.persistentState.player.energy -= energyCost;
+        this.persistentState.currentBackgroundIndex = targetIndex;
         this.updateMapBackground();
         this.generateMiniMap();
 
@@ -498,8 +522,8 @@ class EndlessCultivationGame {
 
     // 获取当前可进入的地图列表
     getAvailableMaps() {
-        const playerRealm = this.gameState.player.realm.currentRealm;
-        const currentMapType = this.metadata.mapBackgrounds[this.gameState.currentBackgroundIndex]?.type;
+        const playerRealm = this.persistentState.player.realm.currentRealm;
+        const currentMapType = this.metadata.mapBackgrounds[this.persistentState.currentBackgroundIndex]?.type;
 
         return this.metadata.mapBackgrounds.map((mapBg, index) => {
             const realmReq = this.metadata.mapRealmRequirements[mapBg.type] || { realm: 0, name: "武者" };
@@ -521,28 +545,28 @@ class EndlessCultivationGame {
     // 地图首次访问处理
     onMapVisit(mapType) {
         // 确保玩家有 inventory 结构
-        if (!this.gameState.player.inventory) {
-            this.gameState.player.inventory = {
+        if (!this.persistentState.player.inventory) {
+            this.persistentState.player.inventory = {
                 consumables: {},
                 waypoints: []
             };
         }
 
-        if (!this.gameState.player.inventory.waypoints) {
-            this.gameState.player.inventory.waypoints = [];
+        if (!this.persistentState.player.inventory.waypoints) {
+            this.persistentState.player.inventory.waypoints = [];
         }
 
         // 首次访问解锁传送点
-        if (!this.gameState.player.inventory.waypoints.includes(mapType)) {
-            this.gameState.player.inventory.waypoints.push(mapType);
+        if (!this.persistentState.player.inventory.waypoints.includes(mapType)) {
+            this.persistentState.player.inventory.waypoints.push(mapType);
 
             const map = this.metadata.mapBackgrounds.find(bg => bg.type === mapType);
             this.addBattleLog(`解锁了 ${map.name} 的传送点！`);
 
             // 首次探索奖励
             const bonus = { exp: 100, spiritStones: 50 };
-            this.gameState.player.exp += bonus.exp;
-            this.gameState.player.spiritStones = (this.gameState.player.spiritStones || 0) + bonus.spiritStones;
+            this.persistentState.player.exp += bonus.exp;
+            this.persistentState.player.spiritStones = (this.persistentState.player.spiritStones || 0) + bonus.spiritStones;
             this.addBattleLog(`首次探索！获得 ${bonus.exp} 经验和 ${bonus.spiritStones} 灵石`);
         }
     }
@@ -550,12 +574,12 @@ class EndlessCultivationGame {
     // 传送到已解锁的传送点
     teleportToWaypoint(mapType) {
         // 确保有传送点数据
-        if (!this.gameState.player.inventory || !this.gameState.player.inventory.waypoints) {
+        if (!this.persistentState.player.inventory || !this.persistentState.player.inventory.waypoints) {
             this.addBattleLog('尚未解锁任何传送点！');
             return false;
         }
 
-        if (!this.gameState.player.inventory.waypoints.includes(mapType)) {
+        if (!this.persistentState.player.inventory.waypoints.includes(mapType)) {
             this.addBattleLog('尚未解锁该地图的传送点！');
             return false;
         }
@@ -830,7 +854,7 @@ class EndlessCultivationGame {
                     const userInfo = JSON.parse(userStr);
 
                     // 设置用户信息
-                    this.gameState.user = {
+                    this.persistentState.user = {
                         loggedIn: true,
                         username: userInfo.username,
                         userId: userInfo.userId,
@@ -840,6 +864,12 @@ class EndlessCultivationGame {
 
                     // 加载游戏状态（等待完成）
                     await this.loadGame();
+
+                    // ✅ 清理存档中可能残留的临时数据（防止脏数据）
+                    this.transientState.enemy = null;
+                    this.transientState.sceneMonsters = [];
+                    this.transientState.battle = { inBattle: false, battleLog: [] };
+                    console.log('✅ 已清理临时数据（enemy, sceneMonsters, battle）');
 
                     // 登录成功，清除跳转计数
                     sessionStorage.removeItem('redirectCount');
@@ -888,7 +918,7 @@ class EndlessCultivationGame {
     
     // 更新管理员控制按钮的显示状态
     updateAdminControls() {
-        const isAdmin = this.gameState.user.role === 'admin';
+        const isAdmin = this.persistentState.user.role === 'admin';
         console.debug("新功能，待开发！");
     }
 
@@ -915,12 +945,12 @@ class EndlessCultivationGame {
 
     // 更新UI显示
     updateUI() {
-        // 确保gameState和resources对象存在
-        if (!this.gameState) {
-            this.gameState = {};
+        // 确保persistentState和resources对象存在
+        if (!this.persistentState) {
+            this.persistentState = {};
         }
-        if (!this.gameState.resources) {
-            this.gameState.resources = {
+        if (!this.persistentState.resources) {
+            this.persistentState.resources = {
                 spiritWood: 0,
                 blackIron: 0,
                 spiritCrystal: 0,
@@ -928,16 +958,16 @@ class EndlessCultivationGame {
                 iron: 0
             };
         }
-        if (!this.gameState.player) {
-            this.gameState.player = {
+        if (!this.persistentState.player) {
+            this.persistentState.player = {
                 energy: 100,
                 maxEnergy: 100
             };
         }
         
         // 更新灵力条（使用统一函数更新主页面和人物面板）
-        const energyCurrent = this.gameState.player.energy || 0;
-        const energyMax = this.gameState.player.maxEnergy || 100;
+        const energyCurrent = this.persistentState.player.energy || 0;
+        const energyMax = this.persistentState.player.maxEnergy || 100;
         this.updateProgressBar('energy', energyCurrent, energyMax);  // 主页面
         this.updateProgressBar('energy', energyCurrent, energyMax, { bar: '-bar-modal', display: '-display-modal' });  // 人物面板
 
@@ -957,19 +987,19 @@ class EndlessCultivationGame {
         // 灵石（spiritStones）
         const spiritStonesElement = document.getElementById('spirit-stones');
         if (spiritStonesElement) {
-            spiritStonesElement.textContent = Math.floor(this.gameState.player.spiritStones || 0);
+            spiritStonesElement.textContent = Math.floor(this.persistentState.player.spiritStones || 0);
         }
 
         // 灵草（herbs）
         const herbsElement = document.getElementById('herbs');
         if (herbsElement) {
-            herbsElement.textContent = Math.floor(this.gameState.player.resources?.herbs || 0);
+            herbsElement.textContent = Math.floor(this.persistentState.player.resources?.herbs || 0);
         }
 
         // 玄铁（iron）
         const ironElement = document.getElementById('iron');
         if (ironElement) {
-            ironElement.textContent = Math.floor(this.gameState.player.resources?.iron || 0);
+            ironElement.textContent = Math.floor(this.persistentState.player.resources?.iron || 0);
         }
         
         // 计算装备效果
@@ -988,7 +1018,7 @@ class EndlessCultivationGame {
 
         const finalAttack = stats.attack;
         const finalDefense = stats.defense;
-        const finalHp = this.gameState.player.hp;  // 当前血量直接使用
+        const finalHp = this.persistentState.player.hp;  // 当前血量直接使用
         const finalLuck = stats.luck;
         const finalSpeed = stats.speed;
         const finalMaxHp = stats.maxHp;
@@ -997,7 +1027,7 @@ class EndlessCultivationGame {
             const levelElement = document.getElementById('level');
             if (levelElement) {
                 if (this.metadata.realmConfig) {
-                    const realm = this.gameState.player.realm;
+                    const realm = this.persistentState.player.realm;
                     const realmName = this.metadata.realmConfig[realm.currentRealm].name;
                     const stageConfig = this.metadata.realmConfig[realm.currentRealm].stages[realm.currentStage - 1];
                     const stageName = stageConfig.name;
@@ -1008,32 +1038,32 @@ class EndlessCultivationGame {
             }
             const expElement = document.getElementById('exp');
             if (expElement) {
-                expElement.textContent = this.gameState.player.exp;
+                expElement.textContent = this.persistentState.player.exp;
             }
             const maxExpElement = document.getElementById('max-exp');
             if (maxExpElement) {
-                maxExpElement.textContent = this.gameState.player.maxExp;
+                maxExpElement.textContent = this.persistentState.player.maxExp;
             }
             // 更新经验条
             const expBarElement = document.getElementById('exp-bar');
             if (expBarElement) {
-                const expPercentage = (this.gameState.player.exp / this.gameState.player.maxExp) * 100;
+                const expPercentage = (this.persistentState.player.exp / this.persistentState.player.maxExp) * 100;
                 expBarElement.style.width = `${Math.min(expPercentage, 100)}%`;
             }
             // 更新突破石显示
             const breakthroughStonesElement = document.getElementById('breakthrough-stones');
             if (breakthroughStonesElement) {
-                breakthroughStonesElement.textContent = `${this.gameState.player.resources.breakthroughStones || 0}`;
+                breakthroughStonesElement.textContent = `${this.persistentState.player.resources.breakthroughStones || 0}`;
             }
             // 更新仙玉显示
             const jadeElement = document.getElementById('jade');
             if (jadeElement) {
-                jadeElement.textContent = `${this.gameState.player.jade || 0}`;
+                jadeElement.textContent = `${this.persistentState.player.jade || 0}`;
             }
             // 更新VIP等级显示
             const vipBadgeElement = document.getElementById('nav-vip-badge');
             if (vipBadgeElement) {
-                const vipLevel = this.gameState.vip?.level || 0;
+                const vipLevel = this.persistentState.vip?.level || 0;
                 const vipInfo = this.vipSystem.getVIPInfo();
                 vipBadgeElement.textContent = vipLevel > 0 ? `VIP${vipLevel}·${vipInfo.label}` : '';
                 vipBadgeElement.style.display = vipLevel > 0 ? 'flex' : 'none';
@@ -1041,11 +1071,11 @@ class EndlessCultivationGame {
             // 更新突破按钮状态
             const breakthroughBtnElement = document.getElementById('breakthrough-btn');
             if (breakthroughBtnElement && this.metadata.realmConfig) {
-                const realm = this.gameState.player.realm;
+                const realm = this.persistentState.player.realm;
                 const currentStageConfig = this.metadata.realmConfig[realm.currentRealm].stages[realm.currentStage - 1];
                 const requiredStones = currentStageConfig.breakthroughStones;
                 const hasEnoughLevel = realm.currentLevel >= currentStageConfig.levelCap;
-                const hasEnoughStones = (this.gameState.player.resources.breakthroughStones || 0) >= requiredStones;
+                const hasEnoughStones = (this.persistentState.player.resources.breakthroughStones || 0) >= requiredStones;
                 
                 if (hasEnoughLevel && hasEnoughStones) {
                     breakthroughBtnElement.disabled = false;
@@ -1061,9 +1091,9 @@ class EndlessCultivationGame {
             }
             const attackElement = document.getElementById('attack');
             if (attackElement) {
-                const baseAttack = this.gameState.player.baseAttack || (this.gameState.player.attack - this.gameState.player.equipmentEffects.attack);
-                const baseFinalAttack = baseAttack + this.gameState.player.equipmentEffects.attack;
-                if (this.gameState.player.tempAttack) {
+                const baseAttack = this.persistentState.player.baseAttack || (this.persistentState.player.attack - this.equipmentEffects.attack);
+                const baseFinalAttack = baseAttack + this.equipmentEffects.attack;
+                if (this.persistentState.player.tempAttack) {
                     attackElement.innerHTML = `${Math.floor(baseFinalAttack)}<span class="text-yellow-400">(${Math.floor(finalAttack)})</span>`;
                 } else {
                     attackElement.textContent = Math.floor(finalAttack);
@@ -1073,9 +1103,9 @@ class EndlessCultivationGame {
             }
             const defenseElement = document.getElementById('defense');
             if (defenseElement) {
-                const baseDefense = this.gameState.player.baseDefense || (this.gameState.player.defense - this.gameState.player.equipmentEffects.defense);
-                const baseFinalDefense = baseDefense + this.gameState.player.equipmentEffects.defense;
-                if (this.gameState.player.tempDefense) {
+                const baseDefense = this.persistentState.player.baseDefense || (this.persistentState.player.defense - this.equipmentEffects.defense);
+                const baseFinalDefense = baseDefense + this.equipmentEffects.defense;
+                if (this.persistentState.player.tempDefense) {
                     defenseElement.innerHTML = `${Math.floor(baseFinalDefense)}<span class="text-yellow-400">(${Math.floor(finalDefense)})</span>`;
                 } else {
                     defenseElement.textContent = Math.floor(finalDefense);
@@ -1106,7 +1136,7 @@ class EndlessCultivationGame {
 
             // 新增：更新导航栏境界显示
             if (this.metadata.realmConfig) {
-                const realm = this.gameState.player.realm;
+                const realm = this.persistentState.player.realm;
                 const realmName = this.metadata.realmConfig[realm.currentRealm].name;
                 const stageConfig = this.metadata.realmConfig[realm.currentRealm].stages[realm.currentStage - 1];
                 const stageName = stageConfig.name;
@@ -1134,9 +1164,9 @@ class EndlessCultivationGame {
             }
             const luckElement = document.getElementById('luck');
             if (luckElement) {
-                const baseLuck = this.gameState.player.baseLuck || (this.gameState.player.luck - this.gameState.player.equipmentEffects.luck);
-                const baseFinalLuck = baseLuck + this.gameState.player.equipmentEffects.luck + realmBonus.luck;
-                if (this.gameState.player.tempLuck) {
+                const baseLuck = this.persistentState.player.baseLuck || (this.persistentState.player.luck - this.equipmentEffects.luck);
+                const baseFinalLuck = baseLuck + this.equipmentEffects.luck + realmBonus.luck;
+                if (this.persistentState.player.tempLuck) {
                     luckElement.innerHTML = `${Math.floor(baseFinalLuck)}<span class="text-yellow-400">(${Math.floor(finalLuck)})</span>`;
                 } else {
                     luckElement.textContent = Math.floor(finalLuck);
@@ -1144,9 +1174,9 @@ class EndlessCultivationGame {
             }
             const speedElement = document.getElementById('speed');
             if (speedElement) {
-                const baseSpeed = this.gameState.player.baseSpeed || (this.gameState.player.speed - (this.gameState.player.equipmentEffects.speed || 0));
-                const baseFinalSpeed = baseSpeed + (this.gameState.player.equipmentEffects.speed || 0) + (realmBonus.speed || 0);
-                if (this.gameState.player.tempSpeed) {
+                const baseSpeed = this.persistentState.player.baseSpeed || (this.persistentState.player.speed - (this.equipmentEffects.speed || 0));
+                const baseFinalSpeed = baseSpeed + (this.equipmentEffects.speed || 0) + (realmBonus.speed || 0);
+                if (this.persistentState.player.tempSpeed) {
                     speedElement.innerHTML = `${Math.floor(baseFinalSpeed)}<span class="text-yellow-400">(${Math.floor(finalSpeed)})</span>`;
                 } else {
                     speedElement.textContent = Math.floor(finalSpeed);
@@ -1173,11 +1203,11 @@ class EndlessCultivationGame {
         // 更新挂机时间显示
         const afkTimeElement = document.getElementById('afk-time');
         if (afkTimeElement) {
-            afkTimeElement.textContent = this.formatTime(this.gameState.settings.afkTime);
+            afkTimeElement.textContent = this.formatTime(this.persistentState.settings.afkTime);
         }
         const collectedResourcesElement = document.getElementById('collected-resources');
         if (collectedResourcesElement) {
-            collectedResourcesElement.textContent = this.gameState.settings.collectedResources;
+            collectedResourcesElement.textContent = this.persistentState.settings.collectedResources;
         }
         
         // 更新战斗日志
@@ -1186,11 +1216,11 @@ class EndlessCultivationGame {
         // 更新用户信息
         const currentUserNav = document.getElementById('current-user-nav');
         if (currentUserNav) {
-            currentUserNav.textContent = this.gameState.user.username;
+            currentUserNav.textContent = this.persistentState.user.username;
         }
         const survivorName = document.getElementById('survivor-name');
         if (survivorName) {
-            survivorName.textContent = this.gameState.user.username;
+            survivorName.textContent = this.persistentState.user.username;
         }
         
         // 更新精炼信息
@@ -1222,41 +1252,41 @@ class EndlessCultivationGame {
     regeneratePlayerStats() {
         // 生命自动恢复（百分比恢复）
         const actualMaxHp = this.getActualStats().maxHp;
-        if (this.gameState.player.hp < actualMaxHp) {
+        if (this.persistentState.player.hp < actualMaxHp) {
             // 基础恢复0.5% + 装备加成百分比
-            const hpRegenPercent = 0.5 + (this.gameState.player.equipmentEffects?.hpRegen || 0);
+            const hpRegenPercent = 0.5 + (this.equipmentEffects?.hpRegen || 0);
             const hpRegenRate = actualMaxHp * hpRegenPercent / 100;
-            this.gameState.player.hp = Math.min(
-                this.gameState.player.hp + hpRegenRate,
+            this.persistentState.player.hp = Math.min(
+                this.persistentState.player.hp + hpRegenRate,
                 actualMaxHp
             );
         }
 
         // 灵力自动恢复（百分比恢复）
-        const actualMaxEnergy = this.getActualStats().maxEnergy || this.gameState.player.maxEnergy;
-        if (this.gameState.player && this.gameState.player.energy !== undefined) {
-            if (this.gameState.player.energy < actualMaxEnergy) {
+        const actualMaxEnergy = this.getActualStats().maxEnergy || this.persistentState.player.maxEnergy;
+        if (this.persistentState.player && this.persistentState.player.energy !== undefined) {
+            if (this.persistentState.player.energy < actualMaxEnergy) {
                 // 基础恢复2% + 装备加成（energyRegen已是小数格式，乘100转为百分比）
                 const stats = this.getActualStats();
                 const baseRegenPercent = 2;
                 const equipRegenBonus = (stats.energyRegen || 0) * 100; // 小数转百分比
                 const energyRegenPercent = baseRegenPercent + equipRegenBonus;
                 const energyRegenRate = actualMaxEnergy * energyRegenPercent / 100;
-                this.gameState.player.energy = Math.min(
-                    this.gameState.player.energy + energyRegenRate,
+                this.persistentState.player.energy = Math.min(
+                    this.persistentState.player.energy + energyRegenRate,
                     actualMaxEnergy
                 );
             }
         } else {
             // 确保灵力属性存在
-            if (!this.gameState.player) {
-                this.gameState.player = {};
+            if (!this.persistentState.player) {
+                this.persistentState.player = {};
             }
-            if (this.gameState.player.energy === undefined) {
-                this.gameState.player.energy = 100;
+            if (this.persistentState.player.energy === undefined) {
+                this.persistentState.player.energy = 100;
             }
-            if (this.gameState.player.maxEnergy === undefined) {
-                this.gameState.player.maxEnergy = 100;
+            if (this.persistentState.player.maxEnergy === undefined) {
+                this.persistentState.player.maxEnergy = 100;
             }
         }
         
@@ -1713,7 +1743,7 @@ class EndlessCultivationGame {
                 // 添加双击事件来卸下装备
                 slot.addEventListener('dblclick', () => {
                     const selectedSlot = slot.dataset.slot;
-                    const item = this.gameState.player.equipment[selectedSlot];
+                    const item = this.persistentState.player.equipment[selectedSlot];
                     if (item) {
                         this.unequipItem(selectedSlot);
                     }
@@ -1807,7 +1837,7 @@ class EndlessCultivationGame {
         bindEvent('#refresh-enemy-btn', 'click', () => {
             // 不再随机切换地图，只刷新当前地图的敌人
             this.generateMiniMap();
-            const currentMap = this.metadata.mapBackgrounds[this.gameState.currentBackgroundIndex];
+            const currentMap = this.metadata.mapBackgrounds[this.persistentState.currentBackgroundIndex];
             this.addBattleLog(`刷新了${currentMap ? currentMap.name : '当前地图'}的敌人！`);
             this.updateUI();
         });
@@ -1982,8 +2012,8 @@ class EndlessCultivationGame {
     // 检查升级
     checkLevelUp() {
    
-        if (this.gameState.player.exp >= this.gameState.player.maxExp) {
-            const realm = this.gameState.player.realm;
+        if (this.persistentState.player.exp >= this.persistentState.player.maxExp) {
+            const realm = this.persistentState.player.realm;
             const currentRealmConfig = this.metadata.realmConfig[realm.currentRealm];
             const currentStageConfig = currentRealmConfig.stages[realm.currentStage - 1];
             
@@ -1991,22 +2021,22 @@ class EndlessCultivationGame {
             if (realm.currentLevel < currentStageConfig.levelCap) {
                 // 升级
                 realm.currentLevel++;
-                this.gameState.player.exp -= this.gameState.player.maxExp;
-                this.gameState.player.maxExp = Math.floor(this.gameState.player.maxExp * 1.5);
+                this.persistentState.player.exp -= this.persistentState.player.maxExp;
+                this.persistentState.player.maxExp = Math.floor(this.persistentState.player.maxExp * 1.5);
 
                 // 记录升级前战力
                 const oldPower = this.calculatePlayerCombatPower();
 
                 // 提升属性
-                this.gameState.player.attack += 3;
-                this.gameState.player.defense += 2;
-                this.gameState.player.maxHp += 20;
-                this.gameState.player.hp = this.gameState.player.maxHp;
-                this.gameState.player.luck += 1;
+                this.persistentState.player.attack += 3;
+                this.persistentState.player.defense += 2;
+                this.persistentState.player.maxHp += 20;
+                this.persistentState.player.hp = this.persistentState.player.maxHp;
+                this.persistentState.player.luck += 1;
                 
                 // 提升灵力上限
-                this.gameState.player.maxEnergy += 10;
-                this.gameState.player.energy = this.gameState.player.maxEnergy; // 升级时充满灵力
+                this.persistentState.player.maxEnergy += 10;
+                this.persistentState.player.energy = this.persistentState.player.maxEnergy; // 升级时充满灵力
 
                 // 播放升级声音
                 this.audioSystem.playSound('levelup-sound', 1, 2000);
@@ -2026,7 +2056,7 @@ class EndlessCultivationGame {
 
                 // 升级后：仅在当前等级所有任务完成时才初始化新任务
                 if (this.mainQuestSystem) {
-                    const mq = this.gameState.mainQuest;
+                    const mq = this.persistentState.mainQuest;
                     const currentQuests = this.mainQuestSystem.getCurrentLevelQuests();
                     const isAllDone = !currentQuests || currentQuests.length === 0 ||
                         mq.currentLevelQuestIndex >= currentQuests.length ||
@@ -2044,7 +2074,7 @@ class EndlessCultivationGame {
             } else {
                 // 达到当前阶段等级上限，提示突破
                 this.addBattleLog(`已达到${currentStageConfig.name}等级上限，需要突破到下一阶段！`);
-                this.gameState.player.exp = this.gameState.player.maxExp; // 保持经验值不变
+                this.persistentState.player.exp = this.persistentState.player.maxExp; // 保持经验值不变
             }
         }
     }
@@ -2067,11 +2097,11 @@ class EndlessCultivationGame {
         const timestamp = new Date().getTime();
 
         let imageSrc = 'Images/default-character.png';
-        if (this.gameState.user.loggedIn && this.gameState.user.gender) {
-            if (this.gameState.user.gender === '男') {
-                imageSrc = `Images/male-character-${this.gameState.player.realm.currentRealm + 1}.png?${timestamp}`;
-            } else if (this.gameState.user.gender === '女') {
-                imageSrc = `Images/female-character-${this.gameState.player.realm.currentRealm + 1}.png?${timestamp}`;
+        if (this.persistentState.user.loggedIn && this.persistentState.user.gender) {
+            if (this.persistentState.user.gender === '男') {
+                imageSrc = `Images/male-character-${this.persistentState.player.realm.currentRealm + 1}.png?${timestamp}`;
+            } else if (this.persistentState.user.gender === '女') {
+                imageSrc = `Images/female-character-${this.persistentState.player.realm.currentRealm + 1}.png?${timestamp}`;
             }
         }
 
@@ -2091,7 +2121,7 @@ class EndlessCultivationGame {
     
     // 计算境界加成
     calculateRealmBonus() {
-        const realm = this.gameState.player.realm;
+        const realm = this.persistentState.player.realm;
         const currentRealmConfig = this.metadata.realmConfig[realm.currentRealm];
         const currentStageConfig = currentRealmConfig.stages[realm.currentStage - 1];
         
@@ -2134,13 +2164,9 @@ class EndlessCultivationGame {
      * @returns {Object} 包含所有实际属性的对象
      */
     getActualStats() {
-        // 确保装备效果已计算（包含VIP加成）
-        if (this.equipmentSystem && typeof this.equipmentSystem.calculateEquipmentEffects === 'function') {
-            this.equipmentSystem.calculateEquipmentEffects();
-        }
-
-        const p = this.gameState.player;
-        const ee = p.equipmentEffects || {};
+        // 使用 getter 获取装备效果（自动缓存）
+        const ee = this.equipmentEffects || {};
+        const p = this.persistentState.player;
         const rb = this.metadata.realmConfig ? this.calculateRealmBonus() : { attack: 0, defense: 0, hp: 0, luck: 0, speed: 0 };
 
                 // 百分比属性列表
@@ -2180,7 +2206,7 @@ class EndlessCultivationGame {
      * @returns {Object} 包含所有实际属性的对象
      */
     getEnemyActualStats() {
-        const e = this.gameState.enemy;
+        const e = this.transientState.enemy;
         if (!e) return null;
 
         // 敌人属性：直接使用基础值，但需要转换百分比属性为小数格式
@@ -2289,8 +2315,8 @@ class EndlessCultivationGame {
      * @returns {Object} 包含各部分加成详情
      */
     getStatsBreakdown() {
-        const p = this.gameState.player;
-        const ee = p.equipmentEffects || {};
+        const p = this.persistentState.player;
+        const ee = this.equipmentEffects || {};
         const rb = this.metadata.realmConfig ? this.calculateRealmBonus() : { attack: 0, defense: 0, hp: 0, luck: 0, speed: 0 };
         const vipBonus = this.vipSystem ? this.vipSystem.getBonus() : { attackBonus: 0, defenseBonus: 0, hpBonus: 0, critBonus: 0 };
 
@@ -2615,7 +2641,7 @@ class EndlessCultivationGame {
 
     // 计算总等级（基于境界、阶段和当前等级）
     calculateTotalLevel() {
-        const realm = this.gameState.player.realm;
+        const realm = this.persistentState.player.realm;
         const realmConfig = this.metadata.realmConfig;
 
         // 累加之前所有境界的等级
@@ -2658,7 +2684,7 @@ class EndlessCultivationGame {
 
     // 尝试突破
     attemptBreakthrough() {
-        const realm = this.gameState.player.realm;
+        const realm = this.persistentState.player.realm;
         const currentRealmConfig = this.metadata.realmConfig[realm.currentRealm];
         const currentStageConfig = currentRealmConfig.stages[realm.currentStage - 1];
         
@@ -2670,13 +2696,13 @@ class EndlessCultivationGame {
         
         // 检查突破石是否足够
         const requiredStones = this.getRequiredBreakthroughStones(realm.currentRealm, realm.currentStage);
-        if (this.gameState.player.resources.breakthroughStones < requiredStones) {
+        if (this.persistentState.player.resources.breakthroughStones < requiredStones) {
             this.addBattleLog('突破石不足，无法突破！');
             return false;
         }
         
         // 执行突破
-        this.gameState.player.resources.breakthroughStones -= requiredStones;
+        this.persistentState.player.resources.breakthroughStones -= requiredStones;
         
         // 更新境界/阶段/等级
         if (realm.currentStage < 10) {
@@ -2761,11 +2787,11 @@ class EndlessCultivationGame {
 
     // 更新人物详情弹框内容
     updateCharacterModal() {
-        if (!this.gameState.player) return;
+        if (!this.persistentState.player) return;
 
         // 更新境界显示
         if (this.metadata.realmConfig) {
-            const realm = this.gameState.player.realm;
+            const realm = this.persistentState.player.realm;
             const realmName = this.metadata.realmConfig[realm.currentRealm].name;
             const stageConfig = this.metadata.realmConfig[realm.currentRealm].stages[realm.currentStage - 1];
             const stageName = stageConfig.name;
@@ -2785,7 +2811,7 @@ class EndlessCultivationGame {
             const breakthroughRequirement = document.getElementById('breakthrough-requirement-modal');
             if (breakthroughRequirement && stageConfig) {
                 const hasEnoughLevel = realm.currentLevel >= stageConfig.levelCap;
-                const currentStones = this.gameState.player.resources.breakthroughStones || 0;
+                const currentStones = this.persistentState.player.resources.breakthroughStones || 0;
                 const requiredStones = stageConfig.breakthroughStones;
                 const hasEnoughStones = currentStones >= requiredStones;
 
@@ -2804,8 +2830,8 @@ class EndlessCultivationGame {
 
         // 更新等级（使用境界等级）
         const levelModal = document.getElementById('level-modal');
-        if (levelModal && this.gameState.player.realm) {
-            levelModal.textContent = this.gameState.player.realm.currentLevel || 1;
+        if (levelModal && this.persistentState.player.realm) {
+            levelModal.textContent = this.persistentState.player.realm.currentLevel || 1;
         }
 
         // 更新经验
@@ -2813,10 +2839,10 @@ class EndlessCultivationGame {
         const maxExpModal = document.getElementById('max-exp-modal');
         const expBarModal = document.getElementById('exp-bar-modal');
         if (expModal && maxExpModal) {
-            expModal.textContent = Math.floor(this.gameState.player.exp);
-            maxExpModal.textContent = Math.floor(this.gameState.player.maxExp);
+            expModal.textContent = Math.floor(this.persistentState.player.exp);
+            maxExpModal.textContent = Math.floor(this.persistentState.player.maxExp);
             if (expBarModal) {
-                const expPercent = (this.gameState.player.exp / this.gameState.player.maxExp) * 100;
+                const expPercent = (this.persistentState.player.exp / this.persistentState.player.maxExp) * 100;
                 expBarModal.style.width = `${expPercent}%`;
             }
         }
@@ -2828,16 +2854,16 @@ class EndlessCultivationGame {
         const stonesModal = document.getElementById('breakthrough-stones-modal');
 
         if (spiritStonesModal) {
-            spiritStonesModal.textContent = Math.floor(this.gameState.player.spiritStones || 0);
+            spiritStonesModal.textContent = Math.floor(this.persistentState.player.spiritStones || 0);
         }
         if (herbsModal) {
-            herbsModal.textContent = Math.floor(this.gameState.player.resources?.herbs || 0);
+            herbsModal.textContent = Math.floor(this.persistentState.player.resources?.herbs || 0);
         }
         if (ironModal) {
-            ironModal.textContent = Math.floor(this.gameState.player.resources?.iron || 0);
+            ironModal.textContent = Math.floor(this.persistentState.player.resources?.iron || 0);
         }
         if (stonesModal) {
-            stonesModal.textContent = Math.floor(this.gameState.player.resources?.breakthroughStones || 0);
+            stonesModal.textContent = Math.floor(this.persistentState.player.resources?.breakthroughStones || 0);
         }
 
         // 更新属性
@@ -2853,9 +2879,9 @@ class EndlessCultivationGame {
 
         const attackModalEl = document.getElementById('attack-modal');
         if (attackModalEl) {
-            const baseAttack = this.gameState.player.baseAttack || (this.gameState.player.attack - this.gameState.player.equipmentEffects.attack);
-            if (this.gameState.player.tempAttack) {
-                attackModalEl.innerHTML = `${Math.floor(baseAttack + this.gameState.player.equipmentEffects.attack)}<span class="text-yellow-400 ml-1">→ ${Math.floor(finalAttack)}</span>`;
+            const baseAttack = this.persistentState.player.baseAttack || (this.persistentState.player.attack - this.equipmentEffects.attack);
+            if (this.persistentState.player.tempAttack) {
+                attackModalEl.innerHTML = `${Math.floor(baseAttack + this.equipmentEffects.attack)}<span class="text-yellow-400 ml-1">→ ${Math.floor(finalAttack)}</span>`;
             } else {
                 attackModalEl.textContent = Math.floor(finalAttack);
             }
@@ -2865,9 +2891,9 @@ class EndlessCultivationGame {
 
         const defenseModalEl = document.getElementById('defense-modal');
         if (defenseModalEl) {
-            const baseDefense = this.gameState.player.baseDefense || (this.gameState.player.defense - this.gameState.player.equipmentEffects.defense);
-            if (this.gameState.player.tempDefense) {
-                defenseModalEl.innerHTML = `${Math.floor(baseDefense + this.gameState.player.equipmentEffects.defense)}<span class="text-yellow-400 ml-1">→ ${Math.floor(finalDefense)}</span>`;
+            const baseDefense = this.persistentState.player.baseDefense || (this.persistentState.player.defense - this.equipmentEffects.defense);
+            if (this.persistentState.player.tempDefense) {
+                defenseModalEl.innerHTML = `${Math.floor(baseDefense + this.equipmentEffects.defense)}<span class="text-yellow-400 ml-1">→ ${Math.floor(finalDefense)}</span>`;
             } else {
                 defenseModalEl.textContent = Math.floor(finalDefense);
             }
@@ -2884,8 +2910,8 @@ class EndlessCultivationGame {
 
         const speedModalEl = document.getElementById('speed-modal');
         if (speedModalEl) {
-            if (this.gameState.player.tempSpeed) {
-                speedModalEl.innerHTML = `${Math.floor(this.gameState.player.speed)}<span class="text-yellow-400 ml-1">→ ${Math.floor(finalSpeed)}</span>`;
+            if (this.persistentState.player.tempSpeed) {
+                speedModalEl.innerHTML = `${Math.floor(this.persistentState.player.speed)}<span class="text-yellow-400 ml-1">→ ${Math.floor(finalSpeed)}</span>`;
             } else {
                 speedModalEl.textContent = Math.floor(finalSpeed);
             }
@@ -2895,8 +2921,8 @@ class EndlessCultivationGame {
 
         const luckModalEl = document.getElementById('luck-modal');
         if (luckModalEl) {
-            if (this.gameState.player.tempLuck) {
-                luckModalEl.innerHTML = `${Math.floor(this.gameState.player.luck)}<span class="text-yellow-400 ml-1">→ ${Math.floor(finalLuck)}</span>`;
+            if (this.persistentState.player.tempLuck) {
+                luckModalEl.innerHTML = `${Math.floor(this.persistentState.player.luck)}<span class="text-yellow-400 ml-1">→ ${Math.floor(finalLuck)}</span>`;
             } else {
                 luckModalEl.textContent = Math.floor(finalLuck);
             }
@@ -2963,11 +2989,11 @@ class EndlessCultivationGame {
         if (characterBodyModal) {
             const timestamp = new Date().getTime();
             let imageSrc = 'Images/default-character.png';
-            if (this.gameState.user.loggedIn && this.gameState.user.gender) {
-                if (this.gameState.user.gender === '男') {
-                    imageSrc = `Images/male-character-${this.gameState.player.realm.currentRealm + 1}.png?${timestamp}`;
-                } else if (this.gameState.user.gender === '女') {
-                    imageSrc = `Images/female-character-${this.gameState.player.realm.currentRealm + 1}.png?${timestamp}`;
+            if (this.persistentState.user.loggedIn && this.persistentState.user.gender) {
+                if (this.persistentState.user.gender === '男') {
+                    imageSrc = `Images/male-character-${this.persistentState.player.realm.currentRealm + 1}.png?${timestamp}`;
+                } else if (this.persistentState.user.gender === '女') {
+                    imageSrc = `Images/female-character-${this.persistentState.player.realm.currentRealm + 1}.png?${timestamp}`;
                 }
             }
             characterBodyModal.src = imageSrc;
@@ -2977,16 +3003,16 @@ class EndlessCultivationGame {
     // 更新技能树模态窗口内容
     updateSkillTreeModal() {
         // 更新顶部信息
-        const realmName = this.metadata.realmConfig?.[this.gameState.player.realm.currentRealm]?.name || '未知境界';
+        const realmName = this.metadata.realmConfig?.[this.persistentState.player.realm.currentRealm]?.name || '未知境界';
         document.getElementById('skill-tree-realm').textContent = realmName + '境';
         document.getElementById('skill-tree-energy').textContent =
-            `${Math.floor(this.gameState.player.energy)}/${this.gameState.player.maxEnergy}`;
+            `${Math.floor(this.persistentState.player.energy)}/${this.persistentState.player.maxEnergy}`;
 
         // 生成境界Tabs
         this.generateRealmTabs();
 
         // 默认显示当前境界的技能树
-        this.showRealmSkillTree(this.gameState.player.realm.currentRealm);
+        this.showRealmSkillTree(this.persistentState.player.realm.currentRealm);
     }
 
     // 生成境界选择Tabs
@@ -2995,7 +3021,7 @@ class EndlessCultivationGame {
         if (!tabsContainer) return;
 
         tabsContainer.innerHTML = '';
-        const currentRealm = this.gameState.player.realm.currentRealm;
+        const currentRealm = this.persistentState.player.realm.currentRealm;
 
         // 只显示当前已达到的境界
         this.metadata.realmConfig.forEach((realmConfig, realmIndex) => {
@@ -3072,7 +3098,7 @@ class EndlessCultivationGame {
             const skillTree = realmSkillTrees.find(tree => tree.type === pos.type);
             if (!skillTree) return;
 
-            const currentLevel = this.gameState.player.skills.levels?.[skillTree.id] || 0;
+            const currentLevel = this.persistentState.player.skills.levels?.[skillTree.id] || 0;
             const maxLevel = skillTree.levels.length;
             const isUnlocked = currentLevel > 0;
             const canUpgrade = this.canUpgradeSkill(skillTree, currentLevel);
@@ -3148,7 +3174,7 @@ class EndlessCultivationGame {
         const detailPanel = document.getElementById('skill-detail-panel');
         if (!detailPanel) return;
 
-        const currentLevel = this.gameState.player.skills.levels?.[skillTree.id] || 0;
+        const currentLevel = this.persistentState.player.skills.levels?.[skillTree.id] || 0;
         const maxLevel = skillTree.levels.length;
         const currentSkill = currentLevel > 0 ? skillTree.levels[currentLevel - 1] : null;
         const nextSkill = currentLevel < maxLevel ? skillTree.levels[currentLevel] : null;
@@ -3240,7 +3266,7 @@ class EndlessCultivationGame {
 
     // 检查是否可以升级技能
     canUpgradeSkill(skillTree, currentLevel) {
-        const player = this.gameState.player;
+        const player = this.persistentState.player;
         const nextSkill = skillTree.levels[currentLevel];
 
         // 检查是否满级
@@ -3306,7 +3332,7 @@ class EndlessCultivationGame {
 
     // 同步自动战斗设置到弹窗
     syncAutoBattleSettingsToModal() {
-        const settings = this.gameState.settings.autoBattleSettings;
+        const settings = this.persistentState.settings.autoBattleSettings;
 
         // 同步复选框状态
         const modalGreen = document.getElementById('modal-auto-battle-green');
@@ -3340,11 +3366,11 @@ class EndlessCultivationGame {
 
     // 切换自动战斗
     toggleAutoBattle() {
-        this.gameState.settings.autoBattleSettings.enabled = !this.gameState.settings.autoBattleSettings.enabled;
+        this.persistentState.settings.autoBattleSettings.enabled = !this.persistentState.settings.autoBattleSettings.enabled;
         const btn = document.getElementById('auto-battle-btn');
         const modalBtn = document.getElementById('modal-toggle-auto-battle-btn');
 
-        if (this.gameState.settings.autoBattleSettings.enabled) {
+        if (this.persistentState.settings.autoBattleSettings.enabled) {
             if (btn) {
                 btn.innerHTML = '<i class="fa fa-pause mr-1"></i> 停止自动战斗';
                 btn.setAttribute('data-tooltip', '停止自动战斗');
@@ -3396,7 +3422,7 @@ class EndlessCultivationGame {
         if (navYellow) navYellow.checked = targetColors.includes('yellow');
         if (navRed) navRed.checked = targetColors.includes('red');
 
-        this.gameState.settings.autoBattleSettings.targetColors = targetColors;
+        this.persistentState.settings.autoBattleSettings.targetColors = targetColors;
     }
 
     // 打开注销账号弹窗
@@ -3435,7 +3461,7 @@ class EndlessCultivationGame {
         const password = passwordInput.value;
 
         // 验证密码
-        if (password !== this.gameState.player.password) {
+        if (password !== this.persistentState.player.password) {
             if (errorMsg) {
                 errorMsg.classList.remove('hidden');
             }
@@ -3481,10 +3507,10 @@ class EndlessCultivationGame {
         if (modal) {
             // 更新余额和VIP显示
             const jadeDisplay = document.getElementById('recharge-jade-balance');
-            if (jadeDisplay) jadeDisplay.textContent = this.gameState.player.jade || 0;
+            if (jadeDisplay) jadeDisplay.textContent = this.persistentState.player.jade || 0;
             const vipDisplay = document.getElementById('recharge-vip-level');
             if (vipDisplay) {
-                const level = this.gameState.vip?.level || 0;
+                const level = this.persistentState.vip?.level || 0;
                 const info = this.vipSystem.getVIPInfo();
                 vipDisplay.textContent = level > 0 ? `VIP${level}·${info.label}` : '普通修士';
             }
@@ -3536,10 +3562,10 @@ class EndlessCultivationGame {
 
             // 更新余额显示
             const jadeDisplay = document.getElementById('recharge-jade-balance');
-            if (jadeDisplay) jadeDisplay.textContent = result.totalJade || this.gameState.player.jade;
+            if (jadeDisplay) jadeDisplay.textContent = result.totalJade || this.persistentState.player.jade;
             const vipDisplay = document.getElementById('recharge-vip-level');
             if (vipDisplay) {
-                const level = this.gameState.vip?.level || 0;
+                const level = this.persistentState.vip?.level || 0;
                 const info = this.vipSystem.getVIPInfo();
                 vipDisplay.textContent = level > 0 ? `VIP${level}·${info.label}` : '普通修士';
             }
@@ -3559,7 +3585,7 @@ class EndlessCultivationGame {
         if (modal) {
             // 更新仙玉余额
             const jadeDisplay = document.getElementById('vip-shop-jade-balance');
-            if (jadeDisplay) jadeDisplay.textContent = this.gameState.player.jade || 0;
+            if (jadeDisplay) jadeDisplay.textContent = this.persistentState.player.jade || 0;
             modal.classList.remove('hidden');
         }
     }
@@ -3643,7 +3669,7 @@ class EndlessCultivationGame {
 
     renderEnemyCollection(container, subtabsContainer, selectedRealmIdx = 0) {
         const categories = this.collectionSystem.getEnemyCategories();
-        const collection = this.gameState.collection;
+        const collection = this.persistentState.collection;
         const realmConfig = this.metadata.realmConfig || [];
 
         // 按境界分组
@@ -3730,7 +3756,7 @@ class EndlessCultivationGame {
 
     renderEquipmentCollection(container, subtabsContainer, selectedRealmIdx = 0, selectedRarityIdx = 0) {
         const categories = this.collectionSystem.getEquipmentCategories();
-        const collection = this.gameState.collection;
+        const collection = this.persistentState.collection;
         const templates = this.metadata.equipmentTemplates || [];
         const slotConfig = this.metadata.equipmentSlotConfig || {};
         const realmConfig = this.metadata.realmConfig || [];
@@ -3862,7 +3888,7 @@ class EndlessCultivationGame {
                 // 检查并提示用户是否装备更好的装备（非战斗场景）
                 const equipped = this.checkAndEquipBetterGearWithPrompt(result.equipment);
                 if (!equipped) {
-                    this.gameState.player.inventory.items.push(result.equipment);
+                    this.persistentState.player.inventory.items.push(result.equipment);
                     this.addBattleLog(`获得${result.equipment.rarityDisplayName} ${result.equipment.name}，已放入背包！`);
                 } else {
                     this.addBattleLog(`获得${result.equipment.rarityDisplayName} ${result.equipment.name}！`);
@@ -3870,7 +3896,7 @@ class EndlessCultivationGame {
             }
             // 更新UI
             const jadeDisplay = document.getElementById('vip-shop-jade-balance');
-            if (jadeDisplay) jadeDisplay.textContent = this.gameState.player.jade || 0;
+            if (jadeDisplay) jadeDisplay.textContent = this.persistentState.player.jade || 0;
             this.updateUI();
             this.updateHealthBars();
 
@@ -3936,7 +3962,7 @@ class EndlessCultivationGame {
         if (document.getElementById('auto-battle-red').checked) {
             targetColors.push('red');
         }
-        this.gameState.settings.autoBattleSettings.targetColors = targetColors;
+        this.persistentState.settings.autoBattleSettings.targetColors = targetColors;
     }
 
     // ❌ 已移除自动采集资源类型更新（v2.0资源系统重构）
@@ -3947,16 +3973,16 @@ class EndlessCultivationGame {
         if (!this.timers.autoBattleTimer) {
             this.timers.autoBattleTimer = setInterval(() => {
                 // 检查自动战斗是否启用
-                if (this.gameState.settings.autoBattleSettings.enabled && this.gameState.player.energy >= 10) {
+                if (this.persistentState.settings.autoBattleSettings.enabled && this.persistentState.player.energy >= 10) {
                     // 检查当前敌人是否符合目标颜色
-                    const enemyPower = this.gameState.enemy.attack * 2 + this.gameState.enemy.defense * 1.5 + this.gameState.enemy.maxHp * 0.1;
+                    const enemyPower = this.transientState.enemy.attack * 2 + this.transientState.enemy.defense * 1.5 + this.transientState.enemy.maxHp * 0.1;
                     const playerStats = this.getActualStats();
                     const playerPower = playerStats.attack * 2 + playerStats.defense * 1.5 + playerStats.maxHp * 0.1;
                     
                     let enemyColor = 'red'; // 默认红色
-                    if (this.gameState.enemy.isBoss) {
+                    if (this.transientState.enemy.isBoss) {
                         enemyColor = 'purple';
-                    } else if (this.gameState.enemy.isElite) {
+                    } else if (this.transientState.enemy.isElite) {
                         enemyColor = 'yellow';
                     } else {
                         const powerRatio = enemyPower / playerPower;
@@ -3970,7 +3996,7 @@ class EndlessCultivationGame {
                     }
                     
                     // 检查当前敌人颜色是否在目标颜色列表中
-                    if (this.gameState.settings.autoBattleSettings.targetColors.includes(enemyColor)) {
+                    if (this.persistentState.settings.autoBattleSettings.targetColors.includes(enemyColor)) {
                         this.attackEnemy();
                     }
                 }
@@ -3988,7 +4014,7 @@ class EndlessCultivationGame {
     
     // 切换自动挂机
     toggleAutoPlay(enabled) {
-        this.gameState.settings.autoPlay = enabled;
+        this.persistentState.settings.autoPlay = enabled;
         
         if (enabled) {
             this.startAutoPlay();
@@ -4011,16 +4037,16 @@ class EndlessCultivationGame {
         if (!this.timers.autoPlayTimer) {
             this.timers.autoPlayTimer = setInterval(() => {
                 // 自动战斗（如果启用）
-                if (this.gameState.settings.autoBattleSettings.enabled && this.gameState.player.energy >= 10) {
+                if (this.persistentState.settings.autoBattleSettings.enabled && this.persistentState.player.energy >= 10) {
                     // 检查当前敌人是否符合目标颜色
-                    const enemyPower = this.gameState.enemy.attack * 2 + this.gameState.enemy.defense * 1.5 + this.gameState.enemy.maxHp * 0.1;
+                    const enemyPower = this.transientState.enemy.attack * 2 + this.transientState.enemy.defense * 1.5 + this.transientState.enemy.maxHp * 0.1;
                     const playerStats = this.getActualStats();
                     const playerPower = playerStats.attack * 2 + playerStats.defense * 1.5 + playerStats.maxHp * 0.1;
                     
                     let enemyColor = 'red'; // 默认红色
-                    if (this.gameState.enemy.isBoss) {
+                    if (this.transientState.enemy.isBoss) {
                         enemyColor = 'purple';
-                    } else if (this.gameState.enemy.isElite) {
+                    } else if (this.transientState.enemy.isElite) {
                         enemyColor = 'yellow';
                     } else {
                         const powerRatio = enemyPower / playerPower;
@@ -4034,7 +4060,7 @@ class EndlessCultivationGame {
                     }
                     
                     // 检查当前敌人颜色是否在目标颜色列表中
-                    if (this.gameState.settings.autoBattleSettings.targetColors.includes(enemyColor)) {
+                    if (this.persistentState.settings.autoBattleSettings.targetColors.includes(enemyColor)) {
                         this.attackEnemy();
                     }
                 }
@@ -4058,7 +4084,7 @@ class EndlessCultivationGame {
     startAfkTimer() {
         if (!this.timers.afkTimer) {
             this.timers.afkTimer = setInterval(() => {
-                this.gameState.settings.afkTime++;
+                this.persistentState.settings.afkTime++;
                 this.updateUI();
             }, 1000);
         }
@@ -4078,20 +4104,20 @@ class EndlessCultivationGame {
     // 添加战斗日志
     addBattleLog(message) {
         // 确保battle对象存在
-        if (!this.gameState.battle) {
-            this.gameState.battle = {
+        if (!this.transientState.battle) {
+            this.transientState.battle = {
                 inBattle: false,
                 battleLog: []
             };
         }
         // 确保battleLog数组存在
-        if (!this.gameState.battle.battleLog) {
-            this.gameState.battle.battleLog = [];
+        if (!this.transientState.battle.battleLog) {
+            this.transientState.battle.battleLog = [];
         }
-        this.gameState.battle.battleLog.push(message);
+        this.transientState.battle.battleLog.push(message);
         // 限制日志长度
-        if (this.gameState.battle.battleLog.length > 10) {
-            this.gameState.battle.battleLog.shift();
+        if (this.transientState.battle.battleLog.length > 10) {
+            this.transientState.battle.battleLog.shift();
         }
 
         // 更新UI（不影响原有逻辑）
@@ -4329,39 +4355,50 @@ class EndlessCultivationGame {
     async loadGame() {
         try {
             // 保存用户信息
-            const userInfo = { ...this.gameState.user };
+            const userInfo = { ...this.persistentState.user };
 
             // 只从服务器加载
-            if (this.gameState.user.loggedIn) {
+            if (this.persistentState.user.loggedIn) {
                 const serverGameState = await this.loadFromServer();
                 if (serverGameState) {
                     if (serverGameState.success && serverGameState.gameState) {
                         this.addBattleLog('从服务器加载游戏成功！');
-                        // 保留用户信息，只更新游戏的其他部分
+
+                        // 直接加载到 persistentState
                         const { user, ...gameData } = serverGameState.gameState;
+                        this.persistentState = { ...gameData, user: userInfo };
+
+                        // 重置临时数据
+                        this.transientState = {
+                            enemy: null,
+                            sceneMonsters: [],
+                            battle: { inBattle: false, battleLog: [] }
+                        };
+
+                        // 清空计算缓存
+                        this._computedCache = {
+                            equipmentEffects: null,
+                            questCache: null
+                        };
 
                         // 补充缺失的资源副本数据（v2.0新增）
-                        if (gameData.player) {
-                            if (!gameData.player.resourceDungeons) {
-                                console.log('[数据迁移] 添加资源副本数据...');
-                                gameData.player.resourceDungeons = {};
-                                // 如果dungeon系统已初始化，调用其初始化方法
-                                if (this.dungeon) {
-                                    this.dungeon.initAllDungeonData();
-                                }
+                        if (this.persistentState.player && !this.persistentState.player.resourceDungeons) {
+                            console.log('[数据迁移] 添加资源副本数据...');
+                            this.persistentState.player.resourceDungeons = {};
+                            // 如果dungeon系统已初始化，调用其初始化方法
+                            if (this.dungeon) {
+                                this.dungeon.initAllDungeonData();
                             }
                         }
-
-                        this.gameState = { ...gameData, user: userInfo };
 
                         // 先加载 metadata（初始化需要从 metadata 读取配置）
                         await this.fetchGameMetadata();
 
                         // 检查是否是新玩家，需要初始化
-                        if (this.gameState.player?.isNewPlayer) {
+                        if (this.persistentState.player?.isNewPlayer) {
                             console.log('检测到新玩家，开始初始化游戏状态...');
                             this.initializeNewPlayer();
-                            delete this.gameState.player.isNewPlayer; // 移除标记
+                            delete this.persistentState.player.isNewPlayer; // 移除标记
                             this.saveGameState(); // 保存初始化后的状态
                         }
 
@@ -4369,42 +4406,42 @@ class EndlessCultivationGame {
                         this.equipmentSystem.cleanupEquipmentColorClass();
 
                         // 主线任务系统数据迁移（兼容旧存档）
-                        if (!this.gameState.mainQuest) {
-                            this.gameState.mainQuest = {
+                        if (!this.persistentState.mainQuest) {
+                            this.persistentState.mainQuest = {
                                 currentRealm: 0,
                                 currentStage: 1,
                                 currentLevel: 1,
                                 currentLevelQuestIndex: 0,
                                 currentQuestIndex: 0,
                                 completedQuests: [],
-                                questData: {},
-                                generatedCache: {}
+                                questData: {}
                             };
                         } else {
                             // 迁移旧存档到新的模板系统字段
-                            if (this.gameState.mainQuest.currentStage === undefined) {
-                                this.gameState.mainQuest.currentStage = this.gameState.player?.realm?.currentStage || 1;
+                            if (this.persistentState.mainQuest.currentStage === undefined) {
+                                this.persistentState.mainQuest.currentStage = this.persistentState.player?.realm?.currentStage || 1;
                             }
-                            if (this.gameState.mainQuest.currentLevel === undefined) {
-                                this.gameState.mainQuest.currentLevel = this.gameState.player?.realm?.currentLevel || 1;
+                            if (this.persistentState.mainQuest.currentLevel === undefined) {
+                                this.persistentState.mainQuest.currentLevel = this.persistentState.player?.realm?.currentLevel || 1;
                             }
-                            if (this.gameState.mainQuest.currentLevelQuestIndex === undefined) {
-                                this.gameState.mainQuest.currentLevelQuestIndex = 0;
+                            if (this.persistentState.mainQuest.currentLevelQuestIndex === undefined) {
+                                this.persistentState.mainQuest.currentLevelQuestIndex = 0;
                             }
-                            if (this.gameState.mainQuest.generatedCache === undefined) {
-                                this.gameState.mainQuest.generatedCache = {};
+                            // 移除旧存档中的 generatedCache（不再存储）
+                            if (this.persistentState.mainQuest.generatedCache !== undefined) {
+                                delete this.persistentState.mainQuest.generatedCache;
                             }
                         }
-                        if (!this.gameState.mainStory) {
-                            this.gameState.mainStory = {
+                        if (!this.persistentState.mainStory) {
+                            this.persistentState.mainStory = {
                                 viewedScenes: [],
                                 currentScene: null
                             };
                         }
 
                         // 每日任务系统数据迁移（兼容旧存档）
-                        if (!this.gameState.dailyQuests) {
-                            this.gameState.dailyQuests = {
+                        if (!this.persistentState.dailyQuests) {
+                            this.persistentState.dailyQuests = {
                                 lastRefreshDate: null,
                                 quests: [],
                                 activityPoints: 0,
@@ -4415,16 +4452,16 @@ class EndlessCultivationGame {
                         }
 
                         // VIP系统数据迁移（兼容旧存档）
-                        if (!this.gameState.vip) {
-                            this.gameState.vip = { level: 0, totalRecharged: 0 };
+                        if (!this.persistentState.vip) {
+                            this.persistentState.vip = { level: 0, totalRecharged: 0 };
                         }
-                        if (this.gameState.player.jade === undefined) {
-                            this.gameState.player.jade = 0;
+                        if (this.persistentState.player.jade === undefined) {
+                            this.persistentState.player.jade = 0;
                         }
 
                         // 图鉴系统数据迁移（兼容旧存档）
-                        if (!this.gameState.collection) {
-                            this.gameState.collection = {
+                        if (!this.persistentState.collection) {
+                            this.persistentState.collection = {
                                 enemies: [],
                                 equipmentTypes: [],
                                 rewardedCategories: []
@@ -4470,31 +4507,33 @@ class EndlessCultivationGame {
 
     
 
-    
+
     // 保存游戏状态
     async saveGameState() {
         try {
-            if (this.gameState.user.loggedIn) {
-                const currentUserId = this.gameState.user.userId;
-                // 只使用服务器端保存
+            if (this.persistentState.user.loggedIn) {
+                console.log('💾 准备保存游戏状态...');
+
                 const token = localStorage.getItem('cultivationToken');
 
+                // 直接保存 persistentState，无需过滤
                 const response = await fetch('http://localhost:3002/api/save', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify({ gameState: this.gameState })
+                    body: JSON.stringify({ gameState: this.persistentState })
                 });
-                
+
                 const result = await response.json();
                 if (!result.success) {
                     console.error('服务器端保存失败:', result.error);
-                    // 如果token无效，重定向到登录页面
                     if (result.error === 'Invalid token' || result.error === 'No token provided') {
                         this.logout();
                     }
+                } else {
+                    console.log('✅ 游戏状态保存成功');
                 }
             }
         } catch (error) {
@@ -4527,13 +4566,13 @@ class EndlessCultivationGame {
 
         // 1. 初始化玩家属性（从metadata）
         if (this.metadata.player?.initialStats) {
-            Object.assign(this.gameState.player, this.metadata.player.initialStats);
+            Object.assign(this.persistentState.player, this.metadata.player.initialStats);
         }
 
         // 2. 初始化资源（v2.0资源系统重构）
         // 初始化玩家资源（灵石、灵草、玄铁等）
-        if (!this.gameState.player.resources) {
-            this.gameState.player.resources = {
+        if (!this.persistentState.player.resources) {
+            this.persistentState.player.resources = {
                 herbs: 0,
                 iron: 0,
                 breakthroughStones: 0
@@ -4541,14 +4580,14 @@ class EndlessCultivationGame {
         }
 
         // 初始化灵石
-        if (this.gameState.player.spiritStones === undefined) {
-            this.gameState.player.spiritStones = 0;
+        if (this.persistentState.player.spiritStones === undefined) {
+            this.persistentState.player.spiritStones = 0;
         }
 
         // 3. 初始化装备和背包
-        this.gameState.player.equipment = {};
-        this.gameState.player.equipmentEffects = {};
-        this.gameState.player.inventory = {
+        this.persistentState.player.equipment = {};
+        // 注意：equipmentEffects 现在是 getter，会自动计算，无需初始化
+        this.persistentState.player.inventory = {
             items: [],          // 装备和物品
             consumables: {},    // 消耗品
             waypoints: []       // 解锁的传送点
@@ -4561,39 +4600,38 @@ class EndlessCultivationGame {
 
         // 5. 初始化设置（从metadata）
         if (this.metadata.player?.defaultSettings) {
-            this.gameState.settings = JSON.parse(JSON.stringify(this.metadata.player.defaultSettings));
+            this.persistentState.settings = JSON.parse(JSON.stringify(this.metadata.player.defaultSettings));
         }
 
         // 6. 初始化战斗状态
         if (this.metadata.player?.defaultBattleState) {
-            this.gameState.battle = JSON.parse(JSON.stringify(this.metadata.player.defaultBattleState));
+            this.transientState.battle = JSON.parse(JSON.stringify(this.metadata.player.defaultBattleState));
         }
 
         // 7. 计算初始装备效果
         this.equipmentSystem.calculateEquipmentEffects();
 
         // 8. 初始化地图状态
-        this.gameState.currentBackgroundIndex = 0;
-        this.gameState.sceneMonsters = [];
+        this.persistentState.currentBackgroundIndex = 0;
+        this.transientState.sceneMonsters = [];
 
         // 9. 初始化主线任务系统
-        this.gameState.mainQuest = {
+        this.persistentState.mainQuest = {
             currentRealm: 0,
             currentStage: 1,
             currentLevel: 1,
             currentLevelQuestIndex: 0,
             currentQuestIndex: 0,  // 保留兼容
             completedQuests: [],
-            questData: {},
-            generatedCache: {}
+            questData: {}
         };
-        this.gameState.mainStory = {
+        this.persistentState.mainStory = {
             viewedScenes: [],
             currentScene: null
         };
 
         // 10. 初始化每日任务系统
-        this.gameState.dailyQuests = {
+        this.persistentState.dailyQuests = {
             lastRefreshDate: null,
             quests: [],
             activityPoints: 0,
@@ -4603,10 +4641,10 @@ class EndlessCultivationGame {
         };
 
         // 11. 初始化VIP系统
-        this.gameState.vip = { level: 0, totalRecharged: 0 };
+        this.persistentState.vip = { level: 0, totalRecharged: 0 };
 
         // 12. 初始化图鉴系统
-        this.gameState.collection = {
+        this.persistentState.collection = {
             enemies: [],
             equipmentTypes: [],
             rewardedCategories: []
@@ -4671,7 +4709,7 @@ class EndlessCultivationGame {
 
     // 更新合成石数量显示
     updateFusionStoneCount() {
-        const fusionStoneCount = this.gameState.player.inventory.consumables?.fusion_stone || 0;
+        const fusionStoneCount = this.persistentState.player.inventory.consumables?.fusion_stone || 0;
         const countElement = document.getElementById('fusion-stone-count');
         if (countElement) {
             countElement.textContent = `拥有: ${fusionStoneCount}`;
@@ -4714,7 +4752,7 @@ class EndlessCultivationGame {
     
     // 处理物品拖放到合成槽位
     dropItemToCraftSlot(index, slot) {
-        const inventory = this.gameState.player.inventory;
+        const inventory = this.persistentState.player.inventory;
         const item = inventory[index];
         
         // 检查是否是装备
@@ -4754,7 +4792,7 @@ class EndlessCultivationGame {
         slots.forEach(slot => {
             const itemId = slot.dataset.itemId;
             if (itemId) {
-                const item = this.gameState.player.inventory[itemId];
+                const item = this.persistentState.player.inventory[itemId];
                 if (item) {
                     items.push(item);
                 }
@@ -4821,7 +4859,7 @@ class EndlessCultivationGame {
 
             // 检查是否使用合成石
             const useFusionStoneCheckbox = document.getElementById('use-fusion-stone');
-            const fusionStones = this.gameState.player.inventory.consumables?.fusion_stone || 0;
+            const fusionStones = this.persistentState.player.inventory.consumables?.fusion_stone || 0;
             let bonusRate = 0;
 
             if (useFusionStoneCheckbox && useFusionStoneCheckbox.checked && fusionStones > 0) {
@@ -4855,7 +4893,7 @@ class EndlessCultivationGame {
 
         // 检查是否使用合成石
         const useFusionStoneCheckbox = document.getElementById('use-fusion-stone');
-        const fusionStones = this.gameState.player.inventory.consumables?.fusion_stone || 0;
+        const fusionStones = this.persistentState.player.inventory.consumables?.fusion_stone || 0;
         let useFusionStone = false;
         let bonusRate = 0;
 
@@ -4869,7 +4907,7 @@ class EndlessCultivationGame {
             const itemId = slot.dataset.itemId;
             if (itemId) {
                 itemIds.push(parseInt(itemId));
-                const item = this.gameState.player.inventory[itemId];
+                const item = this.persistentState.player.inventory[itemId];
                 if (item) {
                     items.push(item);
                 }
@@ -4946,12 +4984,12 @@ class EndlessCultivationGame {
         // 从背包中移除物品（从后往前移除，避免索引混乱）
         itemIds.sort((a, b) => b - a);
         itemIds.forEach(id => {
-            this.gameState.player.inventory.splice(id, 1);
+            this.persistentState.player.inventory.splice(id, 1);
         });
 
         // 消耗合成石
         if (useFusionStone) {
-            this.gameState.player.inventory.consumables.fusion_stone -= 1;
+            this.persistentState.player.inventory.consumables.fusion_stone -= 1;
             this.addBattleLog('使用了合成石，成功率+20%！');
         }
 
@@ -4964,7 +5002,7 @@ class EndlessCultivationGame {
 
         if (Math.random() * 100 < totalRate) {
             // 合成成功
-            this.gameState.player.inventory.push(newEquipment);
+            this.persistentState.player.inventory.push(newEquipment);
             this.addBattleLog(`合成成功！获得了${newEquipment.rarityDisplayName} ${newEquipment.name}！`);
             
             // 播放合成成功声音
@@ -4990,7 +5028,7 @@ class EndlessCultivationGame {
         } else {
             // 合成失败，返回一个原品质的装备
             const failedEquipment = this.equipmentSystem.generateEquipment(firstType, firstLevel, firstRarity);
-            this.gameState.player.inventory.push(failedEquipment);
+            this.persistentState.player.inventory.push(failedEquipment);
             this.addBattleLog(`合成失败！获得了${failedEquipment.rarityDisplayName} ${failedEquipment.name}！`);
             
             // 播放合成失败声音
@@ -5075,7 +5113,7 @@ class EndlessCultivationGame {
 
     // 一键添加装备到合成槽
     autoAddToCraftSlots() {
-        const inventory = this.gameState.player.inventory;
+        const inventory = this.persistentState.player.inventory;
         const craftSlots = document.querySelectorAll('[craft-data-slot]');
 
         // 清空现有槽位
@@ -5142,7 +5180,7 @@ class EndlessCultivationGame {
             // 循环合成，直到没有可合成的装备为止
             while (this.isAutoCrafting) {
                 const craftSlots = document.querySelectorAll('[craft-data-slot]');
-                const currentInventory = this.gameState.player.inventory || [];
+                const currentInventory = this.persistentState.player.inventory || [];
 
                 // 清空所有合成槽位
                 craftSlots.forEach(slot => {
@@ -5235,7 +5273,7 @@ class EndlessCultivationGame {
 
     // 检查可合成的装备
     checkCraftableEquipment() {
-        const inventory = this.gameState.player.inventory || [];
+        const inventory = this.persistentState.player.inventory || [];
         const equipmentByTypeLevelRarity = {};
         
         // 按类型、等级和品质分组装备
@@ -5287,7 +5325,7 @@ class EndlessCultivationGame {
     // 合成装备
     craftEquipment(craftable, useFusionStone = false) {
         // 从背包中取出3个装备
-        const inventory = this.gameState.player.inventory;
+        const inventory = this.persistentState.player.inventory;
         const itemsToRemove = [];
         const originalItems = [];
 
@@ -5295,7 +5333,7 @@ class EndlessCultivationGame {
         let bonusRate = 0;
         let fusionStoneUsed = false;
         if (useFusionStone) {
-            const fusionStones = this.gameState.player.inventory.consumables?.fusion_stone || 0;
+            const fusionStones = this.persistentState.player.inventory.consumables?.fusion_stone || 0;
             if (fusionStones > 0) {
                 bonusRate = 0.2; // 合成石提供20%成功率加成
                 fusionStoneUsed = true;
@@ -5327,7 +5365,7 @@ class EndlessCultivationGame {
 
         // 消耗合成石（在合成前消耗，无论成功失败）
         if (fusionStoneUsed) {
-            this.gameState.player.inventory.consumables.fusion_stone -= 1;
+            this.persistentState.player.inventory.consumables.fusion_stone -= 1;
         }
 
         if (success) {
@@ -5470,9 +5508,9 @@ class EndlessCultivationGame {
     async logout() {
         try {
             // 保存当前用户的游戏状态到服务器
-            if (this.gameState.user.loggedIn) {
-                const currentUserId = this.gameState.user.userId;
-                await this.saveToServer(currentUserId, this.gameState);
+            if (this.persistentState.user.loggedIn) {
+                const currentUserId = this.persistentState.user.userId;
+                await this.saveToServer(currentUserId, this.persistentState);
             }
             
             // 调用服务器端登出API
@@ -5511,7 +5549,7 @@ class EndlessCultivationGame {
     // 注销用户
     async deleteAccount() {
         try {
-            const username = this.gameState.user.username;
+            const username = this.persistentState.user.username;
             const self = this; // 保存this引用
 
             // 创建密码输入模态框
@@ -5614,12 +5652,12 @@ class EndlessCultivationGame {
     // 显示装备菜单
     showEquipMenu() {
         // 确保背包存在
-        if (!this.gameState.player.inventory) {
-            this.gameState.player.inventory = [];
+        if (!this.persistentState.player.inventory) {
+            this.persistentState.player.inventory = [];
         }
 
         // 过滤背包中可用的装备（玩家等级 >= 装备等级）
-        const availableEquipment = this.gameState.player.inventory.filter(
+        const availableEquipment = this.persistentState.player.inventory.filter(
             item => item.level <= this.calculateTotalLevel()
         );
 
@@ -5638,9 +5676,9 @@ class EndlessCultivationGame {
         this.showSelectionModal('选择要装备的物品', '点击选择要装备的物品', items, (index) => {
             const selectedItem = availableEquipment[index];
             // 从背包中移除装备
-            const inventoryIndex = this.gameState.player.inventory.indexOf(selectedItem);
+            const inventoryIndex = this.persistentState.player.inventory.indexOf(selectedItem);
             if (inventoryIndex > -1) {
-                this.gameState.player.inventory.splice(inventoryIndex, 1);
+                this.persistentState.player.inventory.splice(inventoryIndex, 1);
             }
             // 装备物品
             this.equipItem(selectedItem);
@@ -5651,8 +5689,8 @@ class EndlessCultivationGame {
     showUnequipMenu() {
         // 获取已装备的物品
         const equippedItems = [];
-        for (const slot in this.gameState.player.equipment) {
-            const item = this.gameState.player.equipment[slot];
+        for (const slot in this.persistentState.player.equipment) {
+            const item = this.persistentState.player.equipment[slot];
             if (item) {
                 equippedItems.push({ ...item, slot });
             }
@@ -5680,19 +5718,19 @@ class EndlessCultivationGame {
         // 记录装备前战力
         const oldPower = this.calculatePlayerCombatPower();
         // 检查是否已有同类型装备
-        const existingItem = this.gameState.player.equipment[item.type];
+        const existingItem = this.persistentState.player.equipment[item.type];
         
         // 装备新物品
-        this.gameState.player.equipment[item.type] = item;
+        this.persistentState.player.equipment[item.type] = item;
         
         // 如果有旧装备，将其放回背包
         if (existingItem) {
             // 确保背包存在
-            if (!this.gameState.player.inventory) {
-                this.gameState.player.inventory = [];
+            if (!this.persistentState.player.inventory) {
+                this.persistentState.player.inventory = [];
             }
             // 将旧装备放回背包
-            this.gameState.player.inventory.push(existingItem);
+            this.persistentState.player.inventory.push(existingItem);
         }
         
         // 计算装备效果
@@ -5728,14 +5766,14 @@ class EndlessCultivationGame {
     
     // 卸下物品
     unequipItem(slot) {
-        const item = this.gameState.player.equipment[slot];
+        const item = this.persistentState.player.equipment[slot];
         if (item) {
             const oldPower = this.calculatePlayerCombatPower();
             // 卸下物品
-            this.gameState.player.equipment[slot] = null;
+            this.persistentState.player.equipment[slot] = null;
             
             // 将卸下的装备放回背包
-            this.gameState.player.inventory.push(item);
+            this.persistentState.player.inventory.push(item);
             
             // 计算装备效果
             this.equipmentSystem.calculateEquipmentEffects();
@@ -5800,12 +5838,12 @@ class EndlessCultivationGame {
     
     // 检查并自动穿戴更好的装备
     checkAndEquipBetterGear(item) {
-        const currentItem = this.gameState.player.equipment[item.type];
+        const currentItem = this.persistentState.player.equipment[item.type];
 
         // 没有当前装备，直接穿上
         if (!currentItem) {
-            const inventoryIndex = this.gameState.player.inventory.indexOf(item);
-            if (inventoryIndex > -1) this.gameState.player.inventory.splice(inventoryIndex, 1);
+            const inventoryIndex = this.persistentState.player.inventory.indexOf(item);
+            if (inventoryIndex > -1) this.persistentState.player.inventory.splice(inventoryIndex, 1);
             this.equipItem(item);
             return true;
         }
@@ -5815,8 +5853,8 @@ class EndlessCultivationGame {
         const currentItemPower = this.calculateEquipmentCombatPower(currentItem);
 
         if (newItemPower > currentItemPower) {
-            const inventoryIndex = this.gameState.player.inventory.indexOf(item);
-            if (inventoryIndex > -1) this.gameState.player.inventory.splice(inventoryIndex, 1);
+            const inventoryIndex = this.persistentState.player.inventory.indexOf(item);
+            if (inventoryIndex > -1) this.persistentState.player.inventory.splice(inventoryIndex, 1);
             this.equipItem(item);
             return true;
         }
@@ -5839,7 +5877,7 @@ class EndlessCultivationGame {
      * @returns {boolean} - true表示处理完成（装备或显示提示），false表示应放入背包
      */
     checkAndEquipBetterGearWithPrompt(item) {
-        const currentItem = this.gameState.player.equipment[item.type];
+        const currentItem = this.persistentState.player.equipment[item.type];
 
         // 没有当前装备，直接穿上
         if (!currentItem) {
@@ -5930,7 +5968,7 @@ class EndlessCultivationGame {
         document.body.appendChild(overlay);
 
         overlay.querySelector('#equip-replace-cancel').addEventListener('click', () => {
-            this.gameState.player.inventory.push(newItem);
+            this.persistentState.player.inventory.push(newItem);
             this.addBattleLog(`${newItem.name} 已放入背包`);
             this.updateUI();
             overlay.remove();
@@ -5939,10 +5977,10 @@ class EndlessCultivationGame {
         overlay.querySelector('#equip-replace-confirm').addEventListener('click', () => {
             // 旧装备放入背包
             if (currentItem) {
-                this.gameState.player.inventory.push(currentItem);
+                this.persistentState.player.inventory.push(currentItem);
             }
             // 卸下旧装备
-            this.gameState.player.equipment[newItem.type] = null;
+            this.persistentState.player.equipment[newItem.type] = null;
             // 穿上新装备
             this.equipItem(newItem);
             this.addBattleLog(`${newItem.name}${currentItem ? '替换了 ' + currentItem.name : '已装备'}！`);
@@ -6006,7 +6044,7 @@ class EndlessCultivationGame {
         document.body.appendChild(overlay);
 
         overlay.querySelector('#equip-upgrade-cancel').addEventListener('click', () => {
-            this.gameState.player.inventory.push(newItem);
+            this.persistentState.player.inventory.push(newItem);
             this.addBattleLog(`${newItem.name} 已放入背包（潜力装备）`);
             this.updateUI();
             overlay.remove();
@@ -6014,12 +6052,12 @@ class EndlessCultivationGame {
 
         overlay.querySelector('#equip-upgrade-confirm').addEventListener('click', () => {
             // 旧装备放入背包
-            this.gameState.player.inventory.push(currentItem);
+            this.persistentState.player.inventory.push(currentItem);
             // 卸下旧装备
-            this.gameState.player.equipment[newItem.type] = null;
+            this.persistentState.player.equipment[newItem.type] = null;
             // 从背包移除新装备并穿上
-            const idx = this.gameState.player.inventory.indexOf(newItem);
-            if (idx > -1) this.gameState.player.inventory.splice(idx, 1);
+            const idx = this.persistentState.player.inventory.indexOf(newItem);
+            if (idx > -1) this.persistentState.player.inventory.splice(idx, 1);
             this.equipItem(newItem);
             this.addBattleLog(`${newItem.name} 替换了 ${currentItem.name}！`);
             overlay.remove();
@@ -6036,21 +6074,21 @@ class EndlessCultivationGame {
         }
 
         // 检查灵石是否足够
-        if ((this.gameState.player.spiritStones || 0) < item.price) {
+        if ((this.persistentState.player.spiritStones || 0) < item.price) {
             this.addBattleLog(`灵石不足，无法购买 ${item.name}！`);
             return;
         }
 
         // 扣除灵石
-        this.gameState.player.spiritStones = (this.gameState.player.spiritStones || 0) - item.price;
+        this.persistentState.player.spiritStones = (this.persistentState.player.spiritStones || 0) - item.price;
         
         if (item.type === 'consumable') {
             // 药水类物品放入背包
-            this.gameState.player.inventory.push(item);
+            this.persistentState.player.inventory.push(item);
             this.addBattleLog(`购买了 ${item.name}，已放入背包！`);
         } else if (item.type === 'random_equipment') {
             // 随机装备箱：根据玩家境界生成随机白色装备
-            const realm = this.gameState.player.realm;
+            const realm = this.persistentState.player.realm;
             const equipmentLevel = realm.currentRealm + 1;
 
             // 随机选择装备类型
@@ -6069,7 +6107,7 @@ class EndlessCultivationGame {
                 // 检查并提示用户是否装备更好的装备（非战斗场景）
                 const equipped = this.checkAndEquipBetterGearWithPrompt(equipment);
                 if (!equipped) {
-                    this.gameState.player.inventory.push(equipment);
+                    this.persistentState.player.inventory.push(equipment);
                     this.addBattleLog(`${equipment.name} 已放入背包！`);
                 } else {
                     this.addBattleLog(`${equipment.name}！`);
@@ -6102,7 +6140,7 @@ class EndlessCultivationGame {
             // 检查并提示用户是否装备更好的装备（非战斗场景）
             const equipped = this.checkAndEquipBetterGearWithPrompt(equipment);
             if (!equipped) {
-                this.gameState.player.inventory.push(equipment);
+                this.persistentState.player.inventory.push(equipment);
                 this.addBattleLog(`购买了 ${item.name}，已放入背包！`);
             } else {
                 this.addBattleLog(`购买了 ${item.name}！`);
@@ -6121,48 +6159,48 @@ class EndlessCultivationGame {
     // 重置临时状态
     resetTemporaryStats() {
         // 重置临时攻击和防御状态
-        if (this.gameState.player) {
+        if (this.persistentState.player) {
             // 移除临时状态属性
-            delete this.gameState.player.baseAttack;
-            delete this.gameState.player.baseDefense;
-            delete this.gameState.player.baseSpeed;
-            delete this.gameState.player.baseLuck;
-            delete this.gameState.player.tempAttack;
-            delete this.gameState.player.tempDefense;
-            delete this.gameState.player.tempSpeed;
-            delete this.gameState.player.tempLuck;
-            delete this.gameState.player.tempAttackExpires;
-            delete this.gameState.player.tempDefenseExpires;
-            delete this.gameState.player.tempSpeedExpires;
-            delete this.gameState.player.tempLuckExpires;
+            delete this.persistentState.player.baseAttack;
+            delete this.persistentState.player.baseDefense;
+            delete this.persistentState.player.baseSpeed;
+            delete this.persistentState.player.baseLuck;
+            delete this.persistentState.player.tempAttack;
+            delete this.persistentState.player.tempDefense;
+            delete this.persistentState.player.tempSpeed;
+            delete this.persistentState.player.tempLuck;
+            delete this.persistentState.player.tempAttackExpires;
+            delete this.persistentState.player.tempDefenseExpires;
+            delete this.persistentState.player.tempSpeedExpires;
+            delete this.persistentState.player.tempLuckExpires;
         }
     }
 
     // 检查临时状态是否过期
     checkTemporaryStats() {
-        if (!this.gameState.player) return;
+        if (!this.persistentState.player) return;
         
         const now = Date.now();
         
         // 检查攻击药水效果
-        if (this.gameState.player.tempAttackExpires) {
-            const attackExpires = this.gameState.player.tempAttackExpires;
+        if (this.persistentState.player.tempAttackExpires) {
+            const attackExpires = this.persistentState.player.tempAttackExpires;
             if (now > attackExpires) {
                 // 攻击药水效果已过期
-                if (this.gameState.player.baseAttack) {
-                    this.gameState.player.attack = this.gameState.player.baseAttack;
+                if (this.persistentState.player.baseAttack) {
+                    this.persistentState.player.attack = this.persistentState.player.baseAttack;
                 }
-                delete this.gameState.player.baseAttack;
-                delete this.gameState.player.tempAttack;
-                delete this.gameState.player.tempAttackExpires;
+                delete this.persistentState.player.baseAttack;
+                delete this.persistentState.player.tempAttack;
+                delete this.persistentState.player.tempAttackExpires;
             } else {
                 // 攻击药水效果仍然有效，重新设置计时器
                 const remainingTime = attackExpires - now;
                 setTimeout(() => {
-                    if (this.gameState.player && this.gameState.player.baseAttack) {
-                        this.gameState.player.attack = this.gameState.player.baseAttack;
-                        this.gameState.player.tempAttack = null;
-                        this.gameState.player.tempAttackExpires = null;
+                    if (this.persistentState.player && this.persistentState.player.baseAttack) {
+                        this.persistentState.player.attack = this.persistentState.player.baseAttack;
+                        this.persistentState.player.tempAttack = null;
+                        this.persistentState.player.tempAttackExpires = null;
                         this.addBattleLog('攻击药水的效果消失了！');
                         this.updateUI();
                     }
@@ -6171,24 +6209,24 @@ class EndlessCultivationGame {
         }
         
         // 检查防御药水效果
-        if (this.gameState.player.tempDefenseExpires) {
-            const defenseExpires = this.gameState.player.tempDefenseExpires;
+        if (this.persistentState.player.tempDefenseExpires) {
+            const defenseExpires = this.persistentState.player.tempDefenseExpires;
             if (now > defenseExpires) {
                 // 防御药水效果已过期
-                if (this.gameState.player.baseDefense) {
-                    this.gameState.player.defense = this.gameState.player.baseDefense;
+                if (this.persistentState.player.baseDefense) {
+                    this.persistentState.player.defense = this.persistentState.player.baseDefense;
                 }
-                delete this.gameState.player.baseDefense;
-                delete this.gameState.player.tempDefense;
-                delete this.gameState.player.tempDefenseExpires;
+                delete this.persistentState.player.baseDefense;
+                delete this.persistentState.player.tempDefense;
+                delete this.persistentState.player.tempDefenseExpires;
             } else {
                 // 防御药水效果仍然有效，重新设置计时器
                 const remainingTime = defenseExpires - now;
                 setTimeout(() => {
-                    if (this.gameState.player && this.gameState.player.baseDefense) {
-                        this.gameState.player.defense = this.gameState.player.baseDefense;
-                        this.gameState.player.tempDefense = null;
-                        this.gameState.player.tempDefenseExpires = null;
+                    if (this.persistentState.player && this.persistentState.player.baseDefense) {
+                        this.persistentState.player.defense = this.persistentState.player.baseDefense;
+                        this.persistentState.player.tempDefense = null;
+                        this.persistentState.player.tempDefenseExpires = null;
                         this.addBattleLog('防御药水的效果消失了！');
                         this.updateUI();
                     }
@@ -6197,22 +6235,22 @@ class EndlessCultivationGame {
         }
 
         // 检查速度药水效果
-        if (this.gameState.player.tempSpeedExpires) {
-            const speedExpires = this.gameState.player.tempSpeedExpires;
+        if (this.persistentState.player.tempSpeedExpires) {
+            const speedExpires = this.persistentState.player.tempSpeedExpires;
             if (now > speedExpires) {
-                if (this.gameState.player.baseSpeed) {
-                    this.gameState.player.speed = this.gameState.player.baseSpeed;
+                if (this.persistentState.player.baseSpeed) {
+                    this.persistentState.player.speed = this.persistentState.player.baseSpeed;
                 }
-                delete this.gameState.player.baseSpeed;
-                delete this.gameState.player.tempSpeed;
-                delete this.gameState.player.tempSpeedExpires;
+                delete this.persistentState.player.baseSpeed;
+                delete this.persistentState.player.tempSpeed;
+                delete this.persistentState.player.tempSpeedExpires;
             } else {
                 const remainingTime = speedExpires - now;
                 setTimeout(() => {
-                    if (this.gameState.player && this.gameState.player.baseSpeed) {
-                        this.gameState.player.speed = this.gameState.player.baseSpeed;
-                        this.gameState.player.tempSpeed = null;
-                        this.gameState.player.tempSpeedExpires = null;
+                    if (this.persistentState.player && this.persistentState.player.baseSpeed) {
+                        this.persistentState.player.speed = this.persistentState.player.baseSpeed;
+                        this.persistentState.player.tempSpeed = null;
+                        this.persistentState.player.tempSpeedExpires = null;
                         this.addBattleLog('速度药水的效果消失了！');
                         this.updateUI();
                     }
@@ -6221,22 +6259,22 @@ class EndlessCultivationGame {
         }
 
         // 检查幸运药水效果
-        if (this.gameState.player.tempLuckExpires) {
-            const luckExpires = this.gameState.player.tempLuckExpires;
+        if (this.persistentState.player.tempLuckExpires) {
+            const luckExpires = this.persistentState.player.tempLuckExpires;
             if (now > luckExpires) {
-                if (this.gameState.player.baseLuck) {
-                    this.gameState.player.luck = this.gameState.player.baseLuck;
+                if (this.persistentState.player.baseLuck) {
+                    this.persistentState.player.luck = this.persistentState.player.baseLuck;
                 }
-                delete this.gameState.player.baseLuck;
-                delete this.gameState.player.tempLuck;
-                delete this.gameState.player.tempLuckExpires;
+                delete this.persistentState.player.baseLuck;
+                delete this.persistentState.player.tempLuck;
+                delete this.persistentState.player.tempLuckExpires;
             } else {
                 const remainingTime = luckExpires - now;
                 setTimeout(() => {
-                    if (this.gameState.player && this.gameState.player.baseLuck) {
-                        this.gameState.player.luck = this.gameState.player.baseLuck;
-                        this.gameState.player.tempLuck = null;
-                        this.gameState.player.tempLuckExpires = null;
+                    if (this.persistentState.player && this.persistentState.player.baseLuck) {
+                        this.persistentState.player.luck = this.persistentState.player.baseLuck;
+                        this.persistentState.player.tempLuck = null;
+                        this.persistentState.player.tempLuckExpires = null;
                         this.addBattleLog('幸运药水的效果消失了！');
                         this.updateUI();
                     }
@@ -6250,31 +6288,31 @@ class EndlessCultivationGame {
         switch (item.effect) {
             case 'heal':
                 // 恢复生命值
-                const healAmount = Math.floor(this.gameState.player.maxHp * item.value);
-                this.gameState.player.hp = Math.min(this.gameState.player.hp + healAmount, this.gameState.player.maxHp);
+                const healAmount = Math.floor(this.persistentState.player.maxHp * item.value);
+                this.persistentState.player.hp = Math.min(this.persistentState.player.hp + healAmount, this.persistentState.player.maxHp);
                 this.addBattleLog(`使用了 ${item.name}，恢复了 ${healAmount} 点生命值！`);
                 break;
             case 'energy':
                 // 恢复灵力
-                this.gameState.player.energy = this.gameState.player.maxEnergy;
+                this.persistentState.player.energy = this.persistentState.player.maxEnergy;
                 this.addBattleLog(`使用了 ${item.name}，灵力恢复满了！`);
                 break;
             case 'attack':
                 // 临时提升攻击力
-                if (!this.gameState.player.baseAttack) {
-                    this.gameState.player.baseAttack = this.gameState.player.attack;
+                if (!this.persistentState.player.baseAttack) {
+                    this.persistentState.player.baseAttack = this.persistentState.player.attack;
                 }
                 const attackMultiplier = 1 + item.value;
-                this.gameState.player.attack = this.gameState.player.baseAttack * attackMultiplier;
-                this.gameState.player.tempAttack = this.gameState.player.attack;
-                this.gameState.player.tempAttackExpires = Date.now() + 30000; // 30秒后过期
+                this.persistentState.player.attack = this.persistentState.player.baseAttack * attackMultiplier;
+                this.persistentState.player.tempAttack = this.persistentState.player.attack;
+                this.persistentState.player.tempAttackExpires = Date.now() + 30000; // 30秒后过期
                 this.addBattleLog(`使用了 ${item.name}，攻击力提升了 ${item.value * 100}%，持续30秒！`);
                 // 30秒后效果消失
                 setTimeout(() => {
-                    if (this.gameState.player.baseAttack) {
-                        this.gameState.player.attack = this.gameState.player.baseAttack;
-                        this.gameState.player.tempAttack = null;
-                        this.gameState.player.tempAttackExpires = null;
+                    if (this.persistentState.player.baseAttack) {
+                        this.persistentState.player.attack = this.persistentState.player.baseAttack;
+                        this.persistentState.player.tempAttack = null;
+                        this.persistentState.player.tempAttackExpires = null;
                     }
                     this.addBattleLog(`${item.name}的效果消失了！`);
                     this.updateUI();
@@ -6282,20 +6320,20 @@ class EndlessCultivationGame {
                 break;
             case 'defense':
                 // 临时提升防御力
-                if (!this.gameState.player.baseDefense) {
-                    this.gameState.player.baseDefense = this.gameState.player.defense;
+                if (!this.persistentState.player.baseDefense) {
+                    this.persistentState.player.baseDefense = this.persistentState.player.defense;
                 }
                 const defenseMultiplier = 1 + item.value;
-                this.gameState.player.defense = this.gameState.player.baseDefense * defenseMultiplier;
-                this.gameState.player.tempDefense = this.gameState.player.defense;
-                this.gameState.player.tempDefenseExpires = Date.now() + 30000; // 30秒后过期
+                this.persistentState.player.defense = this.persistentState.player.baseDefense * defenseMultiplier;
+                this.persistentState.player.tempDefense = this.persistentState.player.defense;
+                this.persistentState.player.tempDefenseExpires = Date.now() + 30000; // 30秒后过期
                 this.addBattleLog(`使用了 ${item.name}，防御力提升了 ${item.value * 100}%，持续30秒！`);
                 // 30秒后效果消失
                 setTimeout(() => {
-                    if (this.gameState.player.baseDefense) {
-                        this.gameState.player.defense = this.gameState.player.baseDefense;
-                        this.gameState.player.tempDefense = null;
-                        this.gameState.player.tempDefenseExpires = null;
+                    if (this.persistentState.player.baseDefense) {
+                        this.persistentState.player.defense = this.persistentState.player.baseDefense;
+                        this.persistentState.player.tempDefense = null;
+                        this.persistentState.player.tempDefenseExpires = null;
                     }
                     this.addBattleLog(`${item.name}的效果消失了！`);
                     this.updateUI();
@@ -6303,20 +6341,20 @@ class EndlessCultivationGame {
                 break;
             case 'speed':
                 // 临时提升速度
-                if (!this.gameState.player.baseSpeed) {
-                    this.gameState.player.baseSpeed = this.gameState.player.speed;
+                if (!this.persistentState.player.baseSpeed) {
+                    this.persistentState.player.baseSpeed = this.persistentState.player.speed;
                 }
                 const speedMultiplier = 1 + item.value;
-                this.gameState.player.speed = this.gameState.player.baseSpeed * speedMultiplier;
-                this.gameState.player.tempSpeed = this.gameState.player.speed;
-                this.gameState.player.tempSpeedExpires = Date.now() + 30000; // 30秒后过期
+                this.persistentState.player.speed = this.persistentState.player.baseSpeed * speedMultiplier;
+                this.persistentState.player.tempSpeed = this.persistentState.player.speed;
+                this.persistentState.player.tempSpeedExpires = Date.now() + 30000; // 30秒后过期
                 this.addBattleLog(`使用了 ${item.name}，速度提升了 ${item.value * 100}%，持续30秒！`);
                 // 30秒后效果消失
                 setTimeout(() => {
-                    if (this.gameState.player.baseSpeed) {
-                        this.gameState.player.speed = this.gameState.player.baseSpeed;
-                        this.gameState.player.tempSpeed = null;
-                        this.gameState.player.tempSpeedExpires = null;
+                    if (this.persistentState.player.baseSpeed) {
+                        this.persistentState.player.speed = this.persistentState.player.baseSpeed;
+                        this.persistentState.player.tempSpeed = null;
+                        this.persistentState.player.tempSpeedExpires = null;
                     }
                     this.addBattleLog(`${item.name}的效果消失了！`);
                     this.updateUI();
@@ -6324,20 +6362,20 @@ class EndlessCultivationGame {
                 break;
             case 'luck':
                 // 临时提升幸运
-                if (!this.gameState.player.baseLuck) {
-                    this.gameState.player.baseLuck = this.gameState.player.luck;
+                if (!this.persistentState.player.baseLuck) {
+                    this.persistentState.player.baseLuck = this.persistentState.player.luck;
                 }
                 const luckMultiplier = 1 + item.value;
-                this.gameState.player.luck = this.gameState.player.baseLuck * luckMultiplier;
-                this.gameState.player.tempLuck = this.gameState.player.luck;
-                this.gameState.player.tempLuckExpires = Date.now() + 30000; // 30秒后过期
+                this.persistentState.player.luck = this.persistentState.player.baseLuck * luckMultiplier;
+                this.persistentState.player.tempLuck = this.persistentState.player.luck;
+                this.persistentState.player.tempLuckExpires = Date.now() + 30000; // 30秒后过期
                 this.addBattleLog(`使用了 ${item.name}，幸运提升了 ${item.value * 100}%，持续30秒！`);
                 // 30秒后效果消失
                 setTimeout(() => {
-                    if (this.gameState.player.baseLuck) {
-                        this.gameState.player.luck = this.gameState.player.baseLuck;
-                        this.gameState.player.tempLuck = null;
-                        this.gameState.player.tempLuckExpires = null;
+                    if (this.persistentState.player.baseLuck) {
+                        this.persistentState.player.luck = this.persistentState.player.baseLuck;
+                        this.persistentState.player.tempLuck = null;
+                        this.persistentState.player.tempLuckExpires = null;
                     }
                     this.addBattleLog(`${item.name}的效果消失了！`);
                     this.updateUI();
@@ -6349,7 +6387,7 @@ class EndlessCultivationGame {
     // 使用药水
     usePotion() {
         // 过滤背包中的药水
-        const potions = this.gameState.player.inventory.filter(
+        const potions = this.persistentState.player.inventory.filter(
             item => item.type === 'consumable'
         );
 
@@ -6368,9 +6406,9 @@ class EndlessCultivationGame {
         this.showSelectionModal('选择要使用的药水', '点击选择要使用的药水', items, (index) => {
             const selectedPotion = potions[index];
             // 从背包中移除药水
-            const inventoryIndex = this.gameState.player.inventory.indexOf(selectedPotion);
+            const inventoryIndex = this.persistentState.player.inventory.indexOf(selectedPotion);
             if (inventoryIndex > -1) {
-                this.gameState.player.inventory.splice(inventoryIndex, 1);
+                this.persistentState.player.inventory.splice(inventoryIndex, 1);
             }
             // 使用药水
             this.useConsumable(selectedPotion);
@@ -6423,8 +6461,8 @@ class EndlessCultivationGame {
         // 添加新的事件监听器
         newConfirmBtn.addEventListener('click', () => {
             inventory.splice(index, 1);
-            this.gameState.player.spiritStones = (this.gameState.player.spiritStones || 0) + stonesAmount;
-            this.gameState.player.resources.iron = (this.gameState.player.resources.iron || 0) + ironAmount;
+            this.persistentState.player.spiritStones = (this.persistentState.player.spiritStones || 0) + stonesAmount;
+            this.persistentState.player.resources.iron = (this.persistentState.player.resources.iron || 0) + ironAmount;
             this.addBattleLog(`分解 ${itemName} 获得了 ${stonesAmount} 灵石, ${ironAmount} 玄铁！`);
             this.updateUI();
             this.showInventory();
@@ -6453,14 +6491,14 @@ class EndlessCultivationGame {
             document.querySelectorAll('#item-tooltip').forEach(tooltip => tooltip.remove());
 
             // 确保背包存在
-            if (!this.gameState.player.inventory) {
-                this.gameState.player.inventory = [];
+            if (!this.persistentState.player.inventory) {
+                this.persistentState.player.inventory = [];
             }
 
             // 重置分页到第1页
             this.inventoryPagination.currentPage = 1;
 
-            const inventory = this.gameState.player.inventory;
+            const inventory = this.persistentState.player.inventory;
             const inventoryModal = document.getElementById('inventory-modal');
             const inventoryEquipment = document.getElementById('inventory-equipment');
             const inventoryConsumables = document.getElementById('inventory-consumables');
@@ -6773,7 +6811,7 @@ class EndlessCultivationGame {
             
             e.stopPropagation(); // 阻止事件冒泡
             
-            const inventory = this.gameState.player.inventory;
+            const inventory = this.persistentState.player.inventory;
             
             if (item.type === 'consumable') {
                 // 消耗品直接使用
@@ -6813,7 +6851,7 @@ class EndlessCultivationGame {
                 // 绑定菜单选项点击事件
                 document.getElementById('context-use').onclick = () => {
                     // 使用/装备
-                    const equippedItem = this.gameState.player.equipment[item.type];
+                    const equippedItem = this.persistentState.player.equipment[item.type];
                     inventory.splice(index, 1);
                     this.equipItem(item);
                     this.updateUI();
@@ -6939,11 +6977,11 @@ class EndlessCultivationGame {
      * @returns {boolean} - true表示背包已满
      */
     isInventoryFull() {
-        if (!this.gameState.player.inventory) {
-            this.gameState.player.inventory = [];
+        if (!this.persistentState.player.inventory) {
+            this.persistentState.player.inventory = [];
         }
         const maxSize = SIZES.MAX_INVENTORY_SIZE || 50;
-        return this.gameState.player.inventory.length >= maxSize;
+        return this.persistentState.player.inventory.length >= maxSize;
     }
 
     /**
@@ -6952,8 +6990,8 @@ class EndlessCultivationGame {
      * @returns {boolean} - true表示添加成功，false表示背包已满
      */
     addToInventory(item) {
-        if (!this.gameState.player.inventory) {
-            this.gameState.player.inventory = [];
+        if (!this.persistentState.player.inventory) {
+            this.persistentState.player.inventory = [];
         }
 
         // 检查背包是否已满
@@ -6963,7 +7001,7 @@ class EndlessCultivationGame {
         }
 
         // 添加物品
-        this.gameState.player.inventory.push(item);
+        this.persistentState.player.inventory.push(item);
         return true;
     }
 
@@ -6972,10 +7010,10 @@ class EndlessCultivationGame {
      * @returns {Object} - {current: 当前数量, max: 最大容量, percent: 使用百分比}
      */
     getInventoryCapacity() {
-        if (!this.gameState.player.inventory) {
-            this.gameState.player.inventory = [];
+        if (!this.persistentState.player.inventory) {
+            this.persistentState.player.inventory = [];
         }
-        const current = this.gameState.player.inventory.length;
+        const current = this.persistentState.player.inventory.length;
         const max = SIZES.MAX_INVENTORY_SIZE || 50;
         const percent = Math.floor((current / max) * 100);
         return { current, max, percent };
@@ -7140,7 +7178,7 @@ class EndlessCultivationGame {
             hard: 'from-red-600 to-red-500'
         };
 
-        const vipLevel = this.gameState.player.vipLevel || 0;
+        const vipLevel = this.persistentState.player.vipLevel || 0;
         const canSweep = vipLevel >= 1;
 
         let html = '';
@@ -7150,7 +7188,7 @@ class EndlessCultivationGame {
             const currentAttempts = this.dungeon.getCurrentAttempts(dungeonId, diff);
             const maxAttempts = this.dungeon.getMaxAttempts(vipLevel);
             const hasRemaining = currentAttempts < maxAttempts;
-            const isLocked = this.gameState.player.level < config.level_req;
+            const isLocked = this.persistentState.player.level < config.level_req;
             const hasCleared = this.hasClearedDungeon(dungeonId, diff);
 
             html += `
@@ -7186,7 +7224,7 @@ class EndlessCultivationGame {
      * 检查是否已通关
      */
     hasClearedDungeon(dungeonId, difficulty) {
-        const playerData = this.gameState.player.resourceDungeons;
+        const playerData = this.persistentState.player.resourceDungeons;
         return playerData && playerData[dungeonId] && playerData[dungeonId].cleared[difficulty];
     }
 
