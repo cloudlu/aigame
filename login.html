@@ -377,7 +377,7 @@
                 localStorage.removeItem('cultivationToken');
                 localStorage.removeItem('cultivationUser');
                 sessionStorage.removeItem('redirectCount'); // 清除跳转计数
-                console.log('已清除登录状态');
+                console.debug('已清除登录状态');
                 return; // 不继续检查，让用户重新登录
             }
 
@@ -395,15 +395,39 @@
             const userStr = localStorage.getItem('cultivationUser');
 
             if (token && userStr) {
-                // 记录跳转次数
-                sessionStorage.setItem('redirectCount', (redirectCount + 1).toString());
+                // ✅ 先验证 token 是否有效，再决定是否跳转
+                console.debug('检测到登录状态，正在验证 token 有效性...');
 
-                // 已登录，显示提示后跳转到游戏页面
-                console.log('检测到登录状态，正在跳转到游戏页面...');
-                // 延迟跳转，避免过快跳转
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 500);
+                fetch('http://localhost:3002/api/verify-token', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Token 有效，跳转到游戏页面
+                        console.debug('Token 验证成功，正在跳转到游戏页面...');
+                        sessionStorage.setItem('redirectCount', (redirectCount + 1).toString());
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 500);
+                    } else {
+                        // Token 无效，清除并让用户重新登录
+                        console.debug('Token 无效，清除登录状态');
+                        localStorage.removeItem('cultivationToken');
+                        localStorage.removeItem('cultivationUser');
+                        sessionStorage.removeItem('redirectCount');
+                    }
+                })
+                .catch(error => {
+                    console.error('验证 token 失败:', error);
+                    // 网络错误，清除并让用户重新登录
+                    localStorage.removeItem('cultivationToken');
+                    localStorage.removeItem('cultivationUser');
+                    sessionStorage.removeItem('redirectCount');
+                });
             }
         };
     </script>

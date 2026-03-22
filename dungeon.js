@@ -89,6 +89,17 @@ class DungeonSystem {
      */
     getDifficultyConfig(dungeonId, difficulty) {
         const dungeon = this.getDungeonConfig(dungeonId);
+
+        if (!dungeon) {
+            console.error('[getDifficultyConfig] 副本配置未找到:', dungeonId);
+            return null;
+        }
+
+        if (!dungeon.difficulties || !dungeon.difficulties[difficulty]) {
+            console.error('[getDifficultyConfig] 难度配置未找到:', difficulty, '可用难度:', Object.keys(dungeon.difficulties || {}));
+            return null;
+        }
+
         return dungeon.difficulties[difficulty];
     }
 
@@ -97,7 +108,7 @@ class DungeonSystem {
      */
     checkLevelRequirement(dungeonId, difficulty) {
         const config = this.getDifficultyConfig(dungeonId, difficulty);
-        const playerLevel = this.game.persistentState.player.level;
+        const playerLevel = this.game.calculateTotalLevel();
 
         if (playerLevel < config.level_req) {
             this.game.showNotification(`需要等级 ${config.level_req} 才能挑战`, 'error');
@@ -125,7 +136,7 @@ class DungeonSystem {
      * 检查剩余挑战次数
      */
     hasRemainingAttempts(dungeonId, difficulty) {
-        const vipLevel = this.game.persistentState.player.vipLevel || 0;
+        const vipLevel = this.game.persistentState.vip?.level || 0;
         const maxAttempts = this.getMaxAttempts(vipLevel);
         const currentAttempts = this.getCurrentAttempts(dungeonId, difficulty);
 
@@ -179,7 +190,7 @@ class DungeonSystem {
      * 检查是否可以扫荡
      */
     canSweep(dungeonId, difficulty) {
-        const vipLevel = this.game.persistentState.player.vipLevel || 0;
+        const vipLevel = this.game.persistentState.vip?.level || 0;
 
         // VIP1+ 才能扫荡
         if (vipLevel < 1) {
@@ -220,7 +231,7 @@ class DungeonSystem {
      * 获取VIP加成系数
      */
     getVIPBonus() {
-        const vipLevel = this.game.persistentState.player.vipLevel || 0;
+        const vipLevel = this.game.persistentState.vip?.level || 0;
 
         if (vipLevel >= 7) return 0.3;  // +30%
         if (vipLevel >= 4) return 0.2;  // +20%
@@ -233,7 +244,13 @@ class DungeonSystem {
      * 计算最终奖励
      */
     calculateReward(dungeonId, difficulty) {
-        const config = this.getDifficultyConfig(dungeonId);
+        const config = this.getDifficultyConfig(dungeonId, difficulty);
+
+        if (!config || !config.reward) {
+            console.error('副本奖励配置未找到:', dungeonId, difficulty);
+            return {};
+        }
+
         const baseReward = config.reward;
 
         const realmBonus = this.getRealmBonus();
@@ -255,7 +272,7 @@ class DungeonSystem {
     generateEnemyQueue(dungeonId, difficulty) {
         const dungeon = this.getDungeonConfig(dungeonId);
         const config = this.getDifficultyConfig(dungeonId, difficulty);
-        const playerLevel = this.game.persistentState.player.level;
+        const playerLevel = this.game.calculateTotalLevel(); // ✅ 使用 calculateTotalLevel() 而不是 player.level
 
         const enemies = [];
 
@@ -294,7 +311,7 @@ class DungeonSystem {
             }
 
             // 生成敌人数据
-            const enemy = this.generateDungeonEnemy(enemyType, playerLevel, difficulty);
+            const enemy = this.generateDungeonEnemy(enemyType, difficulty);
             enemies.push(enemy);
         }
 
@@ -304,33 +321,25 @@ class DungeonSystem {
     /**
      * 生成副本敌人 - 完整复用探险场景的敌人属性计算逻辑
      */
-    generateDungeonEnemy(enemyType, playerLevel, difficulty) {
-        console.log('=== [generateDungeonEnemy] 开始生成 ===');
-        console.log('enemyType:', enemyType);
-        console.log('playerLevel:', playerLevel, 'difficulty:', difficulty);
-
-        // ✅ 从enemyTypes中查找敌人基础属性
+    generateDungeonEnemy(enemyType, difficulty) {
+        // 从enemyTypes中查找敌人基础属性
         const selectedEnemyType = this.game.metadata.enemyTypes.find(enemy => enemy.name === enemyType.name);
 
         if (!selectedEnemyType) {
             console.warn(`副本敌人 ${enemyType.name} 未在enemyTypes中定义，使用默认属性`);
-        } else {
-            console.log('找到敌人定义:', selectedEnemyType.name, 'baseHp:', selectedEnemyType.baseHp);
         }
 
-        // ✅ 获取基础属性（优先使用定义的，否则使用默认值）
+        // 获取基础属性（优先使用定义的，否则使用默认值）
         const baseHp = selectedEnemyType?.baseHp || 50;
         const baseAttack = selectedEnemyType?.baseAttack || 10;
         const baseDefense = selectedEnemyType?.baseDefense || 5;
         const baseSpeed = selectedEnemyType?.baseSpeed || 8;
         const baseLuck = selectedEnemyType?.baseLuck || 5;
 
-        console.log('基础属性:', { baseHp, baseAttack, baseDefense, baseSpeed, baseLuck });
-
-        // ✅ 计算敌人等级（与探险场景一致）
+        // 计算敌人等级（与探险场景一致）
         const enemyLevel = enemyType.level;
 
-        // ✅ 类型加成（与探险场景一致）
+        // 类型加成（与探险场景一致）
         let bonus = 0;
         if (enemyType.type === 'boss') {
             bonus = 1.0;
@@ -338,23 +347,21 @@ class DungeonSystem {
             bonus = 0.5;
         }
 
-        // ✅ 副本难度加成
+        // 副本难度加成
         const difficultyMod = {
             'easy': 0.8,
             'medium': 1.0,
             'hard': 1.5
         }[difficulty];
 
-        // ✅ 类型倍率（与探险场景一致）
+        // 类型倍率（与探险场景一致）
         const typeMod = {
             'normal': 1.0,
             'elite': 2.5,
             'boss': 5.0
         }[enemyType.type];
 
-        console.log('倍率:', { bonus, difficultyMod, typeMod });
-
-        // ✅ 计算最终属性（使用探险场景的线性成长公式）
+        // 计算最终属性（使用探险场景的线性成长公式）
         // 成长率：HP +50%基础值/级，Attack/Defense +30%基础值/级，Speed/Luck +20%基础值/级
         const finalHp = Math.floor((baseHp + (enemyLevel - 1) * baseHp * 0.5) * (1 + bonus) * difficultyMod * typeMod / (1 + bonus));
         const finalAttack = Math.floor((baseAttack + (enemyLevel - 1) * baseAttack * 0.3) * (1 + bonus) * difficultyMod * typeMod / (1 + bonus));
@@ -362,9 +369,7 @@ class DungeonSystem {
         const finalSpeed = Math.floor((baseSpeed + (enemyLevel - 1) * baseSpeed * 0.2) * (1 + bonus));
         const finalLuck = Math.floor((baseLuck + (enemyLevel - 1) * baseLuck * 0.2) * (1 + bonus));
 
-        console.log('计算结果:', { finalHp, finalAttack, finalDefense, finalSpeed, finalLuck });
-
-        // ✅ 构造完整的敌人数据（与探险场景一致）
+        // 构造完整的敌人数据（与探险场景一致）
         const enemyData = {
             level: enemyLevel,
             hp: finalHp,
@@ -390,8 +395,6 @@ class DungeonSystem {
             baseName: enemyType.name
         };
 
-        console.log('✅ 最终敌人数据:', enemyData);
-
         return enemyData;
     }
 
@@ -400,7 +403,7 @@ class DungeonSystem {
      */
     getEnemyBaseStats(enemyName) {
         // 基于玩家等级的基础属性
-        const playerLevel = this.game.persistentState.player.level;
+        const playerLevel = this.game.calculateTotalLevel();
         const baseHp = 100 + playerLevel * 50;
         const baseAttack = 10 + playerLevel * 8;
         const baseDefense = 5 + playerLevel * 6;
@@ -660,12 +663,12 @@ class DungeonSystem {
     }
 
     /**
-     * 扫荡副本（VIP1+）
+     * 一键扫荡副本（VIP1+）- 扫荡所有剩余次数
      */
     sweepDungeon(dungeonId, difficulty) {
         // 检查是否可以扫荡
         if (!this.canSweep(dungeonId, difficulty)) {
-            const vipLevel = this.game.persistentState.player.vipLevel || 0;
+            const vipLevel = this.game.persistentState.vip?.level || 0;
             if (vipLevel < 1) {
                 this.game.showNotification('VIP1以上才能扫荡', 'error');
             } else {
@@ -674,40 +677,65 @@ class DungeonSystem {
             return;
         }
 
-        // 消耗次数
-        this.consumeAttempt(dungeonId, difficulty);
+        // 计算剩余次数
+        const vipLevel = this.game.persistentState.vip?.level || 0;
+        const maxAttempts = this.getMaxAttempts(vipLevel);
+        const currentAttempts = this.getCurrentAttempts(dungeonId, difficulty);
+        const remainingAttempts = maxAttempts - currentAttempts;
 
-        // 计算奖励
-        const reward = this.calculateReward(dungeonId, difficulty);
+        if (remainingAttempts <= 0) {
+            this.game.showNotification('今日挑战次数已用完', 'error');
+            return;
+        }
+
+        // 计算单次奖励
+        const singleReward = this.calculateReward(dungeonId, difficulty);
+
+        // 累计总奖励
+        const totalReward = {
+            spirit_stones: (singleReward.spirit_stones || 0) * remainingAttempts,
+            herbs: (singleReward.herbs || 0) * remainingAttempts,
+            iron: (singleReward.iron || 0) * remainingAttempts,
+            exp: (singleReward.exp || 0) * remainingAttempts
+        };
+
+        // 批量消耗次数
+        const playerData = this.game.persistentState.player.resourceDungeons;
+        if (!playerData[dungeonId]) {
+            this.initPlayerDungeonData(dungeonId);
+        }
+        const attempts = playerData[dungeonId].attempts[difficulty];
+        attempts.count = maxAttempts; // 直接设为最大次数
+        this.game.saveGameState();
 
         // 发放奖励
-        this.giveReward(reward);
+        this.giveReward(totalReward);
 
         // 显示扫荡结果
-        this.game.showNotification('扫荡成功！', 'success');
-        this.game.showDungeonComplete(reward);
+        this.game.showNotification(`一键扫荡成功！消耗${remainingAttempts}次`, 'success');
+        this.game.showDungeonComplete(totalReward);
     }
 
     /**
      * 发放奖励
      */
     giveReward(reward) {
-        const player = this.game.persistentState.player;
+        const resources = this.game.persistentState.resources;
 
         if (reward.spirit_stones) {
-            player.spiritStones += reward.spirit_stones;
+            resources.spiritStones = (resources.spiritStones || 0) + reward.spirit_stones;
         }
 
         if (reward.herbs) {
-            player.resources.herbs += reward.herbs;
+            resources.herbs = (resources.herbs || 0) + reward.herbs;
         }
 
         if (reward.iron) {
-            player.resources.iron += reward.iron;
+            resources.iron = (resources.iron || 0) + reward.iron;
         }
 
         if (reward.exp) {
-            this.game.gainExp(reward.exp);
+            this.game.persistentState.player.exp += reward.exp;
         }
 
         this.game.saveGameState();

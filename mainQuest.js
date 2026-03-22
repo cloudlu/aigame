@@ -122,28 +122,28 @@ class MainQuestSystem {
                 storyTrigger = `r${realmIndex}_boss_${bossName}`;
                 break;
             }
-            case 'collect_spiritWood': {
+            case 'collect_herbs': {
                 const target = Math.max(5, Math.floor(base.baseCollect * stageMult * (1 + levelInStage * 0.08)));
-                objectives = [{ type: 'collect', resource: 'spiritWood', target }];
-                name = `${stageDisplay}·灵木收集`;
-                description = `收集${target}个灵木`;
-                templateTypeKey = 'collect_wood';
+                objectives = [{ type: 'collect', resource: 'herbs', target }];
+                name = `${stageDisplay}·灵草收集`;
+                description = `收集${target}个灵草`;
+                templateTypeKey = 'collect_herbs';
                 break;
             }
-            case 'collect_blackIron': {
+            case 'collect_iron': {
                 const target = Math.max(3, Math.floor(base.baseCollect * 0.7 * stageMult * (1 + levelInStage * 0.08)));
-                objectives = [{ type: 'collect', resource: 'blackIron', target }];
+                objectives = [{ type: 'collect', resource: 'iron', target }];
                 name = `${stageDisplay}·玄铁收集`;
                 description = `收集${target}个玄铁`;
                 templateTypeKey = 'collect_iron';
                 break;
             }
-            case 'collect_spiritCrystal': {
+            case 'collect_spiritStones': {
                 const target = Math.max(3, Math.floor(base.baseCollect * 0.5 * stageMult * (1 + levelInStage * 0.08)));
-                objectives = [{ type: 'collect', resource: 'spiritCrystal', target }];
+                objectives = [{ type: 'collect', resource: 'spiritStones', target }];
                 name = `${stageDisplay}·灵石收集`;
                 description = `收集${target}个灵石`;
-                templateTypeKey = 'collect_crystal';
+                templateTypeKey = 'collect_stones';
                 break;
             }
             case 'visit_map': {
@@ -159,9 +159,9 @@ class MainQuestSystem {
 
         const isBossMilestone = (levelInStage % 5 === 0);
         const expReward = Math.floor(base.baseExp * stageMult * realmMult * (1 + levelInStage * 0.1));
-        const goldReward = Math.floor(base.baseGold * stageMult * realmMult * (1 + levelInStage * 0.12));
+        const spiritStonesReward = Math.floor(base.baseGold * stageMult * realmMult * (1 + levelInStage * 0.12));
 
-        let rewards = { exp: expReward, gold: goldReward };
+        let rewards = { exp: expReward, spiritStones: spiritStonesReward };
 
         if (isBossMilestone || templateType === 'kill_boss') {
             rewards.skillPoints = Math.max(1, Math.ceil(stageNum * 0.3));
@@ -493,8 +493,8 @@ class MainQuestSystem {
             this.game.persistentState.player.exp += rewards.exp;
         }
 
-        if (rewards.gold) {
-            this.game.persistentState.resources.gold = (this.game.persistentState.resources.gold || 0) + rewards.gold;
+        if (rewards.spiritStones) {
+            this.game.persistentState.resources.spiritStones = (this.game.persistentState.resources.spiritStones || 0) + rewards.spiritStones;
         }
 
         if (rewards.skillPoints) {
@@ -736,12 +736,12 @@ class MainQuestSystem {
 
             html += `
                 <div class="mb-4">
-                    <div class="text-gold font-bold mb-2">${realmNames[i]}</div>
+                    <div class="text-spiritStones font-bold mb-2">${realmNames[i]}</div>
                     <div class="space-y-2">
                         ${scenes.map(s => `
                             <button class="w-full text-left px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm text-white/80 transition-colors flex items-center justify-between" onclick="game.mainQuestSystem.replayStory('${s.id}')">
                                 <span>${s.title}</span>
-                                <i class="fa fa-play text-gold/60"></i>
+                                <i class="fa fa-play text-spiritStones/60"></i>
                             </button>
                         `).join('')}
                     </div>
@@ -862,7 +862,8 @@ class MainQuestSystem {
                 progressText = current ? `已击败 ${obj.targetBoss}` : `击败 ${obj.targetBoss}`;
                 progressPercent = current ? 100 : 0;
             } else if (obj.type === 'collect') {
-                progressText = `收集 ${current}/${target} ${obj.resource === 'spiritWood' ? '灵木' : obj.resource === 'blackIron' ? '玄铁' : '灵石'}`;
+                const resourceNames = { herbs: '灵草', iron: '玄铁', spiritStones: '灵石' };
+                progressText = `收集 ${current}/${target} ${resourceNames[obj.resource] || obj.resource}`;
                 progressPercent = Math.min(100, (current / target) * 100);
             } else if (obj.type === 'visit_map') {
                 const mapNames = {
@@ -899,7 +900,7 @@ class MainQuestSystem {
                     </div>
                     <div class="flex-1">
                         <div class="text-sm ${isComplete ? 'line-through text-white/50' : 'text-white/90'}">${progressText}</div>
-                        ${!isComplete && progressPercent > 0 ? `<div class="h-1 bg-white/10 rounded-full mt-1 overflow-hidden"><div class="h-full bg-gold rounded-full transition-all" style="width: ${progressPercent}%"></div></div>` : ''}
+                        ${!isComplete && progressPercent > 0 ? `<div class="h-1 bg-white/10 rounded-full mt-1 overflow-hidden"><div class="h-full bg-spiritStones rounded-full transition-all" style="width: ${progressPercent}%"></div></div>` : ''}
                     </div>
                 </div>
             `;
@@ -908,7 +909,7 @@ class MainQuestSystem {
         let rewardsHtml = '';
         const rewards = questDef.rewards || {};
         if (rewards.exp) rewardsHtml += `<span class="px-2 py-1 bg-blue-500/20 text-blue-300 rounded text-xs">+${rewards.exp} 经验</span>`;
-        if (rewards.gold) rewardsHtml += `<span class="px-2 py-1 bg-yellow-500/20 text-yellow-300 rounded text-xs">+${rewards.gold} 灵石</span>`;
+        if (rewards.spiritStones) rewardsHtml += `<span class="px-2 py-1 bg-yellow-500/20 text-yellow-300 rounded text-xs">+${rewards.spiritStones} 灵石</span>`;
         if (rewards.skillPoints) rewardsHtml += `<span class="px-2 py-1 bg-purple-500/20 text-purple-300 rounded text-xs">+${rewards.skillPoints} 技能点</span>`;
 
         let levelQuestProgressHtml = '';
@@ -918,7 +919,7 @@ class MainQuestSystem {
                     ${currentQuests.map((q, i) => {
                         const isDone = i < mq.currentLevelQuestIndex;
                         const isActive = i === mq.currentLevelQuestIndex;
-                        return `<div class="flex-1 h-1.5 rounded-full ${isDone ? 'bg-green-500' : isActive ? 'bg-gold' : 'bg-white/20'}"></div>`;
+                        return `<div class="flex-1 h-1.5 rounded-full ${isDone ? 'bg-green-500' : isActive ? 'bg-spiritStones' : 'bg-white/20'}"></div>`;
                     }).join('')}
                 </div>
             `;
@@ -926,7 +927,7 @@ class MainQuestSystem {
 
         contentEl.innerHTML = `
             <!-- 进度概览 -->
-            <div class="text-sm text-gold/80 mb-1">
+            <div class="text-sm text-spiritStones/80 mb-1">
                 第${currentRealm + 1}卷 · ${realmName}之路
             </div>
             <div class="text-xs text-white/50 mb-3">
@@ -935,8 +936,8 @@ class MainQuestSystem {
             </div>
 
             <!-- 当前任务卡片 -->
-            <div class="bg-white/5 rounded-xl p-4 border border-gold/20">
-                <h3 class="text-lg font-bold text-gold mb-2">${questDef.name}</h3>
+            <div class="bg-white/5 rounded-xl p-4 border border-spiritStones/20">
+                <h3 class="text-lg font-bold text-spiritStones mb-2">${questDef.name}</h3>
                 <p class="text-sm text-white/70 mb-4">${questDef.description}</p>
 
                 <!-- 目标列表 -->
@@ -1030,8 +1031,8 @@ class MainQuestSystem {
         if (rewards.exp) {
             rewardsHtml += `<div class="flex items-center gap-2 text-blue-300"><i class="fa fa-star"></i> 经验 +${rewards.exp}</div>`;
         }
-        if (rewards.gold) {
-            rewardsHtml += `<div class="flex items-center gap-2 text-yellow-300"><i class="fa fa-coins"></i> 灵石 +${rewards.gold}</div>`;
+        if (rewards.spiritStones) {
+            rewardsHtml += `<div class="flex items-center gap-2 text-yellow-300"><i class="fa fa-coins"></i> 灵石 +${rewards.spiritStones}</div>`;
         }
         if (rewards.skillPoints) {
             rewardsHtml += `<div class="flex items-center gap-2 text-purple-300"><i class="fa fa-bolt"></i> 技能点 +${rewards.skillPoints}</div>`;

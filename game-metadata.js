@@ -7,7 +7,7 @@ const gameMetadata = {
         { name: "white", displayName: "白色", multiplier: 1.0, pctMultiplier: 1.0, statCount: 1 },
         { name: "blue", displayName: "蓝色", multiplier: 1.5, pctMultiplier: 1.2, statCount: 2 },
         { name: "purple", displayName: "紫色", multiplier: 2.2, pctMultiplier: 1.4, statCount: 3 },
-        { name: "gold", displayName: "黄金", multiplier: 3.2, pctMultiplier: 1.6, statCount: 4 },
+        { name: "spiritStones", displayName: "黄金", multiplier: 3.2, pctMultiplier: 1.6, statCount: 4 },
         { name: "rainbow", displayName: "彩色", multiplier: 4.5, pctMultiplier: 2.0, statCount: 5 }
     ],
     
@@ -156,7 +156,7 @@ const gameMetadata = {
             white: 0.50,
             blue: 0.30,
             purple: 0.148,
-            gold: 0.05,
+            spiritStones: 0.05,
             rainbow: 0.002   // 0.2%（原1%）
         },
         // 精英怪物掉率
@@ -164,7 +164,7 @@ const gameMetadata = {
             white: 0.30,
             blue: 0.35,
             purple: 0.20,
-            gold: 0.145,
+            spiritStones: 0.145,
             rainbow: 0.005   // 0.5%（原3%）
         },
         // BOSS掉率
@@ -172,7 +172,7 @@ const gameMetadata = {
             white: 0.10,
             blue: 0.30,
             purple: 0.30,
-            gold: 0.285,
+            spiritStones: 0.285,
             rainbow: 0.015   // 1.5%（原8%）
         }
     },
@@ -1963,7 +1963,7 @@ const gameMetadata = {
         },
         // 金丹境 (Realm 3) - 4个技能树
         {
-            id: 'goldenCore',
+            id: 'spiritStonesenCore',
             name: '金丹掌系',
             realmRequired: 3,
             type: 'attack',
@@ -1973,14 +1973,14 @@ const gameMetadata = {
             baseEffectColor: { r: 1, g: 0.8, b: 0 },
             levels: [
                 {
-                    name: 'goldenCore_lv1',
+                    name: 'spiritStonesenCore_lv1',
                     description: '金丹之力，造成2.0倍伤害',
                     stageRequired: 1,
                     energyCost: 25,
                     damageMultiplier: 2.0
                 },
                 {
-                    name: 'goldenCore_lv2',
+                    name: 'spiritStonesenCore_lv2',
                     description: '强化金丹掌，造成2.2倍伤害，眩晕敌人1回合',
                     stageRequired: 4,
                     energyCost: 32,
@@ -1988,7 +1988,7 @@ const gameMetadata = {
                     stun: 1
                 },
                 {
-                    name: 'goldenCore_lv3',
+                    name: 'spiritStonesenCore_lv3',
                     description: '金丹爆发，造成2.3倍伤害，眩晕1回合，无视20%防御',
                     stageRequired: 7,
                     energyCost: 40,
@@ -1997,7 +1997,7 @@ const gameMetadata = {
                     armorPenetration: 0.2
                 },
                 {
-                    name: 'goldenCore_lv4',
+                    name: 'spiritStonesenCore_lv4',
                     description: '金丹境巅峰，造成2.5倍伤害，眩晕2回合，无视30%防御',
                     stageRequired: 10,
                     energyCost: 52,
@@ -2008,7 +2008,7 @@ const gameMetadata = {
             ]
         },
         {
-            id: 'goldenArmor',
+            id: 'spiritStonesenArmor',
             name: '金丹甲系',
             realmRequired: 3,
             type: 'defense',
@@ -2018,7 +2018,7 @@ const gameMetadata = {
             baseEffectColor: { r: 1, g: 0.9, b: 0.3 },
             levels: [
                 {
-                    name: 'goldenArmor_lv1',
+                    name: 'spiritStonesenArmor_lv1',
                     description: '减伤50%，护盾吸收300点伤害',
                     stageRequired: 1,
                     energyCost: 28,
@@ -2026,7 +2026,7 @@ const gameMetadata = {
                     shield: 300
                 },
                 {
-                    name: 'goldenArmor_lv2',
+                    name: 'spiritStonesenArmor_lv2',
                     description: '减伤55%，护盾吸收400点伤害，反弹10%伤害',
                     stageRequired: 4,
                     energyCost: 35,
@@ -2035,7 +2035,7 @@ const gameMetadata = {
                     reflectDamage: 0.1
                 },
                 {
-                    name: 'goldenArmor_lv3',
+                    name: 'spiritStonesenArmor_lv3',
                     description: '减伤60%，护盾吸收500点伤害，反弹15%伤害',
                     stageRequired: 7,
                     energyCost: 45,
@@ -2044,7 +2044,7 @@ const gameMetadata = {
                     reflectDamage: 0.15
                 },
                 {
-                    name: 'goldenArmor_lv4',
+                    name: 'spiritStonesenArmor_lv4',
                     description: '减伤70%，护盾吸收600点伤害，反弹20%伤害，免疫控制',
                     stageRequired: 10,
                     energyCost: 55,
@@ -2056,7 +2056,7 @@ const gameMetadata = {
             ]
         },
         {
-            id: 'goldenHeal',
+            id: 'spiritStonesenHeal',
             name: '金丹治疗系',
             realmRequired: 3,
             type: 'recovery',
@@ -2066,14 +2066,14 @@ const gameMetadata = {
             baseEffectColor: { r: 0.6, g: 1, b: 0.6 },
             levels: [
                 {
-                    name: 'goldenHeal_lv1',
+                    name: 'spiritStonesenHeal_lv1',
                     description: '恢复42%最大HP',
                     stageRequired: 1,
                     energyCost: 30,
                     healPercentage: 0.42
                 },
                 {
-                    name: 'goldenHeal_lv2',
+                    name: 'spiritStonesenHeal_lv2',
                     description: '恢复48%最大HP，恢复30点灵力',
                     stageRequired: 4,
                     energyCost: 36,
@@ -2081,7 +2081,7 @@ const gameMetadata = {
                     energyRecover: 30
                 },
                 {
-                    name: 'goldenHeal_lv3',
+                    name: 'spiritStonesenHeal_lv3',
                     description: '恢复55%最大HP，恢复40点灵力，清除负面状态',
                     stageRequired: 7,
                     energyCost: 42,
@@ -2090,7 +2090,7 @@ const gameMetadata = {
                     purify: true
                 },
                 {
-                    name: 'goldenHeal_lv4',
+                    name: 'spiritStonesenHeal_lv4',
                     description: '恢复65%最大HP，恢复50点灵力，清除负面状态，+15%防御持续3回合',
                     stageRequired: 10,
                     energyCost: 50,
@@ -2102,7 +2102,7 @@ const gameMetadata = {
             ]
         },
         {
-            id: 'goldenCorePower',
+            id: 'spiritStonesenCorePower',
             name: '金丹之力系',
             realmRequired: 3,
             type: 'special',
@@ -2112,14 +2112,14 @@ const gameMetadata = {
             baseEffectColor: { r: 1, g: 0.9, b: 0.5 },
             levels: [
                 {
-                    name: 'goldenCorePower_lv1',
+                    name: 'spiritStonesenCorePower_lv1',
                     description: '下2次攻击伤害+60%',
                     stageRequired: 1,
                     energyCost: 35,
                     damageBuff: { bonus: 0.6, turns: 2 }
                 },
                 {
-                    name: 'goldenCorePower_lv2',
+                    name: 'spiritStonesenCorePower_lv2',
                     description: '30%防御 + 30%闪避 + 下2次攻击伤害+70%',
                     stageRequired: 4,
                     energyCost: 42,
@@ -2128,7 +2128,7 @@ const gameMetadata = {
                     damageBuff: { bonus: 0.7, turns: 2 }
                 },
                 {
-                    name: 'goldenCorePower_lv3',
+                    name: 'spiritStonesenCorePower_lv3',
                     description: '35%防御 + 35%闪避 + 下3次攻击伤害+80%，恢复30点灵力',
                     stageRequired: 7,
                     energyCost: 50,
@@ -2138,7 +2138,7 @@ const gameMetadata = {
                     energyRecover: 30
                 },
                 {
-                    name: 'goldenCorePower_lv4',
+                    name: 'spiritStonesenCorePower_lv4',
                     description: '40%防御 + 40%闪避 + 下4次攻击伤害+100%，恢复40点灵力，免疫控制',
                     stageRequired: 10,
                     energyCost: 60,
@@ -2673,12 +2673,10 @@ const gameMetadata = {
             autoPlay: false,
             autoBattle: false,
             afkTime: 0,
-            collectedResources: 0,
             autoBattleSettings: {
                 enabled: false,
                 targetColors: ['green', 'yellow', 'red']
             }
-            // ❌ 已移除 autoCollectSettings（v2.0资源系统重构）
         },
         // 默认战斗状态
         defaultBattleState: {
@@ -2690,27 +2688,6 @@ const gameMetadata = {
     // 资源元数据
     resources: {
         types: [
-            {
-                name: "spiritWood",
-                displayName: "灵木",
-                initialAmount: 0,
-                // ❌ 已移除 baseRate（v2.0资源系统重构）
-                description: "基础修仙资源，用于装备精炼"
-            },
-            {
-                name: "blackIron",
-                displayName: "玄铁",
-                initialAmount: 0,
-                // ❌ 已移除 baseRate（v2.0资源系统重构）
-                description: "中级修仙资源，用于装备精炼"
-            },
-            {
-                name: "spiritCrystal",
-                displayName: "灵石",
-                initialAmount: 0,
-                // ❌ 已移除 baseRate（v2.0资源系统重构）
-                description: "高级修仙资源，用于装备精炼"
-            },
             {
                 name: "jade",
                 displayName: "仙玉",
@@ -2938,7 +2915,7 @@ const gameMetadata = {
             "fogNear": 10,
             "fogFar": 50,
             "features": [
-                "golden sand",
+                "spiritStonesen sand",
                 "magical pearls",
                 "sea spirits"
             ],
@@ -2983,14 +2960,14 @@ const gameMetadata = {
             { id: 'daily_kill_normal', type: 'kill', subType: 'normal', name: '妖兽讨伐', descTemplate: '击败{target}只普通妖兽' },
             { id: 'daily_kill_elite', type: 'kill', subType: 'elite', name: '精英猎杀', descTemplate: '击败{target}只精英妖兽' },
             { id: 'daily_kill_boss', type: 'kill_boss', name: 'Boss 挑战', descTemplate: '击败{target}只Boss' },
-            { id: 'daily_collect_wood', type: 'collect', resource: 'spiritWood', name: '灵木收集', descTemplate: '收集{target}个灵木' },
-            { id: 'daily_collect_iron', type: 'collect', resource: 'blackIron', name: '玄铁收集', descTemplate: '收集{target}个玄铁' },
-            { id: 'daily_collect_crystal', type: 'collect', resource: 'spiritCrystal', name: '灵石收集', descTemplate: '收集{target}个灵石' },
+            { id: 'daily_dungeon_stone', type: 'dungeon', dungeonId: 'spirit_stone_mine', name: '灵石矿脉', descTemplate: '通关灵石矿脉副本' },
+            { id: 'daily_dungeon_herb', type: 'dungeon', dungeonId: 'herb_garden', name: '灵草园', descTemplate: '通关灵草园副本' },
+            { id: 'daily_dungeon_iron', type: 'dungeon', dungeonId: 'iron_mine', name: '玄铁矿', descTemplate: '通关玄铁矿副本' },
             { id: 'daily_visit_map', type: 'visit_map', name: '地图探索', descTemplate: '前往指定地图探索' }
         ],
         questsPerDay: 3,
         // 基础数值
-        baseValues: { kill: 10, collect: 12, boss: 1, exp: 60, gold: 30, activity: 10 },
+        baseValues: { kill: 10, collect: 12, boss: 1, exp: 60, spiritStones: 30, activity: 10 },
         // 连续完成奖励
         streakRewards: [
             { days: 3, bonusPercent: 0.5, extraActivity: 30, title: '小有成就' },
@@ -3010,8 +2987,8 @@ const gameMetadata = {
                 name: '武者',
                 maps: ['xianxia-mountain'],
                 bossPool: ['冰霜巨人'],
-                primaryResource: 'spiritWood',
-                secondaryResource: 'blackIron',
+                primaryResource: 'herbs',
+                secondaryResource: 'iron',
                 crystalUnlockStage: 5,
                 companion: '师尊',
                 realmGoal: '突破武者境的极限'
@@ -3020,8 +2997,8 @@ const gameMetadata = {
                 name: '炼气',
                 maps: ['xianxia-mountain', 'xianxia-beach'],
                 bossPool: ['龙王', '海怪'],
-                primaryResource: 'spiritWood',
-                secondaryResource: 'blackIron',
+                primaryResource: 'herbs',
+                secondaryResource: 'iron',
                 crystalUnlockStage: 1,
                 companion: '师兄',
                 realmGoal: '筑基凝真，踏入修仙正途'
@@ -3030,8 +3007,8 @@ const gameMetadata = {
                 name: '筑基',
                 maps: ['xianxia-beach', 'xianxia-plains'],
                 bossPool: ['草原之王'],
-                primaryResource: 'blackIron',
-                secondaryResource: 'spiritWood',
+                primaryResource: 'iron',
+                secondaryResource: 'herbs',
                 crystalUnlockStage: 1,
                 companion: '弟子',
                 realmGoal: '结成金丹，大道可期'
@@ -3040,8 +3017,8 @@ const gameMetadata = {
                 name: '金丹',
                 maps: ['xianxia-canyon', 'xianxia-desert'],
                 bossPool: ['峡谷领主', '沙漠之王'],
-                primaryResource: 'spiritCrystal',
-                secondaryResource: 'blackIron',
+                primaryResource: 'spiritStones',
+                secondaryResource: 'iron',
                 crystalUnlockStage: 1,
                 companion: '长老',
                 realmGoal: '元婴出世，神通无量'
@@ -3050,8 +3027,8 @@ const gameMetadata = {
                 name: '元婴',
                 maps: ['xianxia-lake', 'xianxia-forest', 'xianxia-volcano'],
                 bossPool: ['湖龙王', '妖狐王', '火山领主'],
-                primaryResource: 'spiritCrystal',
-                secondaryResource: 'blackIron',
+                primaryResource: 'spiritStones',
+                secondaryResource: 'iron',
                 crystalUnlockStage: 1,
                 companion: '故友',
                 realmGoal: '化神超脱，打破寒冬枷锁'
@@ -3060,8 +3037,8 @@ const gameMetadata = {
                 name: '化神',
                 maps: ['xianxia-cave', 'xianxia-heaven'],
                 bossPool: ['地下蠕虫', '麒麟', '元始天尊'],
-                primaryResource: 'spiritCrystal',
-                secondaryResource: 'blackIron',
+                primaryResource: 'spiritStones',
+                secondaryResource: 'iron',
                 crystalUnlockStage: 1,
                 companion: '天道之音',
                 realmGoal: '飞升成仙，打破世界枷锁'
@@ -3084,9 +3061,9 @@ const gameMetadata = {
 
         // 资源名称映射
         resourceNames: {
-            spiritWood: '灵木',
-            blackIron: '玄铁',
-            spiritCrystal: '灵石'
+            herbs: '灵草',
+            iron: '玄铁',
+            spiritStones: '灵石'
         },
 
         // 地图名称映射
@@ -3119,11 +3096,11 @@ const gameMetadata = {
                 '精英级别的战斗考验着你的应变能力，你应对自如。',
                 '又一只精英怪物倒下了，你的实力稳步提升。'
             ],
-            collect_wood: [
-                '灵木散发着淡淡的光芒，这些修炼资源对你大有裨益。',
-                '收集灵木的过程中，你感悟到了木属性灵力的奥妙。',
-                '充足的灵木是修炼的基础，你的储备越来越丰富了。',
-                '{companion}教你辨别灵木的品质，收获颇丰。'
+            collect_herbs: [
+                '灵草散发着淡淡的光芒，这些修炼资源对你大有裨益。',
+                '收集灵草的过程中，你感悟到了木属性灵力的奥妙。',
+                '充足的灵草是炼丹的基础，你的储备越来越丰富了。',
+                '{companion}教你辨别灵草的品质，收获颇丰。'
             ],
             collect_iron: [
                 '沉甸甸的玄铁是锻造法宝的上好材料。',
@@ -3131,7 +3108,7 @@ const gameMetadata = {
                 '玄铁中蕴含着大地之力，对修炼大有帮助。',
                 '{companion}指点你寻找玄铁矿脉，效率提升不少。'
             ],
-            collect_crystal: [
+            collect_stones: [
                 '灵石中蕴含着精纯的灵力，{realmName}功法正需要此物。',
                 '每一颗灵石都在你手中闪烁着光芒，前路越来越清晰。',
                 '高纯度的灵石是修仙者的硬通货，这些收获非常可观。',
@@ -3165,7 +3142,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'kill', subType: 'normal', target: 5 }
                 ],
-                rewards: { exp: 80, gold: 40 },
+                rewards: { exp: 80, spiritStones: 40 },
                 rewardItems: [{ type: 'equipment', slot: 'weapon', rarity: 'white' }],
                 storyTrigger: 'realm0_Q1',
                 nextQuest: 1
@@ -3175,9 +3152,9 @@ const gameMetadata = {
                 name: '拜师学艺',
                 description: '在山峰地区收集修炼资源，为入门做准备',
                 objectives: [
-                    { type: 'collect', resource: 'spiritWood', target: 8 }
+                    { type: 'collect', resource: 'herbs', target: 8 }
                 ],
-                rewards: { exp: 100, gold: 60 },
+                rewards: { exp: 100, spiritStones: 60 },
                 storyTrigger: 'realm0_Q2',
                 nextQuest: 2
             },
@@ -3188,7 +3165,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'reach_level', target: 5 }
                 ],
-                rewards: { exp: 130, gold: 80 },
+                rewards: { exp: 130, spiritStones: 80 },
                 rewardItems: [{ type: 'equipment', slot: 'armor', rarity: 'white' }],
                 storyTrigger: 'realm0_Q3',
                 nextQuest: 3
@@ -3200,7 +3177,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'kill', subType: 'normal', target: 15 }
                 ],
-                rewards: { exp: 150, gold: 100, skillPoints: 1 },
+                rewards: { exp: 150, spiritStones: 100, skillPoints: 1 },
                 storyTrigger: 'realm0_Q4',
                 nextQuest: 4
             },
@@ -3211,7 +3188,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'reach_stage', target: 4 }
                 ],
-                rewards: { exp: 180, gold: 120 },
+                rewards: { exp: 180, spiritStones: 120 },
                 storyTrigger: 'realm0_Q5',
                 nextQuest: 5
             },
@@ -3220,10 +3197,10 @@ const gameMetadata = {
                 name: '资源储备',
                 description: '收集大量修炼资源，巩固中期修为',
                 objectives: [
-                    { type: 'collect', resource: 'spiritWood', target: 15 },
-                    { type: 'collect', resource: 'blackIron', target: 10 }
+                    { type: 'collect', resource: 'herbs', target: 15 },
+                    { type: 'collect', resource: 'iron', target: 10 }
                 ],
-                rewards: { exp: 210, gold: 150 },
+                rewards: { exp: 210, spiritStones: 150 },
                 storyTrigger: 'realm0_Q6',
                 nextQuest: 6
             },
@@ -3234,7 +3211,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'reach_stage', target: 7 }
                 ],
-                rewards: { exp: 240, gold: 180, skillPoints: 1 },
+                rewards: { exp: 240, spiritStones: 180, skillPoints: 1 },
                 storyTrigger: 'realm0_Q7',
                 nextQuest: 7
             },
@@ -3245,7 +3222,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'kill', subType: 'normal', target: 30 }
                 ],
-                rewards: { exp: 260, gold: 200 },
+                rewards: { exp: 260, spiritStones: 200 },
                 storyTrigger: 'realm0_Q8',
                 nextQuest: 8
             },
@@ -3256,7 +3233,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'kill', subType: 'elite', target: 5 }
                 ],
-                rewards: { exp: 280, gold: 250 },
+                rewards: { exp: 280, spiritStones: 250 },
                 storyTrigger: 'realm0_Q9',
                 nextQuest: 9
             },
@@ -3267,7 +3244,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'kill_boss', targetBoss: '冰霜巨人' }
                 ],
-                rewards: { exp: 300, gold: 300, skillPoints: 2 },
+                rewards: { exp: 300, spiritStones: 300, skillPoints: 2 },
                 storyTrigger: 'realm0_Q10',
                 isFinalQuest: true
             }
@@ -3280,10 +3257,10 @@ const gameMetadata = {
                 name: '门派任务',
                 description: '完成门派分配的任务，收集资源',
                 objectives: [
-                    { type: 'collect', resource: 'spiritWood', target: 15 },
-                    { type: 'collect', resource: 'blackIron', target: 10 }
+                    { type: 'collect', resource: 'herbs', target: 15 },
+                    { type: 'collect', resource: 'iron', target: 10 }
                 ],
-                rewards: { exp: 150, gold: 100 },
+                rewards: { exp: 150, spiritStones: 100 },
                 storyTrigger: 'realm1_Q1',
                 nextQuest: 1
             },
@@ -3294,7 +3271,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'visit_map', targetMap: 'xianxia-beach' }
                 ],
-                rewards: { exp: 180, gold: 120 },
+                rewards: { exp: 180, spiritStones: 120 },
                 storyTrigger: 'realm1_Q2',
                 nextQuest: 2
             },
@@ -3305,7 +3282,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'reach_level', target: 5 }
                 ],
-                rewards: { exp: 220, gold: 160 },
+                rewards: { exp: 220, spiritStones: 160 },
                 storyTrigger: 'realm1_Q3',
                 nextQuest: 3
             },
@@ -3316,7 +3293,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'kill', subType: 'normal', target: 15 }
                 ],
-                rewards: { exp: 260, gold: 200, skillPoints: 1 },
+                rewards: { exp: 260, spiritStones: 200, skillPoints: 1 },
                 storyTrigger: 'realm1_Q4',
                 nextQuest: 4
             },
@@ -3327,7 +3304,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'kill_boss', targetBoss: '龙王' }
                 ],
-                rewards: { exp: 300, gold: 250 },
+                rewards: { exp: 300, spiritStones: 250 },
                 storyTrigger: 'realm1_Q5',
                 nextQuest: 5
             },
@@ -3336,9 +3313,9 @@ const gameMetadata = {
                 name: '灵石猎人',
                 description: '收集灵石，修炼炼气功法',
                 objectives: [
-                    { type: 'collect', resource: 'spiritCrystal', target: 15 }
+                    { type: 'collect', resource: 'spiritStones', target: 15 }
                 ],
-                rewards: { exp: 350, gold: 280 },
+                rewards: { exp: 350, spiritStones: 280 },
                 storyTrigger: 'realm1_Q6',
                 nextQuest: 6
             },
@@ -3349,7 +3326,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'kill', subType: 'elite', target: 5 }
                 ],
-                rewards: { exp: 400, gold: 320, skillPoints: 2 },
+                rewards: { exp: 400, spiritStones: 320, skillPoints: 2 },
                 storyTrigger: 'realm1_Q7',
                 nextQuest: 7
             },
@@ -3360,7 +3337,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'reach_level', target: 10 }
                 ],
-                rewards: { exp: 450, gold: 370 },
+                rewards: { exp: 450, spiritStones: 370 },
                 storyTrigger: 'realm1_Q8',
                 nextQuest: 8
             },
@@ -3371,7 +3348,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'kill', subType: 'normal', target: 30 }
                 ],
-                rewards: { exp: 500, gold: 410 },
+                rewards: { exp: 500, spiritStones: 410 },
                 storyTrigger: 'realm1_Q9',
                 nextQuest: 9
             },
@@ -3382,7 +3359,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'kill_boss', targetBoss: '海怪' }
                 ],
-                rewards: { exp: 550, gold: 450, skillPoints: 2 },
+                rewards: { exp: 550, spiritStones: 450, skillPoints: 2 },
                 storyTrigger: 'realm1_Q10',
                 isFinalQuest: true
             }
@@ -3395,10 +3372,10 @@ const gameMetadata = {
                 name: '开山立派',
                 description: '在门派中建立自己的势力，收集资源',
                 objectives: [
-                    { type: 'collect', resource: 'spiritWood', target: 20 },
-                    { type: 'collect', resource: 'blackIron', target: 15 }
+                    { type: 'collect', resource: 'herbs', target: 20 },
+                    { type: 'collect', resource: 'iron', target: 15 }
                 ],
-                rewards: { exp: 250, gold: 200 },
+                rewards: { exp: 250, spiritStones: 200 },
                 storyTrigger: 'realm2_Q1',
                 nextQuest: 1
             },
@@ -3409,7 +3386,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'visit_map', targetMap: 'xianxia-plains' }
                 ],
-                rewards: { exp: 300, gold: 240 },
+                rewards: { exp: 300, spiritStones: 240 },
                 storyTrigger: 'realm2_Q2',
                 nextQuest: 2
             },
@@ -3420,7 +3397,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'reach_level', target: 5 }
                 ],
-                rewards: { exp: 350, gold: 290 },
+                rewards: { exp: 350, spiritStones: 290 },
                 storyTrigger: 'realm2_Q3',
                 nextQuest: 3
             },
@@ -3429,9 +3406,9 @@ const gameMetadata = {
                 name: '资源争夺',
                 description: '参与门派资源分配，收集灵石',
                 objectives: [
-                    { type: 'collect', resource: 'spiritCrystal', target: 20 }
+                    { type: 'collect', resource: 'spiritStones', target: 20 }
                 ],
-                rewards: { exp: 400, gold: 340, skillPoints: 1 },
+                rewards: { exp: 400, spiritStones: 340, skillPoints: 1 },
                 storyTrigger: 'realm2_Q4',
                 nextQuest: 4
             },
@@ -3442,7 +3419,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'kill', subType: 'normal', target: 20 }
                 ],
-                rewards: { exp: 450, gold: 390 },
+                rewards: { exp: 450, spiritStones: 390 },
                 storyTrigger: 'realm2_Q5',
                 nextQuest: 5
             },
@@ -3453,7 +3430,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'kill', subType: 'elite', target: 3 }
                 ],
-                rewards: { exp: 500, gold: 430 },
+                rewards: { exp: 500, spiritStones: 430 },
                 storyTrigger: 'realm2_Q6',
                 nextQuest: 6
             },
@@ -3464,7 +3441,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'kill', subType: 'elite', target: 8 }
                 ],
-                rewards: { exp: 560, gold: 480, skillPoints: 2 },
+                rewards: { exp: 560, spiritStones: 480, skillPoints: 2 },
                 storyTrigger: 'realm2_Q7',
                 nextQuest: 7
             },
@@ -3475,7 +3452,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'reach_level', target: 10 }
                 ],
-                rewards: { exp: 620, gold: 530 },
+                rewards: { exp: 620, spiritStones: 530 },
                 storyTrigger: 'realm2_Q8',
                 nextQuest: 8
             },
@@ -3486,7 +3463,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'kill', subType: 'normal', target: 40 }
                 ],
-                rewards: { exp: 700, gold: 610 },
+                rewards: { exp: 700, spiritStones: 610 },
                 storyTrigger: 'realm2_Q9',
                 nextQuest: 9
             },
@@ -3497,7 +3474,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'kill_boss', targetBoss: '草原之王' }
                 ],
-                rewards: { exp: 800, gold: 700, skillPoints: 3 },
+                rewards: { exp: 800, spiritStones: 700, skillPoints: 3 },
                 storyTrigger: 'realm2_Q10',
                 isFinalQuest: true
             }
@@ -3506,112 +3483,112 @@ const gameMetadata = {
         // === 金丹境 (realm 3) ===
         3: [
             {
-                id: 'golden_status',
+                id: 'spiritStonesen_status',
                 name: '门派地位',
                 description: '在门派中获得更高地位，击杀妖兽立功',
                 objectives: [
                     { type: 'kill', subType: 'normal', target: 20 }
                 ],
-                rewards: { exp: 400, gold: 300 },
+                rewards: { exp: 400, spiritStones: 300 },
                 storyTrigger: 'realm3_Q1',
                 nextQuest: 1
             },
             {
-                id: 'golden_canyon',
+                id: 'spiritStonesen_canyon',
                 name: '峡谷探索',
                 description: '前往峡谷地图，探索新的区域',
                 objectives: [
                     { type: 'visit_map', targetMap: 'xianxia-canyon' }
                 ],
-                rewards: { exp: 470, gold: 360 },
+                rewards: { exp: 470, spiritStones: 360 },
                 storyTrigger: 'realm3_Q2',
                 nextQuest: 2
             },
             {
-                id: 'golden_desert',
+                id: 'spiritStonesen_desert',
                 name: '沙漠寻宝',
                 description: '前往沙漠地图，寻找传说中的宝物',
                 objectives: [
                     { type: 'visit_map', targetMap: 'xianxia-desert' }
                 ],
-                rewards: { exp: 540, gold: 410 },
+                rewards: { exp: 540, spiritStones: 410 },
                 storyTrigger: 'realm3_Q3',
                 nextQuest: 3
             },
             {
-                id: 'golden_collect',
+                id: 'spiritStonesen_collect',
                 name: '收集灵石',
                 description: '收集大量灵石，修炼金丹功法',
                 objectives: [
-                    { type: 'collect', resource: 'spiritCrystal', target: 25 }
+                    { type: 'collect', resource: 'spiritStones', target: 25 }
                 ],
-                rewards: { exp: 600, gold: 460, skillPoints: 2 },
+                rewards: { exp: 600, spiritStones: 460, skillPoints: 2 },
                 storyTrigger: 'realm3_Q4',
                 nextQuest: 4
             },
             {
-                id: 'golden_evil',
+                id: 'spiritStonesen_evil',
                 name: '对抗邪修',
                 description: '与邪恶修士战斗，保护正道',
                 objectives: [
                     { type: 'kill', subType: 'elite', target: 5 }
                 ],
-                rewards: { exp: 660, gold: 510 },
+                rewards: { exp: 660, spiritStones: 510 },
                 storyTrigger: 'realm3_Q5',
                 nextQuest: 5
             },
             {
-                id: 'golden_battle',
+                id: 'spiritStonesen_battle',
                 name: '深入战斗',
                 description: '在峡谷和沙漠地区深入战斗',
                 objectives: [
                     { type: 'kill', subType: 'normal', target: 30 }
                 ],
-                rewards: { exp: 720, gold: 560 },
+                rewards: { exp: 720, spiritStones: 560 },
                 storyTrigger: 'realm3_Q6',
                 nextQuest: 6
             },
             {
-                id: 'golden_elite',
+                id: 'spiritStonesen_elite',
                 name: '精英挑战',
                 description: '挑战强大的精英修士',
                 objectives: [
                     { type: 'kill', subType: 'elite', target: 10 }
                 ],
-                rewards: { exp: 780, gold: 620, skillPoints: 2 },
+                rewards: { exp: 780, spiritStones: 620, skillPoints: 2 },
                 storyTrigger: 'realm3_Q7',
                 nextQuest: 7
             },
             {
-                id: 'golden_advance',
+                id: 'spiritStonesen_advance',
                 name: '修炼突破',
                 description: '深入修炼，达到当前阶段的巅峰',
                 objectives: [
                     { type: 'reach_level', target: 10 }
                 ],
-                rewards: { exp: 850, gold: 700 },
+                rewards: { exp: 850, spiritStones: 700 },
                 storyTrigger: 'realm3_Q8',
                 nextQuest: 8
             },
             {
-                id: 'golden_boss',
+                id: 'spiritStonesen_boss',
                 name: '秘境守卫',
                 description: '击败秘境中的守卫BOSS',
                 objectives: [
                     { type: 'kill', subType: 'boss', target: 2 }
                 ],
-                rewards: { exp: 950, gold: 820 },
+                rewards: { exp: 950, spiritStones: 820 },
                 storyTrigger: 'realm3_Q9',
                 nextQuest: 9
             },
             {
-                id: 'golden_peak',
+                id: 'spiritStonesen_peak',
                 name: '金丹巅峰',
                 description: '挑战峡谷或沙漠地图的BOSS峡谷领主',
                 objectives: [
                     { type: 'kill_boss', targetBoss: '峡谷领主' }
                 ],
-                rewards: { exp: 1050, gold: 950, skillPoints: 3 },
+                rewards: { exp: 1050, spiritStones: 950, skillPoints: 3 },
                 storyTrigger: 'realm3_Q10',
                 isFinalQuest: true
             }
@@ -3627,7 +3604,7 @@ const gameMetadata = {
                     { type: 'visit_map', targetMap: 'xianxia-lake' },
                     { type: 'visit_map', targetMap: 'xianxia-forest' }
                 ],
-                rewards: { exp: 600, gold: 400 },
+                rewards: { exp: 600, spiritStones: 400 },
                 storyTrigger: 'realm4_Q1',
                 nextQuest: 1
             },
@@ -3638,7 +3615,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'visit_map', targetMap: 'xianxia-volcano' }
                 ],
-                rewards: { exp: 680, gold: 460 },
+                rewards: { exp: 680, spiritStones: 460 },
                 storyTrigger: 'realm4_Q2',
                 nextQuest: 2
             },
@@ -3647,10 +3624,10 @@ const gameMetadata = {
                 name: '资源储备',
                 description: '收集大量资源，为元婴突破做准备',
                 objectives: [
-                    { type: 'collect', resource: 'spiritCrystal', target: 30 },
-                    { type: 'collect', resource: 'blackIron', target: 25 }
+                    { type: 'collect', resource: 'spiritStones', target: 30 },
+                    { type: 'collect', resource: 'iron', target: 25 }
                 ],
-                rewards: { exp: 750, gold: 520 },
+                rewards: { exp: 750, spiritStones: 520 },
                 storyTrigger: 'realm4_Q3',
                 nextQuest: 3
             },
@@ -3661,7 +3638,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'kill_boss', targetBoss: '湖龙王' }
                 ],
-                rewards: { exp: 830, gold: 580, skillPoints: 2 },
+                rewards: { exp: 830, spiritStones: 580, skillPoints: 2 },
                 storyTrigger: 'realm4_Q4',
                 nextQuest: 4
             },
@@ -3672,7 +3649,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'kill', subType: 'normal', target: 30 }
                 ],
-                rewards: { exp: 900, gold: 650 },
+                rewards: { exp: 900, spiritStones: 650 },
                 storyTrigger: 'realm4_Q5',
                 nextQuest: 5
             },
@@ -3683,7 +3660,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'kill', subType: 'elite', target: 12 }
                 ],
-                rewards: { exp: 970, gold: 720 },
+                rewards: { exp: 970, spiritStones: 720 },
                 storyTrigger: 'realm4_Q6',
                 nextQuest: 6
             },
@@ -3694,7 +3671,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'kill', subType: 'boss', target: 3 }
                 ],
-                rewards: { exp: 1050, gold: 800, skillPoints: 3 },
+                rewards: { exp: 1050, spiritStones: 800, skillPoints: 3 },
                 storyTrigger: 'realm4_Q7',
                 nextQuest: 7
             },
@@ -3705,7 +3682,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'reach_level', target: 10 }
                 ],
-                rewards: { exp: 1120, gold: 880 },
+                rewards: { exp: 1120, spiritStones: 880 },
                 storyTrigger: 'realm4_Q8',
                 nextQuest: 8
             },
@@ -3716,7 +3693,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'kill', subType: 'normal', target: 50 }
                 ],
-                rewards: { exp: 1200, gold: 1050 },
+                rewards: { exp: 1200, spiritStones: 1050 },
                 storyTrigger: 'realm4_Q9',
                 nextQuest: 9
             },
@@ -3727,7 +3704,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'kill_boss', targetBoss: '火山领主' }
                 ],
-                rewards: { exp: 1300, gold: 1200, skillPoints: 3 },
+                rewards: { exp: 1300, spiritStones: 1200, skillPoints: 3 },
                 storyTrigger: 'realm4_Q10',
                 isFinalQuest: true
             }
@@ -3743,7 +3720,7 @@ const gameMetadata = {
                     { type: 'visit_map', targetMap: 'xianxia-cave' },
                     { type: 'visit_map', targetMap: 'xianxia-heaven' }
                 ],
-                rewards: { exp: 800, gold: 500 },
+                rewards: { exp: 800, spiritStones: 500 },
                 storyTrigger: 'realm5_Q1',
                 nextQuest: 1
             },
@@ -3752,9 +3729,9 @@ const gameMetadata = {
                 name: '探索收集',
                 description: '收集大量灵石，修炼化神功法',
                 objectives: [
-                    { type: 'collect', resource: 'spiritCrystal', target: 40 }
+                    { type: 'collect', resource: 'spiritStones', target: 40 }
                 ],
-                rewards: { exp: 880, gold: 570 },
+                rewards: { exp: 880, spiritStones: 570 },
                 storyTrigger: 'realm5_Q2',
                 nextQuest: 2
             },
@@ -3765,7 +3742,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'kill_boss', targetBoss: '地下蠕虫' }
                 ],
-                rewards: { exp: 960, gold: 650 },
+                rewards: { exp: 960, spiritStones: 650 },
                 storyTrigger: 'realm5_Q3',
                 nextQuest: 3
             },
@@ -3776,7 +3753,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'kill', subType: 'elite', target: 5 }
                 ],
-                rewards: { exp: 1050, gold: 740, skillPoints: 2 },
+                rewards: { exp: 1050, spiritStones: 740, skillPoints: 2 },
                 storyTrigger: 'realm5_Q4',
                 nextQuest: 4
             },
@@ -3787,7 +3764,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'kill', subType: 'normal', target: 40 }
                 ],
-                rewards: { exp: 1120, gold: 820 },
+                rewards: { exp: 1120, spiritStones: 820 },
                 storyTrigger: 'realm5_Q5',
                 nextQuest: 5
             },
@@ -3798,7 +3775,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'kill', subType: 'boss', target: 5 }
                 ],
-                rewards: { exp: 1200, gold: 910 },
+                rewards: { exp: 1200, spiritStones: 910 },
                 storyTrigger: 'realm5_Q6',
                 nextQuest: 6
             },
@@ -3809,7 +3786,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'reach_level', target: 10 }
                 ],
-                rewards: { exp: 1280, gold: 1010, skillPoints: 3 },
+                rewards: { exp: 1280, spiritStones: 1010, skillPoints: 3 },
                 storyTrigger: 'realm5_Q7',
                 nextQuest: 7
             },
@@ -3820,7 +3797,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'kill_boss', targetBoss: '麒麟' }
                 ],
-                rewards: { exp: 1400, gold: 1200 },
+                rewards: { exp: 1400, spiritStones: 1200 },
                 storyTrigger: 'realm5_Q8',
                 nextQuest: 8
             },
@@ -3831,7 +3808,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'kill', subType: 'elite', target: 8 }
                 ],
-                rewards: { exp: 1480, gold: 1350 },
+                rewards: { exp: 1480, spiritStones: 1350 },
                 storyTrigger: 'realm5_Q9',
                 nextQuest: 9
             },
@@ -3842,7 +3819,7 @@ const gameMetadata = {
                 objectives: [
                     { type: 'kill_boss', targetBoss: '元始天尊' }
                 ],
-                rewards: { exp: 1550, gold: 1450, skillPoints: 4 },
+                rewards: { exp: 1550, spiritStones: 1450, skillPoints: 4 },
                 storyTrigger: 'realm5_Q10',
                 isFinalQuest: true
             }
@@ -4107,35 +4084,35 @@ const gameMetadata = {
                     { text: '金丹已成，大道可期！你踏入了金丹境！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
-            'golden_sect_status_complete': {
+            'spiritStonesen_sect_status_complete': {
                 chapter: 3,
                 title: '门派地位',
                 pages: [
                     { text: '你在门派中的地位越来越高，获得了更多的资源和支持。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
-            'golden_canyon_complete': {
+            'spiritStonesen_canyon_complete': {
                 chapter: 3,
                 title: '峡谷探索',
                 pages: [
                     { text: '你来到了险峻的峡谷，四周是悬崖峭壁。', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
-            'golden_desert_complete': {
+            'spiritStonesen_desert_complete': {
                 chapter: 3,
                 title: '沙漠寻宝',
                 pages: [
                     { text: '你穿越了茫茫沙漠，发现了传说中的遗迹！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
-            'golden_evil_complete': {
+            'spiritStonesen_evil_complete': {
                 chapter: 3,
                 title: '正道守护',
                 pages: [
                     { text: '你击败了邪恶修士，保护了正道的尊严！', speaker: '旁白', speakerImage: 'assets/characters/character_01_narrator.jpg' }
                 ]
             },
-            'golden_peak_complete': {
+            'spiritStonesen_peak_complete': {
                 chapter: 3,
                 title: '金丹巅峰',
                 pages: [

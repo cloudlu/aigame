@@ -283,7 +283,7 @@ EndlessCultivationGame.prototype.createBattleScene = function(enemyInfo) {
 
                 // 构建工具提示内容（含装备效果和境界加成）
                 playerTooltip.innerHTML = `
-                    <div class="font-bold">${this.persistentState.user?.username || '玩家'}</div>
+                    <div class="font-bold">${this._user?.username || '玩家'}</div>
                     <div>等级: ${this.calculateTotalLevel()}</div>
                     <div>生命值: ${stats.hp}/${stats.maxHp}</div>
                     <div>灵力: ${this.persistentState.player.energy}/${this.persistentState.player.maxEnergy}</div>

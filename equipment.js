@@ -186,18 +186,17 @@ class EquipmentSystem {
         const cost = this.calculateRefineCost(item.refineLevel);
 
         // 检查资源是否足够（v2.0改为灵石+玄铁）
-        const player = this.game.persistentState.player;
         const resources = this.game.persistentState.resources;
 
-        if ((player.spiritStones || 0) < cost.spiritStones ||
+        if ((resources.spiritStones || 0) < cost.spiritStones ||
             (resources.iron || 0) < cost.iron) {
             this.game.addBattleLog(`资源不足！需要 ${cost.spiritStones} 灵石，${cost.iron} 玄铁`);
-            this.game.addBattleLog(`当前：${player.spiritStones || 0} 灵石，${resources.iron || 0} 玄铁`);
+            this.game.addBattleLog(`当前：${resources.spiritStones || 0} 灵石，${resources.iron || 0} 玄铁`);
             return;
         }
 
         // 消耗资源
-        player.spiritStones = (player.spiritStones || 0) - cost.spiritStones;
+        resources.spiritStones = (resources.spiritStones || 0) - cost.spiritStones;
         resources.iron = (resources.iron || 0) - cost.iron;
         
         // 提升精炼等级
@@ -839,10 +838,10 @@ class EquipmentSystem {
 
     // 计算装备刷新所需材料
     calculateRefreshCost(equipment) {
-        // 基础材料需求
-        const baseSpiritWood = 30;
-        const baseBlackIron = 20;
-        const baseSpiritCrystal = 10;
+        // 基础材料需求（v2.0资源系统统一 - 使用新资源）
+        const baseHerbs = 30;           // 原 baseSpiritWood
+        const baseIron = 20;            // 原 baseBlackIron
+        const baseSpiritStones = 10;    // 原 baseSpiritCrystal
 
         // 品质系数
         const rarityMultipliers = {
@@ -863,9 +862,9 @@ class EquipmentSystem {
         const totalMultiplier = rarityMultiplier * refineMultiplier;
 
         return {
-            spiritWood: Math.floor(baseSpiritWood * totalMultiplier),
-            blackIron: Math.floor(baseBlackIron * totalMultiplier),
-            spiritCrystal: Math.floor(baseSpiritCrystal * totalMultiplier)
+            herbs: Math.floor(baseHerbs * totalMultiplier),
+            iron: Math.floor(baseIron * totalMultiplier),
+            spiritStones: Math.floor(baseSpiritStones * totalMultiplier)
         };
     }
 
@@ -881,9 +880,9 @@ class EquipmentSystem {
         const cost = this.calculateRefreshCost(item);
 
         // 检查材料是否足够
-        if (this.game.persistentState.resources.spiritWood < cost.spiritWood ||
-            this.game.persistentState.resources.blackIron < cost.blackIron ||
-            this.game.persistentState.resources.spiritCrystal < cost.spiritCrystal) {
+        if (this.game.persistentState.resources.herbs < cost.herbs ||
+            this.game.persistentState.resources.iron < cost.iron ||
+            this.game.persistentState.resources.spiritStones < cost.spiritStones) {
             this.game.addBattleLog('材料不足，无法刷新装备属性！');
             return false;
         }
@@ -902,9 +901,9 @@ class EquipmentSystem {
         const oldName = item.name;
 
         // 立即消耗材料（刷新即消耗，无论是否接受结果）
-        this.game.persistentState.resources.spiritWood -= cost.spiritWood;
-        this.game.persistentState.resources.blackIron -= cost.blackIron;
-        this.game.persistentState.resources.spiritCrystal -= cost.spiritCrystal;
+        this.game.persistentState.resources.herbs -= cost.herbs;
+        this.game.persistentState.resources.iron -= cost.iron;
+        this.game.persistentState.resources.spiritStones -= cost.spiritStones;
 
         // 根据品质获取属性条数限制
         const statCount = rarityInfo ? rarityInfo.statCount : 1;
@@ -979,9 +978,9 @@ class EquipmentSystem {
 
                     <div class="bg-dark/50 rounded-lg p-4 mb-4">
                         <div class="text-xs text-light/60 mb-2 text-center">
-                            消耗: <span class="text-light/80">${cost.spiritWood}</span> 灵木,
-                            <span class="text-light/80">${cost.blackIron}</span> 玄铁,
-                            <span class="text-light/80">${cost.spiritCrystal}</span> 灵石
+                            消耗: <span class="text-light/80">${cost.herbs}</span> 灵草,
+                            <span class="text-light/80">${cost.iron}</span> 玄铁,
+                            <span class="text-light/80">${cost.spiritStones}</span> 灵石
                         </div>
 
                         <div class="border-t border-glass/30 pt-3 mt-2">

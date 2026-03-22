@@ -781,17 +781,17 @@ EndlessCultivationGame.prototype.enemyDefeated = function() {
         this.addBattleLog(`你击败了${this.transientState.enemy.name}，获得了${expGained}点经验！`);
     }
 
-    // 获得资源
+    // 获得资源（v2.0资源系统统一 - 使用新资源）
     const resourceMultiplier = this.transientState.enemy.resourceMultiplier || 1;
-    const woodGained = Math.floor((this.transientState.enemy.level * 5 + Math.random() * 5) * resourceMultiplier);
+    const herbsGained = Math.floor((this.transientState.enemy.level * 5 + Math.random() * 5) * resourceMultiplier);
     const ironGained = Math.floor((this.transientState.enemy.level * 2 + Math.random() * 3) * resourceMultiplier);
-    const crystalGained = Math.floor((this.transientState.enemy.level * 1 + Math.random() * 2) * resourceMultiplier);
+    const spiritStonesGained = Math.floor((this.transientState.enemy.level * 1 + Math.random() * 2) * resourceMultiplier);
 
-    this.persistentState.resources.spiritWood += woodGained;
-    this.persistentState.resources.blackIron += ironGained;
-    this.persistentState.resources.spiritCrystal += crystalGained;
+    this.persistentState.resources.herbs += herbsGained;
+    this.persistentState.resources.iron += ironGained;
+    this.persistentState.resources.spiritStones += spiritStonesGained;
 
-    this.addBattleLog(`获得了${woodGained}灵木，${ironGained}玄铁，${crystalGained}灵石！`);
+    this.addBattleLog(`获得了${herbsGained}灵草，${ironGained}玄铁，${spiritStonesGained}灵石！`);
 
     // 杀死敌人恢复灵力
     const killEnergyRecovery = 15;

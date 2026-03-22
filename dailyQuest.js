@@ -134,6 +134,10 @@ class DailyQuestSystem {
                 target = Math.max(3, Math.floor(baseValues.collect * stageMult));
                 description = template.descTemplate.replace('{target}', target);
                 break;
+            case 'dungeon':
+                target = 1;
+                description = template.descTemplate;
+                break;
             case 'visit_map': {
                 // 从玩家当前可进入的地图中随机选择一个
                 const availableMaps = this.game.getAvailableMaps();
@@ -156,7 +160,7 @@ class DailyQuestSystem {
                         claimed: false,
                         rewards: {
                             exp: Math.floor(baseValues.exp * stageMult * realmMult),
-                            gold: Math.floor(baseValues.gold * stageMult * realmMult),
+                            spiritStones: Math.floor(baseValues.spiritStones * stageMult * realmMult),
                             activityPoints: Math.floor(baseValues.activity * stageMult * realmMult)
                         }
                     };
@@ -177,7 +181,7 @@ class DailyQuestSystem {
                         claimed: false,
                         rewards: {
                             exp: Math.floor(baseValues.exp * stageMult * realmMult),
-                            gold: Math.floor(baseValues.gold * stageMult * realmMult),
+                            spiritStones: Math.floor(baseValues.spiritStones * stageMult * realmMult),
                             activityPoints: Math.floor(baseValues.activity * stageMult * realmMult)
                         }
                     };
@@ -186,7 +190,7 @@ class DailyQuestSystem {
         }
 
         const expReward = Math.floor(baseValues.exp * stageMult * realmMult);
-        const goldReward = Math.floor(baseValues.gold * stageMult * realmMult);
+        const spiritStonesReward = Math.floor(baseValues.spiritStones * stageMult * realmMult);
         const activityReward = Math.floor(baseValues.activity * stageMult * realmMult);
 
         return {
@@ -194,6 +198,7 @@ class DailyQuestSystem {
             type: template.type,
             subType: template.subType || null,
             resource: template.resource || null,
+            dungeonId: template.dungeonId || null,
             name: template.name,
             description,
             target,
@@ -202,7 +207,7 @@ class DailyQuestSystem {
             claimed: false,
             rewards: {
                 exp: expReward,
-                gold: goldReward,
+                spiritStones: spiritStonesReward,
                 activityPoints: activityReward
             }
         };
@@ -293,22 +298,22 @@ class DailyQuestSystem {
         const bonusMult = streakConfig ? streakConfig.bonusPercent : 0;
 
         const expReward = Math.floor(quest.rewards.exp * (1 + bonusMult));
-        const goldReward = Math.floor(quest.rewards.gold * (1 + bonusMult));
+        const spiritStonesReward = Math.floor(quest.rewards.spiritStones * (1 + bonusMult));
         const activityReward = quest.rewards.activityPoints;
 
         if (expReward) this.game.persistentState.player.exp += expReward;
-        if (goldReward) this.game.persistentState.resources.gold = (this.game.persistentState.resources.gold || 0) + goldReward;
+        if (spiritStonesReward) this.game.persistentState.resources.spiritStones = (this.game.persistentState.resources.spiritStones || 0) + spiritStonesReward;
         dq.activityPoints = (dq.activityPoints || 0) + activityReward;
         dq.totalCompleted = (dq.totalCompleted || 0) + 1;
         quest.claimed = true;
 
-        let rewardText = `获得 经验+${expReward}，灵石+${goldReward}，活跃度+${activityReward}`;
+        let rewardText = `获得 经验+${expReward}，灵石+${spiritStonesReward}，活跃度+${activityReward}`;
         if (bonusMult > 0) {
             rewardText += ` (${Math.floor(bonusMult * 100)}%连续加成)`;
         }
 
         this.game.addBattleLog(`✅ 领取奖励：${rewardText}`);
-        this.showDailyRewardPopup(quest, expReward, goldReward, activityReward, bonusMult);
+        this.showDailyRewardPopup(quest, expReward, spiritStonesReward, activityReward, bonusMult);
 
         this.game.updateUI();
         this.game.checkLevelUp();
@@ -555,7 +560,7 @@ class DailyQuestSystem {
     /**
      * 显示每日任务奖励弹窗
      */
-    showDailyRewardPopup(quest, exp, gold, activity, bonusMult) {
+    showDailyRewardPopup(quest, exp, spiritStones, activity, bonusMult) {
         const popup = document.getElementById('daily-reward-popup');
         if (!popup) return;
 
@@ -565,7 +570,7 @@ class DailyQuestSystem {
         if (titleEl) titleEl.textContent = `✅ ${quest.name} 完成！`;
         if (rewardsEl) {
             let html = `<div class="flex items-center gap-2 text-blue-300"><i class="fa fa-star"></i> 经验 +${exp}</div>`;
-            html += `<div class="flex items-center gap-2 text-yellow-300"><i class="fa fa-coins"></i> 灵石 +${gold}</div>`;
+            html += `<div class="flex items-center gap-2 text-yellow-300"><i class="fa fa-coins"></i> 灵石 +${spiritStones}</div>`;
             html += `<div class="flex items-center gap-2 text-green-300"><i class="fa fa-bolt"></i> 活跃度 +${activity}</div>`;
             if (bonusMult > 0) {
                 html += `<div class="flex items-center gap-2 text-orange-300"><i class="fa fa-fire"></i> 连续加成 +${Math.floor(bonusMult * 100)}%</div>`;
@@ -643,14 +648,14 @@ class DailyQuestSystem {
                     <p class="text-xs text-white/50 mb-2">${q.description}</p>
                     <div class="flex items-center gap-3 mb-2">
                         <div class="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                            <div class="h-full ${isClaimed ? 'bg-green-500' : isComplete ? 'bg-green-500' : 'bg-gold'} rounded-full transition-all" style="width: ${progressPercent}%"></div>
+                            <div class="h-full ${isClaimed ? 'bg-green-500' : isComplete ? 'bg-green-500' : 'bg-spiritStones'} rounded-full transition-all" style="width: ${progressPercent}%"></div>
                         </div>
                         <span class="text-xs text-white/60">${progressText}</span>
                     </div>
                     <!-- 奖励预览 -->
                     <div class="flex items-center gap-3 mb-2 text-xs text-white/50">
                         <span><i class="fa fa-star text-yellow-400"></i> ${q.rewards.exp}经验</span>
-                        <span><i class="fa fa-coins text-gold"></i> ${q.rewards.gold}灵石</span>
+                        <span><i class="fa fa-coins text-spiritStones"></i> ${q.rewards.spiritStones}灵石</span>
                         <span><i class="fa fa-fire text-orange-400"></i> ${q.rewards.activityPoints}活跃度</span>
                         ${currentStreakConfig ? `<span class="text-green-400">(+${Math.floor(currentStreakConfig.bonusPercent * 100)}%加成)</span>` : ''}
                     </div>
@@ -664,7 +669,7 @@ class DailyQuestSystem {
 
         let headerHtml = `
             <div class="flex items-center justify-between mb-3">
-                <div class="text-xs text-gold/70">${stageDisplay} · 今日任务</div>
+                <div class="text-xs text-spiritStones/70">${stageDisplay} · 今日任务</div>
                 <div class="text-xs text-white/40">${dq.lastRefreshDate || '未刷新'}</div>
             </div>
 
@@ -694,7 +699,7 @@ class DailyQuestSystem {
                 </div>
                 ${nextStreakConfig ? `
                     <div class="mt-1 pt-2 border-t border-white/10">
-                        <div class="text-xs text-gold/70">下一个里程碑: ${nextStreakConfig.title} (${nextStreakConfig.days}天) - 奖励+${Math.floor(nextStreakConfig.bonusPercent * 100)}%</div>
+                        <div class="text-xs text-spiritStones/70">下一个里程碑: ${nextStreakConfig.title} (${nextStreakConfig.days}天) - 奖励+${Math.floor(nextStreakConfig.bonusPercent * 100)}%</div>
                         <div class="h-1.5 bg-white/10 rounded-full mt-1 overflow-hidden">
                             <div class="h-full bg-orange-400 rounded-full transition-all" style="width: ${Math.min(100, (streakDays / nextStreakConfig.days) * 100)}%"></div>
                         </div>
@@ -773,13 +778,13 @@ class DailyQuestSystem {
 
         const deactivate = (btn) => {
             if (btn) {
-                btn.classList.remove('text-gold', 'border-b-2', 'border-gold', 'font-medium');
+                btn.classList.remove('text-spiritStones', 'border-b-2', 'border-spiritStones', 'font-medium');
                 btn.classList.add('text-white/50');
             }
         };
         const activate = (btn) => {
             if (btn) {
-                btn.classList.add('text-gold', 'border-b-2', 'border-gold', 'font-medium');
+                btn.classList.add('text-spiritStones', 'border-b-2', 'border-spiritStones', 'font-medium');
                 btn.classList.remove('text-white/50');
             }
         };

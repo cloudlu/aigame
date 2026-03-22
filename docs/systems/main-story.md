@@ -4,8 +4,8 @@
 
 本文档详细记录了《无尽修仙》游戏的主线剧情、主线任务模板系统、每日任务系统的设计与实现。
 
-**最后更新**: 2026-03-14
-**版本**: v2.0
+**最后更新**: 2026-03-22
+**版本**: v2.1
 **维护者**: 游戏设计团队
 
 ---
@@ -85,9 +85,9 @@
 | `kill_normal` | 击杀普通怪物 | `baseKill × stageMult × (1 + level × 0.1)` |
 | `kill_elite` | 击杀精英怪物 | `ceil(baseKill × stageMult × 0.6 × (1 + level × 0.1))` |
 | `kill_boss` | 击杀 Boss | 固定 1 |
-| `collect_wood` | 收集灵木 | `baseCollect × stageMult × (1 + level × 0.1)` |
+| `collect_herbs` | 收集灵草 | `baseCollect × stageMult × (1 + level × 0.1)` |
 | `collect_iron` | 收集玄铁 | `baseCollect × stageMult × (1 + level × 0.1)` |
-| `collect_crystal` | 收集灵石 | `baseCollect × stageMult × 0.8 × (1 + level × 0.1)` |
+| `collect_spiritStones` | 收集灵石 | `baseCollect × stageMult × 0.8 × (1 + level × 0.1)` |
 | `visit_map` | 前往指定地图 | 固定 1 |
 | `reach_level` | 达到目标等级 | 固定 1 |
 
@@ -101,17 +101,17 @@ stageMultiplier: [1.0, 1.3, 1.6, 2.0, 2.4, 2.8, 3.3, 3.8, 4.3, 5.0]
 realmMultiplier: [1.0, 1.5, 2.2, 3.2, 4.5, 6.5]
 
 // 基础数值
-baseKill: 5, baseCollect: 8, baseExp: 80, baseGold: 40
+baseKill: 5, baseCollect: 8, baseExp: 80, baseSpiritStones: 40
 
 // 击杀目标 = baseKill × stageMult × (1 + level × 0.1)
 // 经验奖励 = baseExp × stageMult × realmMult × (1 + level × 0.05)
-// 灵石奖励 = baseGold × stageMult × realmMult × (1 + level × 0.05)
+// 灵石奖励 = baseSpiritStones × stageMult × realmMult × (1 + level × 0.05)
 ```
 
 ### 武者境缩放示例
 
-| Stage | Level | killTarget | collectTarget | expReward | goldReward |
-|-------|-------|-----------|---------------|-----------|-----------|
+| Stage | Level | killTarget | collectTarget | expReward | spiritStonesReward |
+|-------|-------|-----------|---------------|-----------|-------------------|
 | 1 | 1 | 5 | 8 | 80 | 40 |
 | 1 | 10 | 10 | 16 | 120 | 60 |
 | 5 | 1 | 12 | 19 | 192 | 96 |
@@ -136,9 +136,9 @@ baseKill: 5, baseCollect: 8, baseExp: 80, baseGold: 40
 
 | 境界 | 地图 | Boss 池 | 主要资源 | 伴随角色 |
 |------|------|---------|---------|---------|
-| 武者 | 仙侠山峰 | 冰霜巨人 | 灵木 + 玄铁 | 师尊 |
-| 炼气 | 仙侠山峰 + 仙侠海滩 | 龙王、海怪 | 灵木 + 玄铁 | 师兄 |
-| 筑基 | 仙侠海滩 + 仙侠平原 | 草原之王 | 玄铁 + 灵木 | 弟子 |
+| 武者 | 仙侠山峰 | 冰霜巨人 | 灵草 + 玄铁 | 师尊 |
+| 炼气 | 仙侠山峰 + 仙侠海滩 | 龙王、海怪 | 灵草 + 玄铁 | 师兄 |
+| 筑基 | 仙侠海滩 + 仙侠平原 | 草原之王 | 玄铁 + 灵草 | 弟子 |
 | 金丹 | 仙侠峡谷 + 仙侠沙漠 | 峡谷领主、沙漠之王 | 灵石 + 玄铁 | 长老 |
 | 元婴 | 仙侠湖泊 + 仙侠森林 + 仙侠火山 | 湖龙王、妖狐王、火山领主 | 灵石 + 玄铁 | 老祖 |
 | 化神 | 仙侠洞穴 + 仙侠仙境 | 元始天尊 | 灵石 + 玄铁 | 天道 |
@@ -167,15 +167,15 @@ baseKill: 5, baseCollect: 8, baseExp: 80, baseGold: 40
 | `daily_kill_normal` | 妖兽讨伐 | 击杀普通怪物 | `max(3, baseKill × stageMult)` |
 | `daily_kill_elite` | 精英猎杀 | 击杀精英怪物 | `max(3, baseKill × stageMult)` |
 | `daily_kill_boss` | Boss 挑战 | 击杀 Boss | `max(1, baseBoss × stageMult)` |
-| `daily_collect_wood` | 灵木收集 | 收集灵木 | `max(3, baseCollect × stageMult)` |
+| `daily_collect_herbs` | 灵草收集 | 收集灵草 | `max(3, baseCollect × stageMult)` |
 | `daily_collect_iron` | 玄铁收集 | 收集玄铁 | `max(3, baseCollect × stageMult)` |
-| `daily_collect_crystal` | 灵石收集 | 收集灵石 | `max(3, baseCollect × stageMult)` |
+| `daily_collect_stones` | 灵石收集 | 收集灵石 | `max(3, baseCollect × stageMult)` |
 | `daily_visit_map` | 地图探索 | 前往地图 | 固定 1 |
 
 ### 每日任务基础数值
 
 ```
-kill: 10, collect: 12, boss: 1, exp: 60, gold: 30, activity: 10
+kill: 10, collect: 12, boss: 1, exp: 60, spiritStones: 30, activity: 10
 ```
 
 ### 每日任务缩放
@@ -184,7 +184,7 @@ kill: 10, collect: 12, boss: 1, exp: 60, gold: 30, activity: 10
 // 复用主线模板的 stageMultiplier 和 realmMultiplier
 target = baseValue × stageMult
 expReward = 60 × stageMult × realmMult
-goldReward = 30 × stageMult × realmMult
+spiritStonesReward = 30 × stageMult × realmMult
 activityPoints = 10 × stageMult × realmMult
 ```
 

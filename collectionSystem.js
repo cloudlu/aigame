@@ -164,17 +164,18 @@ class CollectionSystem {
             const allUnlocked = cat.enemyKeys.every(key => collection.enemies.includes(key));
             if (!allUnlocked) continue;
 
-            // 发放奖励：经验丹×5(500经验) + 灵木×100
+            // 发放奖励：经验+2500，灵草+50，灵石+100
             collection.rewardedCategories.push(rewardKey);
-            this.game.addBattleLog(`[图鉴] ${cat.name} 全解锁奖励：经验+2500，灵木+100！`);
+            this.game.addBattleLog(`[图鉴] ${cat.name} 全解锁奖励：经验+2500，灵草+50，灵石+100！`);
 
             // 增加经验
             if (this.game.persistentState.player) {
                 this.game.persistentState.player.exp = (this.game.persistentState.player.exp || 0) + 2500;
             }
-            // 增加资源
+            // 增加资源（v2.0资源系统统一 - 删除wood，改为有用资源）
             if (this.game.persistentState.resources) {
-                this.game.persistentState.resources.wood = (this.game.persistentState.resources.wood || 0) + 100;
+                this.game.persistentState.resources.herbs = (this.game.persistentState.resources.herbs || 0) + 50;
+                this.game.persistentState.resources.spiritStones = (this.game.persistentState.resources.spiritStones || 0) + 100;
             }
         }
     }

@@ -5,6 +5,71 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 并且本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.21] - 2026-03-22
+
+### 修复
+- 🔐 **修复登录死循环问题** - 清理token后导致的 login ↔ index 循环跳转
+  - 问题原因：login.html 只检查 localStorage 有无 token，不验证有效性
+  - 解决方案：跳转前先调用 `/api/verify-token` 验证 token
+  - 新增 `server.js` - `/api/verify-token` 接口
+  - 修改 `login.html` - 验证 token 有效性后再跳转
+
+### 新增
+- 🔐 **单点登录系统** - 每个用户只能有一个有效token
+  - 登录时自动删除该用户的所有旧token
+  - 防止token无限累积（从29个 → 1个）
+  - 提升安全性，避免多设备同时登录
+
+### 优化
+- 🧹 **Token清理** - 清理tokens.json冗余数据
+  - 删除萌萌的28个旧token，只保留最新1个
+  - 防止tokens.json无限增长
+
+### 文档更新
+- 📚 **文档同步完成** - 确保所有文档与v2.0代码一致
+  - 更新6个核心文档（资源系统、图鉴、任务、地图、UI设计）
+  - 所有文档添加"最后更新"时间戳
+  - CHANGELOG记录完整修改历史
+
+### 技术改进
+- 修改 `server.js` - 登录时删除旧token（单点登录）+ 新增token验证接口
+- 修改 `login.html` - 跳转前验证token有效性
+- 修改 `data/tokens.json` - 清理冗余token数据
+
+## [1.20] - 2026-03-22
+
+### 新增
+- 📝 **资源系统统一完成** - v2.0 资源系统重构
+  - 删除冗余资源字段：`gold` → `spiritStones`，`wood` 已删除
+  - 统一货币系统：所有奖励使用 `spiritStones`（灵石）
+  - 图鉴奖励更新：`wood+100` → `herbs+50, spiritStones+100`
+
+### 优化
+- 🧹 **删除重复代码** - 移除 `autoPlay` 相关代码（60+ 行）
+  - 删除 `toggleAutoPlay()`、`startAutoPlay()`、`stopAutoPlay()` 方法
+  - 删除 `timers.autoPlayTimer` 和 `autoCollectTimer`
+  - 保留 `autoBattleSettings` 作为唯一自动战斗控制
+- 💾 **存档数据清理** - 删除冗余字段，合并资源数据
+  - 删除 `resources.gold`、`resources.wood` 字段
+  - 删除 `settings.autoPlay`、`settings.autoBattle` 字段
+  - 合并 `gold` 到 `spiritStones`
+  - 更新三个玩家存档（萌萌、贝贝、亮亮）
+
+### 文档更新
+- 📚 **同步所有文档** - 确保文档与代码一致
+  - 更新 `resource-system-redesign.md`（资源统一说明）
+  - 更新 `collection-system.md`（图鉴奖励）
+  - 更新 `main-story.md`（任务模板字段名）
+  - 更新 `map-system.md`、`design.md`（UI资源显示）
+  - 所有文档添加"最后更新"时间戳
+
+### 技术改进
+- 修改 `game-metadata.js` - 全局替换 `gold` → `spiritStones`
+- 修改 `dailyQuest.js` - 奖励字段重命名
+- 修改 `mainQuest.js` - 奖励字段重命名
+- 修改 `collectionSystem.js` - 图鉴奖励改为有用的资源
+- 修改 `game.js` - 删除无用资源初始化，删除 `autoPlay` 相关方法
+
 ## [1.19] - 2026-03-21
 
 ### 新增

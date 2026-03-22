@@ -121,10 +121,23 @@ app.post('/api/login', async (req, res) => {
         if (!passwordMatch) {
             return res.status(401).json({ error: 'Invalid password' });
         }
-        
-        // 生成token
+
+        // 单点登录：删除该用户的所有旧token
+        console.log(`[登录] 清理 ${username} 的旧token...`);
+        let cleanedCount = 0;
+        for (const [oldToken, tokenData] of users.entries()) {
+            if (tokenData.username === username) {
+                users.delete(oldToken);
+                cleanedCount++;
+            }
+        }
+        if (cleanedCount > 0) {
+            console.log(`[登录] 已清理 ${cleanedCount} 个旧token`);
+        }
+
+        // 生成新token
         const token = generateToken();
-        
+
         // 存储token
         users.set(token, {
             username: username,
@@ -134,8 +147,8 @@ app.post('/api/login', async (req, res) => {
         });
         saveTokens(); // 持久化token
 
-        res.json({ 
-            success: true, 
+        res.json({
+            success: true,
             token: token,
             user: {
                 username: username,
@@ -238,6 +251,14 @@ function verifyToken(req, res, next) {
     req.user = user;
     next();
 }
+
+// Token 验证接口（用于前端验证 token 是否有效）
+app.get('/api/verify-token', verifyToken, (req, res) => {
+    res.json({
+        success: true,
+        user: req.user
+    });
+});
 
 // 保存游戏状态
 app.post('/api/save', verifyToken, (req, res) => {
