@@ -139,27 +139,25 @@ class EquipmentSystem {
         return stats;
     }
     
-    // 计算装备强化所需资源（v2.0资源系统重构）
-    // 消耗灵石 + 玄铁，配合资源副本产出
+    // 计算装备强化所需资源（v2.1 优化消耗曲线）
+    // 目标：简单副本约160天/件，普通副本约53天/件，困难副本约16天/件
     calculateRefineCost(refineLevel) {
-        // 新的强化消耗公式（基于副本产出）
-        // +1: 1,000灵石 + 50玄铁
-        // +2: 2,500灵石 + 100玄铁
-        // +3: 5,000灵石 + 200玄铁
-        // ...
-        // +10: 500,000灵石 + 20,000玄铁
-
-        const spiritStonesBase = 1000;  // 灵石基数
-        const ironBase = 50;            // 玄铁基数
-
-        // 指数增长（配合副本产出）
-        const spiritStonesMultiplier = Math.pow(2.0, refineLevel);
-        const ironMultiplier = Math.pow(1.8, refineLevel);
-
-        return {
-            spiritStones: Math.floor(spiritStonesBase * spiritStonesMultiplier),
-            iron: Math.floor(ironBase * ironMultiplier)
+        // 新的强化消耗表（手动设计曲线，避免指数爆炸）
+        // 总计：478,000灵石，9,060玄铁
+        const costTable = {
+            0: { spiritStones: 500, iron: 30 },      // +0→+1
+            1: { spiritStones: 1500, iron: 60 },     // +1→+2
+            2: { spiritStones: 3000, iron: 120 },    // +2→+3
+            3: { spiritStones: 6000, iron: 200 },    // +3→+4
+            4: { spiritStones: 12000, iron: 350 },   // +4→+5
+            5: { spiritStones: 25000, iron: 600 },   // +5→+6
+            6: { spiritStones: 50000, iron: 1000 },  // +6→+7
+            7: { spiritStones: 80000, iron: 1500 },  // +7→+8
+            8: { spiritStones: 120000, iron: 2200 }, // +8→+9
+            9: { spiritStones: 180000, iron: 3000 }  // +9→+10
         };
+
+        return costTable[refineLevel] || { spiritStones: 0, iron: 0 };
     }
     
     // 精炼装备

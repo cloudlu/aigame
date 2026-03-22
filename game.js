@@ -7224,13 +7224,15 @@ class EndlessCultivationGame {
         const iconMap = {
             spirit_stone_mine: 'fa-gem',
             herb_garden: 'fa-leaf',
-            iron_mine: 'fa-gem'
+            iron_mine: 'fa-gem',
+            exp_dungeon: 'fa-brain'
         };
 
         const colorMap = {
             spirit_stone_mine: 'text-blue-400',
             herb_garden: 'text-green-400',
-            iron_mine: 'text-orange-400'
+            iron_mine: 'text-orange-400',
+            exp_dungeon: 'text-purple-400'
         };
 
         card.innerHTML = `

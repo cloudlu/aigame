@@ -24,7 +24,8 @@ class DungeonSystem {
         this.dungeonMusic = {
             spirit_stone_mine: null,
             herb_garden: null,
-            iron_mine: null
+            iron_mine: null,
+            exp_dungeon: null
         };
 
         this.initDungeonMusic();
@@ -48,6 +49,11 @@ class DungeonSystem {
         this.dungeonMusic.iron_mine = new Audio('assets/audio/dungeon_lava.wav');
         this.dungeonMusic.iron_mine.loop = true;
         this.dungeonMusic.iron_mine.volume = 0.5;
+
+        // 悟道秘境 - 仙境音效
+        this.dungeonMusic.exp_dungeon = new Audio('assets/audio/dungeon_mystical.wav');
+        this.dungeonMusic.exp_dungeon.loop = true;
+        this.dungeonMusic.exp_dungeon.volume = 0.5;
     }
 
     /**
@@ -503,7 +509,8 @@ class DungeonSystem {
         const sceneMap = {
             spirit_stone_mine: BATTLE_SCENES.LAVA_HELL,      // 矿洞用熔岩场景
             herb_garden: BATTLE_SCENES.LAKE_SIDE,            // 灵草园用湖畔场景
-            iron_mine: BATTLE_SCENES.LAVA_HELL               // 铁矿用熔岩场景
+            iron_mine: BATTLE_SCENES.LAVA_HELL,              // 铁矿用熔岩场景
+            exp_dungeon: BATTLE_SCENES.IMMORTAL_PEAK         // 悟道秘境用仙峰场景
         };
 
         const sceneType = sceneMap[this.currentDungeon] || BATTLE_SCENES.IMMORTAL_PEAK;

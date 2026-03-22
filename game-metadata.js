@@ -2963,6 +2963,7 @@ const gameMetadata = {
             { id: 'daily_dungeon_stone', type: 'dungeon', dungeonId: 'spirit_stone_mine', name: '灵石矿脉', descTemplate: '通关灵石矿脉副本' },
             { id: 'daily_dungeon_herb', type: 'dungeon', dungeonId: 'herb_garden', name: '灵草园', descTemplate: '通关灵草园副本' },
             { id: 'daily_dungeon_iron', type: 'dungeon', dungeonId: 'iron_mine', name: '玄铁矿', descTemplate: '通关玄铁矿副本' },
+            { id: 'daily_dungeon_exp', type: 'dungeon', dungeonId: 'exp_dungeon', name: '悟道秘境', descTemplate: '通关悟道秘境副本' },
             { id: 'daily_visit_map', type: 'visit_map', name: '地图探索', descTemplate: '前往指定地图探索' }
         ],
         questsPerDay: 3,
@@ -3922,6 +3923,40 @@ const gameMetadata = {
             },
             enemy_types: ['铁甲兽', '矿石魔', '熔岩怪'],
             boss_type: '熔岩巨人'
+        },
+        // ========== 经验副本 ==========
+        exp_dungeon: {
+            id: 'exp_dungeon',
+            name: '悟道秘境',
+            description: '在此秘境中战斗可获得大量修炼经验',
+            icon: 'fa-brain',
+            scene: 'immortal_peak',
+            type: 'exp',
+            difficulties: {
+                easy: {
+                    name: '简单',
+                    enemies: 3,
+                    reward: { exp: 8000 },
+                    first_clear_bonus: { exp: 4000, skillPoints: 1 },
+                    level_req: 1
+                },
+                medium: {
+                    name: '普通',
+                    enemies: 5,
+                    reward: { exp: 25000 },
+                    first_clear_bonus: { exp: 12500, skillPoints: 2 },
+                    level_req: 15
+                },
+                hard: {
+                    name: '困难',
+                    enemies: 7,
+                    reward: { exp: 60000 },
+                    first_clear_bonus: { exp: 30000, skillPoints: 3 },
+                    level_req: 30
+                }
+            },
+            enemy_types: ['心魔', '幻影', '道障', '迷惘之灵'],
+            boss_type: '心魔化身'
         }
     },
 
