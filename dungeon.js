@@ -645,6 +645,9 @@ class DungeonSystem {
         // 标记为已通关
         this.markDungeonCleared(this.currentDungeon, this.currentDifficulty);
 
+        // 触发每日任务进度
+        this.game.dailyQuestSystem.trackDailyQuestProgress('dungeon_completed', { dungeonId: this.currentDungeon });
+
         // ✅ 清理副本敌人数据
         this.game.transientState.enemy = null;
 
@@ -711,6 +714,9 @@ class DungeonSystem {
         // 发放奖励
         this.giveReward(totalReward);
 
+        // 触发每日任务进度
+        this.game.dailyQuestSystem.trackDailyQuestProgress('dungeon_completed', { dungeonId });
+
         // 显示扫荡结果
         this.game.showNotification(`一键扫荡成功！消耗${remainingAttempts}次`, 'success');
         this.game.showDungeonComplete(totalReward);
@@ -740,6 +746,7 @@ class DungeonSystem {
 
         this.game.saveGameState();
         this.game.updateUI();
+        this.game.checkLevelUp();
     }
 
     /**

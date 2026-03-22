@@ -1207,9 +1207,9 @@ EndlessCultivationGame.prototype.clearBattleStates = function() {
         this.transientState.enemy.debuffs = [];  // 持续减益
     }
 
-    // ✅ 移除防御特效（护盾等）
-    if (typeof this.removeDefenseEffect === 'function') {
-        this.removeDefenseEffect();
+    // ✅ 移除所有防御相关特效（护盾圆环和防御球体）
+    if (typeof this.removeAllDefenseEffects === 'function') {
+        this.removeAllDefenseEffects();
     }
 };
 

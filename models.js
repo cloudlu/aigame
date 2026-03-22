@@ -413,16 +413,24 @@ EndlessCultivationGame.prototype.updateHealthBars = function() {
 
     // ✅ 战斗场景：更新当前选中敌人的血条
     if (isBattleScene && this.transientState.enemy && this.transientState.enemy.name) {
-        // 如果敌人已被击败，跳过血条更新
-        if (this.battle3D && this.battle3D.enemyDefeated) {
-            return;
-        }
-
         // 获取战斗场景敌人缩放倍率
         const bScale = String(this.transientState.enemy.name).startsWith('BOSS') ? SIZES.ENEMY_SCALE_BOSS :
                       (String(this.transientState.enemy.name).startsWith('精英') ? SIZES.ENEMY_SCALE_ELITE : SIZES.ENEMY_SCALE_NORMAL);
 
+        // ✅ 如果敌人已被击败，隐藏血条和蓝条
+        if (this.battle3D && this.battle3D.enemyDefeated) {
+            if (this.battle3D.enemyHealthBar) {
+                this.battle3D.enemyHealthBar.isVisible = false;
+            }
+            if (this.battle3D.enemyEnergyBar) {
+                this.battle3D.enemyEnergyBar.isVisible = false;
+            }
+            return;
+        }
+
         if (this.battle3D.enemyHealthBar) {
+            // 确保血条可见
+            this.battle3D.enemyHealthBar.isVisible = true;
             // 检查HP是否有效（注意：hp=0是有效值，只有null/undefined才无效）
             if (this.transientState.enemy.hp === null || this.transientState.enemy.hp === undefined ||
                 this.transientState.enemy.maxHp === null || this.transientState.enemy.maxHp === undefined) {
@@ -440,22 +448,27 @@ EndlessCultivationGame.prototype.updateHealthBars = function() {
         }
 
         if (this.battle3D.enemyEnergyBar) {
+            // 确保蓝条可见
+            this.battle3D.enemyEnergyBar.isVisible = true;
             const enemyEnergyPercent = Math.max(0, this.transientState.enemy.energy / (this.transientState.enemy.maxEnergy || 100));
             this.battle3D.enemyEnergyBar.scaling.x = enemyEnergyPercent / bScale;
             this.battle3D.enemyEnergyBar.position.x = 0;
         }
     }
 
-    // ✅ 更新护盾特效显示/隐藏
-    if (this.persistentState.player.shieldValue && this.persistentState.player.shieldValue > 0) {
+    // ✅ 更新护盾特效显示/隐藏（仅与护盾值关联）
+    // 注意：defenseEffect（黄色球体）由防御状态单独管理，在受击消耗时移除
+    const hasShield = this.persistentState.player.shieldValue && this.persistentState.player.shieldValue > 0;
+
+    if (hasShield) {
         // 有护盾值，确保护盾特效存在
         if (!this.battle3D.defenseShield && typeof this.createDefenseEffect === 'function') {
             this.createDefenseEffect();
         }
     } else {
-        // 没有护盾值，移除护盾特效
-        if (this.battle3D.defenseShield && typeof this.removeDefenseEffect === 'function') {
-            this.removeDefenseEffect();
+        // 没有护盾值，只移除护盾特效（不影响防御状态特效）
+        if (this.battle3D.defenseShield && typeof this.removeShieldEffect === 'function') {
+            this.removeShieldEffect();
         }
     }
 };

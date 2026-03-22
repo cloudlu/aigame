@@ -1100,26 +1100,8 @@ class EndlessCultivationGame {
                 vipBadgeElement.style.display = vipLevel > 0 ? 'flex' : 'none';
             }
             // 更新突破按钮状态
-            const breakthroughBtnElement = document.getElementById('breakthrough-btn');
-            if (breakthroughBtnElement && this.metadata.realmConfig) {
-                const realm = this.persistentState.player.realm;
-                const currentStageConfig = this.metadata.realmConfig[realm.currentRealm].stages[realm.currentStage - 1];
-                const requiredStones = currentStageConfig.breakthroughStones;
-                const hasEnoughLevel = realm.currentLevel >= currentStageConfig.levelCap;
-                const hasEnoughStones = (this.persistentState.resources.breakthroughStones || 0) >= requiredStones;
-                
-                if (hasEnoughLevel && hasEnoughStones) {
-                    breakthroughBtnElement.disabled = false;
-                    breakthroughBtnElement.setAttribute('data-tooltip', `突破到下一级需要${requiredStones}个突破石`);
-                } else {
-                    breakthroughBtnElement.disabled = true;
-                    if (!hasEnoughLevel) {
-                        breakthroughBtnElement.setAttribute('data-tooltip', `需要达到${currentStageConfig.levelCap}级才能突破`);
-                    } else {
-                        breakthroughBtnElement.setAttribute('data-tooltip', `需要${requiredStones}个突破石才能突破`);
-                    }
-                }
-            }
+            this.updateBreakthroughState();
+
             const attackElement = document.getElementById('attack');
             if (attackElement) {
                 const baseAttack = this.persistentState.player.baseAttack || (this.persistentState.player.attack - this.equipmentEffects.attack);
@@ -1285,7 +1267,7 @@ class EndlessCultivationGame {
             const hpRegenRate = actualMaxHp * hpRegenPercent / 100;
             this.persistentState.player.hp = Math.min(
                 this.persistentState.player.hp + hpRegenRate,
-                actualMaxHp
+                actualMaxHp  // 恢复到加成后的最大血量
             );
         }
 
@@ -1730,7 +1712,7 @@ class EndlessCultivationGame {
 
         // 人物弹框内的突破按钮
         bindEvent('#breakthrough-btn-modal', 'click', () => {
-            this.breakthrough();
+            this.attemptBreakthrough();
         });
 
         // 人物弹框内的自动装备按钮
@@ -2050,16 +2032,30 @@ class EndlessCultivationGame {
                 // 记录升级前战力
                 const oldPower = this.calculatePlayerCombatPower();
 
+                // 根据境界提升属性加成
+                const realmBonus = {
+                    0: { hp: 20, atk: 3, def: 2, energy: 10 },  // 武者
+                    1: { hp: 30, atk: 4, def: 3, energy: 15 },  // 炼气
+                    2: { hp: 50, atk: 6, def: 4, energy: 20 },  // 筑基
+                    3: { hp: 80, atk: 10, def: 6, energy: 30 }, // 金丹
+                    4: { hp: 120, atk: 15, def: 10, energy: 50 }, // 元婴
+                    5: { hp: 200, atk: 25, def: 15, energy: 80 }  // 化神
+                };
+                const bonus = realmBonus[realm.currentRealm] || realmBonus[0];
+
                 // 提升属性
-                this.persistentState.player.attack += 3;
-                this.persistentState.player.defense += 2;
-                this.persistentState.player.maxHp += 20;
-                this.persistentState.player.hp = this.persistentState.player.maxHp;
+                this.persistentState.player.attack += bonus.atk;
+                this.persistentState.player.defense += bonus.def;
+                this.persistentState.player.maxHp += bonus.hp;
                 this.persistentState.player.luck += 1;
-                
+
                 // 提升灵力上限
-                this.persistentState.player.maxEnergy += 10;
-                this.persistentState.player.energy = this.persistentState.player.maxEnergy; // 升级时充满灵力
+                this.persistentState.player.maxEnergy += bonus.energy;
+
+                // 升级时恢复到加成后的最大值
+                const actualStats = this.getActualStats();
+                this.persistentState.player.hp = actualStats.maxHp;
+                this.persistentState.player.energy = actualStats.maxEnergy;
 
                 // 播放升级声音
                 this.audioSystem.playSound('levelup-sound', 1, 2000);
@@ -2705,6 +2701,40 @@ class EndlessCultivationGame {
         return stageConfig.breakthroughStones;
     }
 
+    // 显示突破条件满足的提示
+    showBreakthroughReadyNotification() {
+        const notification = document.getElementById('breakthrough-notification');
+        if (notification) {
+            const nextRealmNameEl = document.getElementById('next-realm-name');
+            const realm = this.persistentState.player.realm;
+
+            // 计算下一阶段/境界名称
+            const realmNames = ['武者', '炼气', '筑基', '金丹', '元婴', '化神'];
+            let nextName = '';
+
+            if (realm.currentStage < 10) {
+                // 下一阶段
+                const stageNames = ['初期', '中期', '后期', '巅峰'];
+                const nextStageIndex = Math.floor((realm.currentStage) / 3);
+                nextName = `${realmNames[realm.currentRealm]}${stageNames[nextStageIndex] || ''}`;
+            } else {
+                // 下一境界
+                nextName = realm.currentRealm < 5 ? `${realmNames[realm.currentRealm + 1]}初期` : '化神巅峰';
+            }
+
+            if (nextRealmNameEl) {
+                nextRealmNameEl.textContent = nextName;
+            }
+
+            notification.classList.remove('hidden');
+            this.addBattleLog(`🌟 突破条件已满足！可以进行境界突破了！`);
+
+            setTimeout(() => {
+                notification.classList.add('hidden');
+            }, 5000);
+        }
+    }
+
     // 尝试突破
     attemptBreakthrough() {
         const realm = this.persistentState.player.realm;
@@ -2749,6 +2779,7 @@ class EndlessCultivationGame {
         this.addBattleLog('突破成功！');
         this.updateCharacterBodyImage();
         this.updateUI();
+        this.updateCharacterModal(); // 同时更新弹框内容
 
         // 主线任务 - 境界提升时启动下一境任务
         if (realm.currentStage === 1 && this.mainQuestSystem) {
@@ -2758,6 +2789,70 @@ class EndlessCultivationGame {
         }
 
         return true;
+    }
+
+    /**
+     * 更新突破按钮状态（统一方法）
+     * @returns {object} { canBreakthrough, hasEnoughLevel, hasEnoughStones, requiredStones, levelCap }
+     */
+    updateBreakthroughState() {
+        const breakthroughBtnElement = document.getElementById('breakthrough-btn');
+        const breakthroughBtnModal = document.getElementById('breakthrough-btn-modal');
+        const breakthroughRequirement = document.getElementById('breakthrough-requirement-modal');
+
+        if (!this.metadata.realmConfig) {
+            return { canBreakthrough: false, hasEnoughLevel: false, hasEnoughStones: false };
+        }
+
+        const realm = this.persistentState.player.realm;
+        const currentStageConfig = this.metadata.realmConfig[realm.currentRealm].stages[realm.currentStage - 1];
+        const levelCap = currentStageConfig.levelCap;
+        const requiredStones = currentStageConfig.breakthroughStones;
+        const hasEnoughLevel = realm.currentLevel >= levelCap;
+        const hasEnoughStones = (this.persistentState.resources.breakthroughStones || 0) >= requiredStones;
+        const canBreakthrough = hasEnoughLevel && hasEnoughStones;
+
+        // 更新主界面按钮
+        if (breakthroughBtnElement) {
+            breakthroughBtnElement.disabled = !canBreakthrough;
+            if (!hasEnoughLevel) {
+                breakthroughBtnElement.setAttribute('data-tooltip', `需要达到 Lv.${levelCap} 才能突破`);
+            } else if (!hasEnoughStones) {
+                breakthroughBtnElement.setAttribute('data-tooltip', `需要 ${requiredStones} 个突破石才能突破`);
+            } else {
+                breakthroughBtnElement.setAttribute('data-tooltip', `点击突破到下一阶段`);
+            }
+        }
+
+        // 更新弹框按钮
+        if (breakthroughBtnModal) {
+            breakthroughBtnModal.disabled = !canBreakthrough;
+        }
+
+        // 更新弹框中的突破需求提示
+        if (breakthroughRequirement) {
+            const currentStones = this.persistentState.resources.breakthroughStones || 0;
+            if (hasEnoughLevel && hasEnoughStones) {
+                breakthroughRequirement.textContent = '✓ 已满足突破条件，点击突破';
+                breakthroughRequirement.className = 'text-center text-xs text-green-400';
+            } else if (!hasEnoughLevel) {
+                breakthroughRequirement.textContent = `需要达到 Lv.${levelCap} 才能突破`;
+                breakthroughRequirement.className = 'text-center text-xs text-light/50';
+            } else {
+                breakthroughRequirement.textContent = `突破需要 ${requiredStones} 个突破石（当前 ${currentStones}）`;
+                breakthroughRequirement.className = 'text-center text-xs text-yellow-400';
+            }
+        }
+
+        // 满足突破条件时显示提示（只提示一次）
+        if (canBreakthrough && !this._breakthroughNotified) {
+            this._breakthroughNotified = true;
+            this.showBreakthroughReadyNotification();
+        } else if (!canBreakthrough) {
+            this._breakthroughNotified = false;
+        }
+
+        return { canBreakthrough, hasEnoughLevel, hasEnoughStones, requiredStones, levelCap };
     }
 
     // ==================== 技能树系统 ====================
@@ -2830,25 +2925,7 @@ class EndlessCultivationGame {
                 realmStageModal.textContent = realm.currentStage;
             }
 
-            // 更新突破需求提示
-            const breakthroughRequirement = document.getElementById('breakthrough-requirement-modal');
-            if (breakthroughRequirement && stageConfig) {
-                const hasEnoughLevel = realm.currentLevel >= stageConfig.levelCap;
-                const currentStones = this.persistentState.resources.breakthroughStones || 0;
-                const requiredStones = stageConfig.breakthroughStones;
-                const hasEnoughStones = currentStones >= requiredStones;
-
-                if (hasEnoughLevel && hasEnoughStones) {
-                    breakthroughRequirement.textContent = '✓ 已满足突破条件，点击突破';
-                    breakthroughRequirement.className = 'text-center text-xs text-green-400';
-                } else if (!hasEnoughLevel) {
-                    breakthroughRequirement.textContent = `需要达到 Lv.${stageConfig.levelCap} 才能突破`;
-                    breakthroughRequirement.className = 'text-center text-xs text-light/50';
-                } else {
-                    breakthroughRequirement.textContent = `突破需要 ${requiredStones} 个突破石（当前 ${currentStones}）`;
-                    breakthroughRequirement.className = 'text-center text-xs text-yellow-400';
-                }
-            }
+            // 突破需求提示已由 updateBreakthroughState() 统一处理
         }
 
         // 更新等级（使用境界等级）
@@ -4623,7 +4700,8 @@ class EndlessCultivationGame {
         this.inventoryPagination = {
             currentPage: 1,
             totalPages: 1,
-            itemsPerPage: SIZES.INVENTORY_PAGE_SIZE || 50
+            itemsPerPage: SIZES.INVENTORY_PAGE_SIZE || 50,
+            currentEquipmentType: 'all'  // 当前选中的装备类型（'all'表示全部）
         };
 
         console.log('新玩家初始化完成');
@@ -6464,7 +6542,7 @@ class EndlessCultivationGame {
                 this.persistentState.player.inventory = [];
             }
 
-            // 重置分页到第1页
+            // 重置分页到第1页（保持当前装备类型筛选）
             this.inventoryPagination.currentPage = 1;
 
             const inventory = this.persistentState.player.inventory;
@@ -6479,6 +6557,10 @@ class EndlessCultivationGame {
             inventoryEquipment.innerHTML = '';
             inventoryConsumables.innerHTML = '';
 
+            // 分类物品
+            const equipmentItems = inventory.filter(item => item.type !== 'consumable');
+            const consumableItems = inventory.filter(item => item.type === 'consumable');
+
             if (inventory.length === 0) {
                 // 显示空背包消息
                 const emptyMessage = document.createElement('div');
@@ -6490,84 +6572,9 @@ class EndlessCultivationGame {
                 const paginationDiv = document.getElementById('inventory-pagination');
                 if (paginationDiv) paginationDiv.classList.add('hidden');
             } else {
-                // 分类物品
-                const equipmentItems = inventory.filter(item => item.type !== 'consumable');
-                const consumableItems = inventory.filter(item => item.type === 'consumable');
+                // ✅ 渲染装备（支持类型筛选 + 分页）
+                this.renderEquipmentWithFilter(equipmentItems);
 
-                // ✅ 创建装备物品格子（按类型分组 + 分页）
-                if (equipmentItems.length === 0) {
-                    const emptyMessage = document.createElement('div');
-                    emptyMessage.className = 'col-span-full text-center py-16 text-light/70';
-                    emptyMessage.textContent = '没有装备！';
-                    inventoryEquipment.appendChild(emptyMessage);
-
-                    // 隐藏分页控件
-                    const paginationDiv = document.getElementById('inventory-pagination');
-                    if (paginationDiv) paginationDiv.classList.add('hidden');
-                } else {
-                    // 按装备类型分组
-                    const groupedEquipment = {};
-                    equipmentItems.forEach(item => {
-                        const equipmentType = item.equipmentType || item.type;
-                        if (!groupedEquipment[equipmentType]) {
-                            groupedEquipment[equipmentType] = [];
-                        }
-                        groupedEquipment[equipmentType].push(item);
-                    });
-
-                    // 获取槽位类型（按order排序）
-                    const slotTypes = this.equipmentSystem.getAllSlotTypes();
-
-                    // ✅ 计算分页信息（按类型分页，每页显示一定数量的类型）
-                    const typesWithItems = slotTypes.filter(slotType => {
-                        const items = groupedEquipment[slotType];
-                        return items && items.length > 0;
-                    });
-
-                    // 添加未分类装备类型
-                    const unclassifiedTypes = Object.keys(groupedEquipment).filter(type => !slotTypes.includes(type));
-                    typesWithItems.push(...unclassifiedTypes);
-
-                    const totalTypes = typesWithItems.length;
-                    const typesPerPage = 4; // 每页显示4种装备类型
-                    this.inventoryPagination.totalPages = Math.ceil(totalTypes / typesPerPage);
-
-                    // 确保当前页在有效范围内
-                    if (this.inventoryPagination.currentPage > this.inventoryPagination.totalPages) {
-                        this.inventoryPagination.currentPage = 1;
-                    }
-
-                    const startIndex = (this.inventoryPagination.currentPage - 1) * typesPerPage;
-                    const endIndex = Math.min(startIndex + typesPerPage, totalTypes);
-                    const currentTypes = typesWithItems.slice(startIndex, endIndex);
-
-                    // 显示当前页的装备类型
-                    currentTypes.forEach(slotType => {
-                        const items = groupedEquipment[slotType];
-                        if (!items || items.length === 0) return;
-
-                        // 获取槽位配置
-                        const slotConfig = this.equipmentSystem.getSlotConfig(slotType);
-                        const typeName = slotConfig.name || slotType;
-                        const typeIcon = slotConfig.icon || 'fa-box';
-
-                        // 创建类型标题
-                        const typeHeader = document.createElement('div');
-                        typeHeader.className = 'col-span-full mt-4 mb-2 flex items-center gap-2 text-sm font-medium text-light/70';
-                        typeHeader.innerHTML = `<i class="fa ${typeIcon} text-primary"></i> ${typeName} (${items.length})`;
-                        inventoryEquipment.appendChild(typeHeader);
-
-                        // 创建该类型的装备格子
-                        items.forEach(item => {
-                            const originalIndex = inventory.indexOf(item);
-                            this.createItemElement(item, originalIndex, inventoryEquipment);
-                        });
-                    });
-
-                    // ✅ 更新分页控件
-                    this.updateInventoryPagination();
-                }
-                
                 // 创建消耗品物品格子
                 if (consumableItems.length === 0) {
                     const emptyMessage = document.createElement('div');
@@ -6582,36 +6589,43 @@ class EndlessCultivationGame {
                     });
                 }
             }
-            
+
+            // ✅ 绑定装备类型子Tab点击事件
+            this.bindEquipmentTypeTabs();
+
             // 绑定Tab切换事件
             document.getElementById('tab-equipment').onclick = () => {
                 // 切换到装备Tab
-                document.getElementById('tab-equipment').classList.add('text-accent', 'border-accent');
+                document.getElementById('tab-equipment').classList.add('bg-gradient-to-r', 'from-primary/20', 'to-accent/10', 'text-primary', 'border-primary/30');
                 document.getElementById('tab-equipment').classList.remove('text-light/60');
                 document.getElementById('tab-consumables').classList.add('text-light/60');
-                document.getElementById('tab-consumables').classList.remove('text-accent', 'border-accent');
+                document.getElementById('tab-consumables').classList.remove('bg-gradient-to-r', 'from-primary/20', 'to-accent/10', 'text-primary', 'border-primary/30');
 
                 // 显示装备区域，隐藏消耗品区域
                 document.getElementById('inventory-equipment').classList.remove('hidden');
                 document.getElementById('inventory-consumables').classList.add('hidden');
 
-                // ✅ 显示分页控件（装备有分页）
+                // ✅ 显示类型子Tab和分页控件
+                const typeTabsDiv = document.getElementById('equipment-type-tabs');
+                if (typeTabsDiv) typeTabsDiv.classList.remove('hidden');
                 const paginationDiv = document.getElementById('inventory-pagination');
                 if (paginationDiv) paginationDiv.classList.remove('hidden');
             };
 
             document.getElementById('tab-consumables').onclick = () => {
                 // 切换到消耗品Tab
-                document.getElementById('tab-consumables').classList.add('text-accent', 'border-accent');
+                document.getElementById('tab-consumables').classList.add('bg-gradient-to-r', 'from-primary/20', 'to-accent/10', 'text-primary', 'border-primary/30');
                 document.getElementById('tab-consumables').classList.remove('text-light/60');
                 document.getElementById('tab-equipment').classList.add('text-light/60');
-                document.getElementById('tab-equipment').classList.remove('text-accent', 'border-accent');
+                document.getElementById('tab-equipment').classList.remove('bg-gradient-to-r', 'from-primary/20', 'to-accent/10', 'text-primary', 'border-primary/30');
 
                 // 显示消耗品区域，隐藏装备区域
                 document.getElementById('inventory-consumables').classList.remove('hidden');
                 document.getElementById('inventory-equipment').classList.add('hidden');
 
-                // ✅ 隐藏分页控件（消耗品无分页）
+                // ✅ 隐藏类型子Tab和分页控件
+                const typeTabsDiv = document.getElementById('equipment-type-tabs');
+                if (typeTabsDiv) typeTabsDiv.classList.add('hidden');
                 const paginationDiv = document.getElementById('inventory-pagination');
                 if (paginationDiv) paginationDiv.classList.add('hidden');
             };
@@ -6670,7 +6684,108 @@ class EndlessCultivationGame {
             console.error('显示背包失败:', error);
         }
     }
-    
+
+    // ✅ 渲染装备（支持类型筛选 + 分页）
+    renderEquipmentWithFilter(equipmentItems) {
+        const inventory = this.persistentState.player.inventory;
+        const inventoryEquipment = document.getElementById('inventory-equipment');
+        const paginationDiv = document.getElementById('inventory-pagination');
+
+        // 清空装备区域
+        inventoryEquipment.innerHTML = '';
+
+        if (equipmentItems.length === 0) {
+            const emptyMessage = document.createElement('div');
+            emptyMessage.className = 'col-span-full text-center py-16 text-light/70';
+            emptyMessage.textContent = '没有装备！';
+            inventoryEquipment.appendChild(emptyMessage);
+            if (paginationDiv) paginationDiv.classList.add('hidden');
+            return;
+        }
+
+        // ✅ 按当前类型筛选
+        const currentType = this.inventoryPagination.currentEquipmentType;
+        let filteredItems = equipmentItems;
+
+        if (currentType !== 'all') {
+            filteredItems = equipmentItems.filter(item => {
+                const itemType = item.equipmentType || item.type;
+                return itemType === currentType;
+            });
+        }
+
+        if (filteredItems.length === 0) {
+            const emptyMessage = document.createElement('div');
+            emptyMessage.className = 'col-span-full text-center py-16 text-light/70';
+            const slotConfig = this.equipmentSystem.getSlotConfig(currentType);
+            emptyMessage.textContent = `没有${slotConfig?.name || currentType}类装备！`;
+            inventoryEquipment.appendChild(emptyMessage);
+            if (paginationDiv) paginationDiv.classList.add('hidden');
+            return;
+        }
+
+        // ✅ 分页
+        const itemsPerPage = 40; // 每页显示40个物品
+        this.inventoryPagination.totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+
+        // 确保当前页在有效范围内
+        if (this.inventoryPagination.currentPage > this.inventoryPagination.totalPages) {
+            this.inventoryPagination.currentPage = 1;
+        }
+
+        const startIndex = (this.inventoryPagination.currentPage - 1) * itemsPerPage;
+        const endIndex = Math.min(startIndex + itemsPerPage, filteredItems.length);
+        const pageItems = filteredItems.slice(startIndex, endIndex);
+
+        // 渲染物品
+        pageItems.forEach(item => {
+            const originalIndex = inventory.indexOf(item);
+            this.createItemElement(item, originalIndex, inventoryEquipment);
+        });
+
+        // ✅ 更新分页控件
+        this.updateInventoryPagination();
+    }
+
+    // ✅ 绑定装备类型子Tab点击事件
+    bindEquipmentTypeTabs() {
+        const typeTabs = document.querySelectorAll('.equipment-type-tab');
+        const inventory = this.persistentState.player.inventory;
+        const equipmentItems = inventory.filter(item => item.type !== 'consumable');
+
+        typeTabs.forEach(tab => {
+            tab.onclick = () => {
+                // 更新选中状态
+                typeTabs.forEach(t => {
+                    t.classList.remove('bg-primary/20', 'text-primary', 'border-primary/30');
+                    t.classList.add('text-light/50');
+                });
+                tab.classList.add('bg-primary/20', 'text-primary', 'border-primary/30');
+                tab.classList.remove('text-light/50');
+
+                // 更新当前类型
+                const selectedType = tab.dataset.type;
+                this.inventoryPagination.currentEquipmentType = selectedType;
+                this.inventoryPagination.currentPage = 1;
+
+                // 重新渲染装备
+                this.renderEquipmentWithFilter(equipmentItems);
+            };
+        });
+
+        // ✅ 恢复当前选中的Tab状态
+        const currentType = this.inventoryPagination.currentEquipmentType;
+        const activeTab = document.querySelector(`.equipment-type-tab[data-type="${currentType}"]`);
+        if (activeTab) {
+            typeTabs.forEach(t => {
+                t.classList.remove('bg-primary/20', 'text-primary', 'border-primary/30');
+                t.classList.add('text-light/50');
+            });
+            activeTab.classList.add('bg-primary/20', 'text-primary', 'border-primary/30');
+            activeTab.classList.remove('text-light/50');
+        }
+    }
+
     // 创建物品元素
     createItemElement(item, index, container) {
         const itemElement = document.createElement('div');
@@ -7047,7 +7162,10 @@ class EndlessCultivationGame {
     inventoryPrevPage() {
         if (this.inventoryPagination.currentPage > 1) {
             this.inventoryPagination.currentPage--;
-            this.showInventory();
+            // ✅ 只重新渲染装备，不重置分页
+            const inventory = this.persistentState.player.inventory;
+            const equipmentItems = inventory.filter(item => item.type !== 'consumable');
+            this.renderEquipmentWithFilter(equipmentItems);
         }
     }
 
@@ -7057,7 +7175,10 @@ class EndlessCultivationGame {
     inventoryNextPage() {
         if (this.inventoryPagination.currentPage < this.inventoryPagination.totalPages) {
             this.inventoryPagination.currentPage++;
-            this.showInventory();
+            // ✅ 只重新渲染装备，不重置分页
+            const inventory = this.persistentState.player.inventory;
+            const equipmentItems = inventory.filter(item => item.type !== 'consumable');
+            this.renderEquipmentWithFilter(equipmentItems);
         }
     }
 

@@ -1301,8 +1301,8 @@
                 <div class="flex flex-col lg:flex-row gap-6">
                     <!-- 左侧：背包物品 -->
                     <div class="flex-1">
-                        <!-- Tab切换按钮 -->
-                        <div class="flex gap-1 mb-4 p-1 bg-dark/30 rounded-lg">
+                        <!-- 主Tab切换按钮 -->
+                        <div class="flex gap-1 mb-3 p-1 bg-dark/30 rounded-lg">
                             <button id="tab-equipment" class="flex-1 px-4 py-2 text-sm font-medium rounded-md bg-gradient-to-r from-primary/20 to-accent/10 text-primary border border-primary/30 flex items-center justify-center gap-2 transition-all">
                                 <i class="fa fa-shield-alt"></i> 装备
                             </button>
@@ -1311,8 +1311,39 @@
                             </button>
                         </div>
 
+                        <!-- 装备类型子Tab -->
+                        <div id="equipment-type-tabs" class="flex flex-wrap gap-1 mb-3">
+                            <button data-type="all" class="equipment-type-tab px-3 py-1 text-xs font-medium rounded-md bg-primary/20 text-primary border border-primary/30 transition-all">
+                                全部
+                            </button>
+                            <button data-type="weapon" class="equipment-type-tab px-3 py-1 text-xs font-medium rounded-md text-light/50 hover:text-light hover:bg-dark/50 transition-all">
+                                <i class="fa fa-sword mr-1"></i>武器
+                            </button>
+                            <button data-type="helmet" class="equipment-type-tab px-3 py-1 text-xs font-medium rounded-md text-light/50 hover:text-light hover:bg-dark/50 transition-all">
+                                <i class="fa fa-hat-wizard mr-1"></i>头盔
+                            </button>
+                            <button data-type="armor" class="equipment-type-tab px-3 py-1 text-xs font-medium rounded-md text-light/50 hover:text-light hover:bg-dark/50 transition-all">
+                                <i class="fa fa-shield mr-1"></i>护甲
+                            </button>
+                            <button data-type="spiritTreasure" class="equipment-type-tab px-3 py-1 text-xs font-medium rounded-md text-light/50 hover:text-light hover:bg-dark/50 transition-all">
+                                <i class="fa fa-gem mr-1"></i>灵宝
+                            </button>
+                            <button data-type="pants" class="equipment-type-tab px-3 py-1 text-xs font-medium rounded-md text-light/50 hover:text-light hover:bg-dark/50 transition-all">
+                                <i class="fa fa-user mr-1"></i>下裳
+                            </button>
+                            <button data-type="boots" class="equipment-type-tab px-3 py-1 text-xs font-medium rounded-md text-light/50 hover:text-light hover:bg-dark/50 transition-all">
+                                <i class="fa fa-shoe-prints mr-1"></i>靴子
+                            </button>
+                            <button data-type="magicArtifact" class="equipment-type-tab px-3 py-1 text-xs font-medium rounded-md text-light/50 hover:text-light hover:bg-dark/50 transition-all">
+                                <i class="fa fa-wand-sparkles mr-1"></i>法器
+                            </button>
+                            <button data-type="amulet" class="equipment-type-tab px-3 py-1 text-xs font-medium rounded-md text-light/50 hover:text-light hover:bg-dark/50 transition-all">
+                                <i class="fa fa-scroll mr-1"></i>护符
+                            </button>
+                        </div>
+
                         <!-- 背包容量提示 -->
-                        <div id="inventory-capacity" class="mb-4 text-sm font-medium text-light/60"></div>
+                        <div id="inventory-capacity" class="mb-3 text-sm font-medium text-light/60"></div>
 
                         <!-- 装备物品区域 -->
                         <div id="inventory-equipment" class="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2 mb-4">

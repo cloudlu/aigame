@@ -748,10 +748,7 @@ EndlessCultivationGame.prototype.playEnemyAttackAnimation = function(hitCallback
             requestAnimationFrame(animateAttack);
         } else {
             enemy.position.x = originalX;
-            if (this.battle3D.defenseEffect) {
-                this.battle3D.defenseEffect.dispose();
-                this.battle3D.defenseEffect = null;
-            }
+            // 注意：defenseEffect 不应在此处移除，应在防御状态被消耗时移除（combatlogic.js 中调用 removeDefenseEffect）
             this.battle3D.isAttacking = false;
             if (endCallback) endCallback();
         }
@@ -958,9 +955,30 @@ EndlessCultivationGame.prototype.createDefenseEffect = function() {
     this.battle3D.defenseShield = shield;
 };
 
-// 移除防御特效
+// 移除防御特效（仅移除黄色球体，不影响护盾圆环）
 EndlessCultivationGame.prototype.removeDefenseEffect = function() {
     // ✅ 防御性检查：确保 battle3D 存在
+    if (!this.battle3D) return;
+
+    // 只移除防御状态特效（黄色球体），护盾特效由 removeShieldEffect 单独管理
+    if (this.battle3D.defenseEffect) {
+        this.battle3D.defenseEffect.dispose();
+        this.battle3D.defenseEffect = null;
+    }
+};
+
+// ✅ 仅移除护盾特效（蓝色圆环）
+EndlessCultivationGame.prototype.removeShieldEffect = function() {
+    if (!this.battle3D) return;
+
+    if (this.battle3D.defenseShield) {
+        this.battle3D.defenseShield.dispose();
+        this.battle3D.defenseShield = null;
+    }
+};
+
+// ✅ 移除所有防御相关特效（战斗结束时使用）
+EndlessCultivationGame.prototype.removeAllDefenseEffects = function() {
     if (!this.battle3D) return;
 
     if (this.battle3D.defenseShield) {

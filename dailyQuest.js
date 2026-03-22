@@ -244,12 +244,9 @@ class DailyQuestSystem {
                     }
                     break;
 
-                case 'collect':
-                    if (eventType === 'resource_collected' && eventData.resource === quest.resource) {
-                        quest.current = Math.min(
-                            (quest.current || 0) + eventData.amount,
-                            quest.target
-                        );
+                case 'dungeon':
+                    if (eventType === 'dungeon_completed' && eventData.dungeonId === quest.dungeonId) {
+                        quest.current = 1;
                         changed = true;
                     }
                     break;
@@ -297,8 +294,10 @@ class DailyQuestSystem {
         const streakConfig = this.getStreakBonus();
         const bonusMult = streakConfig ? streakConfig.bonusPercent : 0;
 
+        // 兼容旧数据：优先使用spiritStones，其次gold
+        const baseSpiritStones = quest.rewards.spiritStones ?? quest.rewards.gold ?? 0;
         const expReward = Math.floor(quest.rewards.exp * (1 + bonusMult));
-        const spiritStonesReward = Math.floor(quest.rewards.spiritStones * (1 + bonusMult));
+        const spiritStonesReward = Math.floor(baseSpiritStones * (1 + bonusMult));
         const activityReward = quest.rewards.activityPoints;
 
         if (expReward) this.game.persistentState.player.exp += expReward;
@@ -620,9 +619,15 @@ class DailyQuestSystem {
             let progressText = '';
             if (q.type === 'kill') {
                 progressText = `${q.current}/${q.target} ${q.subType === 'elite' ? '精英' : q.subType === 'boss' ? 'Boss' : '怪物'}`;
-            } else if (q.type === 'collect') {
-                const resName = tc?.resourceNames?.[q.resource] || q.resource;
-                progressText = `${q.current}/${q.target} ${resName}`;
+            } else if (q.type === 'dungeon') {
+                const dungeonNames = {
+                    'spirit_stone_mine': '灵石矿脉',
+                    'herb_garden': '灵草园',
+                    'iron_mine': '玄铁矿'
+                };
+                const dungeonName = dungeonNames[q.dungeonId] || '副本';
+                progressText = isComplete ? `已通关 ${dungeonName}` : `通关 ${dungeonName}`;
+                progressPercent = isComplete ? 100 : 0;
             } else if (q.type === 'visit_map') {
                 const mapName = tc?.mapNames?.[q.targetMap] || '未知地图';
                 progressText = isComplete ? `已到达 ${mapName}` : `前往 ${mapName}`;

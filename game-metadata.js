@@ -3150,9 +3150,9 @@ const gameMetadata = {
             {
                 id: 'warrior_seek_master',
                 name: '拜师学艺',
-                description: '在山峰地区收集修炼资源，为入门做准备',
+                description: '通关灵石矿脉副本，获取修炼资源',
                 objectives: [
-                    { type: 'collect', resource: 'herbs', target: 8 }
+                    { type: 'dungeon', dungeonId: 'spirit_stone_mine', difficulty: 'easy' }
                 ],
                 rewards: { exp: 100, spiritStones: 60 },
                 storyTrigger: 'realm0_Q2',
@@ -3195,10 +3195,9 @@ const gameMetadata = {
             {
                 id: 'warrior_resource',
                 name: '资源储备',
-                description: '收集大量修炼资源，巩固中期修为',
+                description: '通关灵草园副本，收集修炼资源',
                 objectives: [
-                    { type: 'collect', resource: 'herbs', target: 15 },
-                    { type: 'collect', resource: 'iron', target: 10 }
+                    { type: 'dungeon', dungeonId: 'herb_garden', difficulty: 'easy' }
                 ],
                 rewards: { exp: 210, spiritStones: 150 },
                 storyTrigger: 'realm0_Q6',
@@ -3255,10 +3254,9 @@ const gameMetadata = {
             {
                 id: 'qi_sect_mission',
                 name: '门派任务',
-                description: '完成门派分配的任务，收集资源',
+                description: '通关玄铁矿副本，收集资源',
                 objectives: [
-                    { type: 'collect', resource: 'herbs', target: 15 },
-                    { type: 'collect', resource: 'iron', target: 10 }
+                    { type: 'dungeon', dungeonId: 'iron_mine', difficulty: 'easy' }
                 ],
                 rewards: { exp: 150, spiritStones: 100 },
                 storyTrigger: 'realm1_Q1',
@@ -3311,9 +3309,9 @@ const gameMetadata = {
             {
                 id: 'qi_crystal',
                 name: '灵石猎人',
-                description: '收集灵石，修炼炼气功法',
+                description: '通关灵石矿脉副本，修炼炼气功法',
                 objectives: [
-                    { type: 'collect', resource: 'spiritStones', target: 15 }
+                    { type: 'dungeon', dungeonId: 'spirit_stone_mine', difficulty: 'medium' }
                 ],
                 rewards: { exp: 350, spiritStones: 280 },
                 storyTrigger: 'realm1_Q6',
@@ -3370,10 +3368,9 @@ const gameMetadata = {
             {
                 id: 'foundation_establish',
                 name: '开山立派',
-                description: '在门派中建立自己的势力，收集资源',
+                description: '通关灵草园副本，收集资源',
                 objectives: [
-                    { type: 'collect', resource: 'herbs', target: 20 },
-                    { type: 'collect', resource: 'iron', target: 15 }
+                    { type: 'dungeon', dungeonId: 'herb_garden', difficulty: 'medium' }
                 ],
                 rewards: { exp: 250, spiritStones: 200 },
                 storyTrigger: 'realm2_Q1',
@@ -3404,9 +3401,9 @@ const gameMetadata = {
             {
                 id: 'foundation_resource',
                 name: '资源争夺',
-                description: '参与门派资源分配，收集灵石',
+                description: '通关玄铁矿副本，收集资源',
                 objectives: [
-                    { type: 'collect', resource: 'spiritStones', target: 20 }
+                    { type: 'dungeon', dungeonId: 'iron_mine', difficulty: 'medium' }
                 ],
                 rewards: { exp: 400, spiritStones: 340, skillPoints: 1 },
                 storyTrigger: 'realm2_Q4',
@@ -3518,9 +3515,9 @@ const gameMetadata = {
             {
                 id: 'spiritStonesen_collect',
                 name: '收集灵石',
-                description: '收集大量灵石，修炼金丹功法',
+                description: '通关灵石矿脉困难副本，修炼金丹功法',
                 objectives: [
-                    { type: 'collect', resource: 'spiritStones', target: 25 }
+                    { type: 'dungeon', dungeonId: 'spirit_stone_mine', difficulty: 'hard' }
                 ],
                 rewards: { exp: 600, spiritStones: 460, skillPoints: 2 },
                 storyTrigger: 'realm3_Q4',
@@ -3622,10 +3619,9 @@ const gameMetadata = {
             {
                 id: 'nascent_collect',
                 name: '资源储备',
-                description: '收集大量资源，为元婴突破做准备',
+                description: '通关困难副本，为元婴突破做准备',
                 objectives: [
-                    { type: 'collect', resource: 'spiritStones', target: 30 },
-                    { type: 'collect', resource: 'iron', target: 25 }
+                    { type: 'dungeon', dungeonId: 'herb_garden', difficulty: 'hard' }
                 ],
                 rewards: { exp: 750, spiritStones: 520 },
                 storyTrigger: 'realm4_Q3',
@@ -3727,9 +3723,9 @@ const gameMetadata = {
             {
                 id: 'deity_collect',
                 name: '探索收集',
-                description: '收集大量灵石，修炼化神功法',
+                description: '通关玄铁矿困难副本，修炼化神功法',
                 objectives: [
-                    { type: 'collect', resource: 'spiritStones', target: 40 }
+                    { type: 'dungeon', dungeonId: 'iron_mine', difficulty: 'hard' }
                 ],
                 rewards: { exp: 880, spiritStones: 570 },
                 storyTrigger: 'realm5_Q2',

@@ -8,6 +8,8 @@ class MainQuestSystem {
 
         // 任务缓存（运行时，不存储）
         this._questCache = {};
+        // ID到名称的映射缓存（持久保存已完成任务的名称）
+        this._questNameMap = {};
     }
 
     // ========== 任务模板生成引擎 ==========
@@ -63,17 +65,12 @@ class MainQuestSystem {
     }
 
     /**
-     * 选择收集资源类型
+     * 选择收集资源类型 - 改为选择副本任务
      */
     selectCollectResource(realmIndex, stageNum, levelInStage) {
-        const theme = this.game.metadata.questTemplateConfig.realmThemes[realmIndex];
-
-        if (stageNum >= theme.crystalUnlockStage) {
-            if (levelInStage % 4 === 0) return 'collect_crystal';
-        }
-
-        if (levelInStage % 2 === 0) return 'collect_' + theme.primaryResource;
-        return 'collect_' + theme.secondaryResource;
+        // 3个副本轮换
+        const dungeons = ['dungeon_stone', 'dungeon_herb', 'dungeon_iron'];
+        return dungeons[levelInStage % 3];
     }
 
     /**
@@ -122,28 +119,29 @@ class MainQuestSystem {
                 storyTrigger = `r${realmIndex}_boss_${bossName}`;
                 break;
             }
-            case 'collect_herbs': {
-                const target = Math.max(5, Math.floor(base.baseCollect * stageMult * (1 + levelInStage * 0.08)));
-                objectives = [{ type: 'collect', resource: 'herbs', target }];
-                name = `${stageDisplay}·灵草收集`;
-                description = `收集${target}个灵草`;
-                templateTypeKey = 'collect_herbs';
+            case 'collect_herbs':
+            case 'dungeon_herb': {
+                objectives = [{ type: 'dungeon', dungeonId: 'herb_garden', difficulty: 'easy' }];
+                name = `${stageDisplay}·灵草园通关`;
+                description = `通关灵草园副本`;
+                templateTypeKey = 'dungeon';
                 break;
             }
-            case 'collect_iron': {
-                const target = Math.max(3, Math.floor(base.baseCollect * 0.7 * stageMult * (1 + levelInStage * 0.08)));
-                objectives = [{ type: 'collect', resource: 'iron', target }];
-                name = `${stageDisplay}·玄铁收集`;
-                description = `收集${target}个玄铁`;
-                templateTypeKey = 'collect_iron';
+            case 'collect_iron':
+            case 'dungeon_iron': {
+                objectives = [{ type: 'dungeon', dungeonId: 'iron_mine', difficulty: 'easy' }];
+                name = `${stageDisplay}·玄铁矿通关`;
+                description = `通关玄铁矿副本`;
+                templateTypeKey = 'dungeon';
                 break;
             }
-            case 'collect_spiritStones': {
-                const target = Math.max(3, Math.floor(base.baseCollect * 0.5 * stageMult * (1 + levelInStage * 0.08)));
-                objectives = [{ type: 'collect', resource: 'spiritStones', target }];
-                name = `${stageDisplay}·灵石收集`;
-                description = `收集${target}个灵石`;
-                templateTypeKey = 'collect_stones';
+            case 'collect_spiritStones':
+            case 'collect_stones':
+            case 'dungeon_stone': {
+                objectives = [{ type: 'dungeon', dungeonId: 'spirit_stone_mine', difficulty: 'easy' }];
+                name = `${stageDisplay}·灵石矿脉通关`;
+                description = `通关灵石矿脉副本`;
+                templateTypeKey = 'dungeon';
                 break;
             }
             case 'visit_map': {
@@ -224,6 +222,10 @@ class MainQuestSystem {
 
         // 缓存到内存
         this._questCache[levelKey] = quests;
+        // 同时缓存 ID→名称 映射，用于显示已完成任务
+        quests.forEach(q => {
+            this._questNameMap[q.id] = q.name;
+        });
         return quests;
     }
 
@@ -243,7 +245,7 @@ class MainQuestSystem {
             mq.questData[firstQuest.id] = {
                 objectives: firstQuest.objectives.map(o => {
                     let currentVal;
-                    if (o.type === 'visit_map' || o.type === 'kill_boss') {
+                    if (o.type === 'visit_map' || o.type === 'kill_boss' || o.type === 'dungeon') {
                         currentVal = false;
                     } else if (o.type === 'reach_level') {
                         currentVal = this.game.persistentState.player.realm?.currentLevel || 1;
@@ -375,6 +377,15 @@ class MainQuestSystem {
                     }
                     break;
 
+                case 'dungeon':
+                    if (eventType === 'dungeon_completed' && eventData.dungeonId === objective.dungeonId) {
+                        if (!objective.difficulty || eventData.difficulty === objective.difficulty) {
+                            objective.current = true;
+                            changed = true;
+                        }
+                    }
+                    break;
+
                 case 'reach_level':
                     {
                         const currentLevel = this.game.persistentState.player.realm?.currentLevel || 1;
@@ -457,7 +468,7 @@ class MainQuestSystem {
             mq.questData[nextQuest.id] = {
                 objectives: nextQuest.objectives.map(o => {
                     let currentVal;
-                    if (o.type === 'visit_map' || o.type === 'kill_boss') {
+                    if (o.type === 'visit_map' || o.type === 'kill_boss' || o.type === 'dungeon') {
                         currentVal = false;
                     } else if (o.type === 'reach_level') {
                         currentVal = this.game.persistentState.player.realm?.currentLevel || 1;
@@ -805,6 +816,59 @@ class MainQuestSystem {
     // ========== UI 渲染 ==========
 
     /**
+     * 从任务ID重新生成任务名称（用于已完成任务的显示）
+     */
+    regenerateQuestNameFromId(questId) {
+        // 解析 questId: r{realm}_s{stage}_l{level}_q{index}
+        const match = questId.match(/^r(\d+)_s(\d+)_l(\d+)_q(\d+)$/);
+        if (!match) return questId;
+
+        const realmIndex = parseInt(match[1]);
+        const stageNum = parseInt(match[2]);
+        const levelInStage = parseInt(match[3]);
+        const questIndex = parseInt(match[4]);
+
+        // 获取当前等级的所有任务模板
+        const templates = this.selectQuestTemplates(realmIndex, stageNum, levelInStage);
+
+        // 根据索引选择对应模板
+        if (questIndex < 1 || questIndex > templates.length) return questId;
+        const templateType = templates[questIndex - 1];
+
+        // 使用模板生成名称（简化版）
+        const config = this.game.metadata.questTemplateConfig;
+        const theme = config.realmThemes[realmIndex];
+        const realmName = theme.name;
+        const stageConfig = this.game.metadata.realmConfig[realmIndex]?.stages[stageNum - 1];
+        const stageLabel = stageConfig?.name || '';
+        const stageDisplay = `${realmName}${stageLabel}`;
+
+        // 根据模板类型生成名称
+        switch (templateType) {
+            case 'kill_normal':
+                return `${stageDisplay}·妖兽讨伐`;
+            case 'kill_elite':
+                return `${stageDisplay}·精英猎杀`;
+            case 'kill_boss':
+                return `${stageDisplay}·Boss挑战`;
+            case 'dungeon_herb':
+            case 'collect_herbs':
+                return `${stageDisplay}·灵草园通关`;
+            case 'dungeon_iron':
+            case 'collect_iron':
+                return `${stageDisplay}·玄铁矿通关`;
+            case 'dungeon_stone':
+            case 'collect_stones':
+            case 'collect_spiritStones':
+                return `${stageDisplay}·灵石矿脉通关`;
+            case 'visit_map':
+                return `${stageDisplay}·地图探索`;
+            default:
+                return questId;
+        }
+    }
+
+    /**
      * 更新主线任务 UI
      */
     updateMainQuestUI() {
@@ -879,6 +943,17 @@ class MainQuestSystem {
                     'xianxia-heaven': '仙境'
                 };
                 progressText = current ? `已到达 ${mapNames[obj.targetMap] || obj.targetMap}` : `前往 ${mapNames[obj.targetMap] || obj.targetMap}`;
+                progressPercent = current ? 100 : 0;
+            } else if (obj.type === 'dungeon') {
+                const dungeonNames = {
+                    'spirit_stone_mine': '灵石矿脉',
+                    'herb_garden': '灵草园',
+                    'iron_mine': '玄铁矿'
+                };
+                const difficultyNames = { 'easy': '简单', 'medium': '普通', 'hard': '困难' };
+                const dungeonName = dungeonNames[obj.dungeonId] || '副本';
+                const diffName = obj.difficulty ? difficultyNames[obj.difficulty] || '' : '';
+                progressText = current ? `已通关 ${dungeonName}${diffName ? `(${diffName})` : ''}` : `通关 ${dungeonName}${diffName ? `(${diffName})` : ''}`;
                 progressPercent = current ? 100 : 0;
             } else if (obj.type === 'reach_level') {
                 const currentLevel = this.game.persistentState.player.realm?.currentLevel || 1;
@@ -959,19 +1034,37 @@ class MainQuestSystem {
                 </button>
                 <div id="completed-quests-list" class="hidden mt-2 space-y-1 max-h-40 overflow-y-auto">
                     ${mq.completedQuests.map(id => {
-                        let name = id;
-                        // 从内存缓存中查找任务名称
-                        for (const key in this._questCache) {
-                            const cached = this._questCache[key];
-                            const found = cached.find(q => q.id === id);
-                            if (found) { name = found.name; break; }
+                        // 优先从名称映射缓存查找
+                        let name = this._questNameMap[id];
+                        if (!name) {
+                            // 从内存缓存中查找任务名称
+                            for (const key in this._questCache) {
+                                const cached = this._questCache[key];
+                                const found = cached.find(q => q.id === id);
+                                if (found) {
+                                    name = found.name;
+                                    this._questNameMap[id] = name; // 缓存起来
+                                    break;
+                                }
+                            }
                         }
                         // 回退到 metadata 查找
-                        if (name === id) {
+                        if (!name) {
                             for (let r = 0; r <= 5; r++) {
                                 const quests = this.game.metadata.mainStoryQuests[r] || [];
                                 const q = quests.find(q => q.id === id);
-                                if (q) { name = q.name; break; }
+                                if (q) {
+                                    name = q.name;
+                                    this._questNameMap[id] = name; // 缓存起来
+                                    break;
+                                }
+                            }
+                        }
+                        // 最后从ID重新生成名称
+                        if (!name || name === id) {
+                            name = this.regenerateQuestNameFromId(id);
+                            if (name !== id) {
+                                this._questNameMap[id] = name; // 缓存起来
                             }
                         }
                         return `<div class="text-sm text-white/40 flex items-center gap-2"><i class="fa fa-check text-green-500"></i>${name}</div>`;
