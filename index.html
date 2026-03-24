@@ -1866,12 +1866,17 @@
         </div>
     </div>
 
+    <!-- 事件系统（必须在所有其他脚本之前加载） -->
+    <script type="module" src="event-manager-browser.js"></script>
+
     <!-- 游戏脚本: 独立类系统（需在 game.js 之前加载） -->
     <script src="equipment.js"></script>
     <script src="realmSkillSystem.js"></script>
     <script src="mainQuest.js"></script>
     <script src="dailyQuest.js"></script>
     <script src="audio.js"></script>
+    <script type="module" src="src/audio/AudioManager.js"></script>
+    <script src="src/ui/UIManager.js"></script>
     <script src="vipSystem.js"></script>
     <script src="jadeShop.js"></script>
     <script src="collectionSystem.js"></script>

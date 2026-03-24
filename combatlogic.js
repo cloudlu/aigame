@@ -17,6 +17,15 @@ EndlessCultivationGame.prototype.attackEnemy = function() {
         return;
     }
 
+    // ✅ 触发事件
+    if (typeof eventManager !== 'undefined' && eventManager) {
+        eventManager.emit('battle:attack', {
+            attacker: 'player',
+            target: this.transientState.enemy.name,
+            timestamp: Date.now()
+        });
+    }
+
     // 获取实际属性（包含装备和境界加成）
     const playerStats = this.getActualStats();
     const enemyStats = this.getEnemyActualStats();
@@ -245,15 +254,13 @@ EndlessCultivationGame.prototype.attackEnemy = function() {
                     if (this.persistentState.player.hp <= 0) {
                         this.playerDefeated();
                     }
-                    this.updateUI();
-                    this.updateHealthBars();
+                    // ✅ UI更新由UIManager通过battle:attack事件自动处理
                 }
             );
         }
     );
 
-    // 播放攻击声音
-    this.audioSystem.playSound('attack-sound', 1, 200);
+    // ✅ 攻击音效由AudioManager通过battle:attack事件自动播放
 };
 
 // 使用技能攻击敌人（按类型使用装备的技能）
@@ -302,38 +309,21 @@ EndlessCultivationGame.prototype.useSkill = function(skillType = 'attack') {
         return;
     }
 
-    // 播放技能声音 - 根据技能类型和元素选择音效
-    if (skill.soundUrl) {
-        // 如果有自定义音效URL，使用自定义音效
-        this.audioSystem.playSkillSound(skill.soundUrl);
-    } else {
-        // 根据技能类型选择音效
-        const skillTreeType = skillTree.type; // 'attack', 'defense', 'heal', 'special'
-        const skillElement = this.getSkillElementType(skill);
-
-        if (skillTreeType === 'defense') {
-            // 防御系：低沉护盾音效
-            this.audioSystem.playSound('skill-defense-sound', 0.7, 300);
-        } else if (skillTreeType === 'heal') {
-            // 恢复系：轻柔治疗音效
-            this.audioSystem.playSound('skill-heal-sound', 0.6, 300);
-        } else if (skillTreeType === 'special') {
-            // 特殊系：风属性音效
-            this.audioSystem.playSound('skill-special-sound', 0.6, 300);
-        } else {
-            // 攻击系：根据元素类型选择音效
-            if (skillElement === 'fire') {
-                this.audioSystem.playSound('skill-1-sound', 0.8, 300);
-            } else if (skillElement === 'ice') {
-                this.audioSystem.playSound('skill-2-sound', 0.7, 300);
-            } else if (skillElement === 'thunder') {
-                this.audioSystem.playSound('skill-3-sound', 0.7, 300);
-            } else {
-                // 默认攻击音效
-                this.audioSystem.playSound('skill-0-sound', 0.7, 300);
-            }
-        }
+    // ✅ 触发事件
+    if (typeof eventManager !== 'undefined' && eventManager) {
+        eventManager.emit('battle:skill', {
+            skillType,
+            skillId: equippedSkillId,
+            skillName: skillDisplayName,
+            energyCost: skill.energyCost,
+            soundUrl: skill.soundUrl || null,
+            skillTreeType: skillTree.type || 'attack',
+            skillElement: this.getSkillElementType(skill),
+            timestamp: Date.now()
+        });
     }
+
+    // ✅ 技能音效由AudioManager通过battle:skill事件自动播放
 
     // 获取实际属性（包含装备和境界加成）
     const playerStats = this.getActualStats();
@@ -585,8 +575,7 @@ EndlessCultivationGame.prototype.useSkill = function(skillType = 'attack') {
             this.addBattleLog(`对敌人施加了${skill.debuffs.length}个减益效果！`);
         }
 
-        this.updateUI();
-        this.updateHealthBars();
+        // ✅ UI更新由UIManager通过battle:skill事件自动处理
     };
 
     if (skill.defenseBonus) {
@@ -744,18 +733,26 @@ EndlessCultivationGame.prototype.triggerEnemyCounterattack = function(finalDefen
                 this.transientState.enemy.energy = Math.min(this.transientState.enemy.energy + 20, this.transientState.enemy.maxEnergy);
             }
             if (this.persistentState.player.hp <= 0) this.playerDefeated();
-            this.updateUI();
-            this.updateHealthBars();
+            // ✅ UI更新由UIManager通过battle:attack事件自动处理
         }
     );
 };
 
 // 敌人被击败
 EndlessCultivationGame.prototype.enemyDefeated = function() {
-    // 图鉴：记录击杀敌人
-    if (this.collectionSystem) {
-        this.collectionSystem.recordEnemy(this.transientState.enemy);
+    // ✅ 触发事件
+    if (typeof eventManager !== 'undefined' && eventManager) {
+        const expMultiplier = this.transientState.enemy.expMultiplier || 1;
+        eventManager.emit('battle:victory', {
+            enemy: this.transientState.enemy.name,
+            isBoss: this.transientState.enemy.isBoss || false,
+            isElite: this.transientState.enemy.isElite || false,
+            expGained: Math.floor(this.transientState.enemy.level * 20 * expMultiplier),
+            timestamp: Date.now()
+        });
     }
+
+    // ✅ 图鉴记录由CollectionSystem通过battle:victory事件自动处理
 
     // 显示敌人倒地的画面
     this.showEnemyDefeatedAnimation();
@@ -765,8 +762,7 @@ EndlessCultivationGame.prototype.enemyDefeated = function() {
         this.battle3D.enemyDefeated = true;
     }
 
-    // 播放胜利声音
-    this.audioSystem.playSound('victory-sound', 1, 1000);
+    // ✅ 胜利音效由AudioManager通过battle:victory事件自动播放
 
     // 获得经验
     const expMultiplier = this.transientState.enemy.expMultiplier || 1;
@@ -811,10 +807,15 @@ EndlessCultivationGame.prototype.enemyDefeated = function() {
     // 装备掉落
     const droppedEquipment = this.equipmentSystem.generateEquipmentDrop();
     if (droppedEquipment) {
-        // 图鉴：记录获取装备
-        if (this.collectionSystem) {
-            this.collectionSystem.recordEquipment(droppedEquipment);
+        // ✅ 图鉴记录：触发装备掉落事件
+        if (typeof eventManager !== 'undefined' && eventManager) {
+            eventManager.emit('equipment:drop', {
+                equipment: droppedEquipment,
+                source: 'enemy_drop',
+                timestamp: Date.now()
+            });
         }
+
         const equipped = this.checkAndEquipBetterGear(droppedEquipment);
         if (!equipped) {
             this.persistentState.player.inventory.push(droppedEquipment);
@@ -856,34 +857,12 @@ EndlessCultivationGame.prototype.enemyDefeated = function() {
         }
     }
 
-    // 主线任务进度追踪 - 击杀敌人
-    if (this.mainQuestSystem) {
-        const enemy = this.transientState.enemy;
-        this.mainQuestSystem.trackMainQuestProgress('enemy_killed', {
-            name: enemy.name,
-            isBoss: enemy.isBoss || false,
-            isElite: enemy.isElite || false,
-            type: enemy.isBoss ? 'boss' : (enemy.isElite ? 'elite' : 'normal')
-        });
-    }
-
-    // 每日任务进度追踪 - 击杀敌人
-    if (this.dailyQuestSystem) {
-        const enemy = this.transientState.enemy;
-        this.dailyQuestSystem.trackDailyQuestProgress('enemy_killed', {
-            name: enemy.name,
-            isBoss: enemy.isBoss || false,
-            isElite: enemy.isElite || false,
-            type: enemy.isBoss ? 'boss' : (enemy.isElite ? 'elite' : 'normal')
-        });
-    }
+    // ✅ 主线任务和每日任务进度追踪由对应系统通过battle:victory事件自动处理
 
     // 检查升级
     this.checkLevelUp();
 
-    // 更新UI
-    this.updateUI();
-    this.updateHealthBars();
+    // ✅ UI更新由UIManager通过battle:victory事件自动处理
 
     // ========== 副本战斗胜利处理 ==========
     // 如果是副本战斗，通知副本系统
@@ -891,17 +870,26 @@ EndlessCultivationGame.prototype.enemyDefeated = function() {
         // 副本战斗胜利，不立即关闭战斗界面
         setTimeout(() => {
             this.dungeon.onBattleVictory();
-        }, 1500);
+        }, 1000);
     } else {
         // 普通战斗结束，延迟后关闭战斗模态窗口并返回主界面
         setTimeout(() => {
             this.closeBattleModal();
-        }, 3000);
+        }, 2000);
     }
 };
 
 // 玩家被击败
 EndlessCultivationGame.prototype.playerDefeated = function() {
+    // ✅ 触发事件
+    if (typeof eventManager !== 'undefined' && eventManager) {
+        eventManager.emit('battle:defeat', {
+            enemy: this.transientState.enemy.name,
+            expLoss: Math.floor(this.persistentState.player.exp * 0.2),
+            timestamp: Date.now()
+        });
+    }
+
     if (this.battle3D) {
         this.battle3D.playerDefeated = true;
     }
@@ -909,8 +897,7 @@ EndlessCultivationGame.prototype.playerDefeated = function() {
     // 播放玩家倒地动画
     this.showPlayerDefeatedAnimation();
 
-    // 播放失败声音
-    this.audioSystem.playSound('defeat-sound', 1, 1000);
+    // ✅ 失败音效由AudioManager通过battle:defeat事件自动播放
 
     this.addBattleLog(`你被${this.transientState.enemy.name}击败了！`);
 
@@ -927,11 +914,7 @@ EndlessCultivationGame.prototype.playerDefeated = function() {
     this.transientState.enemy.hp = this.transientState.enemy.maxHp;
     this.transientState.enemy.energy = this.transientState.enemy.maxEnergy;
 
-    // 更新UI
-    this.updateUI();
-    if (typeof this.updateHealthBars === 'function') {
-        this.updateHealthBars();
-    }
+    // ✅ UI更新由UIManager通过battle:defeat事件自动处理
 
     // ========== 副本战斗失败处理 ==========
     // 如果是副本战斗，通知副本系统
@@ -969,6 +952,12 @@ EndlessCultivationGame.prototype.closeBattleModal = function() {
     const battleModal = document.getElementById('battle-modal');
     if (battleModal) {
         battleModal.classList.add('hidden');
+    }
+
+    // ✅ 显示主游戏区域（探险地图）
+    const gameAreaContainer = document.getElementById('game-area-container');
+    if (gameAreaContainer) {
+        gameAreaContainer.classList.remove('hidden');
     }
 
     // 停止战斗音乐

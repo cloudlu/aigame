@@ -599,10 +599,8 @@ class DungeonSystem {
             this.restorePlayerState();
         }
 
-        // 清理战斗场景
-        if (this.game.battle3d) {
-            this.game.battle3d.cleanupScene();
-        }
+        // ✅ 关闭战斗模态框（会清理战斗场景、清理战斗状态、停止战斗音乐）
+        this.game.closeBattleModal();
 
         // ✅ 清理副本敌人数据
         this.game.transientState.enemy = null;
@@ -612,10 +610,6 @@ class DungeonSystem {
         if (exitBtn) {
             exitBtn.classList.add('hidden');
         }
-
-        // 隐藏战斗模态框，显示主游戏区域
-        document.getElementById('battle-modal').classList.add('hidden');
-        document.getElementById('game-area-container').classList.remove('hidden');
 
         // 重置副本状态
         this.currentDungeon = null;
@@ -652,8 +646,15 @@ class DungeonSystem {
         // 标记为已通关
         this.markDungeonCleared(this.currentDungeon, this.currentDifficulty);
 
-        // 触发每日任务进度
-        this.game.dailyQuestSystem.trackDailyQuestProgress('dungeon_completed', { dungeonId: this.currentDungeon });
+        // ✅ 发出副本完成事件（供主线任务和每日任务监听）
+        if (typeof window !== 'undefined' && window.eventManager) {
+            window.eventManager.emit('dungeon:complete', {
+                dungeonId: this.currentDungeon,
+                difficulty: this.currentDifficulty,
+                reward: reward,
+                timestamp: Date.now()
+            });
+        }
 
         // ✅ 清理副本敌人数据
         this.game.transientState.enemy = null;
@@ -664,9 +665,14 @@ class DungeonSystem {
         this.currentDifficulty = null;
         this.enemyQueue = [];
 
-        // 隐藏战斗模态框，显示主游戏区域
-        document.getElementById('battle-modal').classList.add('hidden');
-        document.getElementById('game-area-container').classList.remove('hidden');
+        // ✅ 关闭战斗模态框（会清理战斗状态、停止战斗音乐）
+        this.game.closeBattleModal();
+
+        // 隐藏退出副本按钮
+        const exitBtn = document.getElementById('exit-dungeon-btn');
+        if (exitBtn) {
+            exitBtn.classList.add('hidden');
+        }
 
         // 显示通关界面
         this.game.showDungeonComplete(reward);
@@ -721,8 +727,16 @@ class DungeonSystem {
         // 发放奖励
         this.giveReward(totalReward);
 
-        // 触发每日任务进度
-        this.game.dailyQuestSystem.trackDailyQuestProgress('dungeon_completed', { dungeonId });
+        // ✅ 发出副本完成事件（供主线任务和每日任务监听）
+        if (typeof window !== 'undefined' && window.eventManager) {
+            window.eventManager.emit('dungeon:complete', {
+                dungeonId: dungeonId,
+                difficulty: difficulty,
+                sweepCount: remainingAttempts,
+                reward: totalReward,
+                timestamp: Date.now()
+            });
+        }
 
         // 显示扫荡结果
         this.game.showNotification(`一键扫荡成功！消耗${remainingAttempts}次`, 'success');

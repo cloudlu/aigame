@@ -6,7 +6,10 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
@@ -17,6 +20,6 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.1"
   }
 }

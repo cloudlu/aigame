@@ -242,7 +242,7 @@ class EquipmentSystem {
         }
 
         // 检查背包是否有空位
-        if (this.game.persistentState.player.inventory.length >= 50) {
+        if (this.game.persistentState.player.inventory.length >= SIZES.MAX_INVENTORY_SIZE) {
             this.game.addBattleLog('背包已满，无法脱下装备！');
             return false;
         }

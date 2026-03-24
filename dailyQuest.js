@@ -25,6 +25,49 @@ class DailyQuestSystem {
         }
 
         this.updateDailyQuestUI();
+
+        // ✅ 注册事件监听器，自动追踪任务进度
+        this.registerEventListeners();
+    }
+
+    /**
+     * 注册事件监听器（自动追踪任务进度）
+     */
+    registerEventListeners() {
+        if (typeof window === 'undefined' || !window.eventManager) {
+            console.warn('[每日任务] eventManager未加载，跳过事件监听注册');
+            return;
+        }
+
+        // 监听敌人击杀事件
+        window.eventManager.on('battle:victory', (event) => {
+            if (event.data && event.data.enemy) {
+                this.trackDailyQuestProgress('enemy_killed', {
+                    type: event.data.enemy.type || event.data.enemy.name,
+                    isBoss: event.data.enemy.isBoss || event.data.enemy.name?.startsWith('BOSS')
+                });
+            }
+        });
+
+        // 监听副本完成事件
+        window.eventManager.on('dungeon:complete', (event) => {
+            if (event.data) {
+                this.trackDailyQuestProgress('dungeon_completed', {
+                    dungeonId: event.data.dungeonId
+                });
+            }
+        });
+
+        // 监听地图访问事件
+        window.eventManager.on('map:visit', (event) => {
+            if (event.data) {
+                this.trackDailyQuestProgress('map_visited', {
+                    mapType: event.data.mapType
+                });
+            }
+        });
+
+        console.log('✅ DailyQuestSystem事件监听已注册');
     }
 
     /**

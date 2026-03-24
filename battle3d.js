@@ -1208,6 +1208,17 @@ EndlessCultivationGame.prototype.createFireEffects = function() {
 
 // 显示伤害数字
 EndlessCultivationGame.prototype.showDamage = function(target, amount, type = 'red') {
+    // ✅ 新功能：触发事件
+    if (typeof eventManager !== 'undefined' && eventManager) {
+        eventManager.emit('battle:damage', {
+            target,
+            amount: Math.floor(amount),
+            type,
+            timestamp: Date.now()
+        });
+    }
+
+    // 原有功能保持不变
     if (!this.battle3D || !this.battle3D.scene) return;
 
     // 使用HTML元素显示伤害数字
@@ -1305,6 +1316,16 @@ EndlessCultivationGame.prototype.showDamage = function(target, amount, type = 'r
 
 // 显示灵力变化
 EndlessCultivationGame.prototype.showEnergyChange = function(target, amount) {
+    // ✅ 新功能：触发事件
+    if (typeof eventManager !== 'undefined' && eventManager) {
+        eventManager.emit('battle:energy', {
+            target,
+            amount: Math.floor(amount),
+            timestamp: Date.now()
+        });
+    }
+
+    // 原有功能保持不变
     if (!this.battle3D || !this.battle3D.scene) return;
 
     // 使用HTML元素显示灵力变化
@@ -1369,6 +1390,15 @@ EndlessCultivationGame.prototype.showEnergyChange = function(target, amount) {
 // 显示闪避提示
 EndlessCultivationGame.prototype.showDodge = function(target, text) {
     if (!this.battle3D || !this.battle3D.scene) return;
+
+    // ✅ 触发事件
+    if (typeof eventManager !== 'undefined' && eventManager) {
+        eventManager.emit('battle:dodge', {
+            target,
+            text,
+            timestamp: Date.now()
+        });
+    }
 
     // 使用HTML元素显示闪避提示
     const dodgeElement = document.createElement('div');
@@ -1715,17 +1745,11 @@ EndlessCultivationGame.prototype.createSceneParticles = function(particleType) {
         case 'snowflakes':
             this.createSnowflakeParticles(scene);
             break;
-        case 'ice_crystals':
-            this.createIceCrystalParticles(scene);
-            break;
         case 'water_ripples':
             this.createWaterRippleParticles(scene);
             break;
         case 'nebula_vortex':
             this.createNebulaVortexParticles(scene);
-            break;
-        case 'flying_flowers':
-            this.createFlyingFlowerParticles(scene);
             break;
     }
 };
@@ -1798,59 +1822,6 @@ EndlessCultivationGame.prototype.createSpiritEnergyParticles = function(scene) {
 
     // 保存到 battle3D
     this.battle3D.particleSystems.push(particleSystem);
-};
-
-/**
- * 飞花粒子 - 花瓣飘落（仙山峰顶）
- * ✅ 终极增强版：非常大且明显的粉红色花瓣，降低高度确保可见
- */
-EndlessCultivationGame.prototype.createFlyingFlowerParticles = function(scene) {
-
-    const particleSystem = new BABYLON.ParticleSystem("flyingFlowers", 500, scene); // ✅ 400 -> 500
-
-    particleSystem.particleTexture = new BABYLON.Texture("https://assets.babylonjs.com/textures/flare.png", scene);
-
-    // ✅ 发射器位置（降低高度，更容易看到）
-    particleSystem.emitter = new BABYLON.Vector3(0, 5, 0); // ✅ 8 -> 5 降低发射高度
-
-    // ✅ 粒子属性（超大花瓣，确保可见）
-    particleSystem.minSize = 0.4; // ✅ 0.25 -> 0.4 再次增大60%
-    particleSystem.maxSize = 0.8; // ✅ 0.5 -> 0.8 再次增大60%
-
-    particleSystem.minLifeTime = 6;
-    particleSystem.maxLifeTime = 10;
-
-    particleSystem.emitRate = 50; // ✅ 40 -> 50 再次提高发射率
-
-    // ✅ 颜色（柔和的粉红色，降低亮度50%）
-    particleSystem.color1 = new BABYLON.Color4(0.5, 0.1, 0.2, 0.5); // ✅ 降低亮度：R1.0->0.5, alpha 1.0->0.5
-    particleSystem.color2 = new BABYLON.Color4(0.7, 0.25, 0.35, 0.4); // ✅ 降低亮度：R1.0->0.7, alpha 1.0->0.4
-    particleSystem.colorDead = new BABYLON.Color4(0.5, 0.15, 0.25, 0.0);
-
-    // ✅ 方向和速度（明显的飘落+风吹）
-    particleSystem.direction1 = new BABYLON.Vector3(-1.2, -0.8, -1.2);
-    particleSystem.direction2 = new BABYLON.Vector3(1.2, -0.3, 1.2);
-
-    particleSystem.minEmitPower = 0.6;
-    particleSystem.maxEmitPower = 1.5;
-
-    // 重力（缓慢下落）
-    particleSystem.gravity = new BABYLON.Vector3(0, -0.1, 0);
-
-    // ✅ 发射范围（降低高度，更容易看到）
-    particleSystem.minEmitBox = new BABYLON.Vector3(-10, -2, -10);
-    particleSystem.maxEmitBox = new BABYLON.Vector3(10, 2, 10);
-
-    // 混合模式
-    particleSystem.blendMode = BABYLON.ParticleSystem.BLENDMODE_ADD;
-
-    // 启动
-    particleSystem.start();
-
-    // 保存
-    this.battle3D.particleSystems.push(particleSystem);
-
-    return particleSystem;
 };
 
 /**
@@ -2342,64 +2313,6 @@ EndlessCultivationGame.prototype.createLavaFlow = function(scene) {
 };
 
 // ==================== 冰封雪谷专属特效 ====================
-
-/**
- * 创建冰晶闪烁粒子（冰封雪谷）
- * @param {BABYLON.Scene} scene - 场景
- * ✅ 增强版：更大更亮的冰晶，更容易看到
- */
-EndlessCultivationGame.prototype.createIceCrystalParticles = function(scene) {
-
-    const particleSystem = new BABYLON.ParticleSystem("iceCrystals", 150, scene);
-
-    particleSystem.particleTexture = new BABYLON.Texture("https://assets.babylonjs.com/textures/flare.png", scene);
-
-    // ✅ 发射器位置（场景中心，低空）
-    particleSystem.emitter = new BABYLON.Vector3(0, 1, 0); // ✅ y=2 -> 1
-
-    // ✅ 粒子属性（超大金色冰晶）
-    particleSystem.minSize = 0.3; // ✅ 0.2 -> 0.3 再增大
-    particleSystem.maxSize = 0.8; // ✅ 0.45 -> 0.8 再增大
-
-    particleSystem.minLifeTime = 4; // ✅ 3 -> 4
-    particleSystem.maxLifeTime = 6; // ✅ 5 -> 6
-
-    particleSystem.emitRate = 30; 
-
-    particleSystem.color1 = new BABYLON.Color4(0.4, 0.28, 0.03, 0.75); // ✅ 进一步降低
-    particleSystem.color2 = new BABYLON.Color4(0.35, 0.24, 0.06, 0.65); // ✅ 略暗的金色
-    particleSystem.colorDead = new BABYLON.Color4(0.25, 0.18, 0.04, 0.0); // ✅ 死亡时变暗金色
-
-    // ✅ 方向和速度（明显的缓慢漂浮）
-    particleSystem.direction1 = new BABYLON.Vector3(-0.3, -0.3, -0.3);
-    particleSystem.direction2 = new BABYLON.Vector3(0.3, 0.3, 0.3);
-
-    particleSystem.minEmitPower = 0.2; // ✅ 0.1 -> 0.2
-    particleSystem.maxEmitPower = 0.5; // ✅ 0.3 -> 0.5
-
-    // ✅ 发射范围（调整到玩家可视范围）
-    particleSystem.minEmitBox = new BABYLON.Vector3(-6, 0, -6); // ✅ y: -1 -> 0
-    particleSystem.maxEmitBox = new BABYLON.Vector3(6, 3, 6); // ✅ y: 5 -> 3
-
-    // 混合模式（✅ ADD模式可以隐藏黑色背景，颜色值要低）
-    particleSystem.blendMode = BABYLON.ParticleSystem.BLENDMODE_ADD;
-
-    // 启动
-    particleSystem.start();
-
-    // 延迟检查粒子数量
-    setTimeout(() => {
-        const count = particleSystem.getActiveCount();
-        console.log(`❄️ 冰晶粒子运行中（暗金色+STANDARD模式）- 当前粒子数: ${count}`);
-    }, 1000);
-
-    // 保存
-    this.battle3D.particleSystems.push(particleSystem);
-
-    console.log('❄️ 冰晶粒子已启动（超增强版）- 总容量: 600, 发射率: 100/秒');
-
-    return particleSystem;
-};
 
 /**
  * 创建雪堆装饰物（冰封雪谷）

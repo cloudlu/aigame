@@ -316,6 +316,9 @@ class MainQuestSystem {
     /**
      * 初始化主线任务（新玩家/境界突破后调用）
      */
+    /**
+     * 初始化主线任务
+     */
     initMainQuest(realmIndex) {
         const realm = this.game.persistentState.player.realm;
         const stageNum = realm?.currentStage || 1;
@@ -324,6 +327,62 @@ class MainQuestSystem {
         this.initLevelQuests(realmIndex, stageNum, levelInStage);
 
         this.triggerStory(realmIndex + '_chapter_start');
+
+        // ✅ 注册事件监听器，自动追踪任务进度
+        this.registerEventListeners();
+    }
+
+    /**
+     * 注册事件监听器（自动追踪任务进度）
+     */
+    registerEventListeners() {
+        if (typeof window === 'undefined' || !window.eventManager) {
+            console.warn('[主线任务] eventManager未加载，跳过事件监听注册');
+            return;
+        }
+
+        // 监听敌人击杀事件
+        window.eventManager.on('battle:victory', (event) => {
+            if (event.data && event.data.enemy) {
+                this.trackMainQuestProgress('enemy_killed', {
+                    name: event.data.enemy,
+                    type: event.data.enemy.type || event.data.enemy.name,
+                    isBoss: event.data.isBoss || false,
+                    isElite: event.data.isElite || false
+                });
+            }
+        });
+
+        // 监听副本完成事件
+        window.eventManager.on('dungeon:complete', (event) => {
+            if (event.data) {
+                this.trackMainQuestProgress('dungeon_completed', {
+                    dungeonId: event.data.dungeonId,
+                    difficulty: event.data.difficulty
+                });
+            }
+        });
+
+        // 监听地图访问事件
+        window.eventManager.on('map:visit', (event) => {
+            if (event.data) {
+                this.trackMainQuestProgress('map_visited', {
+                    mapType: event.data.mapType
+                });
+            }
+        });
+
+        // 监听资源采集事件
+        window.eventManager.on('resource:collect', (event) => {
+            if (event.data) {
+                this.trackMainQuestProgress('resource_collected', {
+                    resource: event.data.resource,
+                    amount: event.data.amount
+                });
+            }
+        });
+
+        console.log('✅ MainQuestSystem事件监听已注册');
     }
 
     /**
@@ -355,6 +414,15 @@ class MainQuestSystem {
                     if (eventType === 'enemy_killed' && eventData.isBoss) {
                         if (eventData.name && eventData.name.includes(objective.targetBoss)) {
                             objective.current = true;
+                            changed = true;
+                        }
+                    }
+                    break;
+
+                case 'kill_elite':
+                    if (eventType === 'enemy_killed' && eventData.isElite) {
+                        if (!objective.subType || eventData.type === objective.subType) {
+                            objective.current = (objective.current || 0) + 1;
                             changed = true;
                         }
                     }
@@ -409,18 +477,26 @@ class MainQuestSystem {
         }
 
         if (changed) {
-            const allComplete = questState.objectives.every(o =>
-                o.current === true || o.current >= o.target
-            );
+            this.updateQuestUI();
 
-            if (allComplete) {
+            // 检查任务是否完成
+            if (this.isQuestComplete(questState)) {
                 questState.completed = true;
-                this.onMainQuestComplete(questDef);
+                this.game.showNotification('主线任务完成！', 'success');
+                this.updateQuestUI();
             }
 
-            this.updateMainQuestUI();
             this.game.saveGameState();
         }
+    }
+
+    /**
+     * 检查任务是否完成
+     */
+    isQuestComplete(questState) {
+        return questState.objectives.every(o =>
+            o.current === true || o.current >= o.target
+        );
     }
 
     /**

@@ -242,6 +242,70 @@ class DungeonMusicGenerator {
 
         return buffer;
     }
+
+    /**
+     * 悟道秘境音乐 - 仙境空灵音效
+     * 特点：空灵悠远、风铃声、仙鹤叫声、悠扬笛声、云雾缭绕
+     */
+    generateMysticalMusic() {
+        const duration = 30.0;
+        const sampleRate = this.audioCtx.sampleRate;
+        const length = duration * sampleRate;
+        const buffer = this.audioCtx.createBuffer(1, length, sampleRate);
+        const data = buffer.getChannelData(0);
+
+        for (let i = 0; i < length; i++) {
+            const t = i / sampleRate;
+            let sample = 0;
+
+            // 1. 空灵基础音（五声音阶：C-D-E-G-A）
+            const pentatonic = [261, 293, 329, 392, 440]; // C-D-E-G-A
+            const melodyIdx = Math.floor((t * 0.5) % pentatonic.length);
+            const baseFreq = pentatonic[melodyIdx];
+            const envelope = Math.sin(Math.PI * t / duration) * 0.08;
+            sample += Math.sin(2 * Math.PI * baseFreq * t) * envelope;
+
+            // 2. 风铃声（随机高频清脆音）
+            if (Math.random() < 0.0015) {
+                const bellFreq = 2000 + Math.random() * 2000;
+                const bellEnv = Math.exp(-((t % 30) - Math.floor(t)) * 8);
+                const bell = Math.sin(2 * Math.PI * bellFreq * t) * bellEnv * 0.12;
+                const bellHarmony = Math.sin(2 * Math.PI * bellFreq * 2 * t) * bellEnv * 0.06;
+                sample += bell + bellHarmony;
+            }
+
+            // 3. 仙鹤叫声（偶尔的高频滑音）
+            if (Math.random() < 0.0005) {
+                const craneFreq = 800 + 400 * Math.sin(t * 2);
+                const craneEnv = Math.exp(-((t % 30) - Math.floor(t)) * 3);
+                const crane = Math.sin(2 * Math.PI * craneFreq * t) * craneEnv * 0.15;
+                sample += crane;
+            }
+
+            // 4. 悠扬笛声（缓慢旋律线）
+            const fluteFreq = 523 + 100 * Math.sin(t * 0.2); // C5 ± 变化
+            const fluteEnv = 0.1 + 0.05 * Math.sin(t * 0.5);
+            const flute = Math.sin(2 * Math.PI * fluteFreq * t) * fluteEnv;
+            const fluteVibrato = Math.sin(2 * Math.PI * 6 * t) * 0.01; // 颤音
+            sample += flute + fluteVibrato;
+
+            // 5. 云雾缭绕（柔和的白噪声）
+            const mistNoise = (Math.random() * 2 - 1) * 0.03;
+            const mistMod = Math.sin(2 * Math.PI * 0.1 * t);
+            sample += mistNoise * (0.5 + mistMod * 0.5);
+
+            // 6. 空间回声（延迟效果）
+            const delayTime = 0.5;
+            const delayIndex = Math.floor(delayTime * sampleRate);
+            if (i > delayIndex) {
+                sample += data[i - delayIndex] * 0.2;
+            }
+
+            data[i] = sample * 0.7; // 音量控制
+        }
+
+        return buffer;
+    }
 }
 
 // 生成并保存音频文件
@@ -270,6 +334,13 @@ async function generateDungeonMusic() {
     const lavaWav = audioBufferToWav(lavaBuffer);
     fs.writeFileSync('assets/audio/dungeon_lava.wav', lavaWav);
     console.log('  ✓ 保存至 assets/audio/dungeon_lava.wav\n');
+
+    // 4. 悟道秘境
+    console.log('✨ 生成悟道秘境音乐...');
+    const mysticalBuffer = generator.generateMysticalMusic();
+    const mysticalWav = audioBufferToWav(mysticalBuffer);
+    fs.writeFileSync('assets/audio/dungeon_mystical.wav', mysticalWav);
+    console.log('  ✓ 保存至 assets/audio/dungeon_mystical.wav\n');
 
     console.log('✅ 所有副本音乐已生成！');
 }

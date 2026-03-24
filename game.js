@@ -117,6 +117,22 @@ class EndlessCultivationGame {
         const AudioSystemClass = typeof window !== 'undefined' ? window.AudioSystem : require('./audio');
         this.audioSystem = new AudioSystemClass(this);
 
+        // 初始化事件驱动的音频管理器
+        const AudioManagerClass = typeof window !== 'undefined' ? window.AudioManager : null;
+        if (AudioManagerClass) {
+            this.audioManager = new AudioManagerClass(this);
+        } else {
+            console.warn('AudioManager类未加载，事件驱动音频不可用');
+        }
+
+        // 初始化事件驱动的UI管理器
+        const UIManagerClass = typeof window !== 'undefined' ? window.UIManager : null;
+        if (UIManagerClass) {
+            this.uiManager = new UIManagerClass(this);
+        } else {
+            console.warn('UIManager类未加载，事件驱动UI不可用');
+        }
+
         // 初始化游戏
         this.initGame();
     }
@@ -171,6 +187,22 @@ class EndlessCultivationGame {
             this.dungeon.initAllDungeonData();
         } else {
             console.error('DungeonSystem未定义，跳过副本系统初始化');
+        }
+
+        // 初始化事件驱动的音频管理器
+        if (this.audioManager && typeof window !== 'undefined' && window.eventManager) {
+            this.audioManager.init(window.eventManager);
+            console.log('✅ AudioManager已初始化');
+        } else {
+            console.warn('⚠️ AudioManager或eventManager未加载，跳过音频管理器初始化');
+        }
+
+        // 初始化事件驱动的UI管理器
+        if (this.uiManager && typeof window !== 'undefined' && window.eventManager) {
+            this.uiManager.init(window.eventManager);
+            console.log('✅ UIManager已初始化');
+        } else {
+            console.warn('⚠️ UIManager或eventManager未加载，跳过UI管理器初始化');
         }
 
         // ✅ 重置战斗状态（防止页面刷新后残留战斗状态）
@@ -959,6 +991,12 @@ class EndlessCultivationGame {
     // max: 最大值
     // suffixes: { bar: '-bar', display: '-display' } 后缀配置（可选，使用默认值）
     updateProgressBar(elementPrefix, current, max, suffixes = { bar: '-bar', display: '-display' }) {
+        // ✅ 委托给 UIManager 处理（渐进式重构）
+        if (this.uiManager && typeof this.uiManager.updateProgressBar === 'function') {
+            return this.uiManager.updateProgressBar(elementPrefix, current, max, suffixes);
+        }
+
+        // 降级方案：如果 UIManager 不可用，保留原有逻辑
         const percentage = max > 0 ? (current / max) * 100 : 0;
 
         // 更新条形宽度
@@ -4145,6 +4183,14 @@ class EndlessCultivationGame {
 
     // 添加战斗日志
     addBattleLog(message) {
+        // ✅ 新功能：触发事件（如果 eventManager 存在）
+        if (typeof eventManager !== 'undefined' && eventManager) {
+            eventManager.emit('battle:log', {
+                message,
+                timestamp: Date.now()
+            });
+        }
+
         // 确保battle对象存在
         if (!this.transientState.battle) {
             this.transientState.battle = {
@@ -4519,7 +4565,8 @@ class EndlessCultivationGame {
                             this.inventoryPagination = {
                                 currentPage: 1,
                                 totalPages: 1,
-                                itemsPerPage: SIZES.INVENTORY_PAGE_SIZE || 50
+                                itemsPerPage: SIZES.INVENTORY_PAGE_SIZE || 50,
+                                currentEquipmentType: 'all' // ✅ 修复：添加默认装备类型
                             };
                         }
 
@@ -5764,9 +5811,20 @@ class EndlessCultivationGame {
     equipItem(item) {
         // 记录装备前战力
         const oldPower = this.calculatePlayerCombatPower();
+
         // 检查是否已有同类型装备
         const existingItem = this.persistentState.player.equipment[item.type];
-        
+
+        // ✅ 触发事件
+        if (typeof eventManager !== 'undefined' && eventManager) {
+            eventManager.emit('equipment:equip', {
+                item,
+                replacedItem: existingItem,
+                slot: item.type,
+                timestamp: Date.now()
+            });
+        }
+
         // 装备新物品
         this.persistentState.player.equipment[item.type] = item;
         
@@ -5815,13 +5873,24 @@ class EndlessCultivationGame {
     unequipItem(slot) {
         const item = this.persistentState.player.equipment[slot];
         if (item) {
+            // ✅ 检查背包是否已满
+            if (this.isInventoryFull()) {
+                this.addBattleLog('⚠️ 背包已满！无法卸下装备！');
+                return;
+            }
+
             const oldPower = this.calculatePlayerCombatPower();
             // 卸下物品
             this.persistentState.player.equipment[slot] = null;
-            
-            // 将卸下的装备放回背包
-            this.persistentState.player.inventory.push(item);
-            
+
+            // ✅ 使用addToInventory方法添加装备（带容量检查）
+            const success = this.addToInventory(item);
+            if (!success) {
+                // 如果添加失败，恢复装备
+                this.persistentState.player.equipment[slot] = item;
+                return;
+            }
+
             // 计算装备效果
             this.equipmentSystem.calculateEquipmentEffects();
 
@@ -5925,6 +5994,16 @@ class EndlessCultivationGame {
      */
     checkAndEquipBetterGearWithPrompt(item) {
         const currentItem = this.persistentState.player.equipment[item.type];
+
+        // ✅ 触发事件
+        if (typeof eventManager !== 'undefined' && eventManager) {
+            eventManager.emit('equipment:check', {
+                newItem: item,
+                currentItem,
+                slot: item.type,
+                timestamp: Date.now()
+            });
+        }
 
         // 没有当前装备，直接穿上
         if (!currentItem) {

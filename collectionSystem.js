@@ -15,6 +15,25 @@ class CollectionSystem {
                 rewardedCategories: []
             };
         }
+
+        // ✅ 监听事件，自动记录图鉴
+        if (typeof window !== 'undefined' && window.eventManager) {
+            // 监听战斗胜利事件，自动记录敌人
+            window.eventManager.on('battle:victory', (event) => {
+                if (event.data && event.data.enemy) {
+                    this.recordEnemy(event.data.enemy);
+                }
+            });
+
+            // 监听装备掉落事件，自动记录装备
+            window.eventManager.on('equipment:drop', (event) => {
+                if (event.data && event.data.equipment) {
+                    this.recordEquipment(event.data.equipment);
+                }
+            });
+
+            console.log('✅ CollectionSystem事件监听已注册');
+        }
     }
 
     // ==================== 敌人图鉴 ====================
