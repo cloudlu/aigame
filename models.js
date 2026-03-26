@@ -154,6 +154,30 @@ EndlessCultivationGame.prototype.createPlayerModel = function() {
 
     // 存储玩家模型
     this.battle3D.player = player;
+
+    // ✅ 添加鼠标悬停提示（仅在战斗场景）
+    if (this.transientState.battle.inBattle && this.battle3D.scene && player) {
+        console.log('✅ 战斗场景：为玩家添加ActionManager');
+        player.actionManager = new BABYLON.ActionManager(this.battle3D.scene);
+
+        // 鼠标进入
+        player.actionManager.registerAction(new BABYLON.ExecuteCodeAction(
+            BABYLON.ActionManager.OnPointerOverTrigger,
+            () => {
+                console.log('🖱️ 战斗场景：鼠标移到玩家身上');
+                this.showBattleTooltip('player');
+            }
+        ));
+
+        // 鼠标离开
+        player.actionManager.registerAction(new BABYLON.ExecuteCodeAction(
+            BABYLON.ActionManager.OnPointerOutTrigger,
+            () => {
+                console.log('🖱️ 战斗场景：鼠标离开玩家');
+                this.hideBattleTooltip();
+            }
+        ));
+    }
 };
 
 // 创建敌人3D模型
@@ -249,6 +273,43 @@ EndlessCultivationGame.prototype.createEnemyModel = function() {
     // 存储敌人模型和是否飞行标记
     this.battle3D.enemy = enemyGroup;
     this.battle3D.enemyIsFlying = isFlying;
+
+    // ✅ 添加鼠标悬停提示（仅在战斗场景）
+    // 注意：TransformNode 不能直接添加 ActionManager，需要为其子mesh添加
+    if (this.transientState.battle.inBattle && this.battle3D.scene && enemyGroup) {
+        console.log('✅ 战斗场景：为敌人的子mesh添加ActionManager');
+
+        // 获取所有子mesh
+        const childMeshes = enemyGroup.getChildMeshes();
+        console.log(`📦 敌人模型有 ${childMeshes.length} 个子mesh`);
+
+        if (childMeshes.length > 0) {
+            // 为每个子mesh添加ActionManager
+            childMeshes.forEach((mesh, index) => {
+                mesh.actionManager = new BABYLON.ActionManager(this.battle3D.scene);
+
+                // 鼠标进入
+                mesh.actionManager.registerAction(new BABYLON.ExecuteCodeAction(
+                    BABYLON.ActionManager.OnPointerOverTrigger,
+                    () => {
+                        console.log(`🖱️ 战斗场景：鼠标移到敌人mesh[${index}]身上`);
+                        this.showBattleTooltip('enemy');
+                    }
+                ));
+
+                // 鼠标离开
+                mesh.actionManager.registerAction(new BABYLON.ExecuteCodeAction(
+                    BABYLON.ActionManager.OnPointerOutTrigger,
+                    () => {
+                        console.log(`🖱️ 战斗场景：鼠标离开敌人mesh[${index}]`);
+                        this.hideBattleTooltip();
+                    }
+                ));
+            });
+        } else {
+            console.warn('⚠️ 敌人模型没有子mesh，无法添加ActionManager');
+        }
+    }
 };
 
 // 创建血条

@@ -10,6 +10,9 @@ class MainQuestSystem {
         this._questCache = {};
         // ID到名称的映射缓存（持久保存已完成任务的名称）
         this._questNameMap = {};
+
+        // ✅ 构造函数中注册事件监听器（确保从存档加载时也能监听）
+        this.registerEventListeners();
     }
 
     // ========== 任务模板生成引擎 ==========
@@ -341,20 +344,45 @@ class MainQuestSystem {
             return;
         }
 
+        // 避免重复注册
+        if (this._eventListenersRegistered) {
+            console.log('[主线任务] 事件监听器已注册，跳过重复注册');
+            return;
+        }
+
         // 监听敌人击杀事件
         window.eventManager.on('battle:victory', (event) => {
-            if (event.data && event.data.enemy) {
+            console.log('[主线任务] 收到战斗胜利事件:', event);
+            if (event && event.data) {
+                // 确定敌人类型
+                let enemyType = 'normal';  // 默认是普通怪
+                if (event.data.isBoss) {
+                    enemyType = 'boss';
+                } else if (event.data.isElite) {
+                    enemyType = 'elite';
+                }
+
+                console.log('[主线任务] 敌人类型判定:', {
+                    enemyName: event.data.enemy,
+                    isBoss: event.data.isBoss,
+                    isElite: event.data.isElite,
+                    enemyType: enemyType
+                });
+
                 this.trackMainQuestProgress('enemy_killed', {
                     name: event.data.enemy,
-                    type: event.data.enemy.type || event.data.enemy.name,
+                    type: enemyType,
                     isBoss: event.data.isBoss || false,
                     isElite: event.data.isElite || false
                 });
+            } else {
+                console.warn('[主线任务] 战斗胜利事件数据无效:', event);
             }
         });
 
-        // 监听副本完成事件
+        // 监听副本完成事件（注意：事件名称为 dungeon:complete，追踪类型为 dungeon_completed）
         window.eventManager.on('dungeon:complete', (event) => {
+            console.log('[主线任务] 收到副本完成事件:', event.data);
             if (event.data) {
                 this.trackMainQuestProgress('dungeon_completed', {
                     dungeonId: event.data.dungeonId,
@@ -382,6 +410,7 @@ class MainQuestSystem {
             }
         });
 
+        this._eventListenersRegistered = true;
         console.log('✅ MainQuestSystem事件监听已注册');
     }
 
@@ -390,10 +419,23 @@ class MainQuestSystem {
      */
     trackMainQuestProgress(eventType, eventData) {
         const questState = this.getCurrentQuestState();
-        if (!questState || questState.completed) return;
+        if (!questState || questState.completed) {
+            console.log('[主线任务] 无当前任务或任务已完成，跳过进度追踪');
+            return;
+        }
 
         const questDef = this.getCurrentQuestDef();
-        if (!questDef) return;
+        if (!questDef) {
+            console.log('[主线任务] 无法获取当前任务定义');
+            return;
+        }
+
+        console.log('[主线任务] 追踪进度:', {
+            eventType,
+            eventData,
+            questId: questDef.id,
+            objectives: questState.objectives
+        });
 
         let changed = false;
 
@@ -447,9 +489,16 @@ class MainQuestSystem {
 
                 case 'dungeon':
                     if (eventType === 'dungeon_completed' && eventData.dungeonId === objective.dungeonId) {
+                        console.log('[主线任务] 副本任务匹配:', {
+                            dungeonId: eventData.dungeonId,
+                            objectiveDungeonId: objective.dungeonId,
+                            difficulty: eventData.difficulty,
+                            objectiveDifficulty: objective.difficulty
+                        });
                         if (!objective.difficulty || eventData.difficulty === objective.difficulty) {
                             objective.current = true;
                             changed = true;
+                            console.log('[主线任务] 副本任务完成！');
                         }
                     }
                     break;
@@ -477,13 +526,14 @@ class MainQuestSystem {
         }
 
         if (changed) {
-            this.updateQuestUI();
+            console.log('[主线任务] 进度已更新');
+            this.updateMainQuestUI();
 
             // 检查任务是否完成
             if (this.isQuestComplete(questState)) {
                 questState.completed = true;
-                this.game.showNotification('主线任务完成！', 'success');
-                this.updateQuestUI();
+                console.log('[主线任务] 任务已完成！');
+                this.onMainQuestComplete(questDef);
             }
 
             this.game.saveGameState();

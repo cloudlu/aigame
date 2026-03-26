@@ -3,6 +3,9 @@
 class DailyQuestSystem {
     constructor(game) {
         this.game = game;
+
+        // ✅ 构造函数中注册事件监听器（确保从存档加载时也能监听）
+        this.registerEventListeners();
     }
 
     // ========== 每日任务初始化 ==========
@@ -39,18 +42,35 @@ class DailyQuestSystem {
             return;
         }
 
+        // 避免重复注册
+        if (this._eventListenersRegistered) {
+            console.log('[每日任务] 事件监听器已注册，跳过重复注册');
+            return;
+        }
+
         // 监听敌人击杀事件
         window.eventManager.on('battle:victory', (event) => {
-            if (event.data && event.data.enemy) {
+            console.log('[每日任务] 收到战斗胜利事件:', event.data);
+            if (event.data) {
+                // 确定敌人类型
+                let enemyType = 'normal';  // 默认是普通怪
+                if (event.data.isBoss) {
+                    enemyType = 'boss';
+                } else if (event.data.isElite) {
+                    enemyType = 'elite';
+                }
+
                 this.trackDailyQuestProgress('enemy_killed', {
-                    type: event.data.enemy.type || event.data.enemy.name,
-                    isBoss: event.data.enemy.isBoss || event.data.enemy.name?.startsWith('BOSS')
+                    type: enemyType,
+                    isBoss: event.data.isBoss || false,
+                    isElite: event.data.isElite || false
                 });
             }
         });
 
         // 监听副本完成事件
         window.eventManager.on('dungeon:complete', (event) => {
+            console.log('[每日任务] 收到副本完成事件:', event.data);
             if (event.data) {
                 this.trackDailyQuestProgress('dungeon_completed', {
                     dungeonId: event.data.dungeonId
@@ -67,6 +87,7 @@ class DailyQuestSystem {
             }
         });
 
+        this._eventListenersRegistered = true;
         console.log('✅ DailyQuestSystem事件监听已注册');
     }
 
@@ -263,7 +284,16 @@ class DailyQuestSystem {
      */
     trackDailyQuestProgress(eventType, eventData) {
         const dq = this.game.persistentState.dailyQuests;
-        if (!dq || !dq.quests) return;
+        if (!dq || !dq.quests) {
+            console.log('[每日任务] 无任务数据');
+            return;
+        }
+
+        console.log('[每日任务] 追踪进度:', {
+            eventType,
+            eventData,
+            quests: dq.quests.map(q => ({ id: q.id, type: q.type, current: q.current, completed: q.completed }))
+        });
 
         let changed = false;
 
@@ -276,14 +306,22 @@ class DailyQuestSystem {
                         if (!quest.subType || eventData.type === quest.subType) {
                             quest.current = (quest.current || 0) + 1;
                             changed = true;
+                            console.log(`[每日任务] 击杀任务进度更新: ${quest.name} - ${quest.current}/${quest.target}`);
                         }
                     }
                     break;
 
                 case 'kill_boss':
+                    console.log('[每日任务] Boss任务检查:', {
+                        eventType,
+                        isBoss: eventData.isBoss,
+                        current: quest.current,
+                        target: quest.target
+                    });
                     if (eventType === 'enemy_killed' && eventData.isBoss) {
                         quest.current = (quest.current || 0) + 1;
                         changed = true;
+                        console.log(`[每日任务] Boss任务进度更新: ${quest.name} - ${quest.current}/${quest.target}`);
                     }
                     break;
 
@@ -291,6 +329,7 @@ class DailyQuestSystem {
                     if (eventType === 'dungeon_completed' && eventData.dungeonId === quest.dungeonId) {
                         quest.current = 1;
                         changed = true;
+                        console.log(`[每日任务] 副本任务完成: ${quest.name}`);
                     }
                     break;
 
@@ -298,6 +337,7 @@ class DailyQuestSystem {
                     if (eventType === 'map_visited' && eventData.mapType === quest.targetMap) {
                         quest.current = 1;
                         changed = true;
+                        console.log(`[每日任务] 地图任务完成: ${quest.name}`);
                     }
                     break;
             }
@@ -305,6 +345,7 @@ class DailyQuestSystem {
             if (changed && quest.current >= quest.target) {
                 quest.completed = true;
                 this.game.addBattleLog(`📋 每日任务【${quest.name}】已完成！点击领取奖励。`);
+                console.log(`[每日任务] 任务完成: ${quest.name}`);
             }
         }
 

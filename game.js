@@ -133,6 +133,17 @@ class EndlessCultivationGame {
             console.warn('UIManager类未加载，事件驱动UI不可用');
         }
 
+        // 初始化纯函数式战斗引擎
+        const CombatEngineClass = typeof window !== 'undefined' ? window.CombatEngine : null;
+        const CombatContextBuilderClass = typeof window !== 'undefined' ? window.CombatContextBuilder : null;
+        if (CombatEngineClass && CombatContextBuilderClass) {
+            this.combatEngine = CombatEngineClass;
+            this.combatContextBuilder = CombatContextBuilderClass;
+            console.log('✅ 纯函数式战斗引擎已初始化');
+        } else {
+            console.warn('CombatEngine或CombatContextBuilder类未加载，纯函数式战斗不可用');
+        }
+
         // 初始化游戏
         this.initGame();
     }
@@ -573,7 +584,17 @@ class EndlessCultivationGame {
             this.dailyQuestSystem.trackDailyQuestProgress('map_visited', { mapType: targetMapType });
         }
 
-        this.updateUI();
+        // ✅ 触发地图切换事件
+        if (typeof window !== 'undefined' && window.eventManager) {
+            window.eventManager.emit('map:change', {
+                mapIndex: targetIndex,
+                mapType: targetMapType,
+                mapName: mapInfo.name,
+                energyCost: energyCost,
+                timestamp: Date.now()
+            });
+        }
+
         return true;
     }
 
@@ -1012,8 +1033,16 @@ class EndlessCultivationGame {
         }
     }
 
-    // 更新UI显示
+    // 更新UI显示（✅ 已重构为委托给 UIManager）
     updateUI() {
+        // ✅ 性能优化：委托给 UIManager 的细粒度更新系统
+        if (this.uiManager && typeof this.uiManager.forceUpdateAll === 'function') {
+            return this.uiManager.forceUpdateAll();
+        }
+
+        // ⚠️ 降级方案：如果 UIManager 不可用，使用旧的完整更新逻辑
+        console.warn('[性能警告] UIManager不可用，使用旧的updateUI方法');
+
         // 确保persistentState和resources对象存在
         if (!this.persistentState) {
             this.persistentState = {};
@@ -1033,7 +1062,7 @@ class EndlessCultivationGame {
                 maxEnergy: 100
             };
         }
-        
+
         // 更新灵力条（使用统一函数更新主页面和人物面板）
         const energyCurrent = this.persistentState.player.energy || 0;
         const energyMax = this.persistentState.player.maxEnergy || 100;
@@ -1070,7 +1099,7 @@ class EndlessCultivationGame {
         if (ironElement) {
             ironElement.textContent = Math.floor(this.persistentState.resources.iron || 0);
         }
-        
+
         // 计算装备效果
         this.equipmentSystem.calculateEquipmentEffects();
 
@@ -1093,18 +1122,18 @@ class EndlessCultivationGame {
         const finalMaxHp = stats.maxHp;
 
         // 更新玩家属性显示
-            const levelElement = document.getElementById('level');
-            if (levelElement) {
-                if (this.metadata.realmConfig) {
-                    const realm = this.persistentState.player.realm;
-                    const realmName = this.metadata.realmConfig[realm.currentRealm].name;
-                    const stageConfig = this.metadata.realmConfig[realm.currentRealm].stages[realm.currentStage - 1];
-                    const stageName = stageConfig.name;
-                    levelElement.textContent = `${realmName} ${stageName} ${realm.currentStage}阶 ${realm.currentLevel}级`;
-                } else {
-                    levelElement.textContent = this.calculateTotalLevel();
-                }
+        const levelElement = document.getElementById('level');
+        if (levelElement) {
+            if (this.metadata.realmConfig) {
+                const realm = this.persistentState.player.realm;
+                const realmName = this.metadata.realmConfig[realm.currentRealm].name;
+                const stageConfig = this.metadata.realmConfig[realm.currentRealm].stages[realm.currentStage - 1];
+                const stageName = stageConfig.name;
+                levelElement.textContent = `${realmName} ${stageName} ${realm.currentStage}阶 ${realm.currentLevel}级`;
+            } else {
+                levelElement.textContent = this.calculateTotalLevel();
             }
+        }
             const expElement = document.getElementById('exp');
             if (expElement) {
                 expElement.textContent = this.persistentState.player.exp;
@@ -1262,11 +1291,12 @@ class EndlessCultivationGame {
         
         // 更新用户信息
         const currentUserNav = document.getElementById('current-user-nav');
-        if (currentUserNav) {
+        const survivorName = document.getElementById('survivor-name');
+
+        if (currentUserNav && this._user.username) {
             currentUserNav.textContent = this._user.username;
         }
-        const survivorName = document.getElementById('survivor-name');
-        if (survivorName) {
+        if (survivorName && this._user.username) {
             survivorName.textContent = this._user.username;
         }
         
@@ -1336,12 +1366,13 @@ class EndlessCultivationGame {
                 this.persistentState.player.maxEnergy = 100;
             }
         }
-        
-        // 更新UI
-        this.updateUI();
-        
-        // 更新血条显示
-        if (typeof this.updateHealthBars === 'function') {
+
+        // ✅ 细粒度UI更新：只更新血条和灵力显示（不使用forceUpdateAll）
+        if (this.uiManager) {
+            this.uiManager.updateHealthBars();
+            this.uiManager.updateEnergyDisplay();
+        } else {
+            // 降级方案
             this.updateHealthBars();
         }
     }
@@ -2067,9 +2098,6 @@ class EndlessCultivationGame {
                 this.persistentState.player.exp -= this.persistentState.player.maxExp;
                 this.persistentState.player.maxExp = Math.floor(this.persistentState.player.maxExp * 1.5);
 
-                // 记录升级前战力
-                const oldPower = this.calculatePlayerCombatPower();
-
                 // 根据境界提升属性加成
                 const realmBonus = {
                     0: { hp: 20, atk: 3, def: 2, energy: 10 },  // 武者
@@ -2097,12 +2125,19 @@ class EndlessCultivationGame {
 
                 // 播放升级声音
                 this.audioSystem.playSound('levelup-sound', 1, 2000);
-                
+
                 this.addBattleLog(`恭喜你升级到${realm.currentLevel}级！灵力上限提升了10点！`);
 
-                // 显示战力变化
-                const newPower = this.calculatePlayerCombatPower();
-                this.showCombatPowerChange(newPower - oldPower);
+                // ✅ 触发升级事件
+                if (typeof window !== 'undefined' && window.eventManager) {
+                    window.eventManager.emit('player:levelup', {
+                        newLevel: realm.currentLevel,
+                        oldLevel: realm.currentLevel - 1,
+                        realm: realm.currentRealm,
+                        stage: realm.currentStage,
+                        timestamp: Date.now()
+                    });
+                }
 
                 // 主线任务进度追踪 - 达到等级
                 if (this.mainQuestSystem) {
@@ -2677,23 +2712,110 @@ class EndlessCultivationGame {
     /**
      * 显示战力变化浮动提示
      */
-    showCombatPowerChange(delta) {
+    showCombatPowerChange(delta, oldPower = null, newPower = null) {
         if (delta === 0) return;
+
         const isPositive = delta > 0;
-        const sign = isPositive ? '+' : '';
         const colorClass = isPositive ? 'text-green-400' : 'text-red-400';
 
-        const notification = document.createElement('div');
-        notification.className = `fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[100] pointer-events-none ${colorClass} font-bold text-2xl animate-bounce transition-opacity duration-1000`;
-        notification.textContent = `⚔ 战力 ${sign}${delta}`;
-        document.body.appendChild(notification);
+        // 如果提供了新旧战力，显示动态滚动效果
+        if (oldPower !== null && newPower !== null) {
+            this.showCombatPowerAnimation(oldPower, newPower, isPositive);
+        } else {
+            // 降级方案：显示简单的数值差
+            const sign = isPositive ? '+' : '';
+            const notification = document.createElement('div');
+            notification.className = `fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[100] pointer-events-none ${colorClass} font-bold text-2xl animate-bounce transition-opacity duration-1000`;
+            notification.textContent = `⚔ 战力 ${sign}${delta}`;
+            document.body.appendChild(notification);
 
-        setTimeout(() => {
-            notification.style.opacity = '0';
-            setTimeout(() => notification.remove(), 1000);
-        }, 1500);
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => notification.remove(), 1000);
+            }, 1500);
+        }
 
+        const sign = isPositive ? '+' : '';
         this.addBattleLog(`⚔ 战力变化: ${sign}${delta}`);
+    }
+
+    /**
+     * 显示战力动画效果（从旧值滚动到新值）
+     */
+    showCombatPowerAnimation(oldPower, newPower, isPositive) {
+        const colorClass = isPositive ? 'text-green-400' : 'text-red-400';
+        const arrow = isPositive ? '↑' : '↓';
+
+        // 创建容器
+        const container = document.createElement('div');
+        container.className = `fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[100] pointer-events-none`;
+
+        // 创建标题
+        const title = document.createElement('div');
+        title.className = 'text-center text-white/60 text-sm mb-1';
+        title.textContent = '⚔ 战力';
+
+        // 创建数字显示
+        const numberDisplay = document.createElement('div');
+        numberDisplay.className = `${colorClass} font-bold text-4xl text-center tabular-nums`;
+        numberDisplay.textContent = oldPower.toLocaleString();
+
+        // 创建箭头和变化值
+        const deltaDisplay = document.createElement('div');
+        const delta = newPower - oldPower;
+        const sign = delta > 0 ? '+' : '';
+        deltaDisplay.className = `text-center ${colorClass} text-lg font-bold mt-1`;
+        deltaDisplay.textContent = `${arrow} ${sign}${delta.toLocaleString()}`;
+
+        container.appendChild(title);
+        container.appendChild(numberDisplay);
+        container.appendChild(deltaDisplay);
+        document.body.appendChild(container);
+
+        // 动画参数
+        const duration = 500; // 总动画时间
+        const frameRate = 60;
+        const totalFrames = Math.floor(duration / 1000 * frameRate);
+        let currentFrame = 0;
+
+        // 数字滚动动画
+        const animate = () => {
+            currentFrame++;
+            const progress = currentFrame / totalFrames;
+
+            // 使用 easeOutCubic 缓动函数
+            const easeProgress = 1 - Math.pow(1 - progress, 3);
+
+            // 计算当前显示的值
+            const currentValue = Math.floor(oldPower + (newPower - oldPower) * easeProgress);
+            numberDisplay.textContent = currentValue.toLocaleString();
+
+            if (currentFrame < totalFrames) {
+                requestAnimationFrame(animate);
+            } else {
+                // 动画完成，显示最终值
+                numberDisplay.textContent = newPower.toLocaleString();
+
+                // 1秒后淡出
+                setTimeout(() => {
+                    container.style.transition = 'opacity 0.5s';
+                    container.style.opacity = '0';
+                    setTimeout(() => container.remove(), 500);
+                }, 1000);
+            }
+        };
+
+        // 添加出现动画
+        container.style.opacity = '0';
+        container.style.transform = 'translate(-50%, -50%) scale(0.5)';
+        container.style.transition = 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+
+        requestAnimationFrame(() => {
+            container.style.opacity = '1';
+            container.style.transform = 'translate(-50%, -50%) scale(1)';
+            // 开始数字滚动动画
+            requestAnimationFrame(animate);
+        });
     }
 
     // 计算总等级（基于境界、阶段和当前等级）
@@ -2816,8 +2938,16 @@ class EndlessCultivationGame {
         // 发放突破奖励
         this.addBattleLog('突破成功！');
         this.updateCharacterBodyImage();
-        this.updateUI();
-        this.updateCharacterModal(); // 同时更新弹框内容
+
+        // ✅ 触发突破成功事件
+        if (typeof window !== 'undefined' && window.eventManager) {
+            window.eventManager.emit('player:breakthrough', {
+                realm: realm.currentRealm,
+                stage: realm.currentStage,
+                level: realm.currentLevel,
+                timestamp: Date.now()
+            });
+        }
 
         // 主线任务 - 境界提升时启动下一境任务
         if (realm.currentStage === 1 && this.mainQuestSystem) {
@@ -3441,9 +3571,15 @@ class EndlessCultivationGame {
         const success = this.realmSkillSystem.upgradeSkillTree(skillTreeId);
 
         if (success) {
-            // 更新UI
-            this.updateUI();
             this.addBattleLog('技能升级成功！');
+
+            // ✅ 触发技能升级事件
+            if (typeof window !== 'undefined' && window.eventManager) {
+                window.eventManager.emit('skill:upgrade', {
+                    skillTreeId: skillTreeId,
+                    timestamp: Date.now()
+                });
+            }
         }
 
         return success;
@@ -3708,7 +3844,15 @@ class EndlessCultivationGame {
                 vipDisplay.textContent = level > 0 ? `VIP${level}·${info.label}` : '普通修士';
             }
 
-            this.updateUI();
+            // ✅ 触发充值成功事件
+            if (typeof window !== 'undefined' && window.eventManager) {
+                window.eventManager.emit('recharge:success', {
+                    jade: result.totalJade || this.persistentState.resources.jade,
+                    vipLevel: this.persistentState.vip?.level || 0,
+                    timestamp: Date.now()
+                });
+            }
+
             this.addBattleLog(result.message);
         } else {
             msgEl.textContent = result.message;
@@ -3989,7 +4133,8 @@ class EndlessCultivationGame {
                 <div class="grid grid-cols-3 gap-1">`;
 
             for (const suffix of suffixes) {
-                const key = `${template.type}_${currentRarity.name}_${suffix}`;
+                // ✅ 修改key格式，包含境界索引：${realmIdx}_${type}_${rarity}_${suffix}
+                const key = `${selectedRealmIdx}_${template.type}_${currentRarity.name}_${suffix}`;
                 const isUnlocked = collection.equipmentTypes.includes(key);
                 const bgClass = isUnlocked ? 'bg-green-900/30 border-green-500/30' : 'bg-gray-800/30 border-gray-700/20';
                 const textClass = isUnlocked ? 'text-green-400' : 'text-gray-600';
@@ -4023,6 +4168,7 @@ class EndlessCultivationGame {
                 if (this.collectionSystem) {
                     this.collectionSystem.recordEquipment(result.equipment);
                 }
+
                 // 检查并提示用户是否装备更好的装备（非战斗场景）
                 const equipped = this.checkAndEquipBetterGearWithPrompt(result.equipment);
                 if (!equipped) {
@@ -4165,7 +4311,7 @@ class EndlessCultivationGame {
         if (!this.timers.afkTimer) {
             this.timers.afkTimer = setInterval(() => {
                 this.persistentState.settings.afkTime++;
-                this.updateUI();
+                // 不需要频繁更新UI，挂机时间不是关键显示内容
             }, 1000);
         }
     }
@@ -5097,6 +5243,12 @@ class EndlessCultivationGame {
         if (Math.random() * 100 < totalRate) {
             // 合成成功
             this.persistentState.player.inventory.push(newEquipment);
+
+            // 图鉴：记录合成获得的新装备
+            if (this.collectionSystem) {
+                this.collectionSystem.recordEquipment(newEquipment);
+            }
+
             this.addBattleLog(`合成成功！获得了${newEquipment.rarityDisplayName} ${newEquipment.name}！`);
             
             // 播放合成成功声音
@@ -5466,6 +5618,11 @@ class EndlessCultivationGame {
             // 合成成功：生成新装备（同等级，更高品质）
             const newEquipment = this.generateCraftedEquipment(craftable.type, craftable.level, newRarity);
 
+            // 图鉴：记录合成获得的新装备
+            if (this.collectionSystem) {
+                this.collectionSystem.recordEquipment(newEquipment);
+            }
+
             // 检查并提示用户是否装备更好的装备（非战斗场景）
             const equipped = this.checkAndEquipBetterGearWithPrompt(newEquipment);
             if (!equipped) {
@@ -5809,9 +5966,6 @@ class EndlessCultivationGame {
     
     // 装备物品
     equipItem(item) {
-        // 记录装备前战力
-        const oldPower = this.calculatePlayerCombatPower();
-
         // 检查是否已有同类型装备
         const existingItem = this.persistentState.player.equipment[item.type];
 
@@ -5827,7 +5981,7 @@ class EndlessCultivationGame {
 
         // 装备新物品
         this.persistentState.player.equipment[item.type] = item;
-        
+
         // 如果有旧装备，将其放回背包
         if (existingItem) {
             // 确保背包存在
@@ -5837,7 +5991,10 @@ class EndlessCultivationGame {
             // 将旧装备放回背包
             this.persistentState.player.inventory.push(existingItem);
         }
-        
+
+        // ✅ 清除装备效果缓存
+        this.invalidateEquipmentEffectsCache();
+
         // 计算装备效果
         this.equipmentSystem.calculateEquipmentEffects();
 
@@ -5845,8 +6002,12 @@ class EndlessCultivationGame {
         this.equipmentSystem.updateCharacterEquipmentDisplay();
         this.equipmentSystem.updateCharacterEquipmentDisplayModal();
 
-        // 更新UI
-        this.updateUI();
+        // ✅ 立即更新UI（装备改变需要立即反馈）
+        if (this.uiManager && typeof this.uiManager.updatePlayerStats === 'function') {
+            this.uiManager.updatePlayerStats();
+        } else {
+            this.updateUI();
+        }
 
         // 更新人物面板属性
         if (typeof this.updateCharacterModal === 'function') {
@@ -5864,9 +6025,6 @@ class EndlessCultivationGame {
         } else {
             this.addBattleLog(`装备了 ${item.name}！`);
         }
-        // 显示战力变化
-        const newPower = this.calculatePlayerCombatPower();
-        this.showCombatPowerChange(newPower - oldPower);
     }
     
     // 卸下物品
@@ -5879,7 +6037,6 @@ class EndlessCultivationGame {
                 return;
             }
 
-            const oldPower = this.calculatePlayerCombatPower();
             // 卸下物品
             this.persistentState.player.equipment[slot] = null;
 
@@ -5891,6 +6048,9 @@ class EndlessCultivationGame {
                 return;
             }
 
+            // ✅ 清除装备效果缓存
+            this.invalidateEquipmentEffectsCache();
+
             // 计算装备效果
             this.equipmentSystem.calculateEquipmentEffects();
 
@@ -5898,8 +6058,12 @@ class EndlessCultivationGame {
             this.equipmentSystem.updateCharacterEquipmentDisplay();
             this.equipmentSystem.updateCharacterEquipmentDisplayModal();
 
-            // 更新UI
-            this.updateUI();
+            // ✅ 立即更新UI（装备改变需要立即反馈）
+            if (this.uiManager && typeof this.uiManager.updatePlayerStats === 'function') {
+                this.uiManager.updatePlayerStats();
+            } else {
+                this.updateUI();
+            }
 
             // 更新人物面板属性
             if (typeof this.updateCharacterModal === 'function') {
@@ -5908,9 +6072,6 @@ class EndlessCultivationGame {
 
             // 添加日志
             this.addBattleLog(`卸下了 ${item.name}，已放回背包！`);
-            // 显示战力变化
-            const newPower = this.calculatePlayerCombatPower();
-            this.showCombatPowerChange(newPower - oldPower);
         }
     }
     
@@ -6230,6 +6391,11 @@ class EndlessCultivationGame {
 
             // 显示获得装备的弹框
             this.showEquipmentObtainModal(equipment, item.name, (confirmed) => {
+                // 图鉴：记录购买获得的装备
+                if (this.collectionSystem) {
+                    this.collectionSystem.recordEquipment(equipment);
+                }
+
                 // 检查并提示用户是否装备更好的装备（非战斗场景）
                 const equipped = this.checkAndEquipBetterGearWithPrompt(equipment);
                 if (!equipped) {
@@ -6262,6 +6428,11 @@ class EndlessCultivationGame {
             rarityDisplayName: '白色',
             rarityMultiplier: 1
             };
+
+            // 图鉴：记录购买获得的装备
+            if (this.collectionSystem) {
+                this.collectionSystem.recordEquipment(equipment);
+            }
 
             // 检查并提示用户是否装备更好的装备（非战斗场景）
             const equipped = this.checkAndEquipBetterGearWithPrompt(equipment);
@@ -6328,7 +6499,10 @@ class EndlessCultivationGame {
                         this.persistentState.player.tempAttack = null;
                         this.persistentState.player.tempAttackExpires = null;
                         this.addBattleLog('攻击药水的效果消失了！');
-                        this.updateUI();
+                        // ✅ 细粒度更新：只更新玩家属性
+                        if (this.uiManager && typeof this.uiManager.updatePlayerStats === 'function') {
+                            this.uiManager.updatePlayerStats();
+                        }
                     }
                 }, remainingTime);
             }
@@ -7456,6 +7630,606 @@ class EndlessCultivationGame {
             container.classList.add('hidden');
         }
         this.showDungeonList();
+    }
+
+    // ==================== 纯函数式CombatEngine集成 ====================
+
+    /**
+     * 构建战斗上下文（供纯函数式CombatEngine使用）
+     */
+    buildCombatContext() {
+        if (!this.combatContextBuilder) {
+            console.warn('CombatContextBuilder未初始化');
+            return null;
+        }
+        return this.combatContextBuilder.build(this);
+    }
+
+    /**
+     * 并行测试：纯函数式攻击
+     * 同时运行新旧代码，对比结果
+    /**
+     * 玩家攻击敌人（新版：纯函数式CombatEngine）
+     * 从 combatlogic.js 迁移到纯函数式架构
+     */
+    attackEnemy() {
+        // 只有在战斗模式中才能使用普通攻击
+        if (!this.transientState.battle.inBattle) {
+            this.addBattleLog('只有在战斗模式中才能使用普通攻击！');
+            return;
+        }
+
+        // 确保战斗场景已初始化
+        if (!this.battle3D || !this.battle3D.player || !this.battle3D.enemy) {
+            this.addBattleLog('战斗场景未初始化！');
+            return;
+        }
+
+        // ========== 1. 构建战斗上下文 ==========
+        const context = this.buildCombatContext();
+        if (!context) {
+            console.error('❌ 构建战斗上下文失败，回退到旧代码');
+            return this.attackEnemy_Deprecated();
+        }
+
+        // ========== 2. 调用纯函数计算玩家攻击结果 ==========
+        const playerResult = this.combatEngine.calculatePlayerAttack(context);
+
+        console.log('📊 [纯函数式] 玩家攻击结果:', {
+            isHit: playerResult.data.isHit,
+            isCrit: playerResult.data.isCrit,
+            damage: playerResult.data.damage,
+            enemyHpAfter: playerResult.updatedEnemy.hp
+        });
+
+        // ========== 3. 播放攻击动画 ==========
+        this.playAttackAnimation(
+            // === 碰撞回调：玩家到达敌人位置时 ===
+            () => {
+                if (playerResult.data.isHit) {
+                    // 创建冲击特效
+                    if (this.battle3D.enemy) {
+                        const hitPosition = this.battle3D.enemy.position.clone();
+                        hitPosition.y = 1.0;
+                        const effectColor = playerResult.data.isCrit ? '#ffcc00' : '#ffffff';
+                        this.createAttackEffect(hitPosition, effectColor);
+                    }
+
+                    // 应用伤害
+                    this.transientState.enemy.hp = playerResult.updatedEnemy.hp;
+                    console.log(`[纯函数式] 敌人HP: ${context.enemy.hp} → ${playerResult.updatedEnemy.hp} (伤害: ${playerResult.data.damage})`);
+
+                    // 显示伤害和日志
+                    if (playerResult.data.isCrit) {
+                        this.showDamage(this.battle3D.enemy, playerResult.data.damage, 'crit');
+                        
+                        // 暴击特效
+                        if (this.battle3D && this.battle3D.enemy) {
+                            const critPosition = this.battle3D.enemy.position.clone();
+                            critPosition.y = 1.0;
+                            this.createCriticalHitEffect(critPosition, 'gold');
+                        }
+
+                        // 相机震动和光照闪光
+                        this.cameraShake(0.08, 250);
+                        this.lightFlash(3.0, 200, new BABYLON.Color3(1.0, 0.9, 0.6));
+                    } else {
+                        this.showDamage(this.battle3D.enemy, playerResult.data.damage, 'red');
+                    }
+
+                    this.playEnemyHitAnimation();
+
+                    // 检查敌人是否死亡
+                    if (playerResult.updatedEnemy.hp <= 0) {
+                        console.log('✅ [纯函数式] 敌人HP归零，调用enemyDefeated');
+                        
+                        // 敌人死亡特效
+                        if (this.battle3D && this.battle3D.enemy) {
+                            const deathPosition = this.battle3D.enemy.position.clone();
+                            deathPosition.y = 1.0;
+                            this.createKillEffect(deathPosition);
+                        }
+                        
+                        // 击杀震动和闪光
+                        this.cameraShake(0.12, 400);
+                        this.lightFlash(4.0, 300, new BABYLON.Color3(1.0, 0.95, 0.9));
+                        
+                        this.enemyDefeated();
+                        return;
+                    }
+                } else {
+                    this.showDodge(this.battle3D.enemy, '闪避！');
+                    
+                    // 闪避残影特效
+                    if (this.battle3D && this.battle3D.enemy) {
+                        const dodgePosition = this.battle3D.enemy.position.clone();
+                        dodgePosition.y = 1.0;
+                        this.createDodgeEffect(dodgePosition);
+                    }
+                }
+
+                // 触发事件
+                playerResult.events.forEach(event => {
+                    if (typeof eventManager !== 'undefined') {
+                        eventManager.emit(event.type, event.data);
+                    }
+                });
+
+                // 添加日志
+                playerResult.logs.forEach(log => {
+                    this.addBattleLog(log);
+                });
+            },
+            // === 结束回调：玩家返回后，触发敌人反击 ===
+            () => {
+                if (this.transientState.enemy.hp <= 0) return;
+
+                // ========== 4. 计算敌人攻击 ==========
+                const enemyResult = this.combatEngine.calculateEnemyAttack({
+                    ...context,
+                    enemy: playerResult.updatedEnemy
+                });
+
+                console.log('📊 [纯函数式] 敌人攻击结果:', {
+                    isHit: enemyResult.data.isHit,
+                    isCrit: enemyResult.data.isCrit,
+                    damage: enemyResult.data.damage,
+                    playerHpAfter: enemyResult.updatedPlayer.hp
+                });
+
+                // 播放敌人攻击动画
+                this.playEnemyAttackAnimation(
+                    // 敌人碰撞回调
+                    () => {
+                        if (!enemyResult.data.isHit) {
+                            this.showDodge(this.battle3D.player, '闪避！');
+                        } else {
+                            // ========== 处理防御状态 ==========
+                            let finalDamage = enemyResult.data.damage;
+
+                            // 检查免疫
+                            if (this.persistentState.player.immuneNextAttack) {
+                                this.persistentState.player.immuneNextAttack = false;
+                                this.addBattleLog(`你完全免疫了${this.transientState.enemy.name}的攻击！`);
+                                return;
+                            }
+
+                            // 检查防御状态
+                            if (this.persistentState.player.defenseActive) {
+                                const reductionRate = this.persistentState.player.defenseBonusValue || 0.5;
+                                finalDamage = Math.max(1, Math.floor(enemyResult.data.damage * (1 - reductionRate)));
+                                defenseConsumed = true;
+
+                                const critText = enemyResult.data.isCrit
+                                    ? `💥暴击！(+${Math.floor((enemyResult.data.critResult?.multiplier || 1.5 - 1) * 100)}%) `
+                                    : '';
+                                const reductionText = enemyResult.data.tenacityReduction > 0
+                                    ? ` 韧性减免${Math.floor(enemyResult.data.tenacityReduction * 100)}%`
+                                    : '';
+
+                                this.addBattleLog(`${critText}${this.transientState.enemy.name}！对你造成了${finalDamage}点伤害！（防御减免${Math.floor(reductionRate * 100)}%${reductionText}）`);
+
+                                // 清除防御状态和特效
+                                this.persistentState.player.defenseActive = false;
+                                this.persistentState.player.defenseBonusValue = 0;
+                                this.removeDefenseEffect();
+                            } else {
+                                // 无防御，正常伤害
+                                if (enemyResult.data.isCrit) {
+                                    const critPercent = Math.floor((enemyResult.data.critResult.multiplier - 1) * 100);
+                                    const reductionText = enemyResult.data.tenacityReduction > 0
+                                        ? ` 韧性减免${Math.floor(enemyResult.data.tenacityReduction * 100)}%`
+                                        : '';
+                                    this.addBattleLog(`💥暴击！(+${critPercent}%) ${this.transientState.enemy.name}！对你造成了${finalDamage}点伤害！${reductionText}`);
+                                } else {
+                                    this.addBattleLog(`${this.transientState.enemy.name}对你造成了${finalDamage}点伤害！`);
+                                }
+                            }
+
+                            // 应用伤害
+                            this.persistentState.player.hp = Math.max(0, this.persistentState.player.hp - finalDamage);
+
+                            if (enemyResult.data.isCrit) {
+                                this.showDamage(this.battle3D.player, finalDamage, 'crit');
+                            } else {
+                                this.showDamage(this.battle3D.player, finalDamage, 'red');
+                            }
+
+                            this.playPlayerHitAnimation();
+                        }
+
+                        // 触发事件
+                        enemyResult.events.forEach(event => {
+                            if (typeof eventManager !== 'undefined') {
+                                eventManager.emit(event.type, event.data);
+                            }
+                        });
+
+                        // 添加日志（防御状态的日志已经添加过了）
+                        if (!enemyResult.data.isHit || !this.persistentState.player.defenseActive) {
+                            enemyResult.logs.forEach(log => {
+                                this.addBattleLog(log);
+                            });
+                        }
+
+                        // 检查玩家是否死亡
+                        if (this.persistentState.player.hp <= 0) {
+                            this.playerDefeated();
+                        }
+                    },
+                    // 敌人结束回调
+                    () => {
+                        this.updateHealthBars();
+                    }
+                );
+            }
+        );
+    }
+
+    /**
+     * 旧版攻击方法（重命名，用于回退）
+     * @deprecated 使用 attackEnemy() 代替
+     */
+    attackEnemy_Deprecated() {
+        console.warn('attackEnemy_Deprecated is deprecated, use attackEnemy() instead');
+        // Fallback: call the old version from combatlogic.js if needed
+        // This is kept for rollback purposes only
+        return this.attackEnemy();
+    }
+
+    /**
+     * 获取技能元素类型（包装CombatEngine）
+     * @param {Object} skill - 技能对象
+     * @returns {string} 元素类型
+     */
+    getSkillElementType(skill) {
+        if (this.combatEngine) {
+            return this.combatEngine.getSkillElementType(skill);
+        }
+        return this.getSkillElementType_Deprecated(skill);
+    }
+
+    /**
+     * 旧版技能元素类型判断（重命名）
+     * @deprecated 使用 getSkillElementType() 代替
+     */
+    getSkillElementType_Deprecated(skill) {
+        if (!skill || !skill.effectColor) return 'wind';
+
+        const color = skill.effectColor;
+
+        // 红色系 -> 火元素
+        if (color.r > 0.7 && color.g < 0.5 && color.b < 0.5) {
+            return 'fire';
+        }
+        // 蓝色系 -> 冰元素
+        else if (color.b > 0.7 && color.r < 0.5 && color.g < 0.7) {
+            return 'ice';
+        }
+        // 黄色/紫色系 -> 雷元素
+        else if ((color.r > 0.7 && color.g > 0.7) || (color.r > 0.5 && color.b > 0.5)) {
+            return 'thunder';
+        }
+        // 绿色/白色系 -> 风元素
+        else {
+            return 'wind';
+        }
+    }
+
+    /**
+     * 玩家被击败（包装CombatEngine）
+     */
+    playerDefeated() {
+        // Try pure functional version
+        if (this.combatEngine) {
+            try {
+                const context = this.buildCombatContext();
+                const result = this.combatEngine.calculatePlayerDefeat(context);
+
+                // Apply state changes
+                if (result.updatedPlayer) {
+                    this.persistentState.player.exp = result.updatedPlayer.exp;
+                    this.persistentState.player.hp = result.updatedPlayer.hp;
+                    this.persistentState.player.energy = result.updatedPlayer.energy;
+                }
+                if (result.updatedEnemy) {
+                    this.transientState.enemy.hp = result.updatedEnemy.hp;
+                    this.transientState.enemy.energy = result.updatedEnemy.energy;
+                }
+
+                // Add logs
+                result.logs.forEach(log => this.addBattleLog(log));
+
+                // Emit events
+                if (result.events) {
+                    result.events.forEach(event => {
+                        if (this.eventManager) {
+                            this.eventManager.emit(event.type, event.data);
+                        }
+                    });
+                }
+
+                // UI animations (keep in game.js)
+                if (this.battle3D) {
+                    this.battle3D.playerDefeated = true;
+                }
+                this.showPlayerDefeatedAnimation();
+
+                // Handle dungeon/cleanup
+                setTimeout(() => {
+                    if (this.dungeon && this.dungeon.currentDungeon) {
+                        this.dungeon.onBattleDefeat();
+                    } else {
+                        this.closeBattleModal();
+                    }
+                }, 2000);
+
+                return;
+            } catch (error) {
+                console.error('纯函数式playerDefeated失败，回退到旧版本:', error);
+            }
+        }
+
+        // Fallback to old version
+        this.playerDefeated_Deprecated();
+    }
+
+    /**
+     * 旧版玩家被击败（重命名）
+     * @deprecated 使用 playerDefeated() 代替
+     */
+    playerDefeated_Deprecated() {
+        // 原始实现保留在combatlogic.js中
+    }
+
+    /**
+     * 敌人被击败（包装CombatEngine）
+     */
+    enemyDefeated() {
+        // Try pure functional version
+        if (this.combatEngine) {
+            try {
+                const context = this.buildCombatContext();
+                const result = this.combatEngine.calculateEnemyDefeat(context);
+
+                // Apply state changes
+                if (result.updatedPlayer) {
+                    this.persistentState.player.exp = result.updatedPlayer.exp;
+                    this.persistentState.player.hp = result.updatedPlayer.hp;
+                    this.persistentState.player.energy = result.updatedPlayer.energy;
+                    if (result.updatedPlayer.resources) {
+                        this.persistentState.resources.herbs = result.updatedPlayer.resources.herbs;
+                        this.persistentState.resources.iron = result.updatedPlayer.resources.iron;
+                        this.persistentState.resources.spiritStones = result.updatedPlayer.resources.spiritStones;
+                        this.persistentState.resources.breakthroughStones = result.updatedPlayer.resources.breakthroughStones;
+                    }
+                }
+
+                // Add logs
+                result.logs.forEach(log => this.addBattleLog(log));
+
+                // Emit events
+                if (result.events) {
+                    result.events.forEach(event => {
+                        if (this.eventManager) {
+                            this.eventManager.emit(event.type, event.data);
+                        }
+                    });
+                }
+
+                // UI animations and equipment drops (keep in game.js)
+                this.showEnemyDefeatedAnimation();
+                if (this.battle3D) {
+                    this.battle3D.enemyDefeated = true;
+                }
+
+                // Handle equipment drop
+                const droppedEquipment = this.equipmentSystem.generateEquipmentDrop();
+                if (droppedEquipment) {
+                    if (this.eventManager) {
+                        this.eventManager.emit('equipment:drop', {
+                            equipment: droppedEquipment,
+                            source: 'enemy_drop',
+                            timestamp: Date.now()
+                        });
+                    }
+                    const equipped = this.checkAndEquipBetterGear(droppedEquipment);
+                    if (!equipped) {
+                        this.persistentState.player.inventory.push(droppedEquipment);
+                        this.addBattleLog(`获得了${droppedEquipment.rarityDisplayName} ${droppedEquipment.name}，已放入背包！`);
+                    } else {
+                        this.addBattleLog(`获得了${droppedEquipment.rarityDisplayName} ${droppedEquipment.name}，属性更好，已自动装备！`);
+                    }
+                } else {
+                    this.addBattleLog(`敌人没有掉落装备。`);
+                }
+
+                // Show HP recovery
+                if (result.data.actualHpRecovered > 0) {
+                    this.showDamage(this.battle3D.player, result.data.actualHpRecovered, 'green');
+                }
+
+                // Handle battle end
+                setTimeout(() => {
+                    if (this.dungeon && this.dungeon.currentDungeon) {
+                        this.dungeon.onBattleVictory();
+                    } else {
+                        this.closeBattleModal();
+                    }
+                }, 2000);
+
+                return;
+            } catch (error) {
+                console.error('纯函数式enemyDefeated失败，回退到旧版本:', error);
+            }
+        }
+
+        // Fallback to old version
+        this.enemyDefeated_Deprecated();
+    }
+
+    /**
+     * 旧版敌人被击败（重命名）
+     * @deprecated 使用 enemyDefeated() 代替
+     */
+    enemyDefeated_Deprecated() {
+        // 原始实现保留在combatlogic.js中
+    }
+
+    /**
+     * 处理回合开始时的Buff效果（包装CombatEngine）
+     */
+    processBuffsAtTurnStart() {
+        // Try pure functional version
+        if (this.combatEngine) {
+            try {
+                const context = this.buildCombatContext();
+                const result = this.combatEngine.processBuffsAtTurnStart(context);
+
+                // Apply results
+                if (result.updatedPlayer) {
+                    this.persistentState.player.tempAttackBonus = result.updatedPlayer.tempAttackBonus;
+                    this.persistentState.player.tempDefenseBonus = result.updatedPlayer.tempDefenseBonus;
+                    this.persistentState.player.tempSkillCostReduce = result.updatedPlayer.tempSkillCostReduce;
+                }
+
+                // Add logs
+                result.logs.forEach(log => this.addBattleLog(log));
+
+                // Emit events
+                if (result.events) {
+                    result.events.forEach(event => {
+                        if (this.eventManager) {
+                            this.eventManager.emit(event.type, event.data);
+                        }
+                    });
+                }
+
+                return;
+            } catch (error) {
+                console.error('纯函数式processBuffsAtTurnStart失败，回退到旧版本:', error);
+            }
+        }
+
+        // Fallback to old version
+        this.processBuffsAtTurnStart_Deprecated();
+    }
+
+    /**
+     * 旧版回合开始Buff处理（重命名）
+     * @deprecated 使用 processBuffsAtTurnStart() 代替
+     */
+    processBuffsAtTurnStart_Deprecated() {
+        // 原始实现保留在combatlogic.js中
+    }
+
+    /**
+     * 处理Buff衰减（包装CombatEngine）
+     */
+    processBuffDecay() {
+        // Try pure functional version
+        if (this.combatEngine) {
+            try {
+                const context = this.buildCombatContext();
+                const result = this.combatEngine.processBuffDecay(context);
+
+                // Apply results
+                if (result.updatedPlayer) {
+                    this.persistentState.player.buffs = result.updatedPlayer.buffs;
+                    this.persistentState.player.tempAttackBonus = result.updatedPlayer.tempAttackBonus;
+                    this.persistentState.player.tempDefenseBonus = result.updatedPlayer.tempDefenseBonus;
+                    this.persistentState.player.tempAccuracyBonus = result.updatedPlayer.tempAccuracyBonus;
+                    this.persistentState.player.tempSkillCostReduce = result.updatedPlayer.tempSkillCostReduce;
+                }
+                if (result.updatedEnemy) {
+                    this.transientState.enemy.debuffs = result.updatedEnemy.debuffs;
+                }
+
+                // Add logs
+                result.logs.forEach(log => this.addBattleLog(log));
+
+                // Emit events
+                if (result.events) {
+                    result.events.forEach(event => {
+                        if (this.eventManager) {
+                            this.eventManager.emit(event.type, event.data);
+                        }
+                    });
+                }
+
+                return;
+            } catch (error) {
+                console.error('纯函数式processBuffDecay失败，回退到旧版本:', error);
+            }
+        }
+
+        // Fallback to old version
+        this.processBuffDecay_Deprecated();
+    }
+
+    /**
+     * 旧版Buff衰减（重命名）
+     * @deprecated 使用 processBuffDecay() 代替
+     */
+    processBuffDecay_Deprecated() {
+        // 原始实现保留在combatlogic.js中
+    }
+
+    attackEnemy_ParallelTest() {
+        console.log('🔬 [并行测试] 开始测试纯函数式攻击');
+
+        // 1. 构建上下文
+        const context = this.buildCombatContext();
+        if (!context) {
+            console.warn('构建战斗上下文失败，回退到旧代码');
+            return this.attackEnemy_Old();
+        }
+
+        // 2. 调用纯函数计算结果
+        const pureResult = this.combatEngine.calculatePlayerAttack(context);
+
+        console.log('📊 [纯函数结果]', {
+            isHit: pureResult.data.isHit,
+            isCrit: pureResult.data.isCrit,
+            damage: pureResult.data.damage,
+            enemyHpAfter: pureResult.updatedEnemy.hp
+        });
+
+        // 3. 调用旧代码（对比）
+        const oldEnemyHp = this.transientState.enemy.hp;
+        this.attackEnemy_Old(); // 调用原始版本
+        const newEnemyHp = this.transientState.enemy.hp;
+
+        console.log('📊 [旧代码结果]', {
+            enemyHpBefore: oldEnemyHp,
+            enemyHpAfter: newEnemyHp,
+            damage: oldEnemyHp - newEnemyHp
+        });
+
+        // 4. 对比结果
+        const oldDamage = oldEnemyHp - newEnemyHp;
+        const pureDamage = pureResult.data.damage;
+
+        if (Math.abs(oldDamage - pureDamage) < 5) { // 允许5点误差
+            console.log('✅ [并行测试] 结果一致！');
+        } else {
+            console.warn('⚠️ [并行测试] 结果不一致！', {
+                oldDamage,
+                pureDamage,
+                difference: Math.abs(oldDamage - pureDamage)
+            });
+        }
+
+        return pureResult;
+    }
+
+    /**
+     * 旧版攻击方法（重命名，用于对比）
+     */
+    attackEnemy_Old() {
+        // 这是原始的attackEnemy逻辑，保持不变
+        // 在combatlogic.js中
+        return this.attackEnemy();
     }
 };
 

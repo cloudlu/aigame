@@ -545,6 +545,17 @@ class DungeonSystem {
      * 战斗胜利 - 进入下一个敌人或通关
      */
     onBattleVictory() {
+        // ✅ 发出战斗胜利事件（用于图鉴系统记录敌人）
+        const enemy = this.enemyQueue[this.currentEnemyIndex];
+        if (enemy && typeof window !== 'undefined' && window.eventManager) {
+            window.eventManager.emit('battle:victory', {
+                enemy: enemy,
+                dungeonId: this.currentDungeon,
+                difficulty: this.currentDifficulty,
+                timestamp: Date.now()
+            });
+        }
+
         this.currentEnemyIndex++;
 
         // 检查是否通关

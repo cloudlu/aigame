@@ -149,6 +149,9 @@ EndlessCultivationGame.prototype.createBattleScene = function(enemyInfo) {
     const engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
     const scene = new BABYLON.Scene(engine);
 
+    // ✅ 緻加调试：检查拾取功能
+    console.log('🎮 战斗场景创建，启用拾取功能');
+
     // ✅ 随机选择场景主题
     const sceneType = getRandomBattleScene();
     const sceneConfig = SCENE_CONFIGS[sceneType];
@@ -3282,4 +3285,83 @@ EndlessCultivationGame.prototype.createShieldBreakEffect = function(position) {
     this.battle3D.particleSystems.push(fragments, glow);
 };
 
+// ==================== 战斗场景Tooltip ====================
+
+/**
+ * 显示战斗场景的属性tooltip
+ * @param {string} type - 'player' 或 'enemy'
+ */
+EndlessCultivationGame.prototype.showBattleTooltip = function(type) {
+    // 移除旧的tooltip
+    this.hideBattleTooltip();
+
+    // 获取属性
+    let stats, name, currentHp, maxHp;
+    if (type === 'player') {
+        stats = this.getActualStats();
+        name = this._user?.username || '玩家';  // ✅ 使用实际的游戏名称
+        currentHp = this.persistentState.player.hp;
+        maxHp = stats.maxHp;
+    } else {
+        stats = this.getEnemyActualStats();
+        const enemy = this.transientState.enemy;
+        name = enemy?.name || '敌人';
+        currentHp = enemy?.hp || 0;
+        maxHp = enemy?.maxHp || stats.maxHp;
+    }
+
+    // 创建tooltip
+    const tooltip = document.createElement('div');
+    tooltip.id = 'battle-tooltip';
+    tooltip.className = 'fixed z-[9999] bg-dark/95 border-2 border-accent rounded-lg p-4 text-sm text-white shadow-2xl pointer-events-none backdrop-blur-sm';
+    tooltip.style.left = '50%';
+    tooltip.style.top = '50%';
+    tooltip.style.transform = 'translate(-50%, -50%)';
+    tooltip.style.minWidth = '280px';
+
+    // 生成属性信息
+    let info = `
+        <div class="font-bold text-lg mb-3 text-accent border-b-2 border-accent/50 pb-2">${name}</div>
+        <div class="space-y-2">
+            <div class="text-red-400 font-semibold">❤️ HP: ${Math.floor(currentHp)} / ${Math.floor(maxHp)}</div>
+            <div class="text-blue-400">⚡ 攻击力: ${Math.floor(stats.attack)}</div>
+            <div class="text-green-400">🛡️ 防御力: ${Math.floor(stats.defense)}</div>
+            <div class="text-yellow-400">💨 速度: ${Math.floor(stats.speed)}</div>
+            <div class="text-purple-400">🍀 幸运: ${Math.floor(stats.luck)}</div>
+            <div class="border-t border-white/30 pt-2 mt-3">
+                <div>🎯 命中率: ${(stats.accuracy * 100).toFixed(1)}%</div>
+                <div>🌀 闪避率: ${(stats.dodgeRate * 100).toFixed(1)}%</div>
+                <div>💥 暴击率: ${(stats.criticalRate * 100).toFixed(1)}%</div>
+                <div>⚡ 暴击伤害: ${((1.5 + (stats.critDamage || 0) / 100) * 100).toFixed(0)}%</div>
+                <div>💪 韧性: ${(stats.tenacity * 100).toFixed(1)}%</div>
+            </div>
+    `;
+
+    // 如果是玩家，显示灵力
+    if (type === 'player') {
+        const energy = this.persistentState.player.energy || 0;
+        const maxEnergy = stats.maxEnergy || 100;
+        info += `
+            <div class="border-t border-white/30 pt-2 mt-2">
+                <div class="text-blue-300 font-semibold">🔮 灵力: ${Math.floor(energy)} / ${Math.floor(maxEnergy)}</div>
+            </div>
+        `;
+    }
+
+    info += '</div>';
+    tooltip.innerHTML = info;
+
+    // 添加到文档
+    document.body.appendChild(tooltip);
+};
+
+/**
+ * 隐藏战斗场景的tooltip
+ */
+EndlessCultivationGame.prototype.hideBattleTooltip = function() {
+    const tooltip = document.getElementById('battle-tooltip');
+    if (tooltip) {
+        tooltip.remove();
+    }
+};
 

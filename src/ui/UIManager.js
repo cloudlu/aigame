@@ -23,6 +23,9 @@ class UIManager {
         this.updateTimer = null;
         this.pendingUpdates = new Set();
         this.updateDelay = 50; // 50ms节流
+
+        // 战力变化追踪（自动显示战力变化）
+        this.lastCombatPower = null;
     }
 
     /**
@@ -49,6 +52,18 @@ class UIManager {
         // ========== 装备系统UI更新（细粒度）==========
         this.addListener('equipment:equip', () => this.scheduleUpdate('playerStats'));
         this.addListener('equipment:check', () => this.scheduleUpdate('playerStats'));
+
+        // ========== 玩家升级UI更新 ==========
+        this.addListener('player:levelup', () => this.scheduleUpdate('playerStats', 'expAndLevel', 'realm'));
+
+        // ========== 玩家突破UI更新 ==========
+        this.addListener('player:breakthrough', () => this.scheduleUpdate('playerStats', 'expAndLevel', 'realm', 'resource'));
+
+        // ========== 地图切换UI更新 ==========
+        this.addListener('map:change', () => this.scheduleUpdate('energy', 'resource'));
+
+        // ========== 充值成功UI更新 ==========
+        this.addListener('recharge:success', () => this.scheduleUpdate('playerStats', 'resource', 'vip'));
 
         // ========== 玩家状态UI更新 ==========
         // 可以扩展更多事件...
@@ -205,9 +220,15 @@ class UIManager {
     updatePlayerStats() {
         if (typeof this.game.getActualStats !== 'function') return;
 
-        const stats = this.game.getActualStats();
         const player = this.game.persistentState?.player;
         if (!player) return;
+
+        // ✅ 重要：先清除缓存，再重新计算装备效果
+        if (typeof this.game.invalidateEquipmentEffectsCache === 'function') {
+            this.game.invalidateEquipmentEffectsCache();
+        }
+
+        const stats = this.game.getActualStats();
 
         // 更新攻击、防御
         this.updateElement('attack', Math.floor(stats.attack));
@@ -226,6 +247,22 @@ class UIManager {
             bar: '-bar-modal',
             display: '-display-modal'
         });
+
+        // 更新战力显示并自动检测变化
+        if (typeof this.game.calculatePlayerCombatPower === 'function') {
+            const combatPower = this.game.calculatePlayerCombatPower();
+            this.updateElement('combat-power', combatPower.toLocaleString());
+            this.updateElement('combat-power-modal', combatPower.toLocaleString());
+
+            // ✅ 自动显示战力变化
+            if (this.lastCombatPower !== null && combatPower !== this.lastCombatPower) {
+                const delta = combatPower - this.lastCombatPower;
+                if (typeof this.game.showCombatPowerChange === 'function') {
+                    this.game.showCombatPowerChange(delta, this.lastCombatPower, combatPower);
+                }
+            }
+            this.lastCombatPower = combatPower;
+        }
     }
 
     /**
@@ -334,10 +371,25 @@ class UIManager {
     }
 
     /**
+     * 更新用户信息显示（用户名）
+     */
+    updateUserInfo() {
+        const currentUserNav = document.getElementById('current-user-nav');
+        const survivorName = document.getElementById('survivor-name');
+
+        if (currentUserNav && this.game._user?.username) {
+            currentUserNav.textContent = this.game._user.username;
+        }
+        if (survivorName && this.game._user?.username) {
+            survivorName.textContent = this.game._user.username;
+        }
+    }
+
+    /**
      * 立即强制更新所有UI（不节流，仅用于特殊情况）
      */
     forceUpdateAll() {
-        console.warn('UIManager: forceUpdateAll() 被调用，这会更新所有UI（性能较低）');
+        this.updateUserInfo();
         this.updateEnergyDisplay();
         this.updateResourceDisplay();
         this.updatePlayerStats();

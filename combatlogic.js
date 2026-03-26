@@ -3,8 +3,9 @@
 
 // ==================== 战斗控制 ====================
 
-// 攻击敌人（玩家回合）
-EndlessCultivationGame.prototype.attackEnemy = function() {
+// 攻击敌人（玩家回合）- 旧版，已被纯函数式版本替代
+// @deprecated 使用 game.attackEnemy() 代替
+EndlessCultivationGame.prototype.attackEnemy_Deprecated = function() {
     // 只有在战斗模式中才能使用普通攻击
     if (!this.transientState.battle.inBattle) {
         this.addBattleLog('只有在战斗模式中才能使用普通攻击！');
@@ -949,6 +950,11 @@ EndlessCultivationGame.prototype.playerDefeated = function() {
 
 // 关闭战斗模态窗口
 EndlessCultivationGame.prototype.closeBattleModal = function() {
+    // ✅ 清理战斗tooltip
+    if (typeof this.hideBattleTooltip === 'function') {
+        this.hideBattleTooltip();
+    }
+
     const battleModal = document.getElementById('battle-modal');
     if (battleModal) {
         battleModal.classList.add('hidden');
@@ -1209,7 +1215,11 @@ EndlessCultivationGame.prototype.clearBattleStates = function() {
  * @param {Object} skill - 技能对象
  * @returns {string} 元素类型 ('fire', 'ice', 'thunder', 'wind')
  */
-EndlessCultivationGame.prototype.getSkillElementType = function(skill) {
+/**
+ * 获取技能元素类型（旧版）
+ * @deprecated 使用 game.getSkillElementType() 代替
+ */
+EndlessCultivationGame.prototype.getSkillElementType_Deprecated = function(skill) {
     if (!skill || !skill.effectColor) return 'wind';
 
     const color = skill.effectColor;

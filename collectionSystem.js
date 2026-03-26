@@ -25,13 +25,6 @@ class CollectionSystem {
                 }
             });
 
-            // 监听装备掉落事件，自动记录装备
-            window.eventManager.on('equipment:drop', (event) => {
-                if (event.data && event.data.equipment) {
-                    this.recordEquipment(event.data.equipment);
-                }
-            });
-
             console.log('✅ CollectionSystem事件监听已注册');
         }
     }
@@ -122,7 +115,8 @@ class CollectionSystem {
                         : template.nameSuffixes;
                     if (suffixes) {
                         for (const suffix of suffixes) {
-                            equipKeys.push(`${template.type}_${rarity.name}_${suffix}`);
+                            // ✅ 修改key格式，包含境界索引：${realmIdx}_${type}_${rarity}_${suffix}
+                            equipKeys.push(`${realmIdx}_${template.type}_${rarity.name}_${suffix}`);
                         }
                     }
                 }
@@ -148,7 +142,30 @@ class CollectionSystem {
         const collection = this.game.persistentState.collection;
         if (!collection || !equipment) return;
 
-        const key = `${equipment.type}_${equipment.rarity}_${equipment.suffix}`;
+        if (!equipment.type || !equipment.rarity) return;
+
+        // ✅ 计算境界索引（从装备level推导）
+        const realmIdx = equipment.level ? Math.max(0, equipment.level - 1) : 0;
+
+        // ✅ 如果suffix为undefined，尝试从装备名称中提取
+        let suffix = equipment.suffix;
+        if (!suffix && equipment.name) {
+            // 从装备名称中提取后缀（去除品质前缀后的部分）
+            const rarityPrefixes = ['凡铁', '精钢', '百炼', '青铜', '白银', '寒铁', '青玉', '紫玉', '水晶', '龙泉', '紫金', '玄冰', '天蚕', '紫霄', '太乙', '天罡', '玄冥', '九天', '混元', '太虚', '两仪', '鸿蒙', '混沌', '须弥', '造化'];
+            let name = equipment.name;
+            for (const prefix of rarityPrefixes) {
+                if (name.startsWith(prefix)) {
+                    name = name.substring(prefix.length);
+                    break;
+                }
+            }
+            suffix = name;
+        }
+
+        if (!suffix) return;
+
+        // ✅ 修改key格式，包含境界索引：${realmIdx}_${type}_${rarity}_${suffix}
+        const key = `${realmIdx}_${equipment.type}_${equipment.rarity}_${suffix}`;
         if (!collection.equipmentTypes.includes(key)) {
             collection.equipmentTypes.push(key);
             this.checkAndGrantEquipmentRewards();

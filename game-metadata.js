@@ -7,7 +7,7 @@ const gameMetadata = {
         { name: "white", displayName: "白色", multiplier: 1.0, pctMultiplier: 1.0, statCount: 1 },
         { name: "blue", displayName: "蓝色", multiplier: 1.5, pctMultiplier: 1.2, statCount: 2 },
         { name: "purple", displayName: "紫色", multiplier: 2.2, pctMultiplier: 1.4, statCount: 3 },
-        { name: "spiritStones", displayName: "黄金", multiplier: 3.2, pctMultiplier: 1.6, statCount: 4 },
+        { name: "gold", displayName: "黄金", multiplier: 3.2, pctMultiplier: 1.6, statCount: 4 },
         { name: "rainbow", displayName: "彩色", multiplier: 4.5, pctMultiplier: 2.0, statCount: 5 }
     ],
     
@@ -156,7 +156,7 @@ const gameMetadata = {
             white: 0.50,
             blue: 0.30,
             purple: 0.148,
-            spiritStones: 0.05,
+            gold: 0.05,
             rainbow: 0.002   // 0.2%（原1%）
         },
         // 精英怪物掉率
@@ -164,7 +164,7 @@ const gameMetadata = {
             white: 0.30,
             blue: 0.35,
             purple: 0.20,
-            spiritStones: 0.145,
+            gold: 0.145,
             rainbow: 0.005   // 0.5%（原3%）
         },
         // BOSS掉率
@@ -172,7 +172,7 @@ const gameMetadata = {
             white: 0.10,
             blue: 0.30,
             purple: 0.30,
-            spiritStones: 0.285,
+            gold: 0.285,
             rainbow: 0.015   // 1.5%（原8%）
         }
     },

@@ -200,14 +200,16 @@ class EquipmentSystem {
         // 提升精炼等级
         item.refineLevel = nextLevel;
 
-        // 记录精炼前战力
-        const oldPower = this.game.calculatePlayerCombatPower();
-
         // 清除装备效果缓存（下次访问时重新计算）
         this.game.invalidateEquipmentEffectsCache();
 
-        // 更新UI
-        this.game.updateUI();
+        // ✅ 立即更新UI（装备改变需要立即反馈）
+        if (this.game.uiManager && typeof this.game.uiManager.updatePlayerStats === 'function') {
+            this.game.uiManager.updatePlayerStats();
+        } else {
+            // 降级方案
+            this.game.updateUI();
+        }
 
         // 更新人物属性面板
         if (typeof this.game.updateCharacterModal === 'function') {
@@ -222,10 +224,6 @@ class EquipmentSystem {
         // 添加日志
         this.game.addBattleLog(`${this.getSlotDisplayName(slot)}强化成功！当前强化等级：+${item.refineLevel}`);
         this.game.addBattleLog(`消耗了 ${cost.spiritStones} 灵石，${cost.iron} 玄铁`);
-
-        // 显示战力变化
-        const newPower = this.game.calculatePlayerCombatPower();
-        this.game.showCombatPowerChange(newPower - oldPower);
     }
     
     // 精炼武器（保留向后兼容）
@@ -255,10 +253,18 @@ class EquipmentSystem {
             this.game.persistentState.player.inventory = [];
         }
         this.game.persistentState.player.inventory.push(item);
-        this.game.persistentState.player.equipment[slot] = null;
+        this.game.persistentState.player.equipment[slot] = null;  // ✅ 修复：应该清除装备槽，而不是背包
 
-        // 更新UI
-        this.game.updateUI();
+        // ✅ 清除装备效果缓存
+        this.game.invalidateEquipmentEffectsCache();
+
+        // ✅ 立即更新UI（装备改变需要立即反馈）
+        if (this.game.uiManager && typeof this.game.uiManager.updatePlayerStats === 'function') {
+            this.game.uiManager.updatePlayerStats();
+        } else {
+            // 降级方案
+            this.game.updateUI();
+        }
 
         // 更新装备显示
         this.updateCharacterEquipmentDisplayModal();
@@ -934,8 +940,13 @@ class EquipmentSystem {
         const realmIdx = Math.min(Math.max(0, item.level - 1), (this.game.metadata.equipmentPrefixesByRealm?.length || 1) - 1);
         const prefixes = this.game.metadata.equipmentPrefixesByRealm?.[realmIdx] || ["", "", "", "", ""];
         const prefix = prefixes[rarityIdx] || "";
-        const suffixIndex = Math.floor(Math.random() * template.nameSuffixes.length);
-        const suffix = template.nameSuffixes[suffixIndex] || "装备";
+
+        // ✅ 修复：正确处理二维数组的nameSuffixes
+        const suffixPool = Array.isArray(template.nameSuffixes[0])
+            ? template.nameSuffixes[realmIdx]
+            : template.nameSuffixes;
+        const suffixIndex = Math.floor(Math.random() * suffixPool.length);
+        const suffix = suffixPool[suffixIndex] || "装备";
         const newName = prefix + suffix;
 
         // 保存预览数据到临时状态
@@ -945,11 +956,17 @@ class EquipmentSystem {
             oldName: oldName,
             newStats: newStats,
             newName: newName,
+            newSuffix: suffix,  // ✅ 添加新suffix，确保刷新后能正确记录到图鉴
             cost: cost
         };
 
-        // 更新UI显示资源消耗
-        this.game.updateUI();
+        // ✅ 立即更新UI（资源消耗需要立即反馈）
+        if (this.game.uiManager && typeof this.game.uiManager.updateResourceDisplay === 'function') {
+            this.game.uiManager.updateResourceDisplay();
+        } else {
+            // 降级方案
+            this.game.updateUI();
+        }
 
         // 显示确认模态框
         this.showRefreshConfirmModal(slot, oldStats, newStats, oldName, newName, cost);
@@ -1166,16 +1183,33 @@ class EquipmentSystem {
         }
 
         // 应用新属性（资源已在预览时扣除）
-        const oldPower = this.game.calculatePlayerCombatPower();
         item.stats = newStats;
         item.name = newName;
         item.id = `${item.type}_${item.level}_${item.rarity}_${Math.floor(Math.random() * 100000)}`;
 
+        // ✅ 更新suffix字段，确保图鉴能正确记录
+        if (this.pendingRefresh.newSuffix) {
+            item.suffix = this.pendingRefresh.newSuffix;
+        }
+
         // 清除装备效果缓存
         this.game.invalidateEquipmentEffectsCache();
 
-        // 更新UI
-        this.game.updateUI();
+        // ✅ 立即更新UI（装备改变需要立即反馈）
+        if (this.game.uiManager && typeof this.game.uiManager.updatePlayerStats === 'function') {
+            this.game.uiManager.updatePlayerStats();
+        }
+        if (typeof this.game.updateHealthBars === 'function') {
+            this.game.updateHealthBars();
+        }
+        if (this.game.uiManager && typeof this.game.uiManager.updateResourceDisplay === 'function') {
+            this.game.uiManager.updateResourceDisplay();
+        }
+        if (!this.game.uiManager) {
+            // 降级方案
+            this.game.updateUI();
+        }
+
         if (typeof this.game.updateCharacterModal === 'function') {
             this.game.updateCharacterModal();
         }
@@ -1189,10 +1223,6 @@ class EquipmentSystem {
         this.game.addBattleLog(`${this.getSlotDisplayName(slot)}属性刷新成功！`);
         this.game.addBattleLog(`原属性: ${oldStatsDesc}`);
         this.game.addBattleLog(`新属性: ${newStatsDesc}`);
-
-        // 显示战力变化
-        const newPower = this.game.calculatePlayerCombatPower();
-        this.game.showCombatPowerChange(newPower - oldPower);
 
         // 关闭模态框
         this.closeRefreshConfirmModal();
@@ -1386,8 +1416,17 @@ class EquipmentSystem {
         // 清除装备效果缓存
         this.game.invalidateEquipmentEffectsCache();
 
-        // 更新UI
-        this.game.updateUI();
+        // ✅ 立即更新UI（装备改变需要立即反馈）
+        if (this.game.uiManager && typeof this.game.uiManager.updatePlayerStats === 'function') {
+            this.game.uiManager.updatePlayerStats();
+        }
+        if (typeof this.game.updateHealthBars === 'function') {
+            this.game.updateHealthBars();
+        }
+        if (!this.game.uiManager) {
+            // 降级方案
+            this.game.updateUI();
+        }
 
         // 更新人物面板属性（内部会调用updateCharacterEquipmentDisplayModal）
         this.updateCharacterEquipmentDisplay();

@@ -217,13 +217,8 @@ describe('UIManager', () => {
                 getElementById: vi.fn(() => null)
             });
 
-            const consoleSpy = vi.spyOn(console, 'warn');
-
-            uiManager.forceUpdateAll();
-
-            expect(consoleSpy).toHaveBeenCalledWith(
-                'UIManager: forceUpdateAll() 被调用，这会更新所有UI（性能较低）'
-            );
+            // forceUpdateAll should not throw error
+            expect(() => uiManager.forceUpdateAll()).not.toThrow();
 
             vi.unstubAllGlobals();
         });

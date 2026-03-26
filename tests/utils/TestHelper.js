@@ -1,259 +1,224 @@
 /**
  * 测试工具函数
+ * 提供创建测试对象、模拟游戏环境等辅助功能
  */
 
-import { sleep } from './MockFactory.js';
+import { vi } from 'vitest';
 
 /**
- * 测试套件 - 用于组织相关的测试
+ * 创建模拟游戏对象
  */
-export function describeSuite(name, fn) {
-  describe(name, () => {
-    fn();
-  });
-}
-
-/**
- * 测试用例 - 异步版本
- */
-export async function testAsync(name, fn) {
-  test(name, async () => {
-    await fn();
-  });
-}
-
-/**
- * 设置测试环境 - 在所有测试之前运行
- */
-export function setupTestEnvironment() {
-  // 清理环境
-  beforeEach(() => {
-    // 可以在这里重置全局状态
-  });
-
-  afterEach(() => {
-    // 清理测试产生的副作用
-  });
-}
-
-/**
- * 创建临时测试数据
- */
-export class TestData {
-  constructor() {
-    this.data = new Map();
-  }
-
-  set(key, value) {
-    this.data.set(key, value);
-    return value;
-  }
-
-  get(key) {
-    return this.data.get(key);
-  }
-
-  clear() {
-    this.data.clear();
-  }
-
-  has(key) {
-    return this.data.has(key);
-  }
-}
-
-/**
- * 性能测试工具 - 测量函数执行时间
- */
-export async function measurePerformance(name, fn, iterations = 1000) {
-  const start = performance.now();
-
-  for (let i = 0; i < iterations; i++) {
-    await fn();
-  }
-
-  const end = performance.now();
-  const duration = end - start;
-  const avgTime = duration / iterations;
-
-  console.log(`[性能测试] ${name}:`);
-  console.log(`  总时间: ${duration.toFixed(2)}ms`);
-  console.log(`  平均时间: ${avgTime.toFixed(4)}ms`);
-  console.log(`  迭代次数: ${iterations}`);
-
-  return { duration, avgTime, iterations };
-}
-
-/**
- * 内存泄漏检测（简单版本）
- */
-export function checkMemoryUsage() {
-  if (global.gc) {
-    global.gc();
-  }
-
-  const used = process.memoryUsage();
-  console.log('[内存使用]');
-  console.log(`  堆内存: ${(used.heapUsed / 1024 / 1024).toFixed(2)} MB`);
-  console.log(`  总堆: ${(used.heapTotal / 1024 / 1024).toFixed(2)} MB`);
-  console.log(`  外部: ${(used.external / 1024 / 1024).toFixed(2)} MB`);
-
-  return used;
-}
-
-/**
- * 测试快照 - 用于比较复杂对象
- */
-export class SnapshotTester {
-  constructor() {
-    this.snapshots = new Map();
-  }
-
-  save(name, data) {
-    this.snapshots.set(name, JSON.stringify(data));
-  }
-
-  compare(name, data) {
-    const saved = this.snapshots.get(name);
-    const current = JSON.stringify(data);
-
-    if (saved !== current) {
-      throw new Error(`快照不匹配: ${name}\n期望: ${saved}\n实际: ${current}`);
-    }
-
-    return true;
-  }
-}
-
-/**
- * 随机测试数据生成器
- */
-export class RandomDataGenerator {
-  static number(min = 0, max = 100) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  }
-
-  static string(length = 10) {
-    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let result = '';
-    for (let i = 0; i < length; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
-  }
-
-  static boolean() {
-    return Math.random() < 0.5;
-  }
-
-  static array(length, generator) {
-    return Array.from({ length }, () => generator());
-  }
-
-  static pick(array) {
-    return array[Math.floor(Math.random() * array.length)];
-  }
-}
-
-/**
- * 测试装饰器 - 重复测试
- */
-export function repeat(times) {
-  return function (target, propertyKey, descriptor) {
-    const originalMethod = descriptor.value;
-
-    descriptor.value = function (...args) {
-      for (let i = 0; i < times; i++) {
-        originalMethod.apply(this, args);
-      }
-    };
-
-    return descriptor;
-  };
-}
-
-/**
- * 跳过测试的条件装饰器
- */
-export function skipIf(condition) {
-  return function (target, propertyKey, descriptor) {
-    if (condition) {
-      descriptor.value = () => {
-        console.log(`跳过测试: ${propertyKey}`);
-      };
-    }
-    return descriptor;
-  };
-}
-
-/**
- * 测试清理器 - 确保测试后清理资源
- */
-export class TestCleaner {
-  constructor() {
-    this.cleanupFns = [];
-  }
-
-  addCleanup(fn) {
-    this.cleanupFns.push(fn);
-  }
-
-  async cleanup() {
-    for (const fn of this.cleanupFns.reverse()) {
-      try {
-        await fn();
-      } catch (error) {
-        console.error('清理失败:', error);
-      }
-    }
-    this.cleanupFns = [];
-  }
-}
-
-/**
- * 断言扩展
- */
-export const expectExtended = {
-  /**
-   * 断言数值在范围内
-   */
-  toBeInRange(received, min, max) {
-    const pass = received >= min && received <= max;
+export function createMockGame(overrides = {}) {
     return {
-      pass,
-      message: () =>
-        pass
-          ? `期望 ${received} 不在范围 [${min}, ${max}] 内`
-          : `期望 ${received} 在范围 [${min}, ${max}] 内`
+        persistentState: {
+            player: {
+                hp: 100,
+                maxHp: 100,
+                attack: 10,
+                defense: 5,
+                speed: 10,
+                luck: 5,
+                exp: 0,
+                maxExp: 100,
+                level: 1,
+                realm: {
+                    currentRealm: 0,
+                    currentStage: 1,
+                    currentLevel: 1
+                },
+                equipment: {},
+                inventory: [],
+                ...overrides.persistentState?.player
+            },
+            resources: {
+                spiritStones: 0,
+                jade: 0,
+                herbs: 0,
+                iron: 0,
+                breakthroughStones: 0,
+                ...overrides.persistentState?.resources
+            },
+            collection: {
+                enemies: [],
+                equipmentTypes: [],
+                rewardedCategories: [],
+                ...overrides.persistentState?.collection
+            },
+            ...overrides.persistentState
+        },
+        transientState: {
+            enemy: null,
+            sceneMonsters: [],
+            battle: { inBattle: false, battleLog: [] },
+            ...overrides.transientState
+        },
+        metadata: {
+            equipmentRarities: [
+                { name: 'white', displayName: '白色', multiplier: 1.0, statCount: 1 },
+                { name: 'blue', displayName: '蓝色', multiplier: 1.5, statCount: 2 },
+                { name: 'purple', displayName: '紫色', multiplier: 2.2, statCount: 3 },
+                { name: 'gold', displayName: '黄金', multiplier: 3.2, statCount: 4 },
+                { name: 'rainbow', displayName: '彩色', multiplier: 4.5, statCount: 5 }
+            ],
+            equipmentTemplates: [
+                {
+                    type: 'weapon',
+                    nameSuffixes: ['铁剑', '钢刀', '木枪', '木棍', '石斧', '木杖']
+                },
+                {
+                    type: 'helmet',
+                    nameSuffixes: ['布冠', '布帽', '皮盔', '头巾', '铁环', '布带']
+                }
+            ],
+            realmConfig: [
+                { name: '武者' },
+                { name: '炼气' },
+                { name: '筑基' },
+                { name: '金丹' },
+                { name: '元婴' },
+                { name: '化神' }
+            ],
+            mapNames: {
+                'map1': '测试地图1',
+                'map2': '测试地图2'
+            },
+            mapEnemyMapping: {
+                'map1': ['enemy1', 'enemy2'],
+                'map2': ['enemy3', 'enemy4']
+            },
+            mapRealmRequirements: {
+                'map1': { realm: 0, name: '武者' },
+                'map2': { realm: 1, name: '炼气' }
+            },
+            ...overrides.metadata
+        },
+        addBattleLog: vi.fn(),
+        updateUI: vi.fn(),
+        saveGame: vi.fn(),
+        equipmentSystem: {
+            generateEquipment: vi.fn((type, level, rarity) => ({
+                id: `${type}_${level}_${rarity}_${Date.now()}`,
+                type,
+                level,
+                rarity,
+                name: `测试${type}`,
+                suffix: '测试',
+                stats: { attack: 10, defense: 5 }
+            }))
+        },
+        ...overrides
     };
-  },
+}
 
-  /**
-   * 断言数组包含元素
-   */
-  toContainElement(received, element) {
-    const pass = received.includes(element);
+/**
+ * 创建测试装备对象
+ */
+export function createTestEquipment(overrides = {}) {
     return {
-      pass,
-      message: () =>
-        pass
-          ? `期望数组不包含 ${JSON.stringify(element)}`
-          : `期望数组包含 ${JSON.stringify(element)}`
+        id: 'test_weapon_1',
+        name: '测试武器',
+        type: 'weapon',
+        suffix: '铁剑',
+        level: 1,
+        realmName: '武者',
+        refineLevel: 0,
+        stats: {
+            attack: 10,
+            defense: 5
+        },
+        rarity: 'white',
+        rarityDisplayName: '白色',
+        rarityMultiplier: 1.0,
+        ...overrides
     };
-  },
+}
 
-  /**
-   * 断言对象有指定类型
-   */
-  toBeTypeOf(received, type) {
-    const actualType = typeof received;
-    const pass = actualType === type;
+/**
+ * 创建测试敌人对象
+ */
+export function createTestEnemy(overrides = {}) {
     return {
-      pass,
-      message: () =>
-        pass
-          ? `期望类型不是 ${type}`
-          : `期望类型是 ${type}，但得到 ${actualType}`
+        name: '测试敌人',
+        baseName: '测试敌人',
+        hp: 100,
+        maxHp: 100,
+        attack: 10,
+        defense: 5,
+        speed: 10,
+        isElite: false,
+        isBoss: false,
+        ...overrides
     };
-  }
-};
+}
+
+/**
+ * 创建测试玩家对象
+ */
+export function createTestPlayer(overrides = {}) {
+    return {
+        hp: 100,
+        maxHp: 100,
+        attack: 10,
+        defense: 5,
+        speed: 10,
+        luck: 5,
+        exp: 0,
+        maxExp: 100,
+        level: 1,
+        realm: {
+            currentRealm: 0,
+            currentStage: 1,
+            currentLevel: 1
+        },
+        equipment: {},
+        inventory: [],
+        ...overrides
+    };
+}
+
+/**
+ * 等待指定毫秒数
+ */
+export function wait(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * 模拟事件管理器
+ */
+export function createMockEventManager() {
+    const listeners = new Map();
+
+    return {
+        on: vi.fn((eventName, callback) => {
+            if (!listeners.has(eventName)) {
+                listeners.set(eventName, []);
+            }
+            listeners.get(eventName).push(callback);
+        }),
+        emit: vi.fn((eventName, data) => {
+            const callbacks = listeners.get(eventName);
+            if (callbacks) {
+                callbacks.forEach(cb => cb(data));
+            }
+        }),
+        off: vi.fn((eventName, callback) => {
+            const callbacks = listeners.get(eventName);
+            if (callbacks) {
+                const index = callbacks.indexOf(callback);
+                if (index > -1) callbacks.splice(index, 1);
+            }
+        }),
+        once: vi.fn((eventName, callback) => {
+            const wrapper = (data) => {
+                callback(data);
+                this.off(eventName, wrapper);
+            };
+            this.on(eventName, wrapper);
+        }),
+        clear: vi.fn(() => {
+            listeners.clear();
+        }),
+        listeners
+    };
+}
