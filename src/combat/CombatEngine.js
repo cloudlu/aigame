@@ -81,8 +81,15 @@ class CombatEngine {
     static calculateEnemyAttack(context) {
         const { player, enemy, config } = context;
 
-        // 1. 命中判定
-        const hitChance = Math.min(95, Math.max(5, enemy.accuracy * 100 - player.dodgeRate * 100));
+        // 1. 命中判定（包含闪避技能加成）
+        let hitChance = Math.min(95, Math.max(5, enemy.accuracy * 100 - player.dodgeRate * 100));
+
+        // ✅ 应用闪避技能加成
+        if (player.dodgeActive && player.dodgeBonus) {
+            hitChance -= player.dodgeBonus * 100;
+            hitChance = Math.max(5, hitChance);
+        }
+
         const isHit = Math.random() * 100 < hitChance;
 
         // 2. 暴击判定
@@ -115,6 +122,8 @@ class CombatEngine {
         }
 
         // 5. 返回结果
+        const dodgeUsed = player.dodgeActive && player.dodgeBonus;
+
         return {
             type: 'enemyAttack',
             success: true,
@@ -125,12 +134,19 @@ class CombatEngine {
                 critResult,
                 tenacityReduction,
                 hitChance,
-                baseDamage
+                baseDamage,
+                dodgeUsed  // ✅ 是否使用了闪避技能
             },
             updatedPlayer: isHit ? {
                 ...player,
-                hp: Math.max(0, player.hp - damage)
-            } : player,
+                hp: Math.max(0, player.hp - damage),
+                // ✅ 重置闪避技能状态（如果使用过）
+                ...(dodgeUsed && { dodgeActive: false, dodgeBonus: 0 })
+            } : {
+                ...player,
+                // ✅ 即使未命中，也要重置闪避技能状态（如果使用过）
+                ...(dodgeUsed && { dodgeActive: false, dodgeBonus: 0 })
+            },
             logs: this.generateEnemyAttackLogs(isHit, isCrit, damage, enemy.name, tenacityReduction),
             events: [
                 {
@@ -493,6 +509,215 @@ class CombatEngine {
                     }
                 }
             ]
+        };
+    }
+
+    /**
+     * 计算防御技能
+     * 纯函数：输入上下文 → 输出结果
+     *
+     * @param {CombatContext} context - 战斗上下文
+     * @param {string} skillType - 技能类型
+     * @param {Object} skillData - 技能数据
+     * @param {number} skillLevel - 技能等级
+     * @returns {CombatResult} 技能结果
+     */
+    static calculateDefenseSkill(context, skillType, skillData, skillLevel) {
+        const { player } = context;
+        const logs = [];
+        const events = [];
+        const skillName = skillData.name || '防御技能';
+
+        // 检查灵力消耗
+        const energyCost = skillData.energyCost || 0;
+        if (player.energy < energyCost) {
+            return {
+                type: 'skill',
+                success: false,
+                error: '灵力不足',
+                logs: [`灵力不足！需要${energyCost}灵力`],
+                events: []
+            };
+        }
+
+        // 防御加成
+        const defenseBonus = skillData.defenseBonus || 0.5;
+        const defensePercent = Math.floor(defenseBonus * 100);
+
+        logs.push(`激活防御姿态！下次受到的伤害减少${defensePercent}%`);
+
+        return {
+            type: 'skill',
+            success: true,
+            data: {
+                skillType,
+                skillName,
+                skillLevel,
+                energyCost,
+                defenseBonus,
+                defensePercent
+            },
+            updatedPlayer: {
+                ...player,
+                energy: player.energy - energyCost,
+                defenseActive: true,
+                defenseBonusValue: defenseBonus
+            },
+            logs,
+            events: [{
+                type: 'battle:defense',
+                data: {
+                    skillName,
+                    defenseBonus,
+                    timestamp: Date.now()
+                }
+            }]
+        };
+    }
+
+    /**
+     * 计算治疗技能
+     * 纯函数：输入上下文 → 输出结果
+     *
+     * @param {CombatContext} context - 战斗上下文
+     * @param {string} skillType - 技能类型
+     * @param {Object} skillData - 技能数据
+     * @param {number} skillLevel - 技能等级
+     * @returns {CombatResult} 技能结果
+     */
+    static calculateHealSkill(context, skillType, skillData, skillLevel) {
+        const { player } = context;
+        const logs = [];
+        const events = [];
+        const skillName = skillData.name || '治疗技能';
+
+        // 🔍 DEBUG: 记录输入参数
+        console.log('🔧 [calculateHealSkill] 输入参数:', {
+            playerHp: player.hp,
+            playerMaxHp: player.maxHp,
+            healPercentage: skillData.healPercentage,
+            energy: player.energy,
+            energyCost: skillData.energyCost
+        });
+
+        // 检查灵力消耗
+        const energyCost = skillData.energyCost || 0;
+        if (player.energy < energyCost) {
+            return {
+                type: 'skill',
+                success: false,
+                error: '灵力不足',
+                logs: [`灵力不足！需要${energyCost}灵力`],
+                events: []
+            };
+        }
+
+        // 计算治疗量
+        const healPercentage = skillData.healPercentage || 0;
+        const healAmount = Math.floor(player.maxHp * healPercentage);
+        const newHp = Math.min(player.hp + healAmount, player.maxHp);
+        const actualHeal = newHp - player.hp;
+
+        // 🔍 DEBUG: 记录计算过程
+        console.log('🔧 [calculateHealSkill] 计算过程:', {
+            healAmount,
+            newHp,
+            actualHeal,
+            'hp > maxHp?': player.hp > player.maxHp
+        });
+
+        logs.push(`恢复了${actualHeal}点生命值！`);
+
+        return {
+            type: 'skill',
+            success: true,
+            data: {
+                skillType,
+                skillName,
+                skillLevel,
+                energyCost,
+                healPercentage,
+                healAmount: actualHeal,
+                oldHp: player.hp,
+                newHp
+            },
+            updatedPlayer: {
+                ...player,
+                energy: player.energy - energyCost,
+                hp: newHp
+            },
+            logs,
+            events: [{
+                type: 'battle:heal',
+                data: {
+                    skillName,
+                    healAmount: actualHeal,
+                    timestamp: Date.now()
+                }
+            }]
+        };
+    }
+
+    /**
+     * 计算闪避技能
+     * 纯函数：输入上下文 → 输出结果
+     *
+     * @param {CombatContext} context - 战斗上下文
+     * @param {string} skillType - 技能类型
+     * @param {Object} skillData - 技能数据
+     * @param {number} skillLevel - 技能等级
+     * @returns {CombatResult} 技能结果
+     */
+    static calculateDodgeSkill(context, skillType, skillData, skillLevel) {
+        const { player } = context;
+        const logs = [];
+        const events = [];
+        const skillName = skillData.name || '闪避技能';
+
+        // 检查灵力消耗
+        const energyCost = skillData.energyCost || 0;
+        if (player.energy < energyCost) {
+            return {
+                type: 'skill',
+                success: false,
+                error: '灵力不足',
+                logs: [`灵力不足！需要${energyCost}灵力`],
+                events: []
+            };
+        }
+
+        // 闪避加成
+        const dodgeBonus = skillData.dodgeBonus || 0;
+        const dodgePercent = Math.floor(dodgeBonus * 100);
+
+        logs.push(`激活闪避姿态！闪避率提高${dodgePercent}%`);
+
+        return {
+            type: 'skill',
+            success: true,
+            data: {
+                skillType,
+                skillName,
+                skillLevel,
+                energyCost,
+                dodgeBonus,
+                dodgePercent
+            },
+            updatedPlayer: {
+                ...player,
+                energy: player.energy - energyCost,
+                dodgeActive: true,
+                dodgeBonus
+            },
+            logs,
+            events: [{
+                type: 'battle:dodge',
+                data: {
+                    skillName,
+                    dodgeBonus,
+                    timestamp: Date.now()
+                }
+            }]
         };
     }
 

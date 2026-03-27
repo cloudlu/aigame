@@ -6588,8 +6588,9 @@ class EndlessCultivationGame {
         switch (item.effect) {
             case 'heal':
                 // 恢复生命值
-                const healAmount = Math.floor(this.persistentState.player.maxHp * item.value);
-                this.persistentState.player.hp = Math.min(this.persistentState.player.hp + healAmount, this.persistentState.player.maxHp);
+                const actualMaxHp = this.getActualStats().maxHp;  // ✅ 使用实际maxHp（含装备加成）
+                const healAmount = Math.floor(actualMaxHp * item.value);
+                this.persistentState.player.hp = Math.min(this.persistentState.player.hp + healAmount, actualMaxHp);
                 this.addBattleLog(`使用了 ${item.name}，恢复了 ${healAmount} 点生命值！`);
                 break;
             case 'energy':

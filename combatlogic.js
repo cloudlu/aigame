@@ -326,56 +326,20 @@ EndlessCultivationGame.prototype.useSkill = function(skillType = 'attack') {
 
     // ✅ 技能音效由AudioManager通过battle:skill事件自动播放
 
-    // 获取实际属性（包含装备和境界加成）
-    const playerStats = this.getActualStats();
-    const enemyStats = this.getEnemyActualStats();
-
-    const finalAttack = playerStats.attack;
-    const finalDefense = playerStats.defense;
-    const finalAccuracy = playerStats.accuracy;
-    const finalDodge = playerStats.dodgeRate;
-    const finalCriticalRate = playerStats.criticalRate;
-    const playerCritDamage = playerStats.critDamage;
-    const enemyAccuracy = enemyStats.accuracy;
-    const enemyDodge = enemyStats.dodgeRate;
-    const enemyDefense = enemyStats.defense;
-
-    let playerDamage = 0;
-    let hit = true;
-    let isLuckyStrike = false;
-    let playerCrit = false;
-    let playerCritResult = null;
-
-    // === 伤害类技能：预计算伤害，使用碰撞回调 ===
+    // === 伤害类技能：使用纯函数式计算 + 碰撞回调动画 ===
     if (skill.damageMultiplier || skill.criticalMultiplier) {
-        // 预计算命中和伤害（动画前确定随机值）
-        // accuracy/dodgeRate 内部是小数格式，乘100转为百分比
-        const playerHitChance = Math.min(95, Math.max(5, finalAccuracy * 100 - enemyDodge * 100));
-        hit = Math.random() * 100 < playerHitChance;
-
-        if (hit) {
-            if (skill.damageMultiplier) {
-                // 计算技能基础伤害
-                let baseSkillDamage = Math.floor(finalAttack * skill.damageMultiplier) - enemyDefense;
-                if (skill.extraDamagePercent) baseSkillDamage += Math.floor(this.transientState.enemy.maxHp * skill.extraDamagePercent);
-                if (skill.ignoreDefense) baseSkillDamage += Math.floor(enemyDefense * skill.ignoreDefense);
-
-                // ✅ 暴击判定（使用玩家暴击率和暴击伤害）
-                playerCrit = Math.random() * 100 < finalCriticalRate * 100;
-
-                if (playerCrit) {
-                    playerCritResult = this.rollCritDamage(playerCritDamage);
-                    playerDamage = Math.max(1, Math.floor(baseSkillDamage * playerCritResult.multiplier));
-                } else {
-                    playerDamage = Math.max(1, baseSkillDamage);
-                }
-            } else if (skill.criticalMultiplier) {
-                isLuckyStrike = Math.random() < skill.criticalChance;
-                playerDamage = isLuckyStrike
-                    ? Math.max(1, Math.floor(finalAttack * skill.criticalMultiplier) - enemyDefense)
-                    : Math.max(1, finalAttack - enemyDefense);
-            }
+        // ✅ 使用纯函数式计算伤害
+        const context = this.buildCombatContext();
+        if (!context) {
+            console.error('❌ 构建战斗上下文失败');
+            return;
         }
+
+        const result = this.combatEngine.calculateSkillDamage(context, skillType, skill, skillLevel);
+        console.log('📊 [纯函数式] 伤害技能计算结果:', result);
+
+        // 提取计算结果
+        const { hit, damage: playerDamage, isCrit: playerCrit, isLuckyStrike, critResult: playerCritResult } = result.data;
 
         const skillEffectColor = skill.effectColor || { r: 0, g: 0.5, b: 1 };
 
@@ -401,7 +365,8 @@ EndlessCultivationGame.prototype.useSkill = function(skillType = 'attack') {
         this.playSkillAttackAnimation(isLuckyStrike, skillEffectColor,
             // 碰撞回调：到达敌人时显示伤害
             () => {
-                this.persistentState.player.energy -= skill.energyCost;
+                // ✅ 应用能量消耗（使用纯函数式结果）
+                this.persistentState.player.energy = result.updatedPlayer.energy;
                 this.showEnergyChange(this.battle3D.player, -skill.energyCost);
 
                 if (hit) {
@@ -462,8 +427,8 @@ EndlessCultivationGame.prototype.useSkill = function(skillType = 'attack') {
             // 结束回调：应用状态、触发反击
             () => {
                 if (playerDamage > 0 && hit) {
-                    this.transientState.enemy.hp -= playerDamage;
-                    if (this.transientState.enemy.hp < 0) this.transientState.enemy.hp = 0;
+                    // ✅ 应用伤害到敌人（使用纯函数式结果）
+                    this.transientState.enemy.hp = result.updatedEnemy.hp;
                     if (this.transientState.enemy.hp <= 0) {
                         // ✅ 技能击杀特效
                         if (this.battle3D && this.battle3D.enemy) {
@@ -509,47 +474,123 @@ EndlessCultivationGame.prototype.useSkill = function(skillType = 'attack') {
                     this.addBattleLog(`对敌人施加了${skill.debuffs.length}个减益效果！`);
                 }
                 // 敌人反击
-                this.triggerEnemyCounterattack(finalDefense, enemyAccuracy, finalDodge);
+                this.triggerEnemyCounterattack();
             }
         );
         return;
     }
 
-    // === 非伤害类技能：使用原有逻辑 ===
+    // === 非伤害类技能：使用纯函数式计算 ===
     // 技能效果处理函数
     const handleSkillEffect = () => {
-        // 消耗灵力
-        this.persistentState.player.energy -= skill.energyCost;
-        // 显示灵力消耗
-        this.showEnergyChange(this.battle3D.player, -skill.energyCost);
-
-        if (skill.defenseBonus) {
-            this.persistentState.player.defenseActive = true;
-            this.persistentState.player.defenseBonusValue = skill.defenseBonus;
-            this.addBattleLog(`你使用了${skillDisplayName}，防御姿态已激活！下次受到的伤害减少${Math.floor(skill.defenseBonus * 100)}%！`);
-        } else if (skill.healPercentage) {
-            // 使用公共方法获取实际最大血量
-            const actualMaxHp = this.getActualStats().maxHp;
-            const healAmount = Math.floor(actualMaxHp * skill.healPercentage);
-            this.persistentState.player.hp = Math.min(this.persistentState.player.hp + healAmount, actualMaxHp);
-            this.addBattleLog(`你使用了${skillDisplayName}，恢复了${healAmount}点生命值！`);
-            this.showDamage(this.battle3D.player, healAmount, 'green');
-            // ✅ 创建治疗特效（绿色光华）
-            if (typeof this.createHealEffect === 'function') {
-                this.createHealEffect();
+        // ✅ 使用纯函数式计算
+        if (this.combatEngine && this.combatContextBuilder) {
+            // 构建战斗上下文
+            const context = this.buildCombatContext();
+            if (!context) {
+                console.error('❌ 构建战斗上下文失败');
+                return;
             }
-        } else if (skill.dodgeBonus) {
-            this.persistentState.player.dodgeActive = true;
-            this.persistentState.player.dodgeBonus = skill.dodgeBonus;
-            this.addBattleLog(`你使用了${skillDisplayName}，提高了闪避率！`);
-            // ✅ 创建闪避技能释放特效（风属性残影）
-            if (this.battle3D && this.battle3D.player && typeof this.createDodgeEffect === 'function') {
-                const playerPosition = this.battle3D.player.position.clone();
-                playerPosition.y = 1.0;
-                this.createDodgeEffect(playerPosition);
+
+            let result;
+            // 根据技能类型调用不同的纯函数
+            if (skill.defenseBonus) {
+                result = this.combatEngine.calculateDefenseSkill(context, skillType, skill, skillLevel);
+            } else if (skill.healPercentage) {
+                result = this.combatEngine.calculateHealSkill(context, skillType, skill, skillLevel);
+            } else if (skill.dodgeBonus) {
+                result = this.combatEngine.calculateDodgeSkill(context, skillType, skill, skillLevel);
+            }
+
+            if (result && result.success) {
+                console.log('📊 [纯函数式] 技能计算结果:', result);
+
+                // 应用结果到玩家状态
+                this.persistentState.player.energy = result.updatedPlayer.energy;
+
+                if (skill.defenseBonus) {
+                    this.persistentState.player.defenseActive = result.updatedPlayer.defenseActive;
+                    this.persistentState.player.defenseBonusValue = result.updatedPlayer.defenseBonusValue;
+                    this.addBattleLog(result.logs[0]);
+
+                    // 触发事件
+                    result.events.forEach(event => {
+                        if (typeof eventManager !== 'undefined') {
+                            eventManager.emit(event.type, event.data);
+                        }
+                    });
+                } else if (skill.healPercentage) {
+                    this.persistentState.player.hp = result.updatedPlayer.hp;
+                    this.addBattleLog(result.logs[0]);
+                    this.showDamage(this.battle3D.player, result.data.healAmount, 'green');
+
+                    // ✅ 创建治疗特效
+                    if (typeof this.createHealEffect === 'function') {
+                        this.createHealEffect();
+                    }
+
+                    // 触发事件
+                    result.events.forEach(event => {
+                        if (typeof eventManager !== 'undefined') {
+                            eventManager.emit(event.type, event.data);
+                        }
+                    });
+                } else if (skill.dodgeBonus) {
+                    this.persistentState.player.dodgeActive = result.updatedPlayer.dodgeActive;
+                    this.persistentState.player.dodgeBonus = result.updatedPlayer.dodgeBonus;
+                    this.addBattleLog(result.logs[0]);
+
+                    // ✅ 创建闪避技能释放特效
+                    if (this.battle3D && this.battle3D.player && typeof this.createDodgeEffect === 'function') {
+                        const playerPosition = this.battle3D.player.position.clone();
+                        playerPosition.y = 1.0;
+                        this.createDodgeEffect(playerPosition);
+                    }
+
+                    // 触发事件
+                    result.events.forEach(event => {
+                        if (typeof eventManager !== 'undefined') {
+                            eventManager.emit(event.type, event.data);
+                        }
+                    });
+                }
+            } else if (result && !result.success) {
+                // 灵力不足等错误
+                this.addBattleLog(result.logs[0]);
+                return;
+            }
+        } else {
+            // ❌ 降级到旧逻辑（如果纯函数式引擎不可用）
+            console.warn('⚠️ 纯函数式引擎不可用，使用旧逻辑');
+            this.persistentState.player.energy -= skill.energyCost;
+            this.showEnergyChange(this.battle3D.player, -skill.energyCost);
+
+            if (skill.defenseBonus) {
+                this.persistentState.player.defenseActive = true;
+                this.persistentState.player.defenseBonusValue = skill.defenseBonus;
+                this.addBattleLog(`你使用了${skillDisplayName}，防御姿态已激活！下次受到的伤害减少${Math.floor(skill.defenseBonus * 100)}%！`);
+            } else if (skill.healPercentage) {
+                const actualMaxHp = this.getActualStats().maxHp;
+                const healAmount = Math.floor(actualMaxHp * skill.healPercentage);
+                this.persistentState.player.hp = Math.min(this.persistentState.player.hp + healAmount, actualMaxHp);
+                this.addBattleLog(`你使用了${skillDisplayName}，恢复了${healAmount}点生命值！`);
+                this.showDamage(this.battle3D.player, healAmount, 'green');
+                if (typeof this.createHealEffect === 'function') {
+                    this.createHealEffect();
+                }
+            } else if (skill.dodgeBonus) {
+                this.persistentState.player.dodgeActive = true;
+                this.persistentState.player.dodgeBonus = skill.dodgeBonus;
+                this.addBattleLog(`你使用了${skillDisplayName}，提高了闪避率！`);
+                if (this.battle3D && this.battle3D.player && typeof this.createDodgeEffect === 'function') {
+                    const playerPosition = this.battle3D.player.position.clone();
+                    playerPosition.y = 1.0;
+                    this.createDodgeEffect(playerPosition);
+                }
             }
         }
 
+        // 处理其他效果（护盾、能量恢复、buff/debuff等）
         if (skill.energyRecover) {
             const recoverAmount = Math.min(skill.energyRecover, this.persistentState.player.maxEnergy - this.persistentState.player.energy);
             this.persistentState.player.energy += recoverAmount;
@@ -559,7 +600,6 @@ EndlessCultivationGame.prototype.useSkill = function(skillType = 'attack') {
         if (skill.shield) {
             this.persistentState.player.shieldValue = (this.persistentState.player.shieldValue || 0) + skill.shield;
             this.addBattleLog(`获得了${skill.shield}点护盾！当前护盾：${this.persistentState.player.shieldValue}`);
-            // ✅ 创建护盾特效
             if (typeof this.createDefenseEffect === 'function') {
                 this.createDefenseEffect();
             }
@@ -575,8 +615,6 @@ EndlessCultivationGame.prototype.useSkill = function(skillType = 'attack') {
             skill.debuffs.forEach(d => this.transientState.enemy.debuffs.push({ type: d.type, value: d.value, turns: d.turns }));
             this.addBattleLog(`对敌人施加了${skill.debuffs.length}个减益效果！`);
         }
-
-        // ✅ UI更新由UIManager通过battle:skill事件自动处理
     };
 
     if (skill.defenseBonus) {
@@ -588,6 +626,7 @@ EndlessCultivationGame.prototype.useSkill = function(skillType = 'attack') {
 
 /**
  * 计算敌人攻击（统一函数，避免代码重复）
+ * @deprecated 已废弃，使用 CombatEngine.calculateEnemyAttack() 代替
  * @param {number} finalDefense - 玩家防御力
  * @param {number} enemyAccuracy - 敌人命中率（小数格式，如0.95表示95%）
  * @param {number} finalDodge - 玩家闪避率（小数格式，如0.50表示50%）
@@ -643,17 +682,27 @@ EndlessCultivationGame.prototype.calculateEnemyAttack = function(finalDefense, e
 };
 
 // 敌人反击通用函数（供技能使用）
-EndlessCultivationGame.prototype.triggerEnemyCounterattack = function(finalDefense, enemyAccuracy, finalDodge) {
-    // 敌人反击（使用统一函数计算）
-    const {
-        enemyHit,
-        enemyDamage,
-        enemyCrit,
-        enemyCritResult,
-        tenacityReduction
-    } = this.calculateEnemyAttack(finalDefense, enemyAccuracy, finalDodge, true);
+EndlessCultivationGame.prototype.triggerEnemyCounterattack = function() {
+    // ✅ 使用纯函数式计算敌人攻击
+    const context = this.buildCombatContext();
+    if (!context) {
+        console.error('❌ 构建战斗上下文失败');
+        return;
+    }
+
+    const result = this.combatEngine.calculateEnemyAttack(context);
+    console.log('📊 [纯函数式] 敌人反击计算结果:', result);
+
+    const { isHit: enemyHit, damage: enemyDamage, isCrit: enemyCrit, critResult: enemyCritResult, tenacityReduction } = result.data;
+
     let isImmune = false;
     let finalEnemyDamage = enemyDamage;
+
+    // ✅ 应用闪避技能状态重置（如果使用过）
+    if (result.data.dodgeUsed) {
+        this.persistentState.player.dodgeActive = result.updatedPlayer.dodgeActive;
+        this.persistentState.player.dodgeBonus = result.updatedPlayer.dodgeBonus;
+    }
 
     this.playEnemyAttackAnimation(
         // 碰撞回调
@@ -797,8 +846,9 @@ EndlessCultivationGame.prototype.enemyDefeated = function() {
 
     // 杀死敌人恢复生命值
     const hpRecoveryPercent = 0.35; // 恢复35%最大HP（从20%提升）
-    const hpRecovery = Math.floor(this.persistentState.player.maxHp * hpRecoveryPercent);
-    const actualHpRecovered = Math.min(hpRecovery, this.persistentState.player.maxHp - this.persistentState.player.hp);
+    const actualMaxHp = this.getActualStats().maxHp;  // ✅ 使用实际maxHp（含装备加成）
+    const hpRecovery = Math.floor(actualMaxHp * hpRecoveryPercent);
+    const actualHpRecovered = Math.min(hpRecovery, actualMaxHp - this.persistentState.player.hp);
     if (actualHpRecovered > 0) {
         this.persistentState.player.hp += actualHpRecovered;
         this.addBattleLog(`战斗胜利恢复了${actualHpRecovered}点生命值！`);
@@ -908,7 +958,8 @@ EndlessCultivationGame.prototype.playerDefeated = function() {
     this.addBattleLog(`你失去了 ${expLoss} 点经验！(20%)`);
 
     // 重置玩家HP和灵力
-    this.persistentState.player.hp = this.persistentState.player.maxHp;
+    const actualMaxHp = this.getActualStats().maxHp;  // ✅ 使用实际maxHp（含装备加成）
+    this.persistentState.player.hp = actualMaxHp;
     this.persistentState.player.energy = this.persistentState.player.maxEnergy;
 
     // 重置敌人HP/灵力

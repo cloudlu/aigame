@@ -35,7 +35,12 @@ describe('CombatEngine 纯函数式测试', () => {
                     iron: 0,
                     spiritStones: 0,
                     breakthroughStones: 0
-                }
+                },
+                // ✅ 添加防御/闪避状态字段
+                defenseActive: false,
+                defenseBonusValue: 0,
+                dodgeActive: false,
+                dodgeBonus: 0
             },
             enemy: {
                 name: '测试敌人',
@@ -506,6 +511,196 @@ describe('CombatEngine 纯函数式测试', () => {
 
             expect(context.player.energy).toBe(originalContext.player.energy);
             expect(context.enemy.hp).toBe(originalContext.enemy.hp);
+        });
+    });
+
+    // ==================== calculateDefenseSkill 测试 ====================
+
+    describe('calculateDefenseSkill() - 防御技能计算', () => {
+        it('应该成功激活防御状态', () => {
+            const skillData = {
+                name: '铁壁防御',
+                defenseBonus: 0.5,
+                energyCost: 15
+            };
+
+            const result = CombatEngine.calculateDefenseSkill(context, 'defense', skillData, 1);
+
+            expect(result.success).toBe(true);
+            expect(result.data.defenseBonus).toBe(0.5);
+            expect(result.data.defensePercent).toBe(50);
+            expect(result.updatedPlayer.defenseActive).toBe(true);
+            expect(result.updatedPlayer.defenseBonusValue).toBe(0.5);
+            expect(result.updatedPlayer.energy).toBe(context.player.energy - 15);
+        });
+
+        it('灵力不足时应该失败', () => {
+            const lowEnergyContext = {
+                ...context,
+                player: { ...context.player, energy: 5 }
+            };
+            const skillData = {
+                name: '铁壁防御',
+                defenseBonus: 0.5,
+                energyCost: 15
+            };
+
+            const result = CombatEngine.calculateDefenseSkill(lowEnergyContext, 'defense', skillData, 1);
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('灵力不足');
+        });
+
+        it('不应该修改原始context对象', () => {
+            const originalContext = JSON.parse(JSON.stringify(context));
+            const skillData = {
+                name: '铁壁防御',
+                defenseBonus: 0.5,
+                energyCost: 15
+            };
+
+            CombatEngine.calculateDefenseSkill(context, 'defense', skillData, 1);
+
+            expect(context.player.energy).toBe(originalContext.player.energy);
+            expect(context.player.defenseActive).toBeFalsy();
+        });
+    });
+
+    // ==================== calculateHealSkill 测试 ====================
+
+    describe('calculateHealSkill() - 治疗技能计算', () => {
+        it('应该成功恢复生命值', () => {
+            const damagedContext = {
+                ...context,
+                player: { ...context.player, hp: 50, maxHp: 100 }
+            };
+            const skillData = {
+                name: '回春术',
+                healPercentage: 0.3,
+                energyCost: 20
+            };
+
+            const result = CombatEngine.calculateHealSkill(damagedContext, 'recovery', skillData, 1);
+
+            expect(result.success).toBe(true);
+            expect(result.data.healAmount).toBe(30);
+            expect(result.data.newHp).toBe(80);
+            expect(result.updatedPlayer.hp).toBe(80);
+            expect(result.updatedPlayer.energy).toBe(context.player.energy - 20);
+        });
+
+        it('治疗不应超过最大生命值', () => {
+            const nearFullContext = {
+                ...context,
+                player: { ...context.player, hp: 90, maxHp: 100 }
+            };
+            const skillData = {
+                name: '回春术',
+                healPercentage: 0.3,
+                energyCost: 20
+            };
+
+            const result = CombatEngine.calculateHealSkill(nearFullContext, 'recovery', skillData, 1);
+
+            expect(result.success).toBe(true);
+            expect(result.data.healAmount).toBe(10); // 只恢复到最大HP
+            expect(result.updatedPlayer.hp).toBe(100);
+        });
+
+        it('🐛 Bug修复：当hp > maxHp时应该返回0恢复量（装备加成场景）', () => {
+            // 模拟真实bug场景：玩家基础maxHp=580，装备加成后实际hp=1092
+            const bugContext = {
+                ...context,
+                player: {
+                    ...context.player,
+                    hp: 1092,      // 装备加成后的实际HP
+                    maxHp: 1092    // ✅ 修复后：使用实际maxHp（含装备加成）
+                }
+            };
+            const skillData = {
+                name: '治疗术',
+                healPercentage: 0.01,  // 1%治疗
+                energyCost: 10
+            };
+
+            const result = CombatEngine.calculateHealSkill(bugContext, 'recovery', skillData, 1);
+
+            expect(result.success).toBe(true);
+            expect(result.data.healAmount).toBe(0);  // 已满血，恢复0
+            expect(result.data.newHp).toBe(1092);
+            expect(result.updatedPlayer.hp).toBe(1092);
+
+            // 验证不会出现负数
+            expect(result.data.healAmount).toBeGreaterThanOrEqual(0);
+        });
+
+        it('灵力不足时应该失败', () => {
+            const lowEnergyContext = {
+                ...context,
+                player: { ...context.player, hp: 50, energy: 10 }
+            };
+            const skillData = {
+                name: '回春术',
+                healPercentage: 0.3,
+                energyCost: 20
+            };
+
+            const result = CombatEngine.calculateHealSkill(lowEnergyContext, 'recovery', skillData, 1);
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('灵力不足');
+        });
+    });
+
+    // ==================== calculateDodgeSkill 测试 ====================
+
+    describe('calculateDodgeSkill() - 闪避技能计算', () => {
+        it('应该成功激活闪避状态', () => {
+            const skillData = {
+                name: '幻影步',
+                dodgeBonus: 0.3,
+                energyCost: 10
+            };
+
+            const result = CombatEngine.calculateDodgeSkill(context, 'special', skillData, 1);
+
+            expect(result.success).toBe(true);
+            expect(result.data.dodgeBonus).toBe(0.3);
+            expect(result.data.dodgePercent).toBe(30);
+            expect(result.updatedPlayer.dodgeActive).toBe(true);
+            expect(result.updatedPlayer.dodgeBonus).toBe(0.3);
+            expect(result.updatedPlayer.energy).toBe(context.player.energy - 10);
+        });
+
+        it('灵力不足时应该失败', () => {
+            const lowEnergyContext = {
+                ...context,
+                player: { ...context.player, energy: 5 }
+            };
+            const skillData = {
+                name: '幻影步',
+                dodgeBonus: 0.3,
+                energyCost: 10
+            };
+
+            const result = CombatEngine.calculateDodgeSkill(lowEnergyContext, 'special', skillData, 1);
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('灵力不足');
+        });
+
+        it('不应该修改原始context对象', () => {
+            const originalContext = JSON.parse(JSON.stringify(context));
+            const skillData = {
+                name: '幻影步',
+                dodgeBonus: 0.3,
+                energyCost: 10
+            };
+
+            CombatEngine.calculateDodgeSkill(context, 'special', skillData, 1);
+
+            expect(context.player.energy).toBe(originalContext.player.energy);
+            expect(context.player.dodgeActive).toBeFalsy();
         });
     });
 

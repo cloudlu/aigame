@@ -26,8 +26,9 @@ class CombatContextBuilder {
      */
     static buildPlayerContext(game, playerStats) {
         return {
+            // 🔧 FIX: 使用 getActualStats() 的实际值，而不是 persistentState 的基础值
             hp: game.persistentState.player.hp,
-            maxHp: game.persistentState.player.maxHp,
+            maxHp: playerStats.maxHp,  // ✅ 使用包含装备/buff加成的实际maxHp
             attack: playerStats.attack,
             defense: playerStats.defense,
             speed: playerStats.speed,
@@ -37,9 +38,15 @@ class CombatContextBuilder {
             criticalRate: playerStats.criticalRate,
             critDamage: playerStats.critDamage,
             tenacity: playerStats.tenacity || 0,
+            energy: game.persistentState.player.energy,  // ✅ 添加energy字段
             currentEnergy: game.persistentState.player.currentEnergy || 100,
             buffs: game.persistentState.player.buffs || {},
-            skills: game.persistentState.player.skills || {}
+            skills: game.persistentState.player.skills || {},
+            // ✅ 添加防御/闪避状态
+            defenseActive: game.persistentState.player.defenseActive || false,
+            defenseBonusValue: game.persistentState.player.defenseBonusValue || 0,
+            dodgeActive: game.persistentState.player.dodgeActive || false,
+            dodgeBonus: game.persistentState.player.dodgeBonus || 0
         };
     }
 
