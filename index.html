@@ -488,6 +488,9 @@
                     <button id="dungeon-btn" class="px-2 py-1 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-medium hover:opacity-80 transition-opacity flex items-center gap-1" data-tooltip="资源副本">
                         <i class="fa fa-dungeon"></i><span class="hidden sm:inline"> 副本</span>
                     </button>
+                    <button id="pet-manage-btn" class="px-2 py-1 rounded-lg bg-gradient-to-r from-green-600 to-teal-500 text-white text-xs font-medium hover:opacity-80 transition-opacity flex items-center gap-1" data-tooltip="灵兽">
+                        <i class="fa fa-paw"></i><span class="hidden sm:inline"> 灵兽</span>
+                    </button>
                     <!-- 分隔线 -->
                     <div class="h-5 w-px bg-primary/20 mx-1 hidden md:block"></div>
                     <!-- 移动的按钮已放到3D场景内 -->
@@ -1558,6 +1561,20 @@
                 <button id="exit-dungeon-btn" class="hidden absolute top-4 right-4 z-50 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold transition-all hover:scale-105 border-2 border-red-500 shadow-lg">
                     <i class="fa fa-sign-out-alt mr-2"></i>退出副本
                 </button>
+                <!-- 多敌人选择面板（多敌人战斗时显示） -->
+                <div id="multi-enemy-panel" class="hidden absolute bottom-4 left-4 right-4 z-40 flex gap-2 justify-center">
+                    <!-- 动态生成敌人卡片 -->
+                </div>
+                <!-- 宠物血条（有宠物时显示） -->
+                <div id="pet-health-panel" class="hidden absolute bottom-24 left-4 z-40 bg-black/70 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-green-500/40">
+                    <div class="flex items-center gap-2">
+                        <span id="pet-name" class="text-green-400 text-xs font-bold">宠物</span>
+                        <div class="w-20 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                            <div id="pet-hp-bar" class="h-full bg-green-500 transition-all duration-300"></div>
+                        </div>
+                        <span id="pet-hp-text" class="text-green-300 text-xs">0/0</span>
+                    </div>
+                </div>
                 <!-- 3D场景将在这里渲染 -->
             </div>
             <div class="flex justify-end space-x-2" id="attack-skills">
@@ -1841,6 +1858,23 @@
     </div>
 
     <!-- 图鉴弹窗 -->
+    <!-- 宠物管理面板 -->
+    <div id="pet-management-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
+        <div class="bg-dark-card rounded-xl p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto border border-green-500/30 backdrop-blur-sm shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-green-400 flex items-center gap-2">
+                    <i class="fa fa-paw"></i> 灵兽管理
+                </h2>
+                <button id="close-pet-modal" class="text-light/60 hover:text-white transition-colors">
+                    <i class="fa fa-times text-xl"></i>
+                </button>
+            </div>
+            <div id="pet-management-content">
+                <p class="text-gray-400 text-sm text-center py-4">还没有灵兽</p>
+            </div>
+        </div>
+    </div>
+
     <div id="collection-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
         <div class="bg-dark-card rounded-xl p-6 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-indigo-500/30 backdrop-blur-sm shadow-2xl">
             <div class="flex justify-between items-center mb-4">
@@ -1880,6 +1914,7 @@
     <script src="vipSystem.js"></script>
     <script src="jadeShop.js"></script>
     <script src="collectionSystem.js"></script>
+    <script src="petSystem.js"></script>
     <script src="dungeon.js"></script>
     <!-- 纯函数式战斗引擎（需在 game.js 之前加载） -->
     <script src="src/combat/CombatContextBuilder.js"></script>

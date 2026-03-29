@@ -16,7 +16,12 @@ class JadeShop {
         { id: 'exp_pill',        name: '修为丹',     jade: 30,   type: 'exp', expAmount: 500, desc: '获得500经验值' },
         { id: 'exp_pill_lg',     name: '高级修为丹', jade: 100,  type: 'exp', expAmount: 2000, desc: '获得2000经验值' },
         { id: 'reforge_stone',   name: '重铸石',     jade: 80,   type: 'reforge', desc: '重铸一件装备的随机属性' },
-        { id: 'fusion_stone',    name: '合成石',     jade: 50,   type: 'fusion', desc: '提高装备合成成功率20%' }
+        { id: 'fusion_stone',    name: '合成石',     jade: 50,   type: 'fusion', desc: '提高装备合成成功率20%' },
+        { id: 'pet_egg_fox',     name: '灵狐蛋',     jade: 200,  type: 'pet', petTypeId: 'spirit_fox', desc: '速度暴击型 | 品质随机(凡60%/灵25%/仙12%/神3%)' },
+        { id: 'pet_egg_turtle',  name: '玄龟蛋',     jade: 200,  type: 'pet', petTypeId: 'mystic_turtle', desc: '防御生命型 | 品质随机(凡60%/灵25%/仙12%/神3%)' },
+        { id: 'pet_egg_crow',    name: '火鸦蛋',     jade: 250,  type: 'pet', petTypeId: 'fire_crow', desc: '高攻型 | 品质随机(凡60%/灵25%/仙12%/神3%)' },
+        { id: 'pet_egg_butterfly', name: '冰蝶蛋',   jade: 250,  type: 'pet', petTypeId: 'ice_butterfly', desc: '暴击速度型 | 品质随机(凡60%/灵25%/仙12%/神3%)' },
+        { id: 'pet_egg_eagle',   name: '雷鹰蛋',     jade: 300,  type: 'pet', petTypeId: 'thunder_eagle', desc: '攻速兼备 | 品质随机(凡60%/灵25%/仙12%/神3%)' }
     ];
 
     // 获取商品列表
@@ -90,6 +95,22 @@ class JadeShop {
                 this.game.persistentState.player.inventory.consumables.fusion_stone =
                     (this.game.persistentState.player.inventory.consumables.fusion_stone || 0) + 1;
                 result.message = `购买${item.name}成功！合成装备时可使用`;
+                break;
+
+            case 'pet':
+                if (this.game.petSystem) {
+                    const petInstance = this.game.petSystem.createPetInstance(item.petTypeId);
+                    if (petInstance) {
+                        this.game.petSystem.addPet(petInstance);
+                        // 如果是第一只宠物，自动设置为出战
+                        const pets = this.game.persistentState.player.pets;
+                        if (pets.owned.length === 1) {
+                            this.game.petSystem.setActivePet(petInstance.instanceId);
+                        }
+                        const qualityInfo = this.game.petSystem.constructor.QUALITIES[petInstance.quality || 0];
+                        result = { success: true, message: `孵化成功！获得【${qualityInfo.name} ${petInstance.name}】！` };
+                    }
+                }
                 break;
         }
 

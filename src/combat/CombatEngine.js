@@ -1030,6 +1030,440 @@ class CombatEngine {
             return 'wind';
         }
     }
+
+    // ==================== 多敌人战斗系统 ====================
+
+    /**
+     * 攻击指定敌人（多敌人模式）
+     * @param {Object} context - 战斗上下文（含 enemies[]）
+     * @param {number} targetIndex - 目标敌人索引
+     * @returns {Object} { success, data, updatedEnemies, logs, events }
+     */
+    static calculatePlayerAttackTargeted(context, targetIndex) {
+        const { enemies } = context;
+        const enemy = enemies[targetIndex];
+        if (!enemy || enemy.hp <= 0) {
+            return { success: false, error: '无效目标', logs: ['目标无效！'] };
+        }
+
+        // 复用现有攻击逻辑，但作用于指定敌人
+        const singleContext = { ...context, enemy };
+        const result = CombatEngine.calculatePlayerAttack(singleContext);
+
+        // 更新 enemies 数组中对应敌人
+        const updatedEnemies = [...enemies];
+        updatedEnemies[targetIndex] = result.updatedEnemy;
+
+        return {
+            ...result,
+            updatedEnemies,
+            targetIndex
+        };
+    }
+
+    /**
+     * 所有存活敌人依次反击（多敌人模式）
+     * @param {Object} context - 战斗上下文（含 enemies[]）
+     * @returns {Object[]} 每个敌人的反击结果数组
+     */
+    static calculateMultiEnemyCounterAttack(context) {
+        const { enemies } = context;
+        const results = [];
+        const currentEnemies = [...enemies];
+
+        for (let i = 0; i < currentEnemies.length; i++) {
+            if (currentEnemies[i].hp <= 0) continue;
+
+            const singleContext = { ...context, enemy: currentEnemies[i], enemies: currentEnemies };
+            const result = CombatEngine.calculateEnemyAttack(singleContext);
+
+            results.push({
+                enemyIndex: i,
+                enemyName: currentEnemies[i].name,
+                ...result
+            });
+
+            // 更新后续敌人上下文中的玩家状态
+            if (result.updatedPlayer) {
+                context = { ...context, player: result.updatedPlayer };
+            }
+        }
+
+        return results;
+    }
+
+    /**
+     * 检查多敌人战斗结束
+     * @param {Object} context - 含 player, enemies[], pets[]
+     * @returns {Object} { ended, result:'victory'|'defeat'|null, remainingEnemies }
+     */
+    static checkMultiBattleEnd(context) {
+        const { player, enemies, pets } = context;
+
+        // 玩家死亡 = 战败（宠物存活不算输）
+        const playerAlive = player.hp > 0;
+        const petsAlive = (pets || []).some(p => p.hp > 0);
+
+        if (!playerAlive && !petsAlive) {
+            return { ended: true, result: 'defeat', remainingEnemies: enemies.filter(e => e.hp > 0).length };
+        }
+
+        // 所有敌人死亡 = 胜利
+        const aliveEnemies = enemies.filter(e => e.hp > 0);
+        if (aliveEnemies.length === 0) {
+            return { ended: true, result: 'victory', remainingEnemies: 0 };
+        }
+
+        return { ended: false, result: null, remainingEnemies: aliveEnemies.length };
+    }
+
+    /**
+     * 解析技能 targeting 元数据，返回实际目标列表
+     * @param {Object} context - 战斗上下文
+     * @param {Object} skill - 技能对象（含 targeting）
+     * @param {string} userSide - 'player'|'enemy'|'pet' 使用者阵营
+     * @param {number} targetIndex - 手动选择的目标索引
+     * @returns {Object[]} 目标数组
+     */
+    static resolveTargeting(context, skill, userSide, targetIndex = 0) {
+        const { player, enemies, pets } = context;
+        const targeting = skill.targeting || { side: 'enemy', count: 'single', selection: 'manual' };
+        let { side, count, selection } = targeting;
+
+        // 映射 side：敌人视角自动转换
+        if (userSide === 'enemy') {
+            if (side === 'enemy') side = 'playerSide'; // 敌人的"enemy" = 玩家方
+            else if (side === 'ally') side = 'enemySide'; // 敌人的"ally" = 其他敌人
+        }
+
+        let targets = [];
+
+        if (side === 'enemy' || side === 'playerSide') {
+            // 目标是敌方阵营
+            if (userSide === 'enemy') {
+                // 敌人攻击玩家方 → 目标是玩家 + 宠物
+                targets = [
+                    ...(player.hp > 0 ? [player] : []),
+                    ...(pets || []).filter(p => p.hp > 0)
+                ];
+            } else {
+                // 玩家/宠物攻击敌人方
+                targets = enemies.filter(e => e.hp > 0);
+            }
+        } else if (side === 'ally' || side === 'enemySide') {
+            // 目标是友方阵营
+            if (userSide === 'enemy') {
+                targets = enemies.filter(e => e.hp > 0);
+            } else {
+                targets = [
+                    ...(player.hp > 0 ? [player] : []),
+                    ...(pets || []).filter(p => p.hp > 0)
+                ];
+            }
+        } else if (side === 'self') {
+            // 目标是自己（由调用方处理）
+            return 'SELF';
+        }
+
+        // 根据 count 筛选
+        if (count === 'single') {
+            if (selection === 'manual' && targetIndex < targets.length) {
+                return [targets[targetIndex]];
+            }
+            if (selection === 'auto' || selection === 'manual') {
+                // auto: 选HP最低的 / manual fallback: 选第一个
+                if (selection === 'auto') {
+                    targets.sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp));
+                }
+                return [targets[0]];
+            }
+            return targets.length > 0 ? [targets[0]] : [];
+        }
+
+        if (count === 'all') {
+            return targets;
+        }
+
+        // upTo_N 模式
+        const maxTargets = parseInt(String(count).replace('upTo_', '')) || targets.length;
+        if (selection === 'auto') {
+            targets.sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp));
+        }
+        return targets.slice(0, maxTargets);
+    }
+
+    /**
+     * 统一技能结算（基于 targeting 元数据）
+     * @param {Object} context - 战斗上下文
+     * @param {Object} skill - 技能对象（含 targeting, aoe, 效果属性）
+     * @param {string} userSide - 'player'|'enemy'|'pet'
+     * @param {number} targetIndex - 手动选择的目标索引
+     * @returns {Object} { updatedContext, results[], logs[], events[] }
+     */
+    static calculateSkillWithTargeting(context, skill, userSide, targetIndex = 0) {
+        const targets = CombatEngine.resolveTargeting(context, skill, userSide, targetIndex);
+
+        // self 类型：返回标记，由调用方处理自身效果
+        if (targets === 'SELF') {
+            return CombatEngine._calculateSelfSkill(context, skill, userSide);
+        }
+
+        if (targets.length === 0) {
+            return { updatedContext: context, results: [], logs: ['没有有效目标！'], events: [] };
+        }
+
+        const skillType = skill.type || (skill.damageMultiplier ? 'attack' : 'support');
+        const logs = [];
+        const events = [];
+        const results = [];
+
+        if (skillType === 'attack' || skill.damageMultiplier) {
+            // 攻击技能：按 aoe.mode 分配伤害
+            const aoe = skill.aoe || { mode: 'full' };
+
+            if (aoe.mode === 'full') {
+                // 每个目标独立全额计算
+                for (let i = 0; i < targets.length; i++) {
+                    const singleCtx = { ...context, enemy: targets[i] };
+                    const result = CombatEngine.calculateSkillDamage(singleCtx, skill.type || 'attack', skill, skill.skillLevel || 1);
+                    results.push({ target: targets[i], ...result });
+                }
+            } else if (aoe.mode === 'splash') {
+                // 主目标100%，其他按 splashRatio 衰减
+                for (let i = 0; i < targets.length; i++) {
+                    const ratio = i === 0 ? 1.0 : (aoe.splashRatio || 0.5);
+                    const modifiedSkill = { ...skill, damageMultiplier: (skill.damageMultiplier || 1) * ratio };
+                    const singleCtx = { ...context, enemy: targets[i] };
+                    const result = CombatEngine.calculateSkillDamage(singleCtx, skill.type || 'attack', modifiedSkill, skill.skillLevel || 1);
+                    result.data.splashRatio = ratio;
+                    results.push({ target: targets[i], ...result });
+                }
+            } else if (aoe.mode === 'split') {
+                // 总伤害固定，按目标数均分
+                const totalMultiplier = skill.damageMultiplier || 1;
+                const perTargetMultiplier = totalMultiplier / targets.length;
+                const modifiedSkill = { ...skill, damageMultiplier: perTargetMultiplier };
+                for (let i = 0; i < targets.length; i++) {
+                    const singleCtx = { ...context, enemy: targets[i] };
+                    const result = CombatEngine.calculateSkillDamage(singleCtx, skill.type || 'attack', modifiedSkill, skill.skillLevel || 1);
+                    result.data.splitCount = targets.length;
+                    results.push({ target: targets[i], ...result });
+                }
+            }
+        } else {
+            // 辅助技能：按效果覆盖所有目标
+            for (const target of targets) {
+                results.push({ target, effect: CombatEngine._applySupportEffect(target, skill) });
+            }
+        }
+
+        return { updatedContext: context, results, logs, events };
+    }
+
+    /**
+     * 自身技能处理（self targeting）
+     */
+    static _calculateSelfSkill(context, skill, userSide) {
+        const self = userSide === 'player' ? context.player :
+                     userSide === 'pet' ? context.pets?.[0] :
+                     context.enemies?.[0]; // enemy: 选第一个（Boss自身）
+
+        const effect = {};
+        if (skill.healPercentage) effect.healAmount = Math.floor(self.maxHp * skill.healPercentage);
+        if (skill.defenseBonus) effect.defenseBonus = skill.defenseBonus;
+        if (skill.attackBonus) effect.attackBonus = skill.attackBonus;
+
+        return {
+            updatedContext: context,
+            results: [{ target: self, effect, isSelf: true }],
+            logs: [],
+            events: []
+        };
+    }
+
+    /**
+     * 应用辅助技能效果
+     */
+    static _applySupportEffect(target, skill) {
+        const effect = {};
+        if (skill.healPercentage) {
+            effect.healAmount = Math.min(
+                Math.floor(target.maxHp * skill.healPercentage),
+                target.maxHp - target.hp
+            );
+        }
+        if (skill.defenseBonus) effect.defenseBonus = skill.defenseBonus;
+        if (skill.dodgeBonus) effect.dodgeBonus = skill.dodgeBonus;
+        if (skill.shield) effect.shield = skill.shield;
+        return effect;
+    }
+
+    /**
+     * 敌人AI决策（Boss/精英技能选择）
+     * @param {Object} context - 战斗上下文
+     * @param {number} enemyIndex - 敌人索引
+     * @returns {Object} { action:'skill'|'attack', skillId, skill, targetIndex }
+     */
+    static decideEnemyAction(context, enemyIndex) {
+        const enemy = context.enemies[enemyIndex];
+        if (!enemy || !enemy.skills || enemy.skills.length === 0) {
+            return { action: 'attack', skillId: null, skill: null, targetIndex: 0 };
+        }
+
+        // 检查能量，优先使用高伤害AOE技能
+        const availableSkills = enemy.skills.filter(s => (enemy.energy || 0) >= (s.energyCost || 0));
+        if (availableSkills.length === 0) {
+            return { action: 'attack', skillId: null, skill: null, targetIndex: 0 };
+        }
+
+        // 优先选AOE技能（count:'all'），其次选高伤害技能
+        const aoeSkills = availableSkills.filter(s => s.targeting?.count === 'all');
+        const selectedSkill = aoeSkills.length > 0 ? aoeSkills[0] :
+                              availableSkills.sort((a, b) => (b.damageMultiplier || 1) - (a.damageMultiplier || 1))[0];
+
+        // 选择目标：如果有宠物，随机打玩家或宠物
+        const playerAlive = context.player.hp > 0;
+        const alivePets = (context.pets || []).filter(p => p.hp > 0);
+        let targetIndex = 0;
+        if (playerAlive && alivePets.length > 0 && Math.random() < 0.3) {
+            targetIndex = 1 + Math.floor(Math.random() * alivePets.length); // 1=玩家, 2+=宠物
+        }
+
+        return { action: 'skill', skillId: selectedSkill.id, skill: selectedSkill, targetIndex };
+    }
+
+    /**
+     * Boss/精英技能攻击计算
+     * @param {Object} context - 战斗上下文
+     * @param {number} enemyIndex - 敌人索引
+     * @param {Object} skill - 技能对象
+     * @returns {Object} { updatedPlayer, updatedPets, updatedEnemies, data, logs, events }
+     */
+    static calculateEnemySkillAttack(context, enemyIndex, skill) {
+        const enemy = context.enemies[enemyIndex];
+        if (!enemy || enemy.hp <= 0) {
+            return { success: false, error: '无效敌人' };
+        }
+
+        const result = CombatEngine.calculateSkillWithTargeting(context, skill, 'enemy', 0);
+
+        // 聚合伤害结果
+        const logs = [];
+        const events = [];
+        let totalPlayerDamage = 0;
+        const petDamages = [];
+
+        for (const r of result.results) {
+            if (r.data?.damage) {
+                const targetRef = r.target;
+                // 判断目标是玩家还是宠物
+                if (targetRef === context.player || targetRef.id === context.player.id) {
+                    totalPlayerDamage += r.data.damage;
+                } else {
+                    petDamages.push({ pet: targetRef, damage: r.data.damage });
+                }
+                logs.push(`${enemy.name}使用${skill.name}，对${targetRef.name || '目标'}造成${r.data.damage}点伤害！`);
+            }
+        }
+
+        const updatedPlayer = totalPlayerDamage > 0
+            ? { ...context.player, hp: Math.max(0, context.player.hp - totalPlayerDamage) }
+            : context.player;
+
+        const updatedPets = petDamages.length > 0
+            ? (context.pets || []).map(p => {
+                const dmg = petDamages.find(d => d.pet.id === p.id);
+                return dmg ? { ...p, hp: Math.max(0, p.hp - dmg.damage) } : p;
+            })
+            : context.pets || [];
+
+        const updatedEnemies = [...context.enemies];
+        updatedEnemies[enemyIndex] = {
+            ...enemy,
+            energy: Math.max(0, (enemy.energy || 0) - (skill.energyCost || 0))
+        };
+
+        return {
+            success: true,
+            data: { totalPlayerDamage, petDamages, skillName: skill.name },
+            updatedPlayer,
+            updatedPets,
+            updatedEnemies,
+            logs,
+            events
+        };
+    }
+
+    /**
+     * 宠物AI决策
+     * @param {Object} context - 战斗上下文
+     * @param {number} petIndex - 宠物索引
+     * @returns {Object} { action:'attack'|'skill', targetIndex, skillId }
+     */
+    static decidePetAction(context, petIndex) {
+        const pet = context.pets?.[petIndex];
+        if (!pet || pet.hp <= 0) {
+            return { action: null };
+        }
+
+        // 简单AI：如果有技能且能量足够，随机使用技能，否则普通攻击
+        const aliveEnemies = context.enemies
+            .map((e, i) => ({ ...e, originalIndex: i }))
+            .filter(e => e.hp > 0);
+
+        if (aliveEnemies.length === 0) {
+            return { action: null };
+        }
+
+        // 选HP最低的敌人
+        const target = aliveEnemies.sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp))[0];
+
+        return {
+            action: 'attack',
+            targetIndex: target.originalIndex,
+            skillId: null
+        };
+    }
+
+    /**
+     * 宠物攻击计算
+     * @param {Object} context - 战斗上下文
+     * @param {number} petIndex - 宠物索引
+     * @param {number} targetIndex - 目标敌人索引
+     * @returns {Object} { success, data, updatedEnemy, updatedEnemies, logs }
+     */
+    static calculatePetAttack(context, petIndex, targetIndex) {
+        const pet = context.pets?.[petIndex];
+        const enemy = context.enemies?.[targetIndex];
+
+        if (!pet || pet.hp <= 0 || !enemy || enemy.hp <= 0) {
+            return { success: false, error: '无效攻击', logs: [] };
+        }
+
+        // 宠物攻击公式（简化版）
+        const baseDamage = Math.max(1, pet.attack - enemy.defense * 0.5);
+        const isCrit = Math.random() * 100 < (pet.criticalRate || 5);
+        const damage = isCrit
+            ? Math.floor(baseDamage * (pet.critDamage || 1.5))
+            : Math.floor(baseDamage);
+
+        const updatedEnemy = {
+            ...enemy,
+            hp: Math.max(0, enemy.hp - damage)
+        };
+
+        const updatedEnemies = [...context.enemies];
+        updatedEnemies[targetIndex] = updatedEnemy;
+
+        return {
+            success: true,
+            data: { damage, isCrit, petName: pet.name || '宠物' },
+            updatedEnemy,
+            updatedEnemies,
+            logs: [`${pet.name || '宠物'}${isCrit ? '暴击' : '攻击'}${enemy.name}，造成${damage}点伤害！`],
+            events: [{ type: 'pet:attack', data: { petIndex, targetIndex, damage, isCrit } }]
+        };
+    }
 }
 
 // 挂载到全局（浏览器环境）

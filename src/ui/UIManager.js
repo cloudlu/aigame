@@ -48,6 +48,8 @@ class UIManager {
         this.addListener('battle:defeat', () => this.scheduleUpdate('playerStats'));
         this.addListener('battle:dodge', () => this.scheduleUpdate('healthBars'));
         this.addListener('battle:log', () => this.scheduleUpdate('battleLog'));
+        this.addListener('battle:multiEnemyUpdate', () => this.scheduleUpdate('multiEnemyPanel'));
+        this.addListener('battle:targetSelected', () => this.scheduleUpdate('multiEnemyPanel'));
 
         // ========== 装备系统UI更新（细粒度）==========
         this.addListener('equipment:equip', () => this.scheduleUpdate('playerStats'));
@@ -109,6 +111,7 @@ class UIManager {
         // 优先级：先更新紧急的（血条），再更新次要的（资源）
         const updateOrder = [
             'healthBars',
+            'multiEnemyPanel',
             'energy',
             'playerStats',
             'expAndLevel',
@@ -136,6 +139,9 @@ class UIManager {
         switch (updateType) {
             case 'healthBars':
                 this.updateHealthBars();
+                break;
+            case 'multiEnemyPanel':
+                this.updateMultiEnemyPanel();
                 break;
             case 'energy':
                 this.updateEnergyDisplay();
@@ -176,6 +182,61 @@ class UIManager {
                 console.error('UIManager: 更新血条失败', error);
             }
         }
+    }
+
+    /**
+     * 更新多敌人面板（多敌人战斗时显示）
+     */
+    updateMultiEnemyPanel() {
+        const panel = document.getElementById('multi-enemy-panel');
+        if (!panel) return;
+
+        const enemies = this.game.transientState?.enemies;
+        const battleMode = this.game.transientState?.battle?.battleMode;
+        const selectedIdx = this.game.transientState?.battle?.selectedTargetIndex || 0;
+
+        if (!enemies || enemies.length === 0 || battleMode !== 'multi') {
+            panel.classList.add('hidden');
+            return;
+        }
+
+        panel.classList.remove('hidden');
+
+        // 生成敌人卡片
+        let html = '';
+        enemies.forEach((enemy, i) => {
+            const isDead = enemy.hp <= 0;
+            const isSelected = i === selectedIdx && !isDead;
+            const hpPercent = Math.max(0, (enemy.hp / enemy.maxHp) * 100);
+            const isBoss = enemy.isBoss;
+            const isElite = enemy.isElite;
+            const borderClass = isDead ? 'border-gray-600/30 opacity-40' :
+                                isSelected ? 'border-green-400 ring-2 ring-green-400/50' :
+                                isBoss ? 'border-purple-400/60' :
+                                isElite ? 'border-yellow-400/60' :
+                                'border-red-400/40';
+            const bgClass = isDead ? 'bg-gray-900/80' :
+                           isBoss ? 'bg-purple-900/80' :
+                           isElite ? 'bg-yellow-900/80' :
+                           'bg-red-900/60';
+
+            html += `
+            <div class="enemy-card flex-shrink-0 w-36 ${bgClass} backdrop-blur-sm rounded-lg px-3 py-2 border-2 ${borderClass} cursor-pointer transition-all hover:scale-105 ${isDead ? 'pointer-events-none' : ''}"
+                 onclick="window.game && window.game.selectTarget(${i})" data-enemy-index="${i}">
+                <div class="text-xs font-bold truncate ${isDead ? 'text-gray-500 line-through' : 'text-white'}">
+                    ${isBoss ? '<i class="fa fa-star text-purple-400 mr-1"></i>' : ''}${isElite ? '<i class="fa fa-diamond text-yellow-400 mr-1"></i>' : ''}${enemy.name}
+                </div>
+                <div class="text-xs text-gray-300">Lv.${enemy.level || '?'}</div>
+                <div class="w-full h-2 bg-gray-700 rounded-full mt-1 overflow-hidden">
+                    <div class="h-full rounded-full transition-all ${hpPercent > 50 ? 'bg-green-500' : hpPercent > 25 ? 'bg-yellow-500' : 'bg-red-500'}" style="width:${hpPercent}%"></div>
+                </div>
+                <div class="text-xs text-gray-400 mt-0.5">${Math.max(0, Math.floor(enemy.hp))}/${enemy.maxHp}</div>
+                ${enemy.skills && enemy.skills.length > 0 ? `<div class="text-xs text-purple-300 mt-0.5"><i class="fa fa-bolt"></i> ${enemy.energy || 0}/${enemy.maxEnergy || 0}</div>` : ''}
+                ${isSelected && !isDead ? '<div class="text-xs text-green-400 font-bold mt-0.5">▸ 目标</div>' : ''}
+            </div>`;
+        });
+
+        panel.innerHTML = html;
     }
 
     /**

@@ -650,6 +650,16 @@ class MainQuestSystem {
             }
         }
 
+        // 宠物奖励
+        if (rewards.pet && this.game.petSystem) {
+            const petInstance = this.game.petSystem.createPetInstance(rewards.pet);
+            if (petInstance) {
+                this.game.petSystem.addPet(petInstance);
+                this.game.petSystem.setActivePet(petInstance.instanceId);
+                this.game.showNotification(`获得灵兽【${petInstance.name}】！`, 'success');
+            }
+        }
+
         this.game.updateUI();
         this.game.checkLevelUp();
     }

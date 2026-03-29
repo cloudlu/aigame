@@ -320,6 +320,11 @@ EndlessCultivationGame.prototype.encounterEnemy = function(enemyInfo, initScene 
     // 创建完整的战斗场景
     this.createBattleScene(this.transientState.enemy);
 
+    // 激活宠物（如果有）
+    if (this.petSystem) {
+        this.petSystem.activatePetForBattle();
+    }
+
 }
 
 // ==================== 探险3D场景初始化 ====================

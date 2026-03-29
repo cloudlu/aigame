@@ -271,6 +271,12 @@ EndlessCultivationGame.prototype.useSkill = function(skillType = 'attack') {
         return;
     }
 
+    // 多敌人模式下使用技能（攻击指定目标）
+    if (this.transientState.battle.battleMode === 'multi') {
+        this.useSkillMultiEnemy(skillType);
+        return;
+    }
+
     // 获取指定类型的装备技能
     const equippedSkillId = this.persistentState.player.skills.equipped?.[skillType];
 
@@ -444,7 +450,11 @@ EndlessCultivationGame.prototype.useSkill = function(skillType = 'attack') {
                             skillEffectColor.b
                         ));
                         this.enemyDefeated();
-                        return;
+                        // 单敌人模式：战斗结束，无需反击
+                        // 多敌人模式：继续让剩余敌人反击
+                        if (this.transientState.battle.battleMode !== 'multi') {
+                            return;
+                        }
                     }
                 }
                 // 应用buff/debuff等效果
@@ -683,6 +693,11 @@ EndlessCultivationGame.prototype.calculateEnemyAttack = function(finalDefense, e
 
 // 敌人反击通用函数（供技能使用）
 EndlessCultivationGame.prototype.triggerEnemyCounterattack = function() {
+    // 多敌人模式： 所有存活敌人依次反击
+    if (this.transientState.battle.battleMode === 'multi') {
+        this.processAllEnemyCounterAttacks();
+        return;
+    }
     // ✅ 使用纯函数式计算敌人攻击
     const context = this.buildCombatContext();
     if (!context) {
@@ -782,6 +797,10 @@ EndlessCultivationGame.prototype.triggerEnemyCounterattack = function() {
             if (this.transientState.enemy.isBoss) {
                 this.transientState.enemy.energy = Math.min(this.transientState.enemy.energy + 20, this.transientState.enemy.maxEnergy);
             }
+            // 宠物自动攻击（单敌人模式）
+            if (this.transientState.pets && this.transientState.pets.length > 0) {
+                this.executePetAttack();
+            }
             if (this.persistentState.player.hp <= 0) this.playerDefeated();
             // ✅ UI更新由UIManager通过battle:attack事件自动处理
         }
@@ -790,7 +809,27 @@ EndlessCultivationGame.prototype.triggerEnemyCounterattack = function() {
 
 // 敌人被击败
 EndlessCultivationGame.prototype.enemyDefeated = function() {
-    // ✅ 触发事件
+    // 多敌人模式
+    if (this.transientState.battle.battleMode === 'multi') {
+        const targetIndex = this.transientState.battle.selectedTargetIndex || 0;
+        const target = this.transientState.enemies?.[targetIndex];
+        if (target) {
+            this.addBattleLog(`${target.name}被击败了！`);
+            // 3D倒地动画+移除
+            this.removeEnemyModel(targetIndex);
+        }
+        // 检查是否所有敌人被击败
+        if (this.allEnemiesDefeated()) {
+            this.processAllEnemiesDefeated();
+        } else {
+            // 自动切换到下一个存活敌人
+            this.autoSelectNextTarget();
+        }
+        return;
+    }
+
+    // ✅ 单敌人模式的原始逻辑
+    // 触发事件
     if (typeof eventManager !== 'undefined' && eventManager) {
         const expMultiplier = this.transientState.enemy.expMultiplier || 1;
         eventManager.emit('battle:victory', {
@@ -818,6 +857,11 @@ EndlessCultivationGame.prototype.enemyDefeated = function() {
     const expMultiplier = this.transientState.enemy.expMultiplier || 1;
     const expGained = Math.floor(this.transientState.enemy.level * 20 * expMultiplier);
     this.persistentState.player.exp += expGained;
+
+    // 宠物获得经验（玩家经验的50%）
+    if (this.petSystem && expGained > 0) {
+        this.petSystem.grantExpToActivePet(Math.floor(expGained * 0.5));
+    }
 
     // 精英怪额外提示
     if (this.transientState.enemy.isElite) {
@@ -1290,5 +1334,490 @@ EndlessCultivationGame.prototype.getSkillElementType_Deprecated = function(skill
     // 绿色/白色系 -> 风元素
     else {
         return 'wind';
+    }
+};
+
+// ==================== 多敌人战斗系统 ====================
+
+/**
+ * 攻击指定目标（多敌人模式）
+ * @param {number} targetIndex - 目标敌人索引
+ */
+EndlessCultivationGame.prototype.attackEnemyTargeted = function(targetIndex) {
+    if (!this.transientState.battle.inBattle) {
+        this.addBattleLog('只有在战斗模式中才能使用普通攻击！');
+        return;
+    }
+
+    const enemies = this.transientState.enemies;
+    if (!enemies || !enemies[targetIndex] || enemies[targetIndex].hp <= 0) {
+        this.addBattleLog('无效目标！');
+        return;
+    }
+
+    // 构建多敌人上下文
+    const context = this.combatContextBuilder.buildMultiEnemy(this);
+
+    // 调用纯函数计算
+    const result = this.combatEngine.calculatePlayerAttackTargeted(context, targetIndex);
+
+    if (!result.success) {
+        this.addBattleLog(result.error || '攻击失败');
+        return;
+    }
+
+    // 应用结果
+    this.transientState.enemies[targetIndex].hp = result.updatedEnemies[targetIndex].hp;
+    this.transientState.enemy = this.transientState.enemies[targetIndex]; // 同步兼容
+
+    // 日志和UI
+    if (result.data.isHit) {
+        const critText = result.data.isCrit ? '暴击！' : '';
+        this.addBattleLog(`${critText}对${this.transientState.enemies[targetIndex].name}造成${result.data.damage}点伤害！`);
+
+        // 3D特效
+        if (this.battle3D?.battleEnemies?.[targetIndex]) {
+            this.showDamage(this.battle3D.battleEnemies[targetIndex], result.data.damage, result.data.isCrit ? 'crit' : 'red');
+        }
+    } else {
+        this.addBattleLog(`攻击${this.transientState.enemies[targetIndex].name}但未命中！`);
+    }
+
+    // 检查目标是否被击败
+    if (this.transientState.enemies[targetIndex].hp <= 0) {
+        this.addBattleLog(`${this.transientState.enemies[targetIndex].name}被击败了！`);
+        // 3D移除效果
+        if (this.battle3D?.removeEnemyModel) {
+            this.battle3D.removeEnemyModel(targetIndex);
+        }
+    }
+
+    // 所有敌人反击
+    this.processAllEnemyCounterAttacks();
+
+    // 检查战斗结束
+    const endCheck = this.combatEngine.checkMultiBattleEnd(
+        this.combatContextBuilder.buildMultiEnemy(this)
+    );
+    if (endCheck.ended) {
+        if (endCheck.result === 'victory') {
+            this.processAllEnemiesDefeated();
+        } else {
+            this.playerDefeated();
+        }
+    }
+};
+
+/**
+ * 多敌人模式下的技能使用（垫片：临时设置单目标上下文，复用现有useSkill）
+ */
+EndlessCultivationGame.prototype.useSkillMultiEnemy = function(skillType = 'attack') {
+    const targetIndex = this.transientState.battle.selectedTargetIndex || 0;
+    const target = this.transientState.enemies?.[targetIndex];
+    const targetMesh = this.battle3D?.battleEnemies?.[targetIndex];
+
+    if (!target || target.hp <= 0) {
+        this.addBattleLog('无效目标！');
+        return;
+    }
+
+    // 保存当前单敌人引用
+    const savedEnemy = this.transientState.enemy;
+    const savedEnemyMesh = this.battle3D?.enemy;
+
+    // 临时设置为选中的目标（让现有useSkill正常工作）
+    this.transientState.enemy = target;
+    if (this.battle3D) {
+        this.battle3D.enemy = targetMesh;
+    }
+
+    // 临时切换为单敌人模式，防止 useSkill 再次路由到这里
+    const savedBattleMode = this.transientState.battle.battleMode;
+    this.transientState.battle.battleMode = 'single';
+    this.useSkill(skillType);
+    // 恢复多敌人模式（回调中会检测到multi并正确路由）
+    this.transientState.battle.battleMode = savedBattleMode;
+
+    // 注意：不需要恢复savedEnemy，因为useSkill的回调是异步的
+    // 回调中会检测多敌人模式并正确处理
+};
+
+/**
+ * 多敌人模式技能攻击动画
+ */
+EndlessCultivationGame.prototype.playSkillAttackAnimationMulti = function(isCrit, effectColor, targetMesh, targetIndex, onHit, onComplete) {
+    // 使用普通攻击动画但朝向指定目标
+    this.playAttackAnimationToTarget(targetIndex, onHit, onComplete);
+};
+
+/**
+ * 处理所有敌人的反击（多敌人模式）
+ */
+EndlessCultivationGame.prototype.processAllEnemyCounterAttacks = function() {
+    const enemies = this.transientState.enemies;
+    if (!enemies || enemies.length === 0) return;
+
+    // 收集所有存活敌人
+    const aliveEnemies = enemies
+        .map((e, i) => ({ enemy: e, index: i }))
+        .filter(({ enemy }) => enemy.hp > 0);
+
+    if (aliveEnemies.length === 0) return;
+
+    // 依次反击（串行动画，每个敌人之间间隔800ms）
+    const delayBetweenAttacks = 800;
+    aliveEnemies.forEach(({ enemy, index }, queuePos) => {
+        setTimeout(() => {
+            if (enemy.hp <= 0) return; // 可能在等待期间被杀死
+
+            // Boss/精英检查是否使用技能
+            if ((enemy.isBoss || enemy.isElite) && enemy.skills && enemy.skills.length > 0) {
+                const context = this.combatContextBuilder.buildMultiEnemy(this);
+                const decision = this.combatEngine.decideEnemyAction(context, index);
+
+                if (decision.action === 'skill' && decision.skill) {
+                    this.executeEnemySkill(index, decision.skill);
+                    return;
+                }
+            }
+
+            // 普通攻击
+            this.executeSingleEnemyAttack(index);
+        }, queuePos * delayBetweenAttacks);
+    });
+
+    // 敌人能量回复（在所有攻击结束后）
+    setTimeout(() => {
+        for (const enemy of enemies) {
+            if (enemy.hp > 0 && enemy.maxEnergy > 0) {
+                enemy.energy = Math.min(enemy.maxEnergy, (enemy.energy || 0) + 20);
+            }
+        }
+    }, aliveEnemies.length * delayBetweenAttacks + 200);
+
+    // 宠物自动攻击（在敌人反击和能量恢复之后）
+    const petAttackDelay = aliveEnemies.length * delayBetweenAttacks + 500;
+    setTimeout(() => {
+        this.executePetAttack();
+    }, petAttackDelay);
+};
+
+/**
+ * 执行单个敌人的普通攻击
+ * @param {number} enemyIndex - 敌人索引
+ */
+EndlessCultivationGame.prototype.executeSingleEnemyAttack = function(enemyIndex) {
+    const enemy = this.transientState.enemies[enemyIndex];
+    if (!enemy || enemy.hp <= 0) return;
+
+    // 构建上下文（单敌人视角）
+    const context = this.combatContextBuilder.buildMultiEnemy(this);
+    const singleContext = { ...context, enemy };
+
+    const result = this.combatEngine.calculateEnemyAttack(singleContext);
+    if (!result.success) return;
+
+    // 应用伤害
+    const damage = result.data.damage;
+    let finalDamage = damage;
+
+    // 检查护盾等（复用现有逻辑）
+    if (finalDamage > 0 && this.persistentState.player.shieldValue > 0) {
+        if (this.persistentState.player.shieldValue >= finalDamage) {
+            this.persistentState.player.shieldValue -= finalDamage;
+            this.addBattleLog(`护盾吸收了${finalDamage}点伤害！`);
+            finalDamage = 0;
+        } else {
+            finalDamage -= this.persistentState.player.shieldValue;
+            this.addBattleLog(`护盾破碎！剩余伤害：${finalDamage}`);
+            this.persistentState.player.shieldValue = 0;
+        }
+    }
+
+    // 播放攻击动画（临时设置 battle3D.enemy 为该敌人）
+    const savedEnemyMesh = this.battle3D?.enemy;
+    const enemyMesh = this.battle3D?.battleEnemies?.[enemyIndex];
+    if (this.battle3D) this.battle3D.enemy = enemyMesh;
+
+    this.playEnemyAttackAnimation(
+        () => {
+            // 命中回调
+            if (finalDamage > 0) {
+                this.persistentState.player.hp = Math.max(0, this.persistentState.player.hp - finalDamage);
+                const critText = result.data.isCrit ? '暴击！' : '';
+                this.addBattleLog(`${critText}${enemy.name}对你造成了${finalDamage}点伤害！`);
+                this.playPlayerHitAnimation();
+                if (this.battle3D?.player) {
+                    this.showDamage(this.battle3D.player, finalDamage, 'red');
+                }
+            } else if (damage > 0) {
+                this.addBattleLog(`${enemy.name}的攻击被护盾完全抵挡！`);
+            }
+        },
+        () => {
+            // 完成回调：恢复引用
+            if (this.battle3D) this.battle3D.enemy = savedEnemyMesh;
+        }
+    );
+
+    // 清除防御状态
+    this.persistentState.player.defenseActive = false;
+    this.persistentState.player.dodgeActive = false;
+};
+
+/**
+ * 执行敌人技能（Boss/精英）
+ * @param {number} enemyIndex - 敌人索引
+ * @param {Object} skill - 技能对象
+ */
+EndlessCultivationGame.prototype.executeEnemySkill = function(enemyIndex, skill) {
+    const enemy = this.transientState.enemies[enemyIndex];
+    if (!enemy || enemy.hp <= 0) return;
+
+    const context = this.combatContextBuilder.buildMultiEnemy(this);
+    const result = this.combatEngine.calculateEnemySkillAttack(context, enemyIndex, skill);
+
+    if (!result.success) return;
+
+    // 应用玩家伤害
+    if (result.data.totalPlayerDamage > 0) {
+        let finalDamage = result.data.totalPlayerDamage;
+
+        // 护盾检查
+        if (this.persistentState.player.shieldValue > 0) {
+            if (this.persistentState.player.shieldValue >= finalDamage) {
+                this.persistentState.player.shieldValue -= finalDamage;
+                finalDamage = 0;
+            } else {
+                finalDamage -= this.persistentState.player.shieldValue;
+                this.persistentState.player.shieldValue = 0;
+            }
+        }
+
+        if (finalDamage > 0) {
+            this.persistentState.player.hp = Math.max(0, this.persistentState.player.hp - finalDamage);
+        }
+    }
+
+    // 应用宠物伤害
+    if (result.updatedPets) {
+        for (let i = 0; i < result.updatedPets.length; i++) {
+            if (this.transientState.pets[i]) {
+                this.transientState.pets[i].hp = result.updatedPets[i].hp;
+            }
+        }
+    }
+
+    // 消耗敌人能量
+    enemy.energy = Math.max(0, (enemy.energy || 0) - (skill.energyCost || 0));
+
+    // 日志
+    result.logs.forEach(log => this.addBattleLog(log));
+
+    // 更新UI
+    if (this.uiManager?.updateHealthBars) {
+        this.uiManager.updateHealthBars();
+    }
+};
+
+/**
+ * 选择目标（多敌人模式）
+ * @param {number} index - 目标索引
+ */
+EndlessCultivationGame.prototype.selectTarget = function(index) {
+    const enemies = this.transientState.enemies;
+    if (!enemies || index < 0 || index >= enemies.length || enemies[index].hp <= 0) {
+        return;
+    }
+    this.transientState.battle.selectedTargetIndex = index;
+
+    // 3D高亮目标
+    if (this.battle3D?.highlightTarget) {
+        this.battle3D.highlightTarget(index);
+    }
+
+    // UI更新
+    if (this.uiManager?.updateTargetSelection) {
+        this.uiManager.updateTargetSelection(index);
+    }
+};
+
+/**
+ * 检查所有敌人是否被击败
+ */
+EndlessCultivationGame.prototype.allEnemiesDefeated = function() {
+    const enemies = this.transientState.enemies;
+    return !enemies || enemies.every(e => e.hp <= 0);
+};
+
+/**
+ * 处理所有敌人被击败
+ */
+EndlessCultivationGame.prototype.processAllEnemiesDefeated = function() {
+    this.addBattleLog('所有敌人被击败！');
+
+    // 如果是副本多敌人战斗，直接交给副本处理（奖励/波次/退出）
+    if (this.dungeon && this.dungeon.currentDungeon && this.transientState.battle.battleMode === 'multi') {
+        this.transientState.battle.inBattle = false;
+        this.dungeon.onWaveBattleVictory();
+        return;
+    }
+
+    // 非副本多敌人模式 — 收集总奖励
+    let totalExp = 0;
+    let totalResources = { spiritStones: 0, iron: 0, herbs: 0 };
+
+    for (let i = 0; i < this.transientState.enemies.length; i++) {
+        const context = { ...this.combatContextBuilder.build(this), enemy: this.transientState.enemies[i] };
+        const defeatResult = this.combatEngine.calculateEnemyDefeat(context);
+        totalExp += defeatResult.data.expGained || 0;
+        if (defeatResult.data.resourceDrop) {
+            totalResources.spiritStones += defeatResult.data.resourceDrop.spiritStones || 0;
+            totalResources.iron += defeatResult.data.resourceDrop.iron || 0;
+            totalResources.herbs += defeatResult.data.resourceDrop.herbs || 0;
+        }
+    }
+
+    // 应用总奖励
+    if (this.persistentState.player.exp !== undefined) {
+        this.persistentState.player.exp += totalExp;
+    }
+    // 宠物获得经验（玩家经验的50%）
+    if (this.petSystem && totalExp > 0) {
+        this.petSystem.grantExpToActivePet(Math.floor(totalExp * 0.5));
+    }
+    if (this.persistentState.resources) {
+        this.persistentState.resources.spiritStones = (this.persistentState.resources.spiritStones || 0) + totalResources.spiritStones;
+        this.persistentState.resources.iron = (this.persistentState.resources.iron || 0) + totalResources.iron;
+        this.persistentState.resources.herbs = (this.persistentState.resources.herbs || 0) + totalResources.herbs;
+    }
+
+    // 恢复玩家HP（基于总经验）
+    const playerStats = this.getActualStats();
+    const healAmount = Math.floor(playerStats.maxHp * 0.15);
+    this.persistentState.player.hp = Math.min(playerStats.maxHp, this.persistentState.player.hp + healAmount);
+
+    this.addBattleLog(`获得经验：${totalExp}，灵石：${totalResources.spiritStones}，铁矿：${totalResources.iron}，草药：${totalResources.herbs}`);
+
+    // 关闭战斗
+    this.transientState.battle.inBattle = false;
+    this.transientState.enemies = [];
+    this.transientState.enemy = null;
+
+    // 检查升级
+    if (typeof this.checkLevelUp === 'function') {
+        this.checkLevelUp();
+    }
+
+    // UI更新
+    if (this.uiManager?.closeBattleModal) {
+        this.uiManager.closeBattleModal();
+    }
+};
+
+/**
+ * 自动选择下一个存活敌人作为目标
+ */
+EndlessCultivationGame.prototype.autoSelectNextTarget = function() {
+    const enemies = this.transientState.enemies;
+    if (!enemies) return;
+
+    // 找到第一个存活的敌人
+    for (let i = 0; i < enemies.length; i++) {
+        if (enemies[i].hp > 0) {
+            this.transientState.battle.selectedTargetIndex = i;
+            this.transientState.enemy = enemies[i];
+            if (this.battle3D) {
+                this.battle3D.enemy = this.battle3D.battleEnemies?.[i];
+            }
+            // 更新高亮
+            if (typeof this.highlightTarget === 'function') {
+                this.highlightTarget(i);
+            }
+            // 更新多敌人UI面板
+            if (this.uiManager) {
+                this.uiManager.updateMultiEnemyPanel();
+            }
+            return;
+        }
+    }
+};
+
+/**
+ * 宠物自动攻击回合
+ */
+EndlessCultivationGame.prototype.executePetAttack = function() {
+    const pets = this.transientState.pets;
+    if (!pets || pets.length === 0) return;
+
+    for (let i = 0; i < pets.length; i++) {
+        const pet = pets[i];
+        if (pet.hp <= 0) continue;
+
+        // 仅多敌人战斗模式下宠物攻击
+        const enemies = this.transientState.enemies;
+        if (!enemies || enemies.length === 0) {
+            // 单敌人模式也支持宠物
+            if (!this.transientState.enemy || this.transientState.enemy.hp <= 0) continue;
+        }
+
+        const context = this.combatContextBuilder.buildMultiEnemy
+            ? this.combatContextBuilder.buildMultiEnemy(this)
+            : this.combatContextBuilder.build(this);
+
+        const decision = this.combatEngine.decidePetAction(context, i);
+        if (!decision.action || decision.targetIndex === undefined) continue;
+
+        const result = this.combatEngine.calculatePetAttack(context, i, decision.targetIndex);
+        if (!result.success) continue;
+
+        // 应用伤害
+        if (enemies && enemies.length > 0) {
+            for (let j = 0; j < result.updatedEnemies.length; j++) {
+                if (enemies[j]) {
+                    enemies[j].hp = result.updatedEnemies[j].hp;
+                }
+            }
+        } else if (this.transientState.enemy) {
+            // 单敌人模式
+            const targetEnemy = result.updatedEnemies?.[decision.targetIndex] || result.updatedEnemy;
+            if (targetEnemy) this.transientState.enemy.hp = targetEnemy.hp;
+        }
+
+        // 宠物冲锋动画 + 伤害显示
+        this.playPetAttackAnimation(() => {
+            // 日志
+            result.logs.forEach(log => this.addBattleLog(log));
+
+            // 3D伤害数字
+            const targetIndex = decision.targetIndex;
+            const targetMesh = this.battle3D?.battleEnemies?.[targetIndex] || this.battle3D?.enemy;
+            if (targetMesh && result.data.damage > 0) {
+                this.showDamage(targetMesh, result.data.damage, result.data.isCrit ? 'crit' : 'red');
+            }
+
+            // 更新宠物血条
+            if (this.petSystem) this.petSystem.updatePetHealthPanel();
+
+            // 检查目标是否被击败
+            const target = enemies?.[targetIndex] || this.transientState.enemy;
+            if (target && target.hp <= 0) {
+                this.addBattleLog(`${target.name}被击败了！`);
+                if (enemies && this.removeEnemyModel) {
+                    this.removeEnemyModel(targetIndex);
+                    if (this.allEnemiesDefeated()) {
+                        this.processAllEnemiesDefeated();
+                        return;
+                    }
+                    this.autoSelectNextTarget();
+                } else {
+                    // 单敌人模式
+                    this.enemyDefeated();
+                }
+            }
+        });
+
+        // 每轮只让一只宠物攻击（简化动画时序）
+        return;
     }
 };

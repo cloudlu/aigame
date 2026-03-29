@@ -1500,21 +1500,25 @@ const gameMetadata = {
                     description: '凝聚力量，造成1.2倍伤害',
                     stageRequired: 1,
                     energyCost: 12,
-                    damageMultiplier: 1.2
+                    damageMultiplier: 1.2,
+                    targeting: { side: 'enemy', count: 'single', selection: 'manual' }
                 },
                 {
                     name: 'heavyStrike_lv2',
                     description: '全力一击，造成1.3倍伤害',
                     stageRequired: 4,
                     energyCost: 14,
-                    damageMultiplier: 1.3
+                    damageMultiplier: 1.3,
+                    targeting: { side: 'enemy', count: 'single', selection: 'manual' }
                 },
                 {
                     name: 'heavyStrike_lv3',
                     description: '爆发力量，造成1.4倍伤害',
                     stageRequired: 7,
                     energyCost: 16,
-                    damageMultiplier: 1.4
+                    damageMultiplier: 1.4,
+                    targeting: { side: 'enemy', count: 'all' },
+                    aoe: { mode: 'splash', splashRatio: 0.3 }
                 },
                 {
                     name: 'heavyStrike_lv4',
@@ -1522,7 +1526,9 @@ const gameMetadata = {
                     stageRequired: 10,
                     energyCost: 20,
                     damageMultiplier: 1.5,
-                    criticalBonus: 0.05
+                    criticalBonus: 0.05,
+                    targeting: { side: 'enemy', count: 'all' },
+                    aoe: { mode: 'splash', splashRatio: 0.5 }
                 }
             ]
         },
@@ -1542,14 +1548,16 @@ const gameMetadata = {
                     description: '防御姿态，减伤35%',
                     stageRequired: 7,
                     energyCost: 18,
-                    defenseBonus: 0.35
+                    defenseBonus: 0.35,
+                    targeting: { side: 'self', count: 'single' }
                 },
                 {
                     name: 'ironSkin_lv2',
                     description: '强化防御，减伤45%',
                     stageRequired: 10,
                     energyCost: 25,
-                    defenseBonus: 0.45
+                    defenseBonus: 0.45,
+                    targeting: { side: 'self', count: 'single' }
                 }
             ]
         },
@@ -1568,14 +1576,16 @@ const gameMetadata = {
                     description: '恢复12%最大HP',
                     stageRequired: 4,
                     energyCost: 18,
-                    healPercentage: 0.12
+                    healPercentage: 0.12,
+                    targeting: { side: 'self', count: 'single' }
                 },
                 {
                     name: 'enduranceRecovery_lv2',
                     description: '恢复15%最大HP',
                     stageRequired: 7,
                     energyCost: 22,
-                    healPercentage: 0.15
+                    healPercentage: 0.15,
+                    targeting: { side: 'self', count: 'single' }
                 },
                 {
                     name: 'enduranceRecovery_lv3',
@@ -1583,7 +1593,8 @@ const gameMetadata = {
                     stageRequired: 10,
                     energyCost: 26,
                     healPercentage: 0.18,
-                    hot: { healPercent: 0.03, turns: 3 }
+                    hot: { healPercent: 0.03, turns: 3 },
+                    targeting: { side: 'ally', count: 'all' }
                 }
             ]
         },
@@ -1603,7 +1614,8 @@ const gameMetadata = {
                     stageRequired: 7,
                     energyCost: 10,
                     dodgeBonus: 0.25,
-                    duration: 1
+                    duration: 1,
+                    targeting: { side: 'self', count: 'single' }
                 },
                 {
                     name: 'warriorSense_lv2',
@@ -1612,7 +1624,8 @@ const gameMetadata = {
                     energyCost: 15,
                     dodgeBonus: 0.3,
                     criticalBonus: 0.05,
-                    duration: 1
+                    duration: 1,
+                    targeting: { side: 'self', count: 'single' }
                 }
             ]
         },
@@ -1632,7 +1645,8 @@ const gameMetadata = {
                     description: '凝聚气刃，造成1.4倍伤害',
                     stageRequired: 1,
                     energyCost: 15,
-                    damageMultiplier: 1.4
+                    damageMultiplier: 1.4,
+                    targeting: { side: 'enemy', count: 'single', selection: 'manual' }
                 },
                 {
                     name: 'qiBlade_lv2',
@@ -1640,7 +1654,9 @@ const gameMetadata = {
                     stageRequired: 4,
                     energyCost: 18,
                     damageMultiplier: 1.5,
-                    criticalBonus: 0.05
+                    criticalBonus: 0.05,
+                    targeting: { side: 'enemy', count: 'all' },
+                    aoe: { mode: 'splash', splashRatio: 0.3 }
                 },
                 {
                     name: 'qiBlade_lv3',
@@ -1648,7 +1664,9 @@ const gameMetadata = {
                     stageRequired: 7,
                     energyCost: 22,
                     damageMultiplier: 1.7,
-                    extraDamagePercent: 0.05
+                    extraDamagePercent: 0.05,
+                    targeting: { side: 'enemy', count: 'all' },
+                    aoe: { mode: 'splash', splashRatio: 0.5 }
                 },
                 {
                     name: 'qiBlade_lv4',
@@ -1656,7 +1674,9 @@ const gameMetadata = {
                     stageRequired: 10,
                     energyCost: 28,
                     damageMultiplier: 1.9,
-                    extraDamagePercent: 0.1
+                    extraDamagePercent: 0.1,
+                    targeting: { side: 'enemy', count: 'all' },
+                    aoe: { mode: 'splash', splashRatio: 0.7 }
                 }
             ]
         },
@@ -1676,7 +1696,8 @@ const gameMetadata = {
                     stageRequired: 1,
                     energyCost: 20,
                     defenseBonus: 0.3,
-                    shield: 80
+                    shield: 80,
+                    targeting: { side: 'self', count: 'single' }
                 },
                 {
                     name: 'qiShield_lv2',
@@ -1684,7 +1705,8 @@ const gameMetadata = {
                     stageRequired: 4,
                     energyCost: 24,
                     defenseBonus: 0.35,
-                    shield: 120
+                    shield: 120,
+                    targeting: { side: 'self', count: 'single' }
                 },
                 {
                     name: 'qiShield_lv3',
@@ -1692,7 +1714,8 @@ const gameMetadata = {
                     stageRequired: 7,
                     energyCost: 28,
                     defenseBonus: 0.4,
-                    shield: 160
+                    shield: 160,
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'qiShield_lv4',
@@ -1701,7 +1724,8 @@ const gameMetadata = {
                     energyCost: 35,
                     defenseBonus: 0.5,
                     shield: 200,
-                    immuneCC: true
+                    immuneCC: true,
+                    targeting: { side: 'ally', count: 'all' }
                 }
             ]
         },
@@ -1720,7 +1744,8 @@ const gameMetadata = {
                     description: '灵气回春，恢复18点灵力',
                     stageRequired: 4,
                     energyCost: 5,
-                    energyRecover: 18
+                    energyRecover: 18,
+                    targeting: { side: 'self', count: 'single' }
                 },
                 {
                     name: 'qiHealing_lv2',
@@ -1728,7 +1753,8 @@ const gameMetadata = {
                     stageRequired: 7,
                     energyCost: 15,
                     healPercentage: 0.18,
-                    energyRecover: 15
+                    energyRecover: 15,
+                    targeting: { side: 'self', count: 'single' }
                 },
                 {
                     name: 'qiHealing_lv3',
@@ -1737,7 +1763,8 @@ const gameMetadata = {
                     energyCost: 20,
                     healPercentage: 0.22,
                     energyRecover: 20,
-                    purify: true
+                    purify: true,
+                    targeting: { side: 'ally', count: 'all' }
                 }
             ]
         },
@@ -1757,7 +1784,8 @@ const gameMetadata = {
                     stageRequired: 4,
                     energyCost: 10,
                     dodgeBonus: 0.2,
-                    energyRecover: 12
+                    energyRecover: 12,
+                    targeting: { side: 'self', count: 'single' }
                 },
                 {
                     name: 'qiSense_lv2',
@@ -1766,7 +1794,8 @@ const gameMetadata = {
                     energyCost: 15,
                     defenseBonus: 0.2,
                     dodgeBonus: 0.15,
-                    energyRecover: 15
+                    energyRecover: 15,
+                    targeting: { side: 'self', count: 'single' }
                 },
                 {
                     name: 'qiSense_lv3',
@@ -1775,7 +1804,8 @@ const gameMetadata = {
                     energyCost: 30,
                     dodgeBonus: 0.25,
                     energyRecover: 20,
-                    damageBuff: { bonus: 0.5, turns: 2 }
+                    damageBuff: { bonus: 0.5, turns: 2 },
+                    targeting: { side: 'ally', count: 'all' }
                 }
             ]
         },
@@ -1795,7 +1825,9 @@ const gameMetadata = {
                     description: '剑气斩击，造成1.7倍伤害',
                     stageRequired: 1,
                     energyCost: 20,
-                    damageMultiplier: 1.7
+                    damageMultiplier: 1.7,
+                    targeting: { side: 'enemy', count: 'all' },
+                    aoe: { mode: 'splash', splashRatio: 0.3 }
                 },
                 {
                     name: 'foundationSlash_lv2',
@@ -1803,7 +1835,9 @@ const gameMetadata = {
                     stageRequired: 4,
                     energyCost: 25,
                     damageMultiplier: 1.8,
-                    armorPenetration: 0.15
+                    armorPenetration: 0.15,
+                    targeting: { side: 'enemy', count: 'all' },
+                    aoe: { mode: 'splash', splashRatio: 0.5 }
                 },
                 {
                     name: 'foundationSlash_lv3',
@@ -1811,7 +1845,9 @@ const gameMetadata = {
                     stageRequired: 7,
                     energyCost: 32,
                     damageMultiplier: 2.0,
-                    armorPenetration: 0.25
+                    armorPenetration: 0.25,
+                    targeting: { side: 'enemy', count: 'all' },
+                    aoe: { mode: 'splash', splashRatio: 0.7 }
                 },
                 {
                     name: 'foundationSlash_lv4',
@@ -1820,7 +1856,9 @@ const gameMetadata = {
                     energyCost: 40,
                     damageMultiplier: 2.2,
                     armorPenetration: 0.3,
-                    criticalBonus: 0.1
+                    criticalBonus: 0.1,
+                    targeting: { side: 'enemy', count: 'all' },
+                    aoe: { mode: 'full' }
                 }
             ]
         },
@@ -1840,7 +1878,8 @@ const gameMetadata = {
                     stageRequired: 1,
                     energyCost: 22,
                     defenseBonus: 0.4,
-                    reflectDamage: 0.05
+                    reflectDamage: 0.05,
+                    targeting: { side: 'self', count: 'single' }
                 },
                 {
                     name: 'foundationArmor_lv2',
@@ -1848,7 +1887,8 @@ const gameMetadata = {
                     stageRequired: 4,
                     energyCost: 28,
                     defenseBonus: 0.45,
-                    reflectDamage: 0.08
+                    reflectDamage: 0.08,
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'foundationArmor_lv3',
@@ -1856,7 +1896,8 @@ const gameMetadata = {
                     stageRequired: 7,
                     energyCost: 35,
                     defenseBonus: 0.5,
-                    reflectDamage: 0.12
+                    reflectDamage: 0.12,
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'foundationArmor_lv4',
@@ -1864,7 +1905,8 @@ const gameMetadata = {
                     stageRequired: 10,
                     energyCost: 45,
                     defenseBonus: 0.6,
-                    reflectDamage: 0.15
+                    reflectDamage: 0.15,
+                    targeting: { side: 'ally', count: 'all' }
                 }
             ]
         },
@@ -1883,7 +1925,8 @@ const gameMetadata = {
                     description: '恢复28%最大HP',
                     stageRequired: 1,
                     energyCost: 25,
-                    healPercentage: 0.28
+                    healPercentage: 0.28,
+                    targeting: { side: 'self', count: 'single' }
                 },
                 {
                     name: 'foundationHeal_lv2',
@@ -1891,7 +1934,8 @@ const gameMetadata = {
                     stageRequired: 4,
                     energyCost: 30,
                     healPercentage: 0.32,
-                    hot: { healPercent: 0.04, turns: 5 }
+                    hot: { healPercent: 0.04, turns: 5 },
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'foundationHeal_lv3',
@@ -1900,7 +1944,8 @@ const gameMetadata = {
                     energyCost: 36,
                     healPercentage: 0.38,
                     hot: { healPercent: 0.05, turns: 5 },
-                    purify: true
+                    purify: true,
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'foundationHeal_lv4',
@@ -1910,7 +1955,8 @@ const gameMetadata = {
                     healPercentage: 0.45,
                     hot: { healPercent: 0.06, turns: 8 },
                     purify: true,
-                    defenseBonus: 0.1
+                    defenseBonus: 0.1,
+                    targeting: { side: 'ally', count: 'all' }
                 }
             ]
         },
@@ -1929,7 +1975,8 @@ const gameMetadata = {
                     description: '化身千万，下次攻击伤害+30%',
                     stageRequired: 1,
                     energyCost: 25,
-                    damageBuff: { bonus: 0.3, turns: 1 }
+                    damageBuff: { bonus: 0.3, turns: 1 },
+                    targeting: { side: 'self', count: 'single' }
                 },
                 {
                     name: 'foundationArt_lv2',
@@ -1938,7 +1985,8 @@ const gameMetadata = {
                     energyCost: 32,
                     defenseBonus: 0.25,
                     dodgeBonus: 0.2,
-                    damageBuff: { bonus: 0.4, turns: 1 }
+                    damageBuff: { bonus: 0.4, turns: 1 },
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'foundationArt_lv3',
@@ -1947,7 +1995,8 @@ const gameMetadata = {
                     energyCost: 40,
                     defenseBonus: 0.3,
                     dodgeBonus: 0.25,
-                    damageBuff: { bonus: 0.5, turns: 2 }
+                    damageBuff: { bonus: 0.5, turns: 2 },
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'foundationArt_lv4',
@@ -1957,7 +2006,8 @@ const gameMetadata = {
                     defenseBonus: 0.35,
                     dodgeBonus: 0.3,
                     damageBuff: { bonus: 0.6, turns: 3 },
-                    immuneCC: true
+                    immuneCC: true,
+                    targeting: { side: 'ally', count: 'all' }
                 }
             ]
         },
@@ -1977,7 +2027,9 @@ const gameMetadata = {
                     description: '金丹之力，造成2.0倍伤害',
                     stageRequired: 1,
                     energyCost: 25,
-                    damageMultiplier: 2.0
+                    damageMultiplier: 2.0,
+                    targeting: { side: 'enemy', count: 'all' },
+                    aoe: { mode: 'splash', splashRatio: 0.5 }
                 },
                 {
                     name: 'spiritStonesenCore_lv2',
@@ -1985,7 +2037,9 @@ const gameMetadata = {
                     stageRequired: 4,
                     energyCost: 32,
                     damageMultiplier: 2.2,
-                    stun: 1
+                    stun: 1,
+                    targeting: { side: 'enemy', count: 'all' },
+                    aoe: { mode: 'splash', splashRatio: 0.7 }
                 },
                 {
                     name: 'spiritStonesenCore_lv3',
@@ -1994,7 +2048,9 @@ const gameMetadata = {
                     energyCost: 40,
                     damageMultiplier: 2.3,
                     stun: 1,
-                    armorPenetration: 0.2
+                    armorPenetration: 0.2,
+                    targeting: { side: 'enemy', count: 'all' },
+                    aoe: { mode: 'full' }
                 },
                 {
                     name: 'spiritStonesenCore_lv4',
@@ -2003,7 +2059,9 @@ const gameMetadata = {
                     energyCost: 52,
                     damageMultiplier: 2.5,
                     stun: 2,
-                    armorPenetration: 0.3
+                    armorPenetration: 0.3,
+                    targeting: { side: 'enemy', count: 'all' },
+                    aoe: { mode: 'full' }
                 }
             ]
         },
@@ -2023,7 +2081,8 @@ const gameMetadata = {
                     stageRequired: 1,
                     energyCost: 28,
                     defenseBonus: 0.5,
-                    shield: 300
+                    shield: 300,
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'spiritStonesenArmor_lv2',
@@ -2032,7 +2091,8 @@ const gameMetadata = {
                     energyCost: 35,
                     defenseBonus: 0.55,
                     shield: 400,
-                    reflectDamage: 0.1
+                    reflectDamage: 0.1,
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'spiritStonesenArmor_lv3',
@@ -2041,7 +2101,8 @@ const gameMetadata = {
                     energyCost: 45,
                     defenseBonus: 0.6,
                     shield: 500,
-                    reflectDamage: 0.15
+                    reflectDamage: 0.15,
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'spiritStonesenArmor_lv4',
@@ -2051,7 +2112,8 @@ const gameMetadata = {
                     defenseBonus: 0.7,
                     shield: 600,
                     reflectDamage: 0.2,
-                    immuneCC: true
+                    immuneCC: true,
+                    targeting: { side: 'ally', count: 'all' }
                 }
             ]
         },
@@ -2070,7 +2132,8 @@ const gameMetadata = {
                     description: '恢复42%最大HP',
                     stageRequired: 1,
                     energyCost: 30,
-                    healPercentage: 0.42
+                    healPercentage: 0.42,
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'spiritStonesenHeal_lv2',
@@ -2078,7 +2141,8 @@ const gameMetadata = {
                     stageRequired: 4,
                     energyCost: 36,
                     healPercentage: 0.48,
-                    energyRecover: 30
+                    energyRecover: 30,
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'spiritStonesenHeal_lv3',
@@ -2087,7 +2151,8 @@ const gameMetadata = {
                     energyCost: 42,
                     healPercentage: 0.55,
                     energyRecover: 40,
-                    purify: true
+                    purify: true,
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'spiritStonesenHeal_lv4',
@@ -2097,7 +2162,8 @@ const gameMetadata = {
                     healPercentage: 0.65,
                     energyRecover: 50,
                     purify: true,
-                    defenseBonus: 0.15
+                    defenseBonus: 0.15,
+                    targeting: { side: 'ally', count: 'all' }
                 }
             ]
         },
@@ -2116,7 +2182,8 @@ const gameMetadata = {
                     description: '下2次攻击伤害+60%',
                     stageRequired: 1,
                     energyCost: 35,
-                    damageBuff: { bonus: 0.6, turns: 2 }
+                    damageBuff: { bonus: 0.6, turns: 2 },
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'spiritStonesenCorePower_lv2',
@@ -2125,7 +2192,8 @@ const gameMetadata = {
                     energyCost: 42,
                     defenseBonus: 0.3,
                     dodgeBonus: 0.3,
-                    damageBuff: { bonus: 0.7, turns: 2 }
+                    damageBuff: { bonus: 0.7, turns: 2 },
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'spiritStonesenCorePower_lv3',
@@ -2135,7 +2203,8 @@ const gameMetadata = {
                     defenseBonus: 0.35,
                     dodgeBonus: 0.35,
                     damageBuff: { bonus: 0.8, turns: 3 },
-                    energyRecover: 30
+                    energyRecover: 30,
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'spiritStonesenCorePower_lv4',
@@ -2146,7 +2215,8 @@ const gameMetadata = {
                     dodgeBonus: 0.4,
                     damageBuff: { bonus: 1.0, turns: 4 },
                     energyRecover: 40,
-                    immuneCC: true
+                    immuneCC: true,
+                    targeting: { side: 'ally', count: 'all' }
                 }
             ]
         },
@@ -2166,7 +2236,9 @@ const gameMetadata = {
                     description: '元婴之力，造成2.3倍伤害',
                     stageRequired: 1,
                     energyCost: 35,
-                    damageMultiplier: 2.3
+                    damageMultiplier: 2.3,
+                    targeting: { side: 'enemy', count: 'all' },
+                    aoe: { mode: 'splash', splashRatio: 0.7 }
                 },
                 {
                     name: 'infantStrike_lv2',
@@ -2174,7 +2246,9 @@ const gameMetadata = {
                     stageRequired: 4,
                     energyCost: 42,
                     damageMultiplier: 2.5,
-                    extraDamagePercent: 0.1
+                    extraDamagePercent: 0.1,
+                    targeting: { side: 'enemy', count: 'all' },
+                    aoe: { mode: 'full' }
                 },
                 {
                     name: 'infantStrike_lv3',
@@ -2183,7 +2257,9 @@ const gameMetadata = {
                     energyCost: 50,
                     damageMultiplier: 2.6,
                     executeMultiplier: 2.0,
-                    executeThreshold: 0.25
+                    executeThreshold: 0.25,
+                    targeting: { side: 'enemy', count: 'all' },
+                    aoe: { mode: 'full' }
                 },
                 {
                     name: 'infantStrike_lv4',
@@ -2191,7 +2267,9 @@ const gameMetadata = {
                     stageRequired: 10,
                     energyCost: 65,
                     damageMultiplier: 2.8,
-                    executeThreshold: 0.35
+                    executeThreshold: 0.35,
+                    targeting: { side: 'enemy', count: 'all' },
+                    aoe: { mode: 'full' }
                 }
             ]
         },
@@ -2212,7 +2290,8 @@ const gameMetadata = {
                     energyCost: 35,
                     defenseBonus: 0.6,
                     shield: 700,
-                    reflectDamage: 0.2
+                    reflectDamage: 0.2,
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'infantGuard_lv2',
@@ -2222,7 +2301,8 @@ const gameMetadata = {
                     defenseBonus: 0.65,
                     shield: 800,
                     reflectDamage: 0.25,
-                    immuneCC: true
+                    immuneCC: true,
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'infantGuard_lv3',
@@ -2233,7 +2313,8 @@ const gameMetadata = {
                     shield: 900,
                     reflectDamage: 0.3,
                     immuneCC: true,
-                    healPercentage: 0.1
+                    healPercentage: 0.1,
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'infantGuard_lv4',
@@ -2244,7 +2325,8 @@ const gameMetadata = {
                     shield: 1000,
                     reflectDamage: 0.35,
                     immuneCC: true,
-                    healPercentage: 0.15
+                    healPercentage: 0.15,
+                    targeting: { side: 'ally', count: 'all' }
                 }
             ]
         },
@@ -2264,7 +2346,8 @@ const gameMetadata = {
                     stageRequired: 1,
                     energyCost: 38,
                     healPercentage: 0.6,
-                    energyRecover: 40
+                    energyRecover: 40,
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'infantRecovery_lv2',
@@ -2273,7 +2356,8 @@ const gameMetadata = {
                     energyCost: 45,
                     healPercentage: 0.68,
                     energyRecover: 50,
-                    purify: true
+                    purify: true,
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'infantRecovery_lv3',
@@ -2283,7 +2367,8 @@ const gameMetadata = {
                     healPercentage: 0.78,
                     energyRecover: 60,
                     purify: true,
-                    hot: { healPercent: 0.08, turns: 10 }
+                    hot: { healPercent: 0.08, turns: 10 },
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'infantRecovery_lv4',
@@ -2294,7 +2379,8 @@ const gameMetadata = {
                     energyRecover: 80,
                     purify: true,
                     hot: { healPercent: 0.1, turns: 10 },
-                    defenseBonus: 0.2
+                    defenseBonus: 0.2,
+                    targeting: { side: 'ally', count: 'all' }
                 }
             ]
         },
@@ -2315,7 +2401,8 @@ const gameMetadata = {
                     energyCost: 45,
                     dodgeBonus: 0.4,
                     criticalBonus: 0.15,
-                    damageBuff: { bonus: 0.8, turns: 3 }
+                    damageBuff: { bonus: 0.8, turns: 3 },
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'infantVision_lv2',
@@ -2325,7 +2412,8 @@ const gameMetadata = {
                     dodgeBonus: 0.45,
                     criticalBonus: 0.2,
                     damageBuff: { bonus: 0.9, turns: 3 },
-                    energyRecover: 40
+                    energyRecover: 40,
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'infantVision_lv3',
@@ -2336,7 +2424,8 @@ const gameMetadata = {
                     criticalBonus: 0.25,
                     damageBuff: { bonus: 1.0, turns: 4 },
                     energyRecover: 50,
-                    immuneCC: true
+                    immuneCC: true,
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'infantVision_lv4',
@@ -2347,7 +2436,8 @@ const gameMetadata = {
                     criticalBonus: 0.3,
                     damageBuff: { bonus: 1.2, turns: 5 },
                     energyRecover: 60,
-                    immuneCC: true
+                    immuneCC: true,
+                    targeting: { side: 'ally', count: 'all' }
                 }
             ]
         },
@@ -2367,7 +2457,9 @@ const gameMetadata = {
                     description: '化神之力，造成2.5倍伤害',
                     stageRequired: 1,
                     energyCost: 45,
-                    damageMultiplier: 2.5
+                    damageMultiplier: 2.5,
+                    targeting: { side: 'enemy', count: 'all' },
+                    aoe: { mode: 'full' }
                 },
                 {
                     name: 'deityFist_lv2',
@@ -2375,7 +2467,9 @@ const gameMetadata = {
                     stageRequired: 4,
                     energyCost: 55,
                     damageMultiplier: 2.7,
-                    armorPenetration: 0.4
+                    armorPenetration: 0.4,
+                    targeting: { side: 'enemy', count: 'all' },
+                    aoe: { mode: 'full' }
                 },
                 {
                     name: 'deityFist_lv3',
@@ -2384,7 +2478,9 @@ const gameMetadata = {
                     energyCost: 65,
                     damageMultiplier: 3.0,
                     executeMultiplier: 3.0,
-                    executeThreshold: 0.2
+                    executeThreshold: 0.2,
+                    targeting: { side: 'enemy', count: 'all' },
+                    aoe: { mode: 'full' }
                 },
                 {
                     name: 'deityFist_lv4',
@@ -2393,7 +2489,9 @@ const gameMetadata = {
                     energyCost: 80,
                     damageMultiplier: 3.2,
                     guaranteedCrit: true,
-                    armorPenetration: 0.5
+                    armorPenetration: 0.5,
+                    targeting: { side: 'enemy', count: 'all' },
+                    aoe: { mode: 'full' }
                 }
             ]
         },
@@ -2414,7 +2512,8 @@ const gameMetadata = {
                     energyCost: 45,
                     defenseBonus: 0.7,
                     shield: 1200,
-                    immuneNextAttack: true
+                    immuneNextAttack: true,
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'deityShield_lv2',
@@ -2424,7 +2523,8 @@ const gameMetadata = {
                     defenseBonus: 0.75,
                     shield: 1400,
                     immuneNextAttack: true,
-                    reflectDamage: 0.25
+                    reflectDamage: 0.25,
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'deityShield_lv3',
@@ -2435,7 +2535,8 @@ const gameMetadata = {
                     shield: 1600,
                     immuneNextAttack: true,
                     reflectDamage: 0.3,
-                    healPercentage: 0.15
+                    healPercentage: 0.15,
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'deityShield_lv4',
@@ -2447,7 +2548,8 @@ const gameMetadata = {
                     immuneNextAttack: true,
                     reflectDamage: 0.4,
                     healPercentage: 0.2,
-                    immuneCC: true
+                    immuneCC: true,
+                    targeting: { side: 'ally', count: 'all' }
                 }
             ]
         },
@@ -2468,7 +2570,8 @@ const gameMetadata = {
                     energyCost: 48,
                     healPercentage: 0.85,
                     energyRecover: 60,
-                    purify: true
+                    purify: true,
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'deityBlessing_lv2',
@@ -2478,7 +2581,8 @@ const gameMetadata = {
                     healPercentage: 0.95,
                     energyRecover: 80,
                     purify: true,
-                    hot: { healPercent: 0.1, turns: 12 }
+                    hot: { healPercent: 0.1, turns: 12 },
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'deityBlessing_lv3',
@@ -2489,7 +2593,8 @@ const gameMetadata = {
                     energyRecover: 100,
                     purify: true,
                     hot: { healPercent: 0.12, turns: 12 },
-                    defenseBonus: 0.25
+                    defenseBonus: 0.25,
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'deityBlessing_lv4',
@@ -2500,7 +2605,8 @@ const gameMetadata = {
                     energyRecover: 120,
                     purify: true,
                     hot: { healPercent: 0.15, turns: 15 },
-                    allStatsBonus: 0.3
+                    allStatsBonus: 0.3,
+                    targeting: { side: 'ally', count: 'all' }
                 }
             ]
         },
@@ -2521,7 +2627,8 @@ const gameMetadata = {
                     energyCost: 60,
                     allStatsBonus: 0.5,
                     damageBuff: { bonus: 1.0, turns: 4 },
-                    immuneCC: true
+                    immuneCC: true,
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'deityForm_lv2',
@@ -2531,7 +2638,8 @@ const gameMetadata = {
                     allStatsBonus: 0.6,
                     damageBuff: { bonus: 1.2, turns: 5 },
                     immuneCC: true,
-                    energyRecover: 60
+                    energyRecover: 60,
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'deityForm_lv3',
@@ -2542,7 +2650,8 @@ const gameMetadata = {
                     damageBuff: { bonus: 1.5, turns: 6 },
                     immuneCC: true,
                     energyRecover: 80,
-                    guaranteedCrit: true
+                    guaranteedCrit: true,
+                    targeting: { side: 'ally', count: 'all' }
                 },
                 {
                     name: 'deityForm_lv4',
@@ -2554,12 +2663,136 @@ const gameMetadata = {
                     immuneCC: true,
                     energyRecover: 100,
                     guaranteedCrit: true,
-                    armorPenetration: 0.6
+                    armorPenetration: 0.6,
+                    targeting: { side: 'ally', count: 'all' }
                 }
             ]
         }
     ],
-    
+
+    // Boss 技能池（生成时随机选2个）
+    bossSkills: [
+        {
+            id: 'bossSmash', name: '狂暴打击',
+            targeting: { side: 'enemy', count: 'single', selection: 'auto' },
+            damageMultiplier: 1.8, energyCost: 40,
+            description: '对单个目标造成1.8倍伤害'
+        },
+        {
+            id: 'bossAOE', name: '范围碾压',
+            targeting: { side: 'enemy', count: 'all' },
+            aoe: { mode: 'full' },
+            damageMultiplier: 1.2, energyCost: 60,
+            description: '对所有敌方目标造成1.2倍伤害'
+        },
+        {
+            id: 'bossBreath', name: '龙息',
+            targeting: { side: 'enemy', count: 'all' },
+            aoe: { mode: 'splash', splashRatio: 0.6 },
+            damageMultiplier: 1.5, energyCost: 50,
+            description: '对主目标造成1.5倍伤害，其他目标60%'
+        },
+        {
+            id: 'bossBuff', name: '战吼',
+            targeting: { side: 'self', count: 'single' },
+            defenseBonus: 0.3, attackBonus: 0.2, energyCost: 30,
+            description: '提升自身30%防御和20%攻击'
+        },
+        {
+            id: 'bossHeal', name: '再生',
+            targeting: { side: 'self', count: 'single' },
+            healPercentage: 0.15, energyCost: 40,
+            description: '恢复15%最大生命值'
+        }
+    ],
+
+    // 精英技能池（生成时随机选1个）
+    eliteSkills: [
+        {
+            id: 'eliteStrike', name: '精准打击',
+            targeting: { side: 'enemy', count: 'single', selection: 'auto' },
+            damageMultiplier: 1.5, energyCost: 30,
+            description: '对单个目标造成1.5倍伤害'
+        },
+        {
+            id: 'eliteAOE', name: '横扫',
+            targeting: { side: 'enemy', count: 'all' },
+            aoe: { mode: 'splash', splashRatio: 0.4 },
+            damageMultiplier: 1.2, energyCost: 40,
+            description: '对主目标造成1.2倍伤害，其他目标48%'
+        },
+        {
+            id: 'eliteBuff', name: '硬化',
+            targeting: { side: 'self', count: 'single' },
+            defenseBonus: 0.2, energyCost: 20,
+            description: '提升自身20%防御'
+        }
+    ],
+
+    // 宠物类型定义
+    petTypes: [
+        {
+            id: 'spirit_fox',
+            name: '灵狐',
+            type: '兽',
+            description: '灵巧的灵兽，速度和暴击较高',
+            baseStats: { hp: 120, attack: 18, defense: 8, speed: 15, critRate: 10 },
+            growthPerLevel: { hp: 12, attack: 2, defense: 1, speed: 1, critRate: 0.3 },
+            critDamage: 1.5,
+            evolutionStages: ['幼狐', '灵狐', '天狐'],
+            evolveLevels: [1, 10, 30],
+            color: { r: 0.9, g: 0.7, b: 0.2 }
+        },
+        {
+            id: 'mystic_turtle',
+            name: '玄龟',
+            type: '兽',
+            description: '坚毅的灵兽，防御和生命较高',
+            baseStats: { hp: 200, attack: 12, defense: 20, speed: 5, critRate: 5 },
+            growthPerLevel: { hp: 20, attack: 1, defense: 2, speed: 0.5, critRate: 0.2 },
+            critDamage: 1.5,
+            evolutionStages: ['幼龟', '玄龟', '灵龟'],
+            evolveLevels: [1, 10, 30],
+            color: { r: 0.2, g: 0.4, b: 0.7 }
+        },
+        {
+            id: 'fire_crow',
+            name: '火鸦',
+            type: '鸟',
+            description: '猛烈的灵兽，攻击力极高',
+            baseStats: { hp: 100, attack: 25, defense: 6, speed: 12, critRate: 8 },
+            growthPerLevel: { hp: 10, attack: 3, defense: 0.5, speed: 1, critRate: 0.3 },
+            critDamage: 1.6,
+            evolutionStages: ['火雏', '火鸦', '炎凰'],
+            evolveLevels: [1, 10, 30],
+            color: { r: 0.9, g: 0.3, b: 0.1 }
+        },
+        {
+            id: 'ice_butterfly',
+            name: '冰晶蝶',
+            type: '虫',
+            description: '优雅的灵兽，高暴击高速度',
+            baseStats: { hp: 80, attack: 15, defense: 5, speed: 20, critRate: 15 },
+            growthPerLevel: { hp: 8, attack: 1.5, defense: 0.5, speed: 2, critRate: 0.5 },
+            critDamage: 1.8,
+            evolutionStages: ['冰蛹', '冰蝶', '冰晶蝶'],
+            evolveLevels: [1, 10, 30],
+            color: { r: 0.6, g: 0.82, b: 0.95 }
+        },
+        {
+            id: 'thunder_eagle',
+            name: '雷鹰',
+            type: '鸟',
+            description: '威猛的灵兽，攻击和速度兼备',
+            baseStats: { hp: 110, attack: 22, defense: 7, speed: 18, critRate: 7 },
+            growthPerLevel: { hp: 11, attack: 2.5, defense: 0.8, speed: 1.5, critRate: 0.3 },
+            critDamage: 1.6,
+            evolutionStages: ['雏鹰', '雷鹰', '天鹰'],
+            evolveLevels: [1, 10, 30],
+            color: { r: 0.7, g: 0.7, b: 0.2 }
+        }
+    ],
+
     // 商店系统
     shop: {
         items: [

@@ -64,11 +64,15 @@ class EndlessCultivationGame {
 
         // 临时数据 - 不保存，运行时生成
         this.transientState = {
-            enemy: null,        // 当前敌人
+            enemy: null,        // 当前敌人（单敌人兼容）
+            enemies: [],        // 多敌人战斗敌人数组
+            pets: [],           // 当前出战宠物
             sceneMonsters: [],  // 场景怪物
             battle: {           // 战斗状态
                 inBattle: false,
-                battleLog: []
+                battleLog: [],
+                battleMode: 'single',        // 'single' | 'multi'
+                selectedTargetIndex: 0       // 多敌人时选中的目标索引
             }
         };
 
@@ -112,6 +116,13 @@ class EndlessCultivationGame {
         // 初始化图鉴系统
         const CollectionSystemClass = typeof window !== 'undefined' ? window.CollectionSystem : require('./collectionSystem').CollectionSystem;
         this.collectionSystem = new CollectionSystemClass(this);
+
+        // 初始化宠物系统
+        const PetSystemClass = typeof window !== 'undefined' ? window.PetSystem : null;
+        if (PetSystemClass) {
+            this.petSystem = new PetSystemClass(this);
+            this.petSystem.init();
+        }
 
         // 初始化音频系统
         const AudioSystemClass = typeof window !== 'undefined' ? window.AudioSystem : require('./audio');
@@ -407,6 +418,9 @@ class EndlessCultivationGame {
                 return null;
             };
 
+            // 为所有技能添加 targeting 和 aoe 元数据（基于境界+类型+等级渐进表）
+            this._enrichSkillsWithTargeting();
+
             // 更新游戏状态中的元数据
           
             if (metadata.dropRates) {
@@ -419,7 +433,119 @@ class EndlessCultivationGame {
             throw error;
         }
     }
-    
+
+    // 为所有技能添加 targeting 和 aoe 元数据（基于境界+类型+等级渐进表）
+    _enrichSkillsWithTargeting() {
+        if (!this.metadata || !this.metadata.realmSkills) return;
+
+        // 攻击技能 AOE 渐进表：[realm][levelIndex] → { targeting, aoe }
+        const ATTACK_TARGETING = {
+            0: [ // 武者 powerStrike
+                { targeting: { side: 'enemy', count: 'single', selection: 'manual' } },
+                { targeting: { side: 'enemy', count: 'single', selection: 'manual' } },
+                { targeting: { side: 'enemy', count: 'all' }, aoe: { mode: 'splash', splashRatio: 0.3 } },
+                { targeting: { side: 'enemy', count: 'all' }, aoe: { mode: 'splash', splashRatio: 0.5 } },
+            ],
+            1: [ // 炼气 qiBlade
+                { targeting: { side: 'enemy', count: 'single', selection: 'manual' } },
+                { targeting: { side: 'enemy', count: 'all' }, aoe: { mode: 'splash', splashRatio: 0.3 } },
+                { targeting: { side: 'enemy', count: 'all' }, aoe: { mode: 'splash', splashRatio: 0.5 } },
+                { targeting: { side: 'enemy', count: 'all' }, aoe: { mode: 'splash', splashRatio: 0.7 } },
+            ],
+            2: [ // 筑基 foundationSlash
+                { targeting: { side: 'enemy', count: 'all' }, aoe: { mode: 'splash', splashRatio: 0.3 } },
+                { targeting: { side: 'enemy', count: 'all' }, aoe: { mode: 'splash', splashRatio: 0.5 } },
+                { targeting: { side: 'enemy', count: 'all' }, aoe: { mode: 'splash', splashRatio: 0.7 } },
+                { targeting: { side: 'enemy', count: 'all' }, aoe: { mode: 'full' } },
+            ],
+            3: [ // 金丹 spiritStonesenCore
+                { targeting: { side: 'enemy', count: 'all' }, aoe: { mode: 'splash', splashRatio: 0.5 } },
+                { targeting: { side: 'enemy', count: 'all' }, aoe: { mode: 'splash', splashRatio: 0.7 } },
+                { targeting: { side: 'enemy', count: 'all' }, aoe: { mode: 'full' } },
+                { targeting: { side: 'enemy', count: 'all' }, aoe: { mode: 'full' } },
+            ],
+            4: [ // 元婴 infantStrike
+                { targeting: { side: 'enemy', count: 'all' }, aoe: { mode: 'splash', splashRatio: 0.7 } },
+                { targeting: { side: 'enemy', count: 'all' }, aoe: { mode: 'full' } },
+                { targeting: { side: 'enemy', count: 'all' }, aoe: { mode: 'full' } },
+                { targeting: { side: 'enemy', count: 'all' }, aoe: { mode: 'full' } },
+            ],
+            5: [ // 化神 deityFist
+                { targeting: { side: 'enemy', count: 'all' }, aoe: { mode: 'full' } },
+                { targeting: { side: 'enemy', count: 'all' }, aoe: { mode: 'full' } },
+                { targeting: { side: 'enemy', count: 'all' }, aoe: { mode: 'full' } },
+                { targeting: { side: 'enemy', count: 'all' }, aoe: { mode: 'full' } },
+            ],
+        };
+
+        // 辅助技能覆盖渐进表：defense/recovery/special [realm][levelIndex] → targeting
+        const SUPPORT_TARGETING = {
+            0: [ // 武者
+                { targeting: { side: 'self', count: 'single' } },
+                { targeting: { side: 'self', count: 'single' } },
+                { targeting: { side: 'ally', count: 'all' } },
+                { targeting: { side: 'ally', count: 'all' } },
+            ],
+            1: [ // 炼气
+                { targeting: { side: 'self', count: 'single' } },
+                { targeting: { side: 'self', count: 'single' } },
+                { targeting: { side: 'ally', count: 'all' } },
+                { targeting: { side: 'ally', count: 'all' } },
+            ],
+            2: [ // 筑基
+                { targeting: { side: 'self', count: 'single' } },
+                { targeting: { side: 'ally', count: 'all' } },
+                { targeting: { side: 'ally', count: 'all' } },
+                { targeting: { side: 'ally', count: 'all' } },
+            ],
+            3: [ // 金丹
+                { targeting: { side: 'ally', count: 'all' } },
+                { targeting: { side: 'ally', count: 'all' } },
+                { targeting: { side: 'ally', count: 'all' } },
+                { targeting: { side: 'ally', count: 'all' } },
+            ],
+            4: [ // 元婴
+                { targeting: { side: 'ally', count: 'all' } },
+                { targeting: { side: 'ally', count: 'all' } },
+                { targeting: { side: 'ally', count: 'all' } },
+                { targeting: { side: 'ally', count: 'all' } },
+            ],
+            5: [ // 化神
+                { targeting: { side: 'ally', count: 'all' } },
+                { targeting: { side: 'ally', count: 'all' } },
+                { targeting: { side: 'ally', count: 'all' } },
+                { targeting: { side: 'ally', count: 'all' } },
+            ],
+        };
+
+        for (const skillTree of this.metadata.realmSkills) {
+            const realm = skillTree.realmRequired;
+            const type = skillTree.type;
+
+            if (!skillTree.levels) continue;
+
+            for (let i = 0; i < skillTree.levels.length; i++) {
+                const level = skillTree.levels[i];
+
+                if (type === 'attack') {
+                    const table = ATTACK_TARGETING[realm];
+                    if (table && table[i]) {
+                        level.targeting = table[i].targeting;
+                        if (table[i].aoe) level.aoe = table[i].aoe;
+                    }
+                } else {
+                    // defense, recovery, special
+                    const table = SUPPORT_TARGETING[realm];
+                    if (table && table[i]) {
+                        level.targeting = table[i].targeting;
+                    }
+                }
+            }
+        }
+
+        console.log('✅ 技能 targeting/aoe 元数据已注入');
+    }
+
     // 预加载图片
     preloadImages() {
         // 预加载人物形象图片
@@ -951,9 +1077,11 @@ class EndlessCultivationGame {
 
                     // ✅ 清理存档中可能残留的临时数据（防止脏数据）
                     this.transientState.enemy = null;
+                    this.transientState.enemies = [];
+                    this.transientState.pets = [];
                     this.transientState.sceneMonsters = [];
-                    this.transientState.battle = { inBattle: false, battleLog: [] };
-                    console.log('✅ 已清理临时数据（enemy, sceneMonsters, battle）');
+                    this.transientState.battle = { inBattle: false, battleLog: [], battleMode: 'single', selectedTargetIndex: 0 };
+                    console.log('✅ 已清理临时数据（enemy, enemies, pets, sceneMonsters, battle）');
 
                     // 登录成功，清除跳转计数
                     sessionStorage.removeItem('redirectCount');
@@ -1403,7 +1531,25 @@ class EndlessCultivationGame {
 
         // 攻击按钮
         bindEvent('#attack-btn', 'click', () => {
-            this.attackEnemy();
+            // 多敌人战斗模式：设置目标后走现有攻击流程
+            if (this.transientState.battle.battleMode === 'multi') {
+                const targetIndex = this.transientState.battle.selectedTargetIndex || 0;
+                const target = this.transientState.enemies?.[targetIndex];
+                const targetMesh = this.battle3D?.battleEnemies?.[targetIndex];
+                if (!target || target.hp <= 0) {
+                    this.addBattleLog('无效目标！');
+                    return;
+                }
+                // 临时设置单敌人上下文，复用现有attackEnemy完整动画
+                this.transientState.enemy = target;
+                if (this.battle3D) {
+                    this.battle3D.enemy = targetMesh;
+                }
+                this.attackEnemy();
+            } else {
+                // 单敌人模式：普通攻击
+                this.attackEnemy();
+            }
         });
 
         // 自动战斗按钮 - 打开配置弹窗
@@ -1444,7 +1590,20 @@ class EndlessCultivationGame {
 
         // 手动攻击按钮
         bindEvent('#manual-attack-btn', 'click', () => {
-            this.attackEnemy();
+            if (this.transientState.battle.battleMode === 'multi') {
+                const targetIndex = this.transientState.battle.selectedTargetIndex || 0;
+                const target = this.transientState.enemies?.[targetIndex];
+                const targetMesh = this.battle3D?.battleEnemies?.[targetIndex];
+                if (!target || target.hp <= 0) {
+                    this.addBattleLog('无效目标！');
+                } else {
+                    this.transientState.enemy = target;
+                    if (this.battle3D) this.battle3D.enemy = targetMesh;
+                    this.attackEnemy();
+                }
+            } else {
+                this.attackEnemy();
+            }
             this.closeAutoBattleModal();
         });
 
@@ -1585,6 +1744,20 @@ class EndlessCultivationGame {
         bindEvent('#collection-equip-tab', 'click', () => {
             this.renderCollection('equipment');
         });
+
+        // 宠物管理按钮
+        bindEvent('#pet-manage-btn', 'click', () => {
+            this.openPetManagementModal();
+        });
+        bindEvent('#close-pet-modal', 'click', () => {
+            this.closePetManagementModal();
+        });
+        const petModal = document.getElementById('pet-management-modal');
+        if (petModal) {
+            petModal.addEventListener('click', (e) => {
+                if (e.target === petModal) this.closePetManagementModal();
+            });
+        }
 
         // 用户相关按钮
         
@@ -1973,7 +2146,12 @@ class EndlessCultivationGame {
                 const difficulty = btn.dataset.difficulty;
 
                 if (dungeonId && difficulty && !btn.disabled) {
-                    this.dungeon.enterDungeon(dungeonId, difficulty);
+                    // 悟道秘境使用多敌人波次战斗
+                    if (dungeonId === 'exp_dungeon') {
+                        this.dungeon.enterWaveDungeon(dungeonId, difficulty);
+                    } else {
+                        this.dungeon.enterDungeon(dungeonId, difficulty);
+                    }
                 }
             }
 
@@ -3890,6 +4068,17 @@ class EndlessCultivationGame {
         if (modal) modal.classList.add('hidden');
     }
 
+    openPetManagementModal() {
+        const modal = document.getElementById('pet-management-modal');
+        if (modal) modal.classList.remove('hidden');
+        if (this.petSystem) this.petSystem.renderPetManagementPanel();
+    }
+
+    closePetManagementModal() {
+        const modal = document.getElementById('pet-management-modal');
+        if (modal) modal.classList.add('hidden');
+    }
+
     renderCollection(tab, realmIdx = 0, rarityIdx = 0) {
         const content = document.getElementById('collection-content');
         const subtabsContainer = document.getElementById('collection-subtabs');
@@ -4609,8 +4798,10 @@ class EndlessCultivationGame {
                         // 重置临时数据
                         this.transientState = {
                             enemy: null,
+                            enemies: [],
+                            pets: [],
                             sceneMonsters: [],
-                            battle: { inBattle: false, battleLog: [] }
+                            battle: { inBattle: false, battleLog: [], battleMode: 'single', selectedTargetIndex: 0 }
                         };
 
                         // 清空计算缓存
@@ -4703,6 +4894,14 @@ class EndlessCultivationGame {
                                 enemies: [],
                                 equipmentTypes: [],
                                 rewardedCategories: []
+                            };
+                        }
+
+                        // 宠物系统数据迁移（兼容旧存档）
+                        if (!this.persistentState.player.pets) {
+                            this.persistentState.player.pets = {
+                                owned: [],
+                                activePetId: null
                             };
                         }
 
@@ -4887,6 +5086,12 @@ class EndlessCultivationGame {
             enemies: [],
             equipmentTypes: [],
             rewardedCategories: []
+        };
+
+        // 宠物系统
+        this.persistentState.player.pets = {
+            owned: [],
+            activePetId: null
         };
 
         // 13. 初始化背包分页状态
@@ -7763,6 +7968,25 @@ class EndlessCultivationGame {
             },
             // === 结束回调：玩家返回后，触发敌人反击 ===
             () => {
+                // 多敌人模式：所有存活敌人反击
+                if (this.transientState.battle.battleMode === 'multi') {
+                    // 先同步当前目标HP到enemies数组
+                    const targetIndex = this.transientState.battle.selectedTargetIndex || 0;
+                    if (this.transientState.enemies?.[targetIndex]) {
+                        this.transientState.enemies[targetIndex].hp = this.transientState.enemy.hp;
+                    }
+                    // 所有敌人反击
+                    this.processAllEnemyCounterAttacks();
+                    // 检查战斗结束
+                    const endCheck = this.combatEngine.checkMultiBattleEnd(
+                        this.combatContextBuilder.buildMultiEnemy(this)
+                    );
+                    if (endCheck.ended) {
+                        if (endCheck.result === 'defeat') this.playerDefeated();
+                    }
+                    return;
+                }
+
                 if (this.transientState.enemy.hp <= 0) return;
 
                 // ========== 4. 计算敌人攻击 ==========

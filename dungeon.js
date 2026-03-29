@@ -848,4 +848,267 @@ class DungeonSystem {
             }
         });
     }
+
+    // ==================== 多敌人波次战斗系统 ====================
+
+    /**
+     * 进入多敌人波次副本（悟道秘境等）
+     * 资源副本：简单2波、普通3波、困难3波
+     */
+    enterWaveDungeon(dungeonId, difficulty) {
+        if (!this.checkLevelRequirement(dungeonId, difficulty)) {
+            return;
+        }
+        if (!this.hasRemainingAttempts(dungeonId, difficulty)) {
+            this.game.showNotification('今日挑战次数已用完', 'error');
+            return;
+        }
+
+        this.playerStateBackup = this.backupPlayerState();
+        this.currentDungeon = dungeonId;
+        this.currentDifficulty = difficulty;
+
+        // 波次配置
+        this.currentWave = 1;
+        this.totalWaves = difficulty === 'easy' ? 2 : 3;
+
+        // 累计奖励
+        this.accumulatedRewards = { exp: 0, spiritStones: 0, iron: 0, herbs: 0 };
+
+        // 生成第一波
+        this.startWave(dungeonId, difficulty);
+    }
+
+    /**
+     * 开始一波战斗
+     */
+    startWave(dungeonId, difficulty) {
+        const isLastWave = this.currentWave === this.totalWaves;
+        const waveEnemies = this.generateWaveEnemies(dungeonId, difficulty, isLastWave);
+
+        // 设置多敌人状态
+        this.game.transientState.enemies = waveEnemies;
+        this.game.transientState.battle.battleMode = 'multi';
+        this.game.transientState.battle.selectedTargetIndex = 0;
+        this.game.transientState.battle.inBattle = true;
+        this.game.transientState.enemy = waveEnemies[0];
+
+        // 激活宠物（如果有）
+        if (this.game.petSystem) {
+            this.game.petSystem.activatePetForBattle();
+        }
+
+        // 第一波播放音乐
+        if (this.currentWave === 1) {
+            this.playDungeonMusic(dungeonId);
+        }
+
+        // 创建多敌人战斗场景
+        this.game.createMultiEnemyBattleScene(waveEnemies);
+
+        // 显示退出副本按钮
+        document.getElementById('battle-modal').classList.remove('hidden');
+        const exitBtn = document.getElementById('exit-dungeon-btn');
+        if (exitBtn) exitBtn.classList.remove('hidden');
+
+        // 显示多敌人UI面板
+        if (this.game.uiManager) {
+            this.game.uiManager.updateMultiEnemyPanel();
+        }
+
+        this.game.showNotification(
+            `第 ${this.currentWave}/${this.totalWaves} 波 — ${waveEnemies.length}个敌人！`,
+            'warning'
+        );
+    }
+
+    /**
+     * 生成波次敌人（2-4个同时出现）
+     * @param {string} dungeonId
+     * @param {string} difficulty
+     * @param {boolean} isLastWave - 是否最后一波（最后一波出Boss/精英）
+     */
+    generateWaveEnemies(dungeonId, difficulty, isLastWave) {
+        const count = difficulty === 'easy' ? 2 : difficulty === 'medium' ? 3 : 4;
+        const playerLevel = this.game.calculateTotalLevel();
+        const dungeon = this.getDungeonConfig(dungeonId);
+
+        const enemies = [];
+
+        for (let i = 0; i < count; i++) {
+            let enemyType;
+
+            // 最后一波的最后一个是Boss（困难模式）
+            if (isLastWave && difficulty === 'hard' && i === count - 1) {
+                enemyType = {
+                    type: 'boss',
+                    name: dungeon.boss_type,
+                    level: playerLevel + 2,
+                    scale: 3.0
+                };
+            }
+            // 最后一波的倒数第二个可能是精英
+            else if (isLastWave && difficulty !== 'easy' && i === count - 2) {
+                enemyType = {
+                    type: 'elite',
+                    name: '精英' + dungeon.enemy_types[0],
+                    level: difficulty === 'hard' ? playerLevel + 2 : playerLevel,
+                    scale: 2.0
+                };
+            }
+            // 普通怪
+            else {
+                const randomType = dungeon.enemy_types[Math.floor(Math.random() * dungeon.enemy_types.length)];
+                const levelMod = difficulty === 'easy' ? -2 : difficulty === 'hard' ? 2 : 0;
+                enemyType = {
+                    type: 'normal',
+                    name: randomType,
+                    level: playerLevel + levelMod,
+                    scale: 1.0
+                };
+            }
+
+            const enemy = this.generateDungeonEnemy(enemyType, difficulty);
+
+            // 为Boss/精英分配技能
+            if (enemy.isBoss && this.game.metadata.bossSkills) {
+                const pool = [...this.game.metadata.bossSkills];
+                enemy.skills = this.shuffleArray(pool).slice(0, 2);
+                enemy.energy = 100;
+                enemy.maxEnergy = 100;
+            } else if (enemy.isElite && this.game.metadata.eliteSkills) {
+                const pool = [...this.game.metadata.eliteSkills];
+                enemy.skills = [this.shuffleArray(pool)[0]];
+                enemy.energy = 50;
+                enemy.maxEnergy = 50;
+            }
+
+            enemies.push(enemy);
+        }
+
+        return enemies;
+    }
+
+    /**
+     * Fisher-Yates洗牌
+     */
+    shuffleArray(arr) {
+        const a = [...arr];
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    }
+
+    /**
+     * 波次战斗胜利处理
+     */
+    onWaveBattleVictory() {
+        // 收集本波奖励
+        const waveRewards = { exp: 0, spiritStones: 0, iron: 0, herbs: 0 };
+        for (let i = 0; i < this.game.transientState.enemies.length; i++) {
+            const context = { ...this.game.combatContextBuilder.build(this.game), enemy: this.game.transientState.enemies[i] };
+            const result = this.game.combatEngine.calculateEnemyDefeat(context);
+            if (result.data) {
+                waveRewards.exp += result.data.expGained || 0;
+                waveRewards.spiritStones += result.data.spiritStonesGained || 0;
+                waveRewards.iron += result.data.ironGained || 0;
+                waveRewards.herbs += result.data.herbsGained || 0;
+            }
+        }
+
+        // 累计奖励
+        this.accumulatedRewards.exp += waveRewards.exp;
+        this.accumulatedRewards.spiritStones += waveRewards.spiritStones;
+        this.accumulatedRewards.iron += waveRewards.iron;
+        this.accumulatedRewards.herbs += waveRewards.herbs;
+
+        // 应用本波奖励
+        if (this.game.persistentState.player.exp !== undefined) {
+            this.game.persistentState.player.exp += waveRewards.exp;
+        }
+        // 宠物获得经验（玩家经验的50%）
+        if (this.game.petSystem && waveRewards.exp > 0) {
+            this.game.petSystem.grantExpToActivePet(Math.floor(waveRewards.exp * 0.5));
+        }
+        if (this.game.persistentState.resources) {
+            this.game.persistentState.resources.spiritStones = (this.game.persistentState.resources.spiritStones || 0) + waveRewards.spiritStones;
+            this.game.persistentState.resources.iron = (this.game.persistentState.resources.iron || 0) + waveRewards.iron;
+            this.game.persistentState.resources.herbs = (this.game.persistentState.resources.herbs || 0) + waveRewards.herbs;
+        }
+
+        // 波间恢复玩家HP（20%）
+        const playerStats = this.game.getActualStats();
+        const healAmount = Math.floor(playerStats.maxHp * 0.2);
+        this.game.persistentState.player.hp = Math.min(playerStats.maxHp, this.game.persistentState.player.hp + healAmount);
+
+        // 检查是否还有下一波
+        if (this.currentWave < this.totalWaves) {
+            this.currentWave++;
+            this.game.addBattleLog(`第 ${this.currentWave - 1} 波清除！准备第 ${this.currentWave} 波...`);
+
+            // 清理当前战斗场景（短暂延迟后开始下一波）
+            setTimeout(() => {
+                this.game.transientState.enemies = [];
+                this.game.transientState.battle.inBattle = false;
+                this.startWave(this.currentDungeon, this.currentDifficulty);
+            }, 1000);
+            return;
+        }
+
+        // 所有波次完成 — 通关
+        this.completeWaveDungeon();
+    }
+
+    /**
+     * 多波次副本通关
+     */
+    completeWaveDungeon() {
+        // 停止音乐
+        this.stopAllDungeonMusic();
+
+        // 消耗次数
+        this.consumeAttempt(this.currentDungeon, this.currentDifficulty);
+
+        // 检查升级
+        if (typeof this.game.checkLevelUp === 'function') {
+            this.game.checkLevelUp();
+        }
+
+        const r = this.accumulatedRewards;
+        this.game.showNotification(
+            `副本通关！共 ${this.totalWaves} 波 — 经验:${r.exp} 灵石:${r.spiritStones}`,
+            'success'
+        );
+
+        // 清理战斗状态
+        this.game.transientState.enemies = [];
+        this.game.transientState.battle.battleMode = 'single';
+        this.game.transientState.battle.inBattle = false;
+
+        // 退出副本
+        this.exitDungeonSuccess();
+    }
+
+    /**
+     * 通关退出副本（显示成功消息）
+     */
+    exitDungeonSuccess() {
+        // 恢复玩家状态不回滚（已获得奖励）
+        this.game.closeBattleModal();
+
+        this.game.transientState.enemy = null;
+
+        const exitBtn = document.getElementById('exit-dungeon-btn');
+        if (exitBtn) exitBtn.classList.add('hidden');
+
+        this.currentDungeon = null;
+        this.currentDifficulty = null;
+        this.currentWave = 0;
+        this.totalWaves = 0;
+        this.accumulatedRewards = null;
+
+        this.game.showDungeonList();
+    }
 }

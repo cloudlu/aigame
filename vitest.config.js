@@ -6,6 +6,8 @@ export default defineConfig({
     include: ['tests/**/*.test.js'],
     // 排除的文件
     exclude: ['node_modules', 'dist'],
+    // 排除的文件
+    exclude: ['node_modules', 'dist'],
     // 全局变量
     globals: true,
     // 环境

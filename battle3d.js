@@ -512,6 +512,11 @@ EndlessCultivationGame.prototype.createBattleScene = function(enemyInfo) {
 
     // 淡入效果
     this.fadeInBattleScene();
+
+    // 创建宠物模型（如果有激活的宠物）
+    if (this.transientState.pets && this.transientState.pets.length > 0) {
+        this.createPetModel(this.transientState.pets[0]);
+    }
 };
 
 // 淡入战斗场景
@@ -3363,5 +3368,400 @@ EndlessCultivationGame.prototype.hideBattleTooltip = function() {
     if (tooltip) {
         tooltip.remove();
     }
+};
+
+// ==================== 多敌人战斗3D渲染 ====================
+
+// 多敌人位置常量（X轴为前后方向，Z轴为左右排列）
+const MULTI_ENEMY_POSITIONS = [
+    { x: 2.5, z: -1.8 },
+    { x: 2.5, z: 0.0 },
+    { x: 2.5, z: 1.8 },
+    { x: 2.5, z: 3.6 },
+];
+const PET_POSITION = { x: -1.5, z: 0.5 };
+
+/**
+ * 创建多敌人战斗场景
+ * @param {Object[]} enemies - 敌人数组
+ */
+EndlessCultivationGame.prototype.createMultiEnemyBattleScene = function(enemies) {
+    if (!enemies || enemies.length === 0) return;
+
+    // 使用第一个敌人创建基础场景
+    this.createBattleScene(enemies[0]);
+
+    // 清除单个敌人模型（createBattleScene已创建）
+    if (this.battle3D.enemy) {
+        this.battle3D.enemy.dispose();
+        this.battle3D.enemy = null;
+    }
+
+    // 存储多敌人模型引用
+    this.battle3D.battleEnemies = [];
+
+    // 为每个敌人创建模型
+    enemies.forEach((enemy, index) => {
+        this.createEnemyModelAtPosition(enemy, index);
+    });
+
+    // 创建宠物模型（如果有激活的宠物）
+    if (this.transientState.pets && this.transientState.pets.length > 0) {
+        this.createPetModel(this.transientState.pets[0]);
+    }
+};
+
+/**
+ * 在指定位置创建敌人模型（多敌人模式）
+ * @param {Object} enemyInfo - 敌人信息
+ * @param {number} posIndex - 位置索引(0-3)
+ */
+EndlessCultivationGame.prototype.createEnemyModelAtPosition = function(enemyInfo, posIndex) {
+    if (!this.battle3D || !this.battle3D.scene) return;
+
+    const scene = this.battle3D.scene;
+    const pos = MULTI_ENEMY_POSITIONS[posIndex] || MULTI_ENEMY_POSITIONS[0];
+    const enemyName = String(enemyInfo.name || '');
+    const isBoss = enemyInfo.isBoss;
+    const isElite = enemyInfo.isElite;
+    const scale = isBoss ? SIZES.ENEMY_SCALE_BOSS : (isElite ? SIZES.ENEMY_SCALE_ELITE : SIZES.ENEMY_SCALE_NORMAL);
+    const category = this.getEnemyCategory(enemyName);
+
+    // 颜色匹配（与 models.js createEnemyModel 一致）
+    const colorMap = [
+        { keywords: ['狼', '豹', '狮'], r: 0.5, g: 0.5, b: 0.55 },
+        { keywords: ['熊', '牛'], r: 0.45, g: 0.28, b: 0.15 },
+        { keywords: ['蛇', '蜥', '虫', '蠕'], r: 0.25, g: 0.6, b: 0.2 },
+        { keywords: ['火', '熔岩', '凤凰'], r: 0.9, g: 0.3, b: 0.1 },
+        { keywords: ['冰', '雪', '霜'], r: 0.6, g: 0.82, b: 0.95 },
+        { keywords: ['龙', '麒麟'], r: 0.35, g: 0.15, b: 0.55 },
+        { keywords: ['树', '花', '藤', '木'], r: 0.2, g: 0.5, b: 0.15 },
+        { keywords: ['水', '蛟', '鲛', '鱼', '蟹', '虾', '龟'], r: 0.15, g: 0.4, b: 0.7 },
+        { keywords: ['沙', '沙漠'], r: 0.85, g: 0.75, b: 0.55 },
+        { keywords: ['石', '岩', '山'], r: 0.55, g: 0.52, b: 0.48 },
+        { keywords: ['蝙蝠', '幽灵', '暗影', '洞'], r: 0.3, g: 0.2, b: 0.4 },
+        { keywords: ['仙', '天', '云', '鹤'], r: 0.9, g: 0.85, b: 0.95 },
+        { keywords: ['妖', '精', '怪', '魔'], r: 0.6, g: 0.2, b: 0.3 },
+    ];
+    let bodyColor = { r: 0.8, g: 0.2, b: 0.2 };
+    for (const entry of colorMap) {
+        if (entry.keywords.some(kw => enemyName.includes(kw))) {
+            bodyColor = entry;
+            break;
+        }
+    }
+
+    let color;
+    if (isBoss) {
+        color = new BABYLON.Color3(0.8, 0.2, 0.8);
+    } else if (isElite) {
+        color = new BABYLON.Color3(0.9, 0.75, 0.1);
+    } else {
+        color = new BABYLON.Color3(bodyColor.r, bodyColor.g, bodyColor.b);
+    }
+
+    const material = new BABYLON.StandardMaterial("multiEnemyMat_" + posIndex + "_" + Date.now(), scene);
+    material.diffuseColor = color;
+    material.specularColor = new BABYLON.Color3(0.1, 0.1, 0.1);
+    material.specularPower = 32;
+    if (isBoss) {
+        material.emissiveColor = new BABYLON.Color3(0.2, 0.05, 0.2);
+    } else if (isElite) {
+        material.emissiveColor = new BABYLON.Color3(0.15, 0.12, 0.02);
+    }
+
+    const enemyGroup = new BABYLON.TransformNode("multiEnemyGroup_" + posIndex, scene);
+    this.buildEnemyByCategory(enemyGroup, category, material, scene);
+
+    // Boss额外添加角
+    if (isBoss) {
+        const hornMat = new BABYLON.StandardMaterial("multiHornMat_" + posIndex, scene);
+        hornMat.diffuseColor = new BABYLON.Color3(0.8, 0.7, 0.3);
+        const horn1 = BABYLON.MeshBuilder.CreateCylinder("multiHorn1_" + posIndex, { diameterTop: 0.1, diameterBottom: 0.3, height: 0.8, tessellation: 6 }, scene);
+        horn1.parent = enemyGroup;
+        horn1.position.set(-0.4, 2.2, 0);
+        horn1.rotation.z = -0.3;
+        horn1.material = hornMat;
+        const horn2 = BABYLON.MeshBuilder.CreateCylinder("multiHorn2_" + posIndex, { diameterTop: 0.1, diameterBottom: 0.3, height: 0.8, tessellation: 6 }, scene);
+        horn2.parent = enemyGroup;
+        horn2.position.set(0.4, 2.2, 0);
+        horn2.rotation.z = 0.3;
+        horn2.material = hornMat;
+    }
+
+    enemyGroup.scaling.setAll(scale);
+
+    // 战斗场景位置（与 models.js createEnemyModel 一致）
+    const isFlying = category === 'BIRD' || category === 'GHOST';
+    enemyGroup.position.x = pos.x;
+    enemyGroup.position.y = isFlying ? -0.7 : -1;
+    enemyGroup.position.z = pos.z;
+    enemyGroup.rotation.y = -Math.PI / 2; // 面向左侧玩家
+
+    // Boss/精英描边
+    if (isBoss) {
+        const childMeshes = enemyGroup.getChildMeshes();
+        childMeshes.forEach(mesh => {
+            mesh.renderOutline = true;
+            mesh.outlineColor = new BABYLON.Color3(0.8, 0, 0.8);
+            mesh.outlineWidth = 0.05;
+        });
+    } else if (isElite) {
+        const childMeshes = enemyGroup.getChildMeshes();
+        childMeshes.forEach(mesh => {
+            mesh.renderOutline = true;
+            mesh.outlineColor = new BABYLON.Color3(1, 0.84, 0);
+            mesh.outlineWidth = 0.03;
+        });
+    }
+
+    // 存储引用
+    this.battle3D.battleEnemies[posIndex] = enemyGroup;
+    enemyGroup.metadata = { enemyIndex: posIndex, enemyInfo };
+
+    // 创建血条（多敌人模式）
+    const healthBar = this.createHealthBar(0xff0000);
+    healthBar.scaling.x = 0.5 / scale;
+    healthBar.scaling.y = 1.0 / scale;
+    healthBar.scaling.z = 0.5 / scale;
+    const healthBarY = SIZES.getHealthBarY(category);
+    healthBar.position.x = 0;
+    healthBar.position.y = healthBarY;
+    healthBar.position.z = 0;
+    healthBar.isVisible = true;
+    healthBar.parent = enemyGroup;
+    enemyGroup.metadata.healthBar = healthBar;
+
+    // 点击选择目标（为所有子mesh添加pickable和actionManager）
+    const childMeshes = enemyGroup.getChildMeshes();
+    childMeshes.forEach(mesh => {
+        mesh.isPickable = true;
+        mesh.actionManager = new BABYLON.ActionManager(scene);
+        mesh.actionManager.registerAction(
+            new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, () => {
+                this.selectTarget(posIndex);
+            })
+        );
+    });
+};
+
+/**
+ * 高亮选中的目标
+ * @param {number} targetIndex - 目标索引
+ */
+EndlessCultivationGame.prototype.highlightTarget = function(targetIndex) {
+    if (!this.battle3D?.battleEnemies) return;
+
+    // 清除所有高亮
+    this.battle3D.battleEnemies.forEach((mesh, i) => {
+        if (mesh && mesh.renderOutline) {
+            const enemy = this.transientState.enemies?.[i];
+            if (enemy?.isBoss) {
+                mesh.outlineColor = new BABYLON.Color3(0.8, 0, 0.8);
+                mesh.outlineWidth = 0.05;
+            } else if (enemy?.isElite) {
+                mesh.outlineColor = new BABYLON.Color3(1, 0.84, 0);
+                mesh.outlineWidth = 0.03;
+            } else {
+                mesh.renderOutline = false;
+            }
+        }
+    });
+
+    // 高亮选中目标
+    const target = this.battle3D.battleEnemies[targetIndex];
+    if (target) {
+        target.renderOutline = true;
+        target.outlineColor = new BABYLON.Color3(0, 1, 0.5);
+        target.outlineWidth = 0.06;
+    }
+};
+
+/**
+ * 移除已击败敌人的3D模型
+ * @param {number} index - 敌人索引
+ */
+EndlessCultivationGame.prototype.removeEnemyModel = function(index) {
+    if (!this.battle3D?.battleEnemies?.[index]) return;
+
+    const mesh = this.battle3D.battleEnemies[index];
+
+    // 播放击败特效
+    if (mesh) {
+        this.createKillEffect(mesh.position);
+
+        // 播放倒地动画后再销毁
+        const originalY = mesh.position.y;
+        const originalZ = mesh.rotation.z;
+        const startTime = Date.now();
+        const duration = 600;
+
+        const fallAnim = () => {
+            const progress = Math.min((Date.now() - startTime) / duration, 1);
+            mesh.position.y = originalY - progress * 1.5;
+            mesh.rotation.z = originalZ + progress * Math.PI / 2;
+            if (progress < 1) {
+                requestAnimationFrame(fallAnim);
+            } else {
+                mesh.dispose();
+            }
+        };
+        fallAnim();
+    }
+    this.battle3D.battleEnemies[index] = null;
+};
+
+/**
+ * 向指定目标播放攻击动画
+ * @param {number} targetIndex - 目标索引
+ * @param {Function} onHit - 命中回调
+ * @param {Function} onComplete - 完成回调
+ */
+EndlessCultivationGame.prototype.playAttackAnimationToTarget = function(targetIndex, onHit, onComplete) {
+    if (!this.battle3D?.player || !this.battle3D?.battleEnemies?.[targetIndex]) {
+        if (onComplete) onComplete();
+        return;
+    }
+
+    const player = this.battle3D.player;
+    const target = this.battle3D.battleEnemies[targetIndex];
+    const startX = player.position.x;
+    const targetX = target.position.x;
+
+    // 简化版：玩家冲向目标再返回
+    const forward = { x: targetX - 1.0 };
+    const duration = 300;
+
+    const animPlayer = new BABYLON.Animation(
+        'attackToTarget', 'position.x', 60,
+        BABYLON.Animation.ANIMATIONTYPE_FLOAT,
+        BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
+    );
+    animPlayer.setKeys([
+        { frame: 0, value: startX },
+        { frame: duration / 2, value: forward.x },
+        { frame: duration, value: startX }
+    ]);
+
+    player.animations = [animPlayer];
+    this.battle3D.scene.beginAnimation(player, 0, duration, false, 1, () => {
+        if (onComplete) onComplete();
+    });
+
+    // 命中时回调
+    setTimeout(() => {
+        if (onHit) onHit();
+    }, duration / 2);
+};
+
+/**
+ * 播放AOE全屏特效
+ * @param {Function} onHit - 命中回调
+ * @param {Function} onComplete - 完成回调
+ */
+EndlessCultivationGame.prototype.playAOEAnimation = function(onHit, onComplete) {
+    if (!this.battle3D?.scene) {
+        if (onComplete) onComplete();
+        return;
+    }
+
+    // 全屏闪光
+    this.lightFlash(4.0, 400, new BABYLON.Color3(1, 0.8, 0.3));
+    this.cameraShake(0.15, 350);
+
+    // 对所有存活敌人显示伤害
+    setTimeout(() => { if (onHit) onHit(); }, 200);
+    setTimeout(() => { if (onComplete) onComplete(); }, 500);
+};
+
+/**
+ * 创建宠物3D模型
+ * @param {Object} petInfo - 宠物信息
+ */
+EndlessCultivationGame.prototype.createPetModel = function(petInfo) {
+    if (!this.battle3D?.scene) {
+        console.log('⚠️ createPetModel: 战斗场景不存在');
+        return;
+    }
+
+    const scene = this.battle3D.scene;
+
+    // 宠物使用缩小版敌人模型
+    const category = this.getEnemyCategory ? this.getEnemyCategory(petInfo.type || '兽') : 'QUAD';
+    const scale = 0.6;
+
+    // 宠物颜色（绿色系）
+    const color = new BABYLON.Color3(
+        petInfo.color?.r || 0.3,
+        petInfo.color?.g || 0.7,
+        petInfo.color?.b || 0.4
+    );
+
+    const material = new BABYLON.StandardMaterial("petMaterial_" + Date.now(), scene);
+    material.diffuseColor = color;
+    material.specularColor = new BABYLON.Color3(0.1, 0.1, 0.1);
+    material.emissiveColor = new BABYLON.Color3(0.1, 0.25, 0.15);
+
+    const petGroup = new BABYLON.TransformNode("petGroup", scene);
+
+    // 根据类别创建外形（复用敌人模型构建器）
+    if (this.buildEnemyByCategory) {
+        this.buildEnemyByCategory(petGroup, category, material, scene);
+    }
+
+    petGroup.scaling.setAll(scale);
+
+    petGroup.position.x = -1.5;
+    petGroup.position.y = 0;
+    petGroup.position.z = 0.5;
+    petGroup.rotation.y = Math.PI / 2;
+
+    this.battle3D.pet = petGroup;
+    console.log('✅ 宠物3D模型已创建:', petInfo.name, '类别:', category);
+};
+
+// 宠物攻击动画（冲锋 → 回位）
+EndlessCultivationGame.prototype.playPetAttackAnimation = function(onHit) {
+    const pet = this.battle3D?.pet;
+    if (!pet) {
+        if (onHit) onHit();
+        return;
+    }
+
+    const originalX = pet.position.x;
+    const targetX = this.battle3D.enemy?.position?.x || 2.0;
+    const rushRange = (targetX - originalX) * 0.6;
+    const startTime = Date.now();
+    const duration = 400;
+
+    this.audioSystem?.playSound('attack-sound', 0.6, 100);
+
+    const animate = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        if (progress < 0.4) {
+            // 冲锋
+            pet.position.x = originalX + Math.sin(progress / 0.4 * Math.PI / 2) * rushRange;
+        } else {
+            // 回位
+            const returnProgress = (progress - 0.4) / 0.6;
+            const peakX = originalX + rushRange;
+            pet.position.x = peakX - Math.sin(returnProgress * Math.PI / 2) * rushRange;
+        }
+
+        if (progress >= 0.35 && progress < 0.45) {
+            if (onHit) onHit();
+            onHit = null;
+        }
+
+        if (progress < 1) {
+            requestAnimationFrame(animate);
+        } else {
+            pet.position.x = originalX;
+        }
+    };
+
+    animate();
 };
 

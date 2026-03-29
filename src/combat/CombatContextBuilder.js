@@ -95,6 +95,103 @@ class CombatContextBuilder {
             dropRates: game.metadata.dropRates || {}
         };
     }
+    /**
+     * 构建完整的战斗上下文（多敌人模式）
+     * @param {EndlessCultivationGame} game - 游戏实例
+     * @returns {CombatContext} 战斗上下文（含 enemies[] 和 pets[]）
+     */
+    static buildMultiEnemy(game) {
+        const playerStats = game.getActualStats();
+
+        return {
+            player: this.buildPlayerContext(game, playerStats),
+            enemy: this.buildEnemyContext(game, game.getEnemyActualStats()),
+            enemies: this.buildEnemiesContext(game),
+            pets: this.buildPetsContext(game),
+            battleState: this.buildBattleState(game),
+            config: this.buildConfig(game)
+        };
+    }
+
+    /**
+     * 构建多敌人上下文数组（兼容单敌人模式）
+     */
+    static buildEnemiesContext(game) {
+        // 多敌人模式
+        const enemies = game.transientState.enemies || [];
+        if (enemies.length > 0) {
+            return enemies.map(enemy => ({
+                id: enemy.id || enemy.name,
+                name: enemy.name,
+                baseName: enemy.baseName,
+                hp: enemy.hp,
+                maxHp: enemy.maxHp,
+                attack: enemy.attack,
+                defense: enemy.defense,
+                speed: enemy.speed,
+                accuracy: enemy.accuracy || enemy.baseAccuracy || 85,
+                dodgeRate: enemy.dodgeRate || enemy.baseDodge || 3,
+                criticalRate: enemy.criticalRate || 5,
+                critDamage: enemy.critDamage || 1.5,
+                level: enemy.level,
+                isBoss: enemy.isBoss || false,
+                isElite: enemy.isElite || false,
+                buffs: enemy.buffs || {},
+                skills: enemy.skills || [],
+                energy: enemy.energy || 0,
+                maxEnergy: enemy.maxEnergy || 0
+            }));
+        }
+
+        // 单敌人模式（fallback）
+        const enemy = game.transientState.enemy;
+        if (enemy) {
+            return [{
+                id: enemy.id || enemy.name,
+                name: enemy.name,
+                baseName: enemy.baseName,
+                hp: enemy.hp,
+                maxHp: enemy.maxHp,
+                attack: enemy.attack,
+                defense: enemy.defense,
+                speed: enemy.speed,
+                accuracy: enemy.accuracy || enemy.baseAccuracy || 85,
+                dodgeRate: enemy.dodgeRate || enemy.baseDodge || 3,
+                criticalRate: enemy.criticalRate || 5,
+                critDamage: enemy.critDamage || 1.5,
+                level: enemy.level,
+                isBoss: enemy.isBoss || false,
+                isElite: enemy.isElite || false,
+                buffs: enemy.buffs || {},
+                skills: enemy.skills || [],
+                energy: enemy.energy || 0,
+                maxEnergy: enemy.maxEnergy || 0
+            }];
+        }
+
+        return [];
+    }
+
+    /**
+     * 构建宠物上下文数组
+     */
+    static buildPetsContext(game) {
+        const pets = game.transientState.pets || [];
+        return pets.map(pet => ({
+            id: pet.id,
+            name: pet.name,
+            hp: pet.hp,
+            maxHp: pet.maxHp,
+            attack: pet.attack,
+            defense: pet.defense,
+            speed: pet.speed,
+            criticalRate: pet.criticalRate || 5,
+            critDamage: pet.critDamage || 1.5,
+            skills: pet.skills || [],
+            energy: pet.energy || 100,
+            maxEnergy: pet.maxEnergy || 100
+        }));
+    }
 }
 
 // 挂载到全局（浏览器环境）

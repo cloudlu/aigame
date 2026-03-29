@@ -472,6 +472,28 @@ EndlessCultivationGame.prototype.updateHealthBars = function() {
         return; // 探险场景只更新玩家和敌人列表，不更新gameState.enemy
     }
 
+    // ✅ 多敌人战斗场景：更新每个敌人的血条
+    if (isBattleScene && this.transientState.battle.battleMode === 'multi' && this.battle3D.battleEnemies) {
+        const enemies = this.transientState.enemies;
+        if (enemies) {
+            enemies.forEach((enemy, i) => {
+                const mesh = this.battle3D.battleEnemies[i];
+                if (mesh && mesh.metadata && mesh.metadata.healthBar) {
+                    const hb = mesh.metadata.healthBar;
+                    if (enemy.hp <= 0) {
+                        hb.isVisible = false;
+                    } else {
+                        hb.isVisible = true;
+                        const percent = Math.max(0, enemy.hp / enemy.maxHp);
+                        const eScale = enemy.isBoss ? SIZES.ENEMY_SCALE_BOSS :
+                                      (enemy.isElite ? SIZES.ENEMY_SCALE_ELITE : SIZES.ENEMY_SCALE_NORMAL);
+                        hb.scaling.x = percent * (0.5 / eScale) * (1 / (0.5 / eScale)); // 还原原始宽度比例
+                    }
+                }
+            });
+        }
+    }
+
     // ✅ 战斗场景：更新当前选中敌人的血条
     if (isBattleScene && this.transientState.enemy && this.transientState.enemy.name) {
         // 获取战斗场景敌人缩放倍率
@@ -531,5 +553,10 @@ EndlessCultivationGame.prototype.updateHealthBars = function() {
         if (this.battle3D.defenseShield && typeof this.removeShieldEffect === 'function') {
             this.removeShieldEffect();
         }
+    }
+
+    // 更新宠物血条
+    if (this.petSystem && this.transientState.pets && this.transientState.pets.length > 0) {
+        this.petSystem.updatePetHealthPanel();
     }
 };
